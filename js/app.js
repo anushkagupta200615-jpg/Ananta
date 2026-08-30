@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const intuitionLab = new IntuitionLab();
   window.intuitionLab = intuitionLab;
 
+  const conceptDoctor = new ConceptDoctor();
+  window.conceptDoctor = conceptDoctor;
+
   // ==========================================
   // 3. View & Tab Routing
   // ==========================================
@@ -95,9 +98,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 60);
     }
 
-    // Refresh Wave Canvas when entering Intuition Lab
-    if (tabKey === 'intuition' && window.intuitionLab) {
-      setTimeout(() => window.intuitionLab.initWaveCanvas(), 60);
+    // Refresh Wave Canvas and Doctor Canvas when entering Intuition Lab
+    if (tabKey === 'intuition') {
+      if (window.intuitionLab) setTimeout(() => window.intuitionLab.initWaveCanvas(), 60);
+      if (window.conceptDoctor) setTimeout(() => window.conceptDoctor.loadConcept(window.conceptDoctor.currentConceptId), 80);
     }
   }
   window.switchView = switchView;

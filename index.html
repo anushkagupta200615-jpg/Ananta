@@ -587,6 +587,58 @@
           </p>
         </div>
 
+        <!-- ================= CONCEPT DOCTOR: ASK & ANIMATE ================= -->
+        <div class="concept-doctor-panel">
+          <div class="doctor-header-row">
+            <div class="doctor-badge">🩺 AI Quantum Concept Doctor</div>
+            <h2>Struggling with a Concept? Type it below and see it animated!</h2>
+            <p>Tell us what is confusing you (e.g., "I don't get Quantum Tunneling", "Why can't we clone qubits?", "Wavefunction collapse", "Teleportation"). Our engine translates it into a real-world analogy and runs a live interactive simulation.</p>
+          </div>
+
+          <div class="doctor-input-bar">
+            <input type="text" id="concept-query-input" placeholder="e.g., I am facing problem in Quantum Tunneling..." class="doctor-input-field" />
+            <button id="btn-concept-ask" class="btn-doctor-ask">Diagnose & Animate ⚡</button>
+          </div>
+
+          <div class="doctor-quick-chips">
+            <span class="chips-label">Popular Dilemmas:</span>
+            <button class="concept-quick-pill active" data-concept="tunneling">Quantum Tunneling</button>
+            <button class="concept-quick-pill" data-concept="teleportation">Quantum Teleportation</button>
+            <button class="concept-quick-pill" data-concept="nocloning">No-Cloning Theorem</button>
+            <button class="concept-quick-pill" data-concept="collapse">Wavefunction Collapse</button>
+            <button class="concept-quick-pill" data-concept="decoherence">Decoherence & Noise</button>
+            <button class="concept-quick-pill" data-concept="bloch">Bloch Sphere</button>
+          </div>
+
+          <!-- Dynamic Stage for Concept Animation -->
+          <div class="doctor-stage-card">
+            <div class="stage-info-column">
+              <h3 id="doctor-concept-title">Quantum Tunneling: Walking Through Walls</h3>
+              
+              <div class="doctor-section-box">
+                <span class="doctor-box-tag">Real-World Analogy</span>
+                <p id="doctor-concept-analogy">Imagine rolling a tennis ball up a steep hill...</p>
+              </div>
+
+              <div class="doctor-section-box">
+                <span class="doctor-box-tag">Why It Matters to Humanity</span>
+                <p id="doctor-concept-impact">Without quantum tunneling, the Sun could not shine...</p>
+              </div>
+
+              <div class="doctor-controls-wrapper">
+                <span class="doctor-box-tag">Interactive Sandbox</span>
+                <div id="doctor-canvas-controls" class="doctor-controls-inner">
+                  <!-- Injected dynamically -->
+                </div>
+              </div>
+            </div>
+
+            <div class="stage-canvas-column">
+              <canvas id="doctor-animation-canvas" class="doctor-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+
         <div class="intuition-grid">
 
           <!-- EXPERIMENT 1: The Spinning Coin -->
@@ -829,6 +881,7 @@
   <script src="js/algorithms.js"></script>
   <script src="js/research-papers.js"></script>
   <script src="js/intuition-lab.js"></script>
+  <script src="js/concept-doctor.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
