@@ -1294,74 +1294,11 @@ body {
   color: var(--text-dim);
 }
 
-.algorithms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-  gap: 20px;
-}
-
-.algo-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 20px;
+.algorithms-main-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  box-shadow: var(--card-shadow);
-}
-
-.algo-card:hover {
-  border-color: var(--accent-blue);
-  box-shadow: 0 4px 14px rgba(15, 98, 254, 0.12);
-}
-
-.algo-card-badge {
-  align-self: flex-start;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--bg-subtle);
-  color: var(--accent-blue);
-}
-
-.algo-card-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-white);
-}
-
-.algo-card-desc {
-  font-size: 13px;
-  color: var(--text-dim);
-  flex-grow: 1;
-}
-
-.algo-card-math {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  padding: 6px 8px;
-  border-radius: 4px;
-  color: var(--accent-blue);
-}
-
-.btn-load-algo {
-  background: var(--accent-blue);
-  color: #ffffff;
-  border: none;
-  padding: 8px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.btn-load-algo:hover {
-  background: var(--accent-blue-hover);
+  gap: 20px;
+  width: 100%;
 }
 
 /* Mentor Console */
@@ -3834,6 +3771,8 @@ input:checked + .slider-round:before {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .algo-filter-label {
@@ -3880,6 +3819,8 @@ input:checked + .slider-round:before {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .algo-stat {
@@ -3906,6 +3847,8 @@ input:checked + .slider-round:before {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 22px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .algo-card {
