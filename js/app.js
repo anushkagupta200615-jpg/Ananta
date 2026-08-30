@@ -273,13 +273,41 @@ document.addEventListener('DOMContentLoaded', () => {
   // 5. Circuit Controls & Safe Preset Helpers
   // ==========================================
   window.loadPresetSafe = function(presetKey) {
-    if (window.ALGORITHM_PRESETS && window.ALGORITHM_PRESETS[presetKey]) {
-      circuitUI.loadPreset(window.ALGORITHM_PRESETS[presetKey].grid);
+    if (!circuitUI) return;
+    let targetGrid = null;
+    let targetAlgo = null;
+
+    if (presetKey === 'bell' || presetKey === 'bell_phi_plus') {
+      targetGrid = [
+        ['H', 'CX_CTRL', null, null, null, null],
+        [null, 'CX_TGT', null, null, null, null],
+        [null, null, null, null, null, null]
+      ];
+      if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'bell_phi_plus');
+    } else if (presetKey === 'grover' || presetKey === 'grover_2qubit') {
+      targetGrid = [
+        ['H', 'Z', 'H', 'X', 'H', null],
+        ['H', 'CX_TGT', 'H', 'X', 'H', null],
+        [null, null, null, null, null, null]
+      ];
+      if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'grover_2qubit');
     } else if (presetKey === 'superposition') {
-      circuitUI.clearCircuit();
-      circuitUI.setGate(0, 0, 'H');
-      circuitUI.setGate(1, 0, 'H');
-      circuitUI.setGate(2, 0, 'H');
+      targetGrid = [
+        ['H', null, null, null, null, null],
+        ['H', null, null, null, null, null],
+        ['H', null, null, null, null, null]
+      ];
+      if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'superposition_3' || a.id === 'superposition');
+    } else if (window.ALGORITHM_CATALOG) {
+      targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === presetKey);
+      if (targetAlgo) targetGrid = targetAlgo.grid;
+    }
+
+    if (targetGrid) {
+      circuitUI.loadCircuit(targetGrid);
+      if (targetAlgo && circuitUI.startAlgorithmTour) {
+        circuitUI.startAlgorithmTour(targetAlgo);
+      }
     }
   };
 
@@ -287,61 +315,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnClearCirc) {
     btnClearCirc.addEventListener('click', () => circuitUI.clearCircuit());
   }
-
-  // ==========================================
-  // 6. Bind Operations Palette Buttons
-  // ==========================================
-  const gateBtns = document.querySelectorAll('.gate-btn');
-  gateBtns.forEach(btn => {
-    const gate = btn.getAttribute('data-gate');
-
-    btn.addEventListener('dragstart', (e) => {
-      circuitUI.activeDragGate = gate;
-      e.dataTransfer.setData('text/plain', gate);
-    });
-
-    btn.addEventListener('click', () => {
-      if (window.selectedPaletteGate === gate) {
-        window.selectedPaletteGate = null;
-        btn.style.outline = 'none';
-      } else {
-        gateBtns.forEach(b => b.style.outline = 'none');
-        window.selectedPaletteGate = gate;
-        btn.style.outline = '2px solid var(--accent-blue)';
-      }
-    });
-  });
-
-  // ==========================================
-  // 7. Algorithm Presets Grid
-  // ==========================================
-  const algoContainer = document.getElementById('algorithm-cards-container');
-  if (algoContainer && window.ALGORITHM_PRESETS) {
-    algoContainer.innerHTML = '';
-    Object.values(window.ALGORITHM_PRESETS).forEach(algo => {
-      const card = document.createElement('div');
-      card.className = 'algo-card';
-      card.innerHTML = `
-        <div class="algo-card-badge">${algo.difficulty}</div>
-        <h3 class="algo-card-title">${algo.title}</h3>
-        <p class="algo-card-desc">${algo.desc}</p>
-        <div class="algo-card-math">${algo.math}</div>
-        <button class="btn-load-algo" data-algo="${algo.id}">
-          Open in Simulator
-        </button>
-      `;
-      card.querySelector('.btn-load-algo').addEventListener('click', () => {
-        circuitUI.loadPreset(algo.grid);
-        switchView('simulator');
-      });
-      algoContainer.appendChild(card);
-    });
-  }
-
-  // Initial State: Apply Hadamard on q0
-  setTimeout(() => {
-    circuitUI.setGate(0, 0, 'H');
-  }, 100);
 
   // ==========================================
   // 8. Research Library Engine

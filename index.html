@@ -318,16 +318,34 @@
           <div class="ribbon-meta">
             <span class="file-name-label">untitled_circuit.q</span>
             <div class="quick-tools">
-              <button class="tool-btn" id="btn-clear-circ">Clear Grid</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('bell')">Bell State</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('grover')">Grover's</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('superposition')">Superposition</button>
+              <button class="tool-btn" id="btn-clear-circ" title="Reset all 3 wires to ground state |000⟩">Clear Grid</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('bell')" title="Load Entangled Bell Pair |Φ⁺⟩ = (|00⟩ + |11⟩)/√2">⚡ Bell State</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('grover')" title="Load Grover Quantum Search Algorithm">🔍 Grover's Search</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('superposition')" title="Load Uniform 3-Qubit Superposition (12.5% each)">🌊 Superposition</button>
             </div>
           </div>
           <div class="ribbon-execute">
-            <button class="btn-run-calc" onclick="window.circuitUI.updateSimulation()">
-              Run Circuit Simulation
+            <button class="btn-run-calc" id="btn-run-calc" onclick="window.circuitUI.runInteractiveSimulation()" title="Click to run real-time quantum statevector simulation across all wires">
+              Run Circuit Simulation ⚡
             </button>
+          </div>
+        </div>
+
+        <!-- Simulator Quick Guide: 3 Easy Steps -->
+        <div class="sim-quick-guide-strip">
+          <div class="guide-item">
+            <span class="guide-num">1</span>
+            <span class="guide-desc"><strong>Choose Gate:</strong> Click any gate (e.g. <strong>H</strong> for Superposition or <strong>⊕</strong> for CNOT).</span>
+          </div>
+          <div class="guide-arrow">→</div>
+          <div class="guide-item">
+            <span class="guide-num">2</span>
+            <span class="guide-desc"><strong>Place on Wire:</strong> Click any slot on wires <code>q0</code>, <code>q1</code>, or <code>q2</code>.</span>
+          </div>
+          <div class="guide-arrow">→</div>
+          <div class="guide-item">
+            <span class="guide-num">3</span>
+            <span class="guide-desc"><strong>Inspect State:</strong> Dirac notation <code>|ψ⟩</code>, 3D Bloch sphere & probabilities update in real time!</span>
           </div>
         </div>
 
@@ -337,24 +355,49 @@
           <!-- Left: Gate Operations Palette (IBM Style Color Codes) -->
           <div class="operations-dock">
             <div class="dock-title">
-              <h3>Operations</h3>
+              <h3>Gate Operations</h3>
             </div>
 
-            <!-- Square Gate Buttons -->
+            <!-- Square Gate Buttons with Clear Pedagogical Labels -->
             <div class="operations-grid">
-              <button class="gate-btn btn-coral" draggable="true" data-gate="H" title="Hadamard (H)">H</button>
-              <button class="gate-btn btn-blue" draggable="true" data-gate="CX" title="Controlled-NOT (CNOT) ⊕">⊕</button>
-              <button class="gate-btn btn-crimson" draggable="true" data-gate="X" title="Pauli-X (NOT)">X</button>
-              <button class="gate-btn btn-magenta" draggable="true" data-gate="Y" title="Pauli-Y">Y</button>
+              <button class="gate-btn btn-coral" draggable="true" data-gate="H" title="Hadamard (H): Rotates |0⟩ into equal 50/50 superposition">
+                <span class="gate-key">H</span>
+                <span class="gate-label">Superpos</span>
+              </button>
+              <button class="gate-btn btn-blue" draggable="true" data-gate="CX" title="CNOT: Two-qubit entangling gate">
+                <span class="gate-key">⊕</span>
+                <span class="gate-label">CNOT Entangle</span>
+              </button>
+              <button class="gate-btn btn-crimson" draggable="true" data-gate="X" title="Pauli-X: Quantum NOT gate (flips 0 and 1)">
+                <span class="gate-key">X</span>
+                <span class="gate-label">NOT Flip</span>
+              </button>
+              <button class="gate-btn btn-magenta" draggable="true" data-gate="Y" title="Pauli-Y: Bit + Phase rotation">
+                <span class="gate-key">Y</span>
+                <span class="gate-label">Pauli-Y</span>
+              </button>
               
-              <button class="gate-btn btn-purple" draggable="true" data-gate="Z" title="Pauli-Z">Z</button>
-              <button class="gate-btn btn-cyan" draggable="true" data-gate="S" title="Phase S">S</button>
-              <button class="gate-btn btn-sky" draggable="true" data-gate="T" title="Phase T">T</button>
-              <button class="gate-btn btn-slate" draggable="true" data-gate="M" title="Measurement">∿</button>
+              <button class="gate-btn btn-purple" draggable="true" data-gate="Z" title="Pauli-Z: Phase flip (inverts phase of |1⟩ to negative)">
+                <span class="gate-key">Z</span>
+                <span class="gate-label">Phase Flip</span>
+              </button>
+              <button class="gate-btn btn-cyan" draggable="true" data-gate="S" title="Phase S: Quarter phase shift (90 degrees / pi/2)">
+                <span class="gate-key">S</span>
+                <span class="gate-label">90° Phase</span>
+              </button>
+              <button class="gate-btn btn-sky" draggable="true" data-gate="T" title="Phase T: Eighth phase shift (45 degrees / pi/4)">
+                <span class="gate-key">T</span>
+                <span class="gate-label">45° Phase</span>
+              </button>
+              <button class="gate-btn btn-slate" draggable="true" data-gate="M" title="Measurement: Collapses superposition into classical bit">
+                <span class="gate-key">∿</span>
+                <span class="gate-label">Measure</span>
+              </button>
             </div>
 
-            <div class="dock-instruction">
-              Click or drag gates onto wire slots to evaluate unitary transformations.
+            <!-- User Guidance Hint Bar -->
+            <div class="palette-hint-bar" id="palette-hint-bar">
+              <span id="palette-hint-text">💡 <strong>How to build:</strong> Click a gate above, then click a slot on wires q0, q1, or q2.</span>
             </div>
 
             <!-- Live State Interpretation Card -->

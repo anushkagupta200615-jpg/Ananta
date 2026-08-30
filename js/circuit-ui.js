@@ -13,8 +13,12 @@ class CircuitUI {
     this.numCols = 6;
     this.selectedQubitForBloch = 0;
 
-    // Grid: grid[qubit][col]
-    this.grid = Array.from({ length: this.numQubits }, () => Array(this.numCols).fill(null));
+    // Grid: grid[qubit][col] - Initialized with Bell State (|000⟩ + |110⟩)/√2 by default so the simulator is alive immediately!
+    this.grid = [
+      ['H', 'CX_CTRL', null, null, null, null],
+      [null, 'CX_TGT', null, null, null, null],
+      [null, null, null, null, null, null]
+    ];
     this.activeDragGate = null;
 
     // Step-by-Step Playback Controller (-1 = full circuit, 0 = init |000⟩, 1..6 = after col 0..5)
@@ -57,6 +61,10 @@ class CircuitUI {
     this.renderGrid();
   }
 
+  setGate(qubit, col, gateName) {
+    this.placeGate(gateName, qubit, col);
+  }
+
   renderGrid() {
     if (!this.gridContainer) return;
     this.gridContainer.innerHTML = '';
@@ -72,7 +80,7 @@ class CircuitUI {
       label.innerHTML = `<span class="wire-name">q<sub>${q}</sub></span> <span class="wire-state">|0⟩</span>`;
       row.appendChild(label);
 
-      // Wire track with slots
+      // Wire track with continuous luminous quantum line
       const wireTrack = document.createElement('div');
       wireTrack.className = 'wire-track';
 
@@ -91,24 +99,43 @@ class CircuitUI {
         // Render placed gate if any
         const gate = this.grid[q][c];
         if (gate) {
+          slot.classList.add('has-gate');
           slot.appendChild(this.createGateElement(gate, q, c));
+        } else if (window.selectedPaletteGate) {
+          slot.classList.add('ready-to-place');
         }
 
         // Dragover / Drop handlers
-        slot.addEventListener('dragover', (e) => e.preventDefault());
+        slot.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          slot.classList.add('drag-hover');
+        });
+        slot.addEventListener('dragleave', () => slot.classList.remove('drag-hover'));
         slot.addEventListener('drop', (e) => {
           e.preventDefault();
+          slot.classList.remove('drag-hover');
           const droppedGate = e.dataTransfer.getData('text/plain') || this.activeDragGate;
           if (droppedGate) {
             this.placeGate(droppedGate, q, c);
           }
         });
 
+        // Click to place, remove, or guide
         slot.addEventListener('click', () => {
           if (window.selectedPaletteGate) {
             this.placeGate(window.selectedPaletteGate, q, c);
           } else if (this.grid[q][c]) {
             this.removeGate(q, c);
+          } else {
+            const hint = document.getElementById('palette-hint-text');
+            if (hint) {
+              hint.innerHTML = '👉 <strong>Select a gate first:</strong> Click H, ⊕, X, or Z on the left to arm it!';
+              const bar = document.getElementById('palette-hint-bar');
+              if (bar) {
+                bar.classList.add('hint-alert');
+                setTimeout(() => bar.classList.remove('hint-alert'), 1200);
+              }
+            }
           }
         });
 
@@ -118,30 +145,130 @@ class CircuitUI {
       row.appendChild(wireTrack);
       this.gridContainer.appendChild(row);
     }
+
+    // Render vertical CNOT quantum entanglement connectors
+    setTimeout(() => this.renderCnotConnectors(), 10);
+  }
+
+  renderCnotConnectors() {
+    document.querySelectorAll('.cnot-vertical-connector').forEach(el => el.remove());
+
+    for (let c = 0; c < this.numCols; c++) {
+      let ctrlQubit = -1;
+      let tgtQubit = -1;
+      for (let q = 0; q < this.numQubits; q++) {
+        if (this.grid[q][c] === 'CX_CTRL') ctrlQubit = q;
+        if (this.grid[q][c] === 'CX_TGT') tgtQubit = q;
+      }
+
+      if (ctrlQubit !== -1 && tgtQubit !== -1) {
+        const topQ = Math.min(ctrlQubit, tgtQubit);
+        const botQ = Math.max(ctrlQubit, tgtQubit);
+        const topSlot = document.getElementById(`slot-${topQ}-${c}`);
+        const botSlot = document.getElementById(`slot-${botQ}-${c}`);
+
+        if (topSlot && botSlot) {
+          const rectTop = topSlot.getBoundingClientRect();
+          const rectBot = botSlot.getBoundingClientRect();
+          const gridRect = this.gridContainer.getBoundingClientRect();
+
+          const connector = document.createElement('div');
+          connector.className = 'cnot-vertical-connector';
+          const topPos = (rectTop.top + rectTop.height / 2) - gridRect.top;
+          const height = (rectBot.top + rectBot.height / 2) - (rectTop.top + rectTop.height / 2);
+          const leftPos = (rectTop.left + rectTop.width / 2) - gridRect.left;
+
+          connector.style.top = `${topPos}px`;
+          connector.style.left = `${leftPos}px`;
+          connector.style.height = `${height}px`;
+
+          this.gridContainer.appendChild(connector);
+        }
+      }
+    }
   }
 
   createGateElement(gateName, qubit, col) {
     const el = document.createElement('div');
-    el.className = `placed-gate gate-color-${gateName.toLowerCase()}`;
+    const cssName = gateName.toLowerCase().replace('_ctrl', '-ctrl').replace('_tgt', '-tgt');
+    el.className = `placed-gate gate-chip gate-${cssName}`;
     el.setAttribute('data-gate', gateName);
 
     if (gateName === 'CX_CTRL') {
-      el.className += ' gate-cx-ctrl';
-      el.innerHTML = '<span class="cnot-dot">●</span>';
+      el.className += ' gate-cnot-ctrl';
+      el.innerHTML = '<span class="cnot-dot">●</span><span class="gate-sublabel">CTRL</span>';
     } else if (gateName === 'CX_TGT') {
-      el.className += ' gate-cx-tgt';
-      el.innerHTML = '<span class="cnot-cross">⊕</span>';
+      el.className += ' gate-cnot-tgt';
+      el.innerHTML = '<span class="cnot-cross">⊕</span><span class="gate-sublabel">TGT</span>';
     } else {
-      el.textContent = gateName;
+      const sublabels = {
+        'H': 'Superpos',
+        'X': 'NOT Flip',
+        'Y': 'Pauli-Y',
+        'Z': 'Phase',
+        'S': '90° Phase',
+        'T': '45° Phase',
+        'M': 'Measure'
+      };
+      const displayKey = gateName === 'M' ? '∿' : gateName;
+      el.innerHTML = `
+        <span class="gate-main-letter">${displayKey}</span>
+        <span class="gate-sublabel">${sublabels[gateName] || ''}</span>
+      `;
     }
 
-    el.title = `${gateName} on q[${qubit}] col ${col + 1} (Click to remove)`;
+    const del = document.createElement('span');
+    del.className = 'gate-delete-x';
+    del.textContent = '✕';
+    del.title = 'Remove gate';
+    el.appendChild(del);
+
+    el.title = `${gateName} on Wire q[${qubit}], Column ${col + 1} (Click to remove)`;
     return el;
+  }
+
+  runInteractiveSimulation() {
+    const btn = document.getElementById('btn-run-calc');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⚡ Simulating Wavefunction...';
+      btn.classList.add('sim-active');
+    }
+
+    if (this.audio && this.audio.isEnabled) {
+      this.audio.playStatevectorChord(this.engine.getProbabilities());
+    }
+
+    // Visual wave packet sweep across columns
+    for (let c = 0; c < this.numCols; c++) {
+      setTimeout(() => {
+        for (let q = 0; q < this.numQubits; q++) {
+          const s = document.getElementById(`slot-${q}-${c}`);
+          if (s) {
+            s.classList.add('pulse-sweep');
+            setTimeout(() => s.classList.remove('pulse-sweep'), 280);
+          }
+        }
+      }, c * 75);
+    }
+
+    setTimeout(() => {
+      this.updateSimulation();
+      if (btn) {
+        btn.innerHTML = '✓ Simulation Complete (100% Fidelity)';
+        btn.classList.remove('sim-active');
+        btn.classList.add('sim-done');
+        setTimeout(() => {
+          btn.innerHTML = 'Run Circuit Simulation ⚡';
+          btn.disabled = false;
+          btn.classList.remove('sim-done');
+        }, 1200);
+      }
+    }, this.numCols * 75 + 100);
   }
 
   placeGate(gateName, qubit, col) {
     if (gateName === 'CX') {
-      // Find other qubit for CNOT target
       const targetQubit = (qubit + 1) % this.numQubits;
       this.grid[qubit][col] = 'CX_CTRL';
       this.grid[targetQubit][col] = 'CX_TGT';
@@ -504,13 +631,20 @@ class CircuitUI {
       });
 
       chip.addEventListener('click', () => {
+        const hintEl = document.getElementById('palette-hint-text');
+        const slots = document.querySelectorAll('.gate-slot:not(.has-gate)');
+
         if (window.selectedPaletteGate === gate) {
           window.selectedPaletteGate = null;
           chip.classList.remove('selected-palette');
+          slots.forEach(s => s.classList.remove('ready-to-place'));
+          if (hintEl) hintEl.innerHTML = '💡 <strong>How to build:</strong> Click a gate above, then click a slot on wires q0, q1, or q2.';
         } else {
           paletteChips.forEach(c => c.classList.remove('selected-palette'));
           window.selectedPaletteGate = gate;
           chip.classList.add('selected-palette');
+          slots.forEach(s => s.classList.add('ready-to-place'));
+          if (hintEl) hintEl.innerHTML = `🎯 <strong>Armed: [ ${gate} ]</strong> - Click any slot on wires q0, q1, or q2 to place. (Click ${gate} again to cancel)`;
         }
       });
     });
