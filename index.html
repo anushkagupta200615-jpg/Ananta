@@ -641,14 +641,54 @@
           <div class="mentor-header">
             <div>
               <h3>AI Quantum Mentor</h3>
-              <p>Statevector diagnostics, unitary matrix explanations, and conceptual guidance.</p>
+              <p>Statevector diagnostics, unitary matrix explanations, and real-time circuit guidance.</p>
             </div>
-            <div class="mentor-mode-switch">
-              <span id="ai-mode-label">Intuitive (ELI5)</span>
-              <label class="custom-toggle">
-                <input type="checkbox" id="ai-mode-toggle">
-                <span class="toggle-slider"></span>
-              </label>
+            <div class="mentor-header-controls">
+              <button id="btn-toggle-llm-settings" class="btn-llm-settings-toggle" title="Configure Cloud LLM (Gemini / OpenAI)">
+                ⚙️ LLM Provider: <span id="llm-active-pill" class="llm-pill local">Offline Expert</span>
+              </button>
+              <div class="mentor-mode-switch">
+                <span id="ai-mode-label">Intuitive (ELI5)</span>
+                <label class="custom-toggle">
+                  <input type="checkbox" id="ai-mode-toggle">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide-down LLM Configuration Panel -->
+          <div id="llm-settings-drawer" class="llm-settings-drawer" style="display: none;">
+            <div class="llm-settings-header">
+              <h4>🤖 Connect Cloud LLM to Quantum Studio</h4>
+              <span class="llm-telemetry-badge">⚡ Real-time Circuit Telemetry Synced</span>
+            </div>
+            <div class="llm-settings-grid">
+              <div class="llm-form-group">
+                <label for="llm-provider-select">AI Model Provider:</label>
+                <select id="llm-provider-select" class="llm-select">
+                  <option value="gemini">Google Gemini 2.0 / 1.5 Flash (Recommended - Free Tier)</option>
+                  <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+                  <option value="local">Built-in Offline Expert System (No API Key Required)</option>
+                </select>
+              </div>
+
+              <div class="llm-form-group" id="api-key-group">
+                <label for="llm-api-key-input">API Key (Stored locally in your browser):</label>
+                <div class="api-key-input-wrap">
+                  <input type="password" id="llm-api-key-input" class="llm-input" placeholder="Enter Gemini or OpenAI API Key...">
+                  <button type="button" id="btn-toggle-api-key-visibility" class="btn-eye-toggle" title="Show/Hide Key">👁️</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="llm-settings-footer">
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="llm-link-hint" id="llm-get-key-link">
+                Get a free Google Gemini API Key at Google AI Studio ↗
+              </a>
+              <div class="llm-footer-actions">
+                <button id="btn-save-llm-settings" class="btn-save-llm">Save & Connect</button>
+              </div>
             </div>
           </div>
 
