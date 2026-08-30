@@ -242,7 +242,7 @@ class CircuitUI {
     }
 
     // Clear Circuit Button
-    const clearBtn = document.getElementById('btn-clear-circuit');
+    const clearBtn = document.getElementById('btn-clear-circuit') || document.getElementById('btn-clear-circ');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => this.clearCircuit());
     }

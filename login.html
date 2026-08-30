@@ -10,17 +10,32 @@
   <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   
   <style>
-    :root {
+    /* Light Theme (Default) */
+    :root, body.light-theme, [data-theme="light"] {
       --bg-page: #f8fafc;
       --bg-card: #ffffff;
       --border-color: #e2e8f0;
-      --border-focus: #0f62fe;
+      --border-darker: #cbd5e1;
       --text-main: #0f172a;
       --text-sub: #475569;
       --text-muted: #64748b;
       --accent-blue: #0f62fe;
       --accent-blue-hover: #0043ce;
-      --accent-cyan: #0284c7;
+      --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Dark Theme */
+    body.dark-theme, [data-theme="dark"] {
+      --bg-page: #090d16;
+      --bg-card: #131b2e;
+      --border-color: #243048;
+      --border-darker: #334155;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --text-muted: #64748b;
+      --accent-blue: #0f62fe;
+      --accent-blue-hover: #2563eb;
+      --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     }
 
     * {
@@ -38,6 +53,33 @@
       align-items: center;
       justify-content: center;
       padding: 24px;
+      position: relative;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* Floating Theme Toggle */
+    .login-theme-btn {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: all 0.15s ease;
+      z-index: 10;
+    }
+
+    .login-theme-btn:hover {
+      border-color: var(--accent-blue);
     }
 
     .login-container {
@@ -49,7 +91,8 @@
       overflow: hidden;
       display: grid;
       grid-template-columns: 1.15fr 1fr;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+      box-shadow: var(--card-shadow);
+      transition: background-color 0.2s ease, border-color 0.2s ease;
     }
 
     @media (max-width: 860px) {
@@ -58,7 +101,7 @@
       }
     }
 
-    /* Left Side: Ancient Rishi Artwork & Inscription */
+    /* Left Side: Ancient Rishi Artwork */
     .rishi-image-panel {
       position: relative;
       background: #0f172a;
@@ -87,7 +130,7 @@
     .rishi-overlay-gradient {
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.2) 0%, rgba(15, 23, 42, 0.75) 75%, rgba(15, 23, 42, 0.95) 100%);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.2) 0%, rgba(15, 23, 42, 0.75) 75%, rgba(15, 23, 42, 0.96) 100%);
       pointer-events: none;
     }
 
@@ -119,13 +162,13 @@
       line-height: 1.5;
     }
 
-    /* Right Side: Clean White Sign-In Card */
+    /* Right Side: Sign-In Card */
     .signin-form-panel {
       padding: 44px 38px;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      background: #ffffff;
+      background: var(--bg-card);
     }
 
     .brand-header {
@@ -147,10 +190,6 @@
       letter-spacing: -0.5px;
     }
 
-    .brand-accent {
-      color: var(--accent-blue);
-    }
-
     .form-title {
       font-size: 26px;
       font-weight: 700;
@@ -170,7 +209,7 @@
       width: 100%;
       background: #ffffff;
       color: #1f2937;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--border-darker);
       border-radius: 6px;
       padding: 12px 16px;
       display: flex;
@@ -188,8 +227,7 @@
 
     .btn-google:hover {
       background: #f8fafc;
-      border-color: #94a3b8;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
       transform: translateY(-1px);
     }
 
@@ -211,7 +249,7 @@
 
     .divider span {
       position: relative;
-      background: #ffffff;
+      background: var(--bg-card);
       padding: 0 12px;
       font-size: 11px;
       color: var(--text-muted);
@@ -233,7 +271,7 @@
     }
 
     .text-input {
-      background: #ffffff;
+      background: var(--bg-page);
       border: 1px solid var(--border-color);
       color: var(--text-main);
       padding: 11px 14px;
@@ -294,7 +332,7 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.55);
+      background: rgba(15, 23, 42, 0.65);
       backdrop-filter: blur(4px);
       z-index: 1000;
       align-items: center;
@@ -410,6 +448,12 @@
 </head>
 <body>
 
+  <!-- Floating Theme Switcher -->
+  <button class="login-theme-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+    <span id="theme-icon">🌙</span>
+    <span id="theme-text">Dark</span>
+  </button>
+
   <div class="login-container">
     
     <!-- Left: Ancient Rishi Kanada Artwork -->
@@ -425,7 +469,7 @@
       </div>
     </div>
 
-    <!-- Right: Clean White Sign-In Card -->
+    <!-- Right: Clean Sign-In Card -->
     <div class="signin-form-panel">
       <div class="brand-header">
         <svg class="brand-svg" viewBox="0 0 44 44">
@@ -433,7 +477,7 @@
                 fill="none" stroke="#0f62fe" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
           <circle cx="14" cy="22" r="2.5" fill="#0f62fe" />
           <circle cx="30" cy="22" r="2.5" fill="#8b5cf6" />
-          <circle cx="22" cy="22" r="2" fill="#0f172a" />
+          <circle cx="22" cy="22" r="2" fill="#0f62fe" />
         </svg>
         <span class="brand-text">Ananta</span>
       </div>
@@ -441,7 +485,7 @@
       <h1 class="form-title">Welcome</h1>
       <p class="form-subtitle">Sign in to launch the Quantum Circuit Studio and access your quantum experiments.</p>
 
-      <!-- Google Sign In Button (Triggers interactive Google account selection) -->
+      <!-- Google Sign In Button -->
       <button class="btn-google" id="btn-google-signin" onclick="openGoogleDialog()">
         <svg viewBox="0 0 24 24" width="20" height="20">
           <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
@@ -520,6 +564,31 @@
   </div>
 
   <script>
+    // Theme logic for login page
+    function applyTheme(theme) {
+      const isDark = theme === 'dark';
+      document.body.className = isDark ? 'dark-theme' : 'light-theme';
+      document.body.setAttribute('data-theme', theme);
+      const icon = document.getElementById('theme-icon');
+      const text = document.getElementById('theme-text');
+      if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+      if (text) text.textContent = isDark ? 'Light' : 'Dark';
+      localStorage.setItem('ananta_theme', theme);
+    }
+
+    function toggleTheme() {
+      const current = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(current);
+    }
+
+    const savedTheme = localStorage.getItem('ananta_theme') || 'light';
+    applyTheme(savedTheme);
+
+    // If user is already logged in, redirect directly to simulator!
+    if (localStorage.getItem('ananta_user')) {
+      window.location.href = 'index.html#simulator';
+    }
+
     function openGoogleDialog() {
       document.getElementById('google-modal').classList.add('active');
     }
@@ -541,7 +610,7 @@
     }
 
     function submitEmailLogin() {
-      const email = document.getElementById('email').value || 'developer@ananta-quantum.io';
+      const email = document.getElementById('email').value || 'anushkagupta200615@gmail.com';
       const user = {
         name: email.split('@')[0],
         email: email,

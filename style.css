@@ -1,9 +1,10 @@
 /* ==========================================================================
-   Ananta - Production Quantum Studio Stylesheet (Clean White Theme)
-   Modern, Developer-Grade Quantum Circuit IDE & Visualizer
+   Ananta - Production Quantum Studio Stylesheet
+   Dual Theme: Complete White (Light) & Sleek Black (Dark) Support
    ========================================================================== */
 
-:root {
+/* Light Theme Variables (Default) */
+:root, body.light-theme, [data-theme="light"] {
   --bg-main: #f8fafc;
   --bg-nav: #ffffff;
   --bg-card: #ffffff;
@@ -21,6 +22,11 @@
   --text-dim: #475569;
   --text-subtle: #64748b;
 
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --code-bg: #11141c;
+  --code-text: #38bdf8;
+  --circuit-canvas-bg: #ffffff;
+
   /* IBM Quantum Composer Operations Palette */
   --ibm-coral: #fa4d56;
   --ibm-blue: #0f62fe;
@@ -33,6 +39,31 @@
 
   --font-sans: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Roboto Mono', monospace;
+}
+
+/* Dark Theme Variables */
+body.dark-theme, [data-theme="dark"] {
+  --bg-main: #090d16;
+  --bg-nav: #0f1523;
+  --bg-card: #131b2e;
+  --bg-subtle: #1a233a;
+  --border-color: #243048;
+  --border-darker: #334155;
+
+  --accent-cyan: #00f0ff;
+  --accent-blue: #0f62fe;
+  --accent-blue-hover: #2563eb;
+  --accent-purple: #a855f7;
+  --accent-emerald: #10b981;
+
+  --text-white: #f8fafc;
+  --text-dim: #94a3b8;
+  --text-subtle: #64748b;
+
+  --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  --code-bg: #070a10;
+  --code-text: #00f0ff;
+  --circuit-canvas-bg: #ffffff; /* White circuit canvas so colored gates stand out crisp */
 }
 
 * {
@@ -49,10 +80,11 @@ body {
   display: flex;
   flex-direction: column;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* ==========================================================================
-   1. Global Top Navigation (White Background)
+   1. Global Top Navigation (Theme-Adaptive)
    ========================================================================== */
 
 .app-nav-bar {
@@ -62,17 +94,18 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
+  padding: 0 28px;
   position: sticky;
   top: 0;
   z-index: 100;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .nav-left {
   display: flex;
   align-items: center;
-  gap: 36px;
+  gap: 32px;
   height: 100%;
 }
 
@@ -98,7 +131,7 @@ body {
 .brand-primary {
   font-size: 20px;
   font-weight: 900;
-  color: #0f172a;
+  color: var(--text-white);
   letter-spacing: -0.5px;
 }
 
@@ -128,6 +161,7 @@ body {
   align-items: center;
   border-bottom: 2px solid transparent;
   transition: all 0.15s ease;
+  cursor: pointer;
 }
 
 .nav-item:hover {
@@ -140,25 +174,30 @@ body {
   font-weight: 700;
 }
 
-/* Nav Right */
+/* Nav Right Controls */
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .theme-switch-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-subtle);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-white);
   cursor: pointer;
   display: flex;
   align-items: center;
-  padding: 4px;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease;
 }
 
 .theme-switch-btn:hover {
-  color: var(--text-white);
+  border-color: var(--accent-blue);
 }
 
 .btn-nav-login {
@@ -166,7 +205,7 @@ body {
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 4px;
   cursor: pointer;
 }
@@ -192,7 +231,7 @@ body {
   background: var(--accent-blue-hover);
 }
 
-/* Logged-In User Profile Badge in Header */
+/* User Profile Badge */
 .user-profile-nav {
   display: flex;
   align-items: center;
@@ -203,7 +242,7 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #0f62fe;
+  background: var(--accent-blue);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -215,17 +254,19 @@ body {
 .user-name-label {
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
 }
 
 .btn-signout {
-  background: none;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 4px;
   font-size: 11px;
+  font-weight: 600;
   color: var(--text-dim);
   cursor: pointer;
+  transition: all 0.15s;
 }
 
 .btn-signout:hover {
@@ -235,7 +276,7 @@ body {
 }
 
 /* ==========================================================================
-   2. Main Viewports
+   2. Main Viewport Container & Section Toggles
    ========================================================================== */
 
 .app-main-viewport {
@@ -252,12 +293,12 @@ body {
 }
 
 /* ==========================================================================
-   VIEW 1: Hero Overview (Clean White Theme)
+   VIEW 1: Hero Overview
    ========================================================================== */
 
 .hero-layout {
   max-width: 1280px;
-  margin: 50px auto 0 auto;
+  margin: 40px auto 60px auto;
   padding: 0 32px;
   display: grid;
   grid-template-columns: 1.1fr 1fr;
@@ -276,8 +317,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
   color: var(--accent-blue);
   font-size: 12px;
   font-weight: 700;
@@ -300,7 +341,7 @@ body {
   line-height: 1.18;
   letter-spacing: -1px;
   margin-bottom: 18px;
-  color: #0f172a;
+  color: var(--text-white);
 }
 
 .accent-text {
@@ -326,11 +367,11 @@ body {
 }
 
 .cap-item {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   padding: 12px 14px;
   border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow);
 }
 
 .cap-metric {
@@ -369,8 +410,8 @@ body {
 }
 
 .btn-secondary-action {
-  background: #ffffff;
-  border: 1px solid var(--border-darker);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   color: var(--text-white);
   font-size: 14px;
   font-weight: 600;
@@ -385,17 +426,17 @@ body {
   border-color: var(--accent-blue);
 }
 
-/* Right: Animated Pipeline Card (High-Contrast White Frame with Crisp Circuits) */
+/* Pipeline Preview Window */
 .circuit-preview-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .preview-header-bar {
-  background: #f8fafc;
+  background: var(--bg-subtle);
   padding: 10px 14px;
   display: flex;
   align-items: center;
@@ -423,7 +464,7 @@ body {
 
 .preview-svg-container {
   padding: 24px 16px;
-  background: #ffffff;
+  background: var(--bg-card);
 }
 
 .pipeline-svg {
@@ -433,12 +474,12 @@ body {
 }
 
 .circuit-line {
-  stroke: #cbd5e1;
+  stroke: var(--border-darker);
   stroke-width: 1.5;
 }
 
 .qubit-tag {
-  fill: #475569;
+  fill: var(--text-dim);
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
@@ -473,7 +514,7 @@ body {
 }
 
 .entangle-target-ring {
-  fill: #ffffff;
+  fill: var(--bg-card);
   stroke: var(--ibm-blue);
   stroke-width: 2;
 }
@@ -483,7 +524,6 @@ body {
   stroke-width: 2;
 }
 
-/* Gliding Wave Packets */
 .wave-packet {
   fill: var(--ibm-blue);
   filter: drop-shadow(0 0 4px rgba(15, 98, 254, 0.6));
@@ -503,7 +543,7 @@ body {
 }
 
 /* ==========================================================================
-   VIEW 2: Authentication / Login View with Ancient Rishi
+   VIEW 2: Authentication / Login View
    ========================================================================== */
 
 .login-split-container {
@@ -534,7 +574,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
   width: 100%;
 }
 
@@ -582,18 +622,18 @@ body {
   margin: 0 auto;
 }
 
-/* Right: Clean White Sign-In Card */
+/* Right Side: Clean Sign-In Card */
 .login-card-panel {
   display: flex;
   justify-content: center;
 }
 
 .clean-auth-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 36px 32px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-shadow);
   width: 100%;
   max-width: 420px;
 }
@@ -617,13 +657,13 @@ body {
 .auth-app-title {
   font-size: 16px;
   font-weight: 900;
-  color: #0f172a;
+  color: var(--text-white);
 }
 
 .auth-welcome-title {
   font-size: 24px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
   margin-bottom: 6px;
 }
 
@@ -638,7 +678,7 @@ body {
   width: 100%;
   background-color: #ffffff;
   color: #1f2937;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-darker);
   border-radius: 6px;
   padding: 11px 16px;
   display: flex;
@@ -655,7 +695,6 @@ body {
 
 .btn-google-signin:hover {
   background-color: #f8fafc;
-  border-color: #94a3b8;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
 }
@@ -682,7 +721,7 @@ body {
 
 .simple-divider span {
   position: relative;
-  background: #ffffff;
+  background: var(--bg-card);
   padding: 0 10px;
   font-size: 11px;
   color: var(--text-subtle);
@@ -721,9 +760,9 @@ body {
 }
 
 .clean-input {
-  background: #ffffff;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
-  color: #0f172a;
+  color: var(--text-white);
   padding: 10px 12px;
   border-radius: 6px;
   font-size: 14px;
@@ -779,7 +818,7 @@ body {
 }
 
 /* ==========================================================================
-   VIEW 3: Quantum Simulator (IBM Composer Style on White BG)
+   VIEW 3: Quantum Simulator (IBM Composer Style)
    ========================================================================== */
 
 .studio-workspace-container {
@@ -792,14 +831,14 @@ body {
 }
 
 .studio-ribbon {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 10px 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: var(--card-shadow);
 }
 
 .ribbon-meta {
@@ -812,7 +851,7 @@ body {
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
 }
 
 .quick-tools {
@@ -823,9 +862,9 @@ body {
 }
 
 .tool-btn {
-  background: #f1f5f9;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
-  color: #334155;
+  color: var(--text-white);
   font-size: 11px;
   font-weight: 600;
   padding: 5px 10px;
@@ -835,8 +874,7 @@ body {
 }
 
 .tool-btn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+  border-color: var(--accent-blue);
 }
 
 .btn-run-calc {
@@ -854,16 +892,16 @@ body {
   background: var(--accent-blue-hover);
 }
 
-/* Operations Dock + Circuit Canvas */
+/* Two-Column Studio Layout */
 .studio-two-col {
   display: grid;
   grid-template-columns: 260px 1fr;
   gap: 16px;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 18px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: var(--card-shadow);
 }
 
 @media (max-width: 900px) {
@@ -883,7 +921,7 @@ body {
 .dock-title h3 {
   font-size: 14px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
 }
 
 .operations-grid {
@@ -906,7 +944,7 @@ body {
   align-items: center;
   justify-content: center;
   transition: transform 0.1s ease;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .gate-btn:hover {
@@ -924,12 +962,12 @@ body {
 
 .dock-instruction {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-subtle);
   line-height: 1.4;
 }
 
 .state-analysis-box .exp-card {
-  background: #f8fafc;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
   border-left: 3px solid var(--ibm-blue);
   padding: 10px;
@@ -947,13 +985,13 @@ body {
 .state-analysis-box .exp-title {
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
   margin: 2px 0;
 }
 
 .state-analysis-box .exp-summary {
   font-size: 11px;
-  color: #334155;
+  color: var(--text-dim);
 }
 
 /* White Circuit Canvas */
@@ -962,6 +1000,10 @@ body {
   flex-direction: column;
   gap: 12px;
   overflow-x: auto;
+  background: #ffffff;
+  padding: 14px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
 }
 
 .step-ruler {
@@ -970,7 +1012,7 @@ body {
   padding-left: 90px;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .step-ruler span {
@@ -995,7 +1037,7 @@ body {
   width: 75px;
   font-family: var(--font-mono);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: #0f172a;
 }
 
@@ -1091,11 +1133,11 @@ body {
 }
 
 .vis-dock-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: var(--card-shadow);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1110,17 +1152,18 @@ body {
 .vis-dock-header h4 {
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
 }
 
 .vis-dock-sub {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-subtle);
 }
 
 .qubit-dropdown {
-  background: #f1f5f9;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
+  color: var(--text-white);
   font-size: 11px;
   padding: 2px 6px;
   border-radius: 4px;
@@ -1137,8 +1180,8 @@ body {
   gap: 8px;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #334155;
-  background: #f8fafc;
+  color: var(--text-dim);
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
   padding: 5px 8px;
   border-radius: 4px;
@@ -1168,7 +1211,7 @@ body {
 .prob-state-label {
   width: 40px;
   font-weight: 700;
-  color: #475569;
+  color: var(--text-dim);
 }
 
 .active-state .prob-state-label {
@@ -1178,7 +1221,7 @@ body {
 .prob-bar-track {
   flex-grow: 1;
   height: 12px;
-  background: #f1f5f9;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
   border-radius: 2px;
   overflow: hidden;
@@ -1194,13 +1237,13 @@ body {
   width: 44px;
   text-align: right;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-dim);
 }
 
 /* Code Preview */
 .export-preview pre {
-  background: #11141c;
-  color: #38bdf8;
+  background: var(--code-bg);
+  color: var(--code-text);
   padding: 12px;
   border-radius: 4px;
   font-family: var(--font-mono);
@@ -1210,8 +1253,9 @@ body {
 }
 
 .btn-copy-chip {
-  background: #f1f5f9;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
+  color: var(--text-white);
   font-size: 11px;
   font-weight: 600;
   padding: 3px 8px;
@@ -1220,16 +1264,16 @@ body {
 }
 
 .btn-copy-chip:hover {
-  background: #e2e8f0;
+  border-color: var(--accent-blue);
 }
 
 /* ==========================================================================
-   VIEW 4: Algorithms & Mentor Views (Clean White)
+   VIEW 4: Algorithms, Mentor, Challenges & Docs (Adaptive Dual Theme)
    ========================================================================== */
 
 .standard-page-container {
   max-width: 1040px;
-  margin: 32px auto;
+  margin: 32px auto 60px auto;
   padding: 0 20px;
 }
 
@@ -1240,7 +1284,7 @@ body {
 .page-lead-header h2 {
   font-size: 26px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
   margin-bottom: 4px;
 }
 
@@ -1256,19 +1300,19 @@ body {
 }
 
 .algo-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: var(--card-shadow);
 }
 
 .algo-card:hover {
   border-color: var(--accent-blue);
-  box-shadow: 0 4px 12px rgba(15, 98, 254, 0.08);
+  box-shadow: 0 4px 14px rgba(15, 98, 254, 0.12);
 }
 
 .algo-card-badge {
@@ -1277,14 +1321,14 @@ body {
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 4px;
-  background: #eff6ff;
+  background: var(--bg-subtle);
   color: var(--accent-blue);
 }
 
 .algo-card-title {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
 }
 
 .algo-card-desc {
@@ -1296,7 +1340,7 @@ body {
 .algo-card-math {
   font-family: var(--font-mono);
   font-size: 12px;
-  background: #f8fafc;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
   padding: 6px 8px;
   border-radius: 4px;
@@ -1319,9 +1363,9 @@ body {
   background: var(--accent-blue-hover);
 }
 
-/* Mentor Console (White Theme) */
+/* Mentor Console */
 .mentor-console {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 24px;
@@ -1329,7 +1373,7 @@ body {
   flex-direction: column;
   gap: 16px;
   min-height: 600px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: var(--card-shadow);
 }
 
 .mentor-header {
@@ -1343,7 +1387,7 @@ body {
 .mentor-header h3 {
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
 }
 
 .mentor-header p {
@@ -1372,7 +1416,7 @@ body {
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background-color: #cbd5e1;
+  background-color: var(--border-darker);
   border-radius: 20px;
   transition: .2s;
 }
@@ -1407,7 +1451,7 @@ input:checked + .toggle-slider:before {
 }
 
 .prompt-chip {
-  background: #f1f5f9;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
   color: var(--text-white);
   padding: 4px 10px;
@@ -1417,13 +1461,12 @@ input:checked + .toggle-slider:before {
 }
 
 .prompt-chip:hover {
-  background: #e2e8f0;
   border-color: var(--accent-blue);
 }
 
 .mentor-chat-stream {
   flex-grow: 1;
-  background: #f8fafc;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 16px;
@@ -1451,19 +1494,18 @@ input:checked + .toggle-slider:before {
 
 .chat-ai {
   align-self: flex-start;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-left: 3px solid var(--accent-blue);
-  color: #1e293b;
+  color: var(--text-white);
 }
 
 .chat-ai .chat-sender-label { color: var(--accent-blue); }
 
 .chat-user {
   align-self: flex-end;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #1e3a8a;
+  background: var(--accent-blue);
+  color: #ffffff;
 }
 
 .mentor-input-row {
@@ -1473,9 +1515,9 @@ input:checked + .toggle-slider:before {
 
 .chat-text-input {
   flex-grow: 1;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
-  color: #0f172a;
+  color: var(--text-white);
   padding: 10px 14px;
   border-radius: 4px;
   font-size: 13px;
@@ -1499,11 +1541,11 @@ input:checked + .toggle-slider:before {
 
 /* Challenges Panel */
 .challenges-panel {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: var(--card-shadow);
 }
 
 .challenges-header-row {
@@ -1520,7 +1562,7 @@ input:checked + .toggle-slider:before {
 .challenges-header-row h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
 }
 
 .challenges-score-badge {
@@ -1530,7 +1572,7 @@ input:checked + .toggle-slider:before {
 
 .score-bar-bg {
   height: 6px;
-  background: #e2e8f0;
+  background: var(--border-color);
   border-radius: 6px;
   overflow: hidden;
   margin-top: 4px;
@@ -1549,7 +1591,7 @@ input:checked + .toggle-slider:before {
 }
 
 .mission-card {
-  background: #f8fafc;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 16px;
@@ -1560,7 +1602,6 @@ input:checked + .toggle-slider:before {
 
 .mission-card.mission-completed {
   border-color: var(--accent-emerald);
-  background: #f0fdf4;
 }
 
 .mission-header {
@@ -1573,7 +1614,7 @@ input:checked + .toggle-slider:before {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #cbd5e1;
+  background: var(--border-darker);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1589,7 +1630,7 @@ input:checked + .toggle-slider:before {
 .mission-title {
   font-size: 14px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
 }
 
 .mission-desc {
@@ -1600,17 +1641,17 @@ input:checked + .toggle-slider:before {
 
 .mission-hint {
   font-size: 11px;
-  background: #fffbeb;
-  border: 1px solid #fef3c7;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   padding: 6px 8px;
   border-radius: 4px;
   color: #b45309;
 }
 
 .btn-load-mission {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
-  color: #0f172a;
+  color: var(--text-white);
   padding: 6px;
   border-radius: 4px;
   font-size: 12px;
@@ -1625,17 +1666,17 @@ input:checked + .toggle-slider:before {
 
 /* Documentation */
 .docs-container-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 30px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: var(--card-shadow);
 }
 
 .docs-container-card h2 {
   font-size: 24px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
   margin-bottom: 8px;
 }
 
@@ -1652,7 +1693,7 @@ input:checked + .toggle-slider:before {
 .doc-block h3 {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
   margin-bottom: 8px;
 }
 
@@ -1663,7 +1704,7 @@ input:checked + .toggle-slider:before {
 }
 
 .math-snippet {
-  background: #f8fafc;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-color);
   padding: 10px;
   border-radius: 4px;
@@ -1671,4 +1712,143 @@ input:checked + .toggle-slider:before {
   font-size: 13px;
   color: var(--accent-blue);
   margin-top: 8px;
+}
+
+/* ==========================================================================
+   Google OAuth Account Picker Modal
+   ========================================================================== */
+
+.google-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.google-modal-backdrop.active {
+  display: flex;
+}
+
+.google-oauth-dialog {
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 8px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+  overflow: hidden;
+  animation: modalPop 0.2s ease-out;
+}
+
+@keyframes modalPop {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.oauth-header {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.oauth-title-text h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.oauth-title-text p {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.oauth-body {
+  padding: 16px 24px;
+}
+
+.account-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+}
+
+.account-item:hover {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.user-avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #0f62fe;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.account-info strong {
+  display: block;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.account-info span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.oauth-footer {
+  padding: 14px 24px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.btn-cancel-oauth {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.btn-cancel-oauth:hover {
+  color: #1f2937;
+}
+
+/* Toast Message */
+.mission-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid var(--accent-emerald);
+  padding: 12px 18px;
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 999;
 }

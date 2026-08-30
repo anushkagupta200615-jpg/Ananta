@@ -57,10 +57,9 @@
     </div>
 
     <div class="nav-right">
-      <button class="theme-switch-btn" id="btn-theme-toggle" title="Switch Theme">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-          <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
-        </svg>
+      <button class="theme-switch-btn" id="btn-theme-toggle" title="Toggle Light / Dark Mode" onclick="window.toggleTheme()">
+        <span id="theme-toggle-icon">🌙</span>
+        <span id="theme-toggle-text">Dark</span>
       </button>
 
       <!-- Authenticated User Profile Badge -->
@@ -80,7 +79,7 @@
   <main class="app-main-viewport">
 
     <!-- ================= VIEW 1: HERO OVERVIEW ================= -->
-    <section class="viewport-section active" id="view-overview">
+    <section class="viewport-section" id="view-overview">
       <div class="hero-layout">
         
         <!-- Left: Product Introduction & Real Capability Highlights -->
@@ -312,9 +311,9 @@
             <span class="file-name-label">untitled_circuit.q</span>
             <div class="quick-tools">
               <button class="tool-btn" id="btn-clear-circ">Clear Grid</button>
-              <button class="tool-btn" onclick="window.circuitUI.loadPreset(window.ALGORITHM_PRESETS.bell.grid)">Bell State</button>
-              <button class="tool-btn" onclick="window.circuitUI.loadPreset(window.ALGORITHM_PRESETS.grover.grid)">Grover's</button>
-              <button class="tool-btn" onclick="window.circuitUI.loadPreset(window.ALGORITHM_PRESETS.superposition.grid)">Superposition</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('bell')">Bell State</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('grover')">Grover's</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('superposition')">Superposition</button>
             </div>
           </div>
           <div class="ribbon-execute">

@@ -1,13 +1,46 @@
 /**
  * Ananta Coordinator
- * Tab routing, authentication state, gate operations binding, and interactive state management.
+ * Tab routing, dual theme (light/dark) toggle, authentication state,
+ * and quantum simulation engine bindings.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Initialize Quantum Simulation Engine (3 Qubits)
+  // ==========================================
+  // 1. Dual Theme System (Light & Dark)
+  // ==========================================
+  function applyTheme(theme) {
+    const isDark = theme === 'dark';
+    if (isDark) {
+      document.body.classList.add('dark-theme');
+      document.body.classList.remove('light-theme');
+      document.body.setAttribute('data-theme', 'dark');
+    } else {
+      document.body.classList.add('light-theme');
+      document.body.classList.remove('dark-theme');
+      document.body.setAttribute('data-theme', 'light');
+    }
+    
+    const icon = document.getElementById('theme-toggle-icon');
+    const text = document.getElementById('theme-toggle-text');
+    if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+    if (text) text.textContent = isDark ? 'Light' : 'Dark';
+
+    localStorage.setItem('ananta_theme', theme);
+  }
+
+  window.toggleTheme = function() {
+    const current = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(current);
+  };
+
+  const savedTheme = localStorage.getItem('ananta_theme') || 'light';
+  applyTheme(savedTheme);
+
+  // ==========================================
+  // 2. Quantum Engine & Visualizers
+  // ==========================================
   const engine = new QuantumCircuitEngine(3);
 
-  // 2. Initialize 3D Bloch Sphere
   let blochVisualizer = null;
   try {
     blochVisualizer = new BlochSphereVisualizer('bloch-sphere-canvas');
@@ -15,23 +48,24 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Three.js initialization:', err);
   }
 
-  // 3. Initialize Circuit UI
   const circuitUI = new CircuitUI(engine, blochVisualizer);
   window.circuitUI = circuitUI;
 
-  // 4. Initialize AI Mentor
   const aiTutor = new QuantaAITutor();
   window.quantaAI = aiTutor;
 
-  // 5. Initialize Missions
   const missionManager = new MissionManager();
   window.missionManager = missionManager;
 
-  // 6. Navigation Tabs Routing
+  // ==========================================
+  // 3. View & Tab Routing
+  // ==========================================
   const navItems = document.querySelectorAll('.nav-item');
   const sections = document.querySelectorAll('.viewport-section');
 
   function switchView(tabKey) {
+    if (!tabKey) tabKey = 'simulator';
+
     navItems.forEach(item => {
       if (item.getAttribute('data-tab') === tabKey) {
         item.classList.add('active');
@@ -43,16 +77,19 @@ document.addEventListener('DOMContentLoaded', () => {
     sections.forEach(sec => {
       if (sec.id === `view-${tabKey}`) {
         sec.classList.add('active');
+        sec.style.display = 'block';
       } else {
         sec.classList.remove('active');
+        sec.style.display = 'none';
       }
     });
 
-    // Handle Bloch canvas resize when entering simulator
+    // Resize Bloch sphere when entering simulator
     if (tabKey === 'simulator' && blochVisualizer) {
       setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
-      }, 100);
+        if (circuitUI) circuitUI.updateSimulation();
+      }, 60);
     }
   }
   window.switchView = switchView;
@@ -65,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Brand Logo Click -> Overview
+  // Logo Click -> Overview
   const navLogoBtn = document.getElementById('nav-logo-btn');
   if (navLogoBtn) {
     navLogoBtn.addEventListener('click', () => switchView('overview'));
@@ -88,9 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // Authentication & Google Login Flow
+  // 4. Authentication & Google Login Flow
   // ==========================================
-
   function updateNavUser() {
     const userJson = localStorage.getItem('ananta_user');
     const userContainer = document.getElementById('nav-user-container');
@@ -101,27 +137,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (userJson) {
       try {
         const user = JSON.parse(userJson);
-        if (userContainer && loginBtn) {
-          userContainer.style.display = 'flex';
-          loginBtn.style.display = 'none';
-          if (userAvatar) userAvatar.textContent = user.avatar || user.name.charAt(0).toUpperCase();
-          if (userName) userName.textContent = user.name;
-        }
+        if (userContainer) userContainer.style.display = 'flex';
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (userAvatar) userAvatar.textContent = user.avatar || (user.name ? user.name.charAt(0).toUpperCase() : 'A');
+        if (userName) userName.textContent = user.name || 'User';
+        return true;
       } catch (e) {
         console.error('Error parsing user session', e);
       }
-    } else {
-      if (userContainer && loginBtn) {
-        userContainer.style.display = 'none';
-        loginBtn.style.display = 'inline-block';
-      }
     }
+    if (userContainer) userContainer.style.display = 'none';
+    if (loginBtn) loginBtn.style.display = 'inline-block';
+    return false;
   }
 
-  // Check login on startup
-  updateNavUser();
-
-  // Navigation Sign In Button
   const navLoginBtn = document.getElementById('nav-login-btn');
   if (navLoginBtn) {
     navLoginBtn.addEventListener('click', (e) => {
@@ -130,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Google OAuth Dialog Controls
+  // Google OAuth Dialog
   window.openGoogleDialog = () => {
     const modal = document.getElementById('google-modal');
     if (modal) modal.classList.add('active');
@@ -194,40 +223,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // Circuit Controls & Preset Buttons
+  // 5. Circuit Controls & Safe Preset Helpers
   // ==========================================
+  window.loadPresetSafe = function(presetKey) {
+    if (window.ALGORITHM_PRESETS && window.ALGORITHM_PRESETS[presetKey]) {
+      circuitUI.loadPreset(window.ALGORITHM_PRESETS[presetKey].grid);
+    } else if (presetKey === 'superposition') {
+      circuitUI.clearCircuit();
+      circuitUI.setGate(0, 0, 'H');
+      circuitUI.setGate(1, 0, 'H');
+      circuitUI.setGate(2, 0, 'H');
+    }
+  };
 
   const btnClearCirc = document.getElementById('btn-clear-circ');
   if (btnClearCirc) {
     btnClearCirc.addEventListener('click', () => circuitUI.clearCircuit());
   }
 
-  const btnBellPreset = document.getElementById('btn-preset-bell');
-  if (btnBellPreset) {
-    btnBellPreset.addEventListener('click', () => {
-      circuitUI.loadPreset(ALGORITHM_PRESETS['bell-state'].grid);
-    });
-  }
-
-  const btnGroverPreset = document.getElementById('btn-preset-grover');
-  if (btnGroverPreset) {
-    btnGroverPreset.addEventListener('click', () => {
-      circuitUI.loadPreset(ALGORITHM_PRESETS['grover'].grid);
-    });
-  }
-
-  const btnSuperposPreset = document.getElementById('btn-preset-superpos');
-  if (btnSuperposPreset) {
-    btnSuperposPreset.addEventListener('click', () => {
-      circuitUI.clearCircuit();
-      circuitUI.setGate(0, 0, 'H');
-      circuitUI.setGate(1, 0, 'H');
-      circuitUI.setGate(2, 0, 'H');
-    });
-  }
-
   // ==========================================
-  // Bind Operations Palette Buttons (.gate-btn)
+  // 6. Bind Operations Palette Buttons
   // ==========================================
   const gateBtns = document.querySelectorAll('.gate-btn');
   gateBtns.forEach(btn => {
@@ -245,18 +260,18 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         gateBtns.forEach(b => b.style.outline = 'none');
         window.selectedPaletteGate = gate;
-        btn.style.outline = '2px solid #0f62fe';
+        btn.style.outline = '2px solid var(--accent-blue)';
       }
     });
   });
 
   // ==========================================
-  // Algorithm Presets Grid
+  // 7. Algorithm Presets Grid
   // ==========================================
   const algoContainer = document.getElementById('algorithm-cards-container');
-  if (algoContainer) {
+  if (algoContainer && window.ALGORITHM_PRESETS) {
     algoContainer.innerHTML = '';
-    Object.values(ALGORITHM_PRESETS).forEach(algo => {
+    Object.values(window.ALGORITHM_PRESETS).forEach(algo => {
       const card = document.createElement('div');
       card.className = 'algo-card';
       card.innerHTML = `
@@ -276,14 +291,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Initial State: Apply Hadamard on q0 to demonstrate active quantum state
+  // Initial State: Apply Hadamard on q0
   setTimeout(() => {
     circuitUI.setGate(0, 0, 'H');
   }, 100);
 
-  // Check URL hash for direct routing (#simulator, #algorithms, #login, etc.)
+  // ==========================================
+  // 8. Determine Initial Active View
+  // ==========================================
+  const isLoggedIn = updateNavUser();
   const hash = window.location.hash.replace('#', '');
-  if (hash && ['overview', 'simulator', 'algorithms', 'ai-assistant', 'challenges', 'docs', 'login'].includes(hash)) {
+
+  if (hash && ['overview', 'simulator', 'algorithms', 'ai-assistant', 'challenges', 'docs'].includes(hash)) {
     switchView(hash);
+  } else if (isLoggedIn) {
+    // If logged in and no specific hash, jump straight into Simulator
+    switchView('simulator');
+  } else {
+    // If not logged in, present Login view
+    switchView('login');
   }
 });
