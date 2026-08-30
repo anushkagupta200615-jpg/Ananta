@@ -3349,5 +3349,477 @@ input:checked + .slider-round:before {
   border-radius: 3px;
 }
 
+/* ==========================================================================
+   Q-CTRL INSPIRED: Hardware Control Lab, Pulse Visualizer & Skill Tree
+   ========================================================================== */
+
+.hardware-control-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hw-panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hw-title-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hw-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.hw-title-box h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-white);
+  letter-spacing: -0.3px;
+}
+
+.hw-subtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.hw-lab-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 960px) {
+  .hw-lab-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hw-card {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hw-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hw-tag {
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent-blue);
+}
+
+.hw-card-header h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+/* Noise Controls */
+.noise-controls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.noise-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-white);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.noise-slider-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.noise-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.noise-slider-labels strong {
+  color: var(--text-white);
+  font-family: var(--font-mono);
+}
+
+.hw-range {
+  width: 100%;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+
+/* Metrics & Fidelity Gauge */
+.hw-metrics-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.hw-gauge-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-grow: 1;
+}
+
+.gauge-name {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.gauge-track {
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.gauge-bar {
+  height: 100%;
+  transition: width 0.3s, background 0.3s;
+}
+
+.purity-box {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-blue);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  padding: 6px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.hw-note-text {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.btn-decoupling-action {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-white);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 9px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.btn-decoupling-action:hover,
+.btn-decoupling-action.active-decoupling {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+/* 2. Microwave Pulse Visualizer */
+.pulse-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chips-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.pulse-gate-select-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pulse-gate-select-btn:hover,
+.pulse-gate-select-btn.active {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border-color: var(--accent-blue);
+}
+
+.pulse-canvas-wrapper {
+  background: #000000;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  height: 160px;
+}
+
+.pulse-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.pulse-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.spec-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+}
+
+.spec-col span {
+  color: var(--text-dim);
+}
+
+.spec-col strong {
+  color: var(--text-white);
+  font-family: var(--font-mono);
+}
+
+.pulse-desc-note {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ==========================================================================
+   3. Black Opal Gamified Skill Tree
+   ========================================================================== */
+
+.skill-tree-section {
+  margin-top: 36px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.skill-tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.skill-tree-title-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skill-tree-title-box h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.xp-meter-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+
+.xp-star {
+  font-size: 16px;
+}
+
+.xp-amount {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.skill-tree-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.skill-node-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  transition: all 0.2s;
+}
+
+.skill-node-card.skill-unlocked {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.skill-node-card.skill-locked {
+  opacity: 0.65;
+}
+
+.skill-badge-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.skill-node-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-grow: 1;
+}
+
+.skill-node-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.skill-node-title-row h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin: 0;
+}
+
+.skill-status-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.skill-node-card.skill-locked .skill-status-tag {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.skill-node-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Floating Skill Toast */
+.skill-unlock-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: #0c0c0c;
+  border: 1px solid #10b981;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(16, 185, 129, 0.3);
+  padding: 14px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 10000;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.skill-unlock-toast.toast-show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.toast-badge {
+  font-size: 28px;
+}
+
+.toast-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toast-text strong {
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.toast-text span {
+  font-size: 11px;
+  color: #10b981;
+  font-weight: 700;
+}
+
+
 
 

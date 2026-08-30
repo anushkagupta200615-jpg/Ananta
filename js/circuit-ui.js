@@ -316,6 +316,12 @@ class CircuitUI {
       window.missionManager.evaluate(this.grid, probs);
     }
 
+    // Update Hardware Studio (Noise & Skills)
+    if (window.hwStudio) {
+      window.hwStudio.updateNoiseDisplay();
+      window.hwStudio.checkSkillUnlocks();
+    }
+
     this.updateStepperDisplay();
   }
 

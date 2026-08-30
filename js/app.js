@@ -63,6 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const conceptDoctor = new ConceptDoctor();
   window.conceptDoctor = conceptDoctor;
 
+  const hwStudio = new HardwareControlStudio(engine, circuitUI);
+  window.hwStudio = hwStudio;
+
   // ==========================================
   // 3. View & Tab Routing
   // ==========================================
@@ -90,18 +93,28 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Resize Bloch sphere when entering simulator
-    if (tabKey === 'simulator' && blochVisualizer) {
-      setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-        if (circuitUI) circuitUI.updateSimulation();
-      }, 60);
+    // Resize Bloch sphere & refresh microwave pulse canvas when entering simulator
+    if (tabKey === 'simulator') {
+      if (blochVisualizer) {
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+          if (circuitUI) circuitUI.updateSimulation();
+        }, 60);
+      }
+      if (window.hwStudio) {
+        setTimeout(() => window.hwStudio.initPulseCanvas(), 80);
+      }
     }
 
     // Refresh Wave Canvas and Doctor Canvas when entering Intuition Lab
     if (tabKey === 'intuition') {
       if (window.intuitionLab) setTimeout(() => window.intuitionLab.initWaveCanvas(), 60);
       if (window.conceptDoctor) setTimeout(() => window.conceptDoctor.loadConcept(window.conceptDoctor.currentConceptId), 80);
+    }
+
+    // Refresh Skill Tree when entering Challenges tab
+    if (tabKey === 'challenges' && window.hwStudio) {
+      setTimeout(() => window.hwStudio.renderSkillTree(), 50);
     }
   }
   window.switchView = switchView;

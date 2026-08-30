@@ -456,6 +456,122 @@
 
         </div>
 
+        <!-- ================= Q-CTRL INSPIRED HARDWARE & CONTROL LAB ================= -->
+        <div class="hardware-control-panel">
+          <div class="hw-panel-header">
+            <div class="hw-title-box">
+              <span class="hw-badge">🔬 Quantum Hardware & Control Lab</span>
+              <h3>Realistic Noise & Microwave Pulse Dynamics</h3>
+            </div>
+            <span class="hw-subtitle">Explore physical QPU error models (Fire Opal) and shaped RF microwave drive envelopes (Boulder Opal).</span>
+          </div>
+
+          <div class="hw-lab-grid">
+            <!-- 1. Noise & Decoherence Simulator (Fire Opal) -->
+            <div class="hw-card">
+              <div class="hw-card-header">
+                <div class="hw-tag">Hardware Physics (NISQ)</div>
+                <h4>Decoherence & Error Mitigation</h4>
+              </div>
+
+              <div class="noise-controls-list">
+                <div class="noise-toggle-row">
+                  <span>Realistic IBM Falcon Noise Model</span>
+                  <label class="switch-control">
+                    <input type="checkbox" id="toggle-noise-mode" />
+                    <span class="slider-round"></span>
+                  </label>
+                </div>
+
+                <div class="noise-slider-item">
+                  <div class="noise-slider-labels">
+                    <span>T₁ Relaxation (Energy Decay):</span>
+                    <strong id="val-t1">50 µs</strong>
+                  </div>
+                  <input type="range" id="slider-t1" min="10" max="150" value="50" class="hw-range" />
+                </div>
+
+                <div class="noise-slider-item">
+                  <div class="noise-slider-labels">
+                    <span>T₂ Dephasing (Phase Jitter):</span>
+                    <strong id="val-t2">30 µs</strong>
+                  </div>
+                  <input type="range" id="slider-t2" min="5" max="100" value="30" class="hw-range" />
+                </div>
+
+                <div class="noise-slider-item">
+                  <div class="noise-slider-labels">
+                    <span>Gate Depolarizing Error:</span>
+                    <strong id="val-gate-error">0.8%</strong>
+                  </div>
+                  <input type="range" id="slider-gate-error" min="0.1" max="4.0" step="0.1" value="0.8" class="hw-range" />
+                </div>
+              </div>
+
+              <!-- Fidelity Gauge & Purity -->
+              <div class="hw-metrics-row">
+                <div class="hw-gauge-box">
+                  <span class="gauge-name">Circuit State Fidelity (F):</span>
+                  <strong id="hardware-fidelity-val">100.0%</strong>
+                  <div class="gauge-track">
+                    <div id="hardware-fidelity-bar" class="gauge-bar" style="width: 100%;"></div>
+                  </div>
+                </div>
+                <div class="purity-box">
+                  <span id="hardware-purity-val">Tr(ρ²) = 1.000</span>
+                </div>
+              </div>
+
+              <div id="hardware-noise-note" class="hw-note-text">
+                <span style="color:#00f0ff;">Ideal Noiseless Mode:</span> 100% mathematical fidelity.
+              </div>
+
+              <button id="btn-apply-decoupling" class="btn-decoupling-action">
+                Apply Dynamic Decoupling (Suppress Noise) 🛡️
+              </button>
+            </div>
+
+            <!-- 2. RF Microwave Control Pulse Visualizer (Boulder Opal) -->
+            <div class="hw-card">
+              <div class="hw-card-header">
+                <div class="hw-tag">Microwave Control Engineering</div>
+                <h4 id="pulse-gate-title">Hadamard (H) Microwave Pulse</h4>
+              </div>
+
+              <div class="pulse-chips-row">
+                <span class="chips-hint">Select Gate:</span>
+                <button class="pulse-gate-select-btn active" data-gate="H">H (Y/2)</button>
+                <button class="pulse-gate-select-btn" data-gate="X">X (π-pulse)</button>
+                <button class="pulse-gate-select-btn" data-gate="Z">Z (Virtual)</button>
+                <button class="pulse-gate-select-btn" data-gate="CX">CX (Cross-Resonance)</button>
+              </div>
+
+              <div class="pulse-canvas-wrapper">
+                <canvas id="microwave-pulse-canvas" class="pulse-canvas"></canvas>
+              </div>
+
+              <div class="pulse-specs-grid">
+                <div class="spec-col">
+                  <span>RF Frequency:</span>
+                  <strong id="pulse-freq-val">5.184 GHz</strong>
+                </div>
+                <div class="spec-col">
+                  <span>Pulse Duration:</span>
+                  <strong id="pulse-duration-val">20 ns</strong>
+                </div>
+                <div class="spec-col">
+                  <span>Envelope Shape:</span>
+                  <strong id="pulse-shape-val">Gaussian DRAG</strong>
+                </div>
+              </div>
+
+              <p id="pulse-gate-desc" class="pulse-desc-note">
+                Y/2 rotation via shaped Gaussian DRAG envelope with quadrature derivative to prevent state leakage.
+              </p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -535,6 +651,24 @@
 
           <div class="challenges-grid" id="missions-list">
             <!-- Populated by algorithms.js -->
+          </div>
+
+          <!-- Gamified Skill Tree (Black Opal Style) -->
+          <div class="skill-tree-section">
+            <div class="skill-tree-header">
+              <div class="skill-tree-title-box">
+                <span class="hw-badge">🏆 Quantum Mastery Roadmap</span>
+                <h3>Unlock Skills & Earn XP</h3>
+              </div>
+              <div class="xp-meter-badge">
+                <span class="xp-star">⭐</span>
+                <span id="player-xp-counter" class="xp-amount">150 XP</span>
+              </div>
+            </div>
+
+            <div id="skill-tree-nodes" class="skill-tree-grid">
+              <!-- Rendered by hardware-control.js -->
+            </div>
           </div>
         </div>
       </div>
@@ -920,6 +1054,7 @@
   <script src="js/research-papers.js"></script>
   <script src="js/intuition-lab.js"></script>
   <script src="js/concept-doctor.js"></script>
+  <script src="js/hardware-control.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
