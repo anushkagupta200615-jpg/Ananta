@@ -3,29 +3,29 @@
    Dual Theme: Complete White (Light) & Sleek Black (Dark) Support
    ========================================================================== */
 
-/* Light Theme Variables (Default) */
-:root, body.light-theme, [data-theme="light"] {
-  --bg-main: #f8fafc;
-  --bg-nav: #ffffff;
-  --bg-card: #ffffff;
-  --bg-subtle: #f1f5f9;
-  --border-color: #e2e8f0;
-  --border-darker: #cbd5e1;
+/* Pure Black Theme (Default) */
+:root, body, body.dark-theme, [data-theme="dark"] {
+  --bg-main: #000000;
+  --bg-nav: #050505;
+  --bg-card: #0c0c0c;
+  --bg-subtle: #161616;
+  --border-color: #242424;
+  --border-darker: #333333;
 
-  --accent-cyan: #0284c7;
+  --accent-cyan: #00f0ff;
   --accent-blue: #0f62fe;
-  --accent-blue-hover: #0043ce;
-  --accent-purple: #8b5cf6;
+  --accent-blue-hover: #2563eb;
+  --accent-purple: #a855f7;
   --accent-emerald: #10b981;
 
-  --text-white: #0f172a;
-  --text-dim: #475569;
-  --text-subtle: #64748b;
+  --text-white: #ffffff;
+  --text-dim: #a3a3a3;
+  --text-subtle: #737373;
 
-  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
-  --code-bg: #11141c;
-  --code-text: #38bdf8;
-  --circuit-canvas-bg: #ffffff;
+  --card-shadow: 0 12px 36px rgba(0, 0, 0, 0.95);
+  --code-bg: #040404;
+  --code-text: #00f0ff;
+  --circuit-canvas-bg: #080808;
 
   /* IBM Quantum Composer Operations Palette */
   --ibm-coral: #fa4d56;
@@ -41,29 +41,29 @@
   --font-mono: 'Roboto Mono', monospace;
 }
 
-/* Dark Theme Variables */
-body.dark-theme, [data-theme="dark"] {
-  --bg-main: #090d16;
-  --bg-nav: #0f1523;
-  --bg-card: #131b2e;
-  --bg-subtle: #1a233a;
-  --border-color: #243048;
-  --border-darker: #334155;
+/* Pure White Theme (Switchable Option) */
+body.light-theme, [data-theme="light"] {
+  --bg-main: #ffffff;
+  --bg-nav: #ffffff;
+  --bg-card: #ffffff;
+  --bg-subtle: #f4f4f5;
+  --border-color: #e4e4e7;
+  --border-darker: #d4d4d8;
 
-  --accent-cyan: #00f0ff;
+  --accent-cyan: #0284c7;
   --accent-blue: #0f62fe;
-  --accent-blue-hover: #2563eb;
-  --accent-purple: #a855f7;
+  --accent-blue-hover: #0043ce;
+  --accent-purple: #8b5cf6;
   --accent-emerald: #10b981;
 
-  --text-white: #f8fafc;
-  --text-dim: #94a3b8;
-  --text-subtle: #64748b;
+  --text-white: #09090b;
+  --text-dim: #52525b;
+  --text-subtle: #71717a;
 
-  --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
-  --code-bg: #070a10;
-  --code-text: #00f0ff;
-  --circuit-canvas-bg: #ffffff; /* White circuit canvas so colored gates stand out crisp */
+  --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  --code-bg: #18181b;
+  --code-text: #38bdf8;
+  --circuit-canvas-bg: #ffffff;
 }
 
 * {
@@ -570,11 +570,11 @@ body {
 
 .rishi-photo-card {
   position: relative;
-  background: #0f172a;
+  background: #000000;
   border: 1px solid var(--border-color);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
   width: 100%;
 }
 
@@ -588,7 +588,7 @@ body {
 .rishi-photo-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(15, 23, 42, 0.75) 80%, rgba(15, 23, 42, 0.96) 100%);
+  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.8) 80%, rgba(0, 0, 0, 0.98) 100%);
   pointer-events: none;
 }
 
@@ -994,16 +994,17 @@ body {
   color: var(--text-dim);
 }
 
-/* White Circuit Canvas */
+/* Circuit Canvas */
 .circuit-canvas-white {
   display: flex;
   flex-direction: column;
   gap: 12px;
   overflow-x: auto;
-  background: #ffffff;
+  background: var(--circuit-canvas-bg);
   padding: 14px;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .step-ruler {
@@ -1012,7 +1013,7 @@ body {
   padding-left: 90px;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-subtle);
 }
 
 .step-ruler span {
@@ -1038,7 +1039,7 @@ body {
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-white);
 }
 
 .wire-track {
@@ -1056,15 +1057,15 @@ body {
   right: 0;
   top: 50%;
   height: 1.5px;
-  background: #94a3b8;
+  background: var(--border-darker);
   z-index: 0;
 }
 
 .gate-slot {
   width: 58px;
   height: 58px;
-  background: #ffffff;
-  border: 1px dashed #cbd5e1;
+  background: var(--bg-subtle);
+  border: 1px dashed var(--border-color);
   border-radius: 4px;
   position: relative;
   z-index: 1;
@@ -1077,7 +1078,7 @@ body {
 
 .gate-slot:hover {
   border-color: var(--ibm-blue);
-  background: #eff6ff;
+  background: var(--bg-card);
 }
 
 .gate-slot.has-gate {

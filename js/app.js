@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const icon = document.getElementById('theme-toggle-icon');
     const text = document.getElementById('theme-toggle-text');
     if (icon) icon.textContent = isDark ? '☀️' : '🌙';
-    if (text) text.textContent = isDark ? 'Light' : 'Dark';
+    if (text) text.textContent = isDark ? 'White' : 'Black';
 
     localStorage.setItem('ananta_theme', theme);
   }
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     applyTheme(current);
   };
 
-  const savedTheme = localStorage.getItem('ananta_theme') || 'light';
+  const savedTheme = localStorage.getItem('ananta_theme') || 'dark';
   applyTheme(savedTheme);
 
   // ==========================================
