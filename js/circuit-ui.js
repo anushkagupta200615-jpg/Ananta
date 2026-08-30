@@ -171,6 +171,10 @@ class CircuitUI {
     this.updateSimulation();
   }
 
+  loadCircuit(gridData) {
+    this.loadPreset(gridData);
+  }
+
   // =========================================================================
   // STEP-BY-STEP PLAYBACK CONTROLLER ("Quantum Time Machine")
   // =========================================================================

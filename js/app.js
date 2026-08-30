@@ -66,6 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const hwStudio = new HardwareControlStudio(engine, circuitUI);
   window.hwStudio = hwStudio;
 
+  const algorithmLibrary = new AlgorithmLibrary();
+  window.algorithmLibrary = algorithmLibrary;
+
   // ==========================================
   // 3. View & Tab Routing
   // ==========================================
@@ -115,6 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Refresh Skill Tree when entering Challenges tab
     if (tabKey === 'challenges' && window.hwStudio) {
       setTimeout(() => window.hwStudio.renderSkillTree(), 50);
+    }
+
+    // Refresh Algorithm Library when entering Algorithms tab
+    if (tabKey === 'algorithms' && window.algorithmLibrary) {
+      setTimeout(() => window.algorithmLibrary.render(), 40);
     }
   }
   window.switchView = switchView;

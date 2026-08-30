@@ -3820,6 +3820,397 @@ input:checked + .slider-round:before {
   font-weight: 700;
 }
 
+/* ==========================================================================
+   COMPREHENSIVE QUANTUM ALGORITHM BENCHMARK LABS
+   ========================================================================== */
+
+.algo-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.algo-filter-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 4px;
+}
+
+.algo-cat-chip {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.algo-cat-chip:hover {
+  border-color: var(--accent-blue);
+  color: var(--text-white);
+}
+
+.algo-cat-chip.active {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 12px rgba(15, 98, 254, 0.4);
+}
+
+.algo-stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 14px 20px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.algo-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.algo-stat-num {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+.algo-stat-lbl {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.algo-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 22px;
+}
+
+.algo-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.algo-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(15, 98, 254, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.algo-card-top {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.algo-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.algo-category-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.algo-difficulty-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.algo-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin: 4px 0 0 0;
+  letter-spacing: -0.2px;
+}
+
+.algo-subtitle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.algo-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.algo-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.algo-math-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.algo-math-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.algo-math-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: #fbbf24;
+  word-break: break-word;
+}
+
+.algo-real-world {
+  background: rgba(16, 185, 129, 0.05);
+  border-left: 3px solid #10b981;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.algo-rw-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #10b981;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.algo-rw-text {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Inline Mini Circuit Preview */
+.algo-circuit-preview {
+  background: #000000;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.circuit-preview-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  letter-spacing: 0.5px;
+}
+
+.mini-circuit-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mini-circuit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-wire-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  width: 22px;
+  flex-shrink: 0;
+}
+
+.mini-wire-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-grow: 1;
+  background: repeating-linear-gradient(to right, transparent, transparent 1px, transparent 1px);
+  position: relative;
+}
+
+.mini-wire-line::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--border-color);
+  z-index: 0;
+}
+
+.mini-gate {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 22px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.mini-wire-gap {
+  width: 28px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+/* Card Actions */
+.algo-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border-color);
+  padding-top: 14px;
+}
+
+.algo-tags-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.algo-tag {
+  font-size: 10px;
+  color: var(--text-subtle);
+  background: var(--bg-subtle);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.btn-run-in-sim {
+  background: linear-gradient(135deg, #0f62fe 0%, #0043ce 100%);
+  color: #ffffff;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.btn-run-in-sim:hover {
+  background: linear-gradient(135deg, #0043ce 0%, #002d9c 100%);
+  box-shadow: 0 0 12px rgba(15, 98, 254, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Floating Algorithm Load Banner */
+.algo-load-banner {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-30px);
+  background: #0c0c0c;
+  border: 1px solid #00f0ff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 240, 255, 0.4);
+  padding: 12px 24px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 10000;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.algo-load-banner.banner-show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.banner-icon {
+  font-size: 24px;
+}
+
+.banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.banner-text strong {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.banner-text code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #00f0ff;
+}
+
+
 
 
 
