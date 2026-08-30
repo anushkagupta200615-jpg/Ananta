@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In - Ananta Quantum Studio</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-page: #f8fafc;
+      --bg-card: #ffffff;
+      --border-color: #e2e8f0;
+      --border-focus: #0f62fe;
+      --text-main: #0f172a;
+      --text-sub: #475569;
+      --text-muted: #64748b;
+      --accent-blue: #0f62fe;
+      --accent-blue-hover: #0043ce;
+      --accent-cyan: #0284c7;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .login-container {
+      max-width: 1040px;
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    @media (max-width: 860px) {
+      .login-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left Side: Ancient Rishi Artwork & Inscription */
+    .rishi-image-panel {
+      position: relative;
+      background: #0f172a;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      overflow: hidden;
+      min-height: 520px;
+    }
+
+    .rishi-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      transition: transform 8s ease;
+    }
+
+    .login-container:hover .rishi-img {
+      transform: scale(1.03);
+    }
+
+    .rishi-overlay-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.2) 0%, rgba(15, 23, 42, 0.75) 75%, rgba(15, 23, 42, 0.95) 100%);
+      pointer-events: none;
+    }
+
+    .rishi-caption-box {
+      position: relative;
+      z-index: 2;
+      padding: 30px;
+    }
+
+    .sanskrit-verse {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fbbf24;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+
+    .rishi-title {
+      font-size: 14px;
+      color: #ffffff;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .rishi-desc {
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    /* Right Side: Clean White Sign-In Card */
+    .signin-form-panel {
+      padding: 44px 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: #ffffff;
+    }
+
+    .brand-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .brand-svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .brand-text {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+
+    .brand-accent {
+      color: var(--accent-blue);
+    }
+
+    .form-title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+
+    .form-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+
+    /* Google Sign-In Button */
+    .btn-google {
+      width: 100%;
+      background: #ffffff;
+      color: #1f2937;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-family: 'Lato', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .btn-google:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .divider {
+      text-align: center;
+      position: relative;
+      margin: 22px 0;
+    }
+
+    .divider::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--border-color);
+    }
+
+    .divider span {
+      position: relative;
+      background: #ffffff;
+      padding: 0 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .input-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+
+    .text-input {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 11px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .text-input:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.1);
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--accent-blue);
+      color: #ffffff;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: 'Lato', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.15s;
+    }
+
+    .btn-submit:hover {
+      background: var(--accent-blue-hover);
+    }
+
+    .guest-link-box {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .guest-action {
+      color: var(--accent-blue);
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .guest-action:hover {
+      text-decoration: underline;
+    }
+
+    /* Interactive Google OAuth Modal */
+    .google-modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .google-modal-backdrop.active {
+      display: flex;
+    }
+
+    .google-oauth-dialog {
+      background: #ffffff;
+      border-radius: 8px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+      animation: modalPop 0.2s ease-out;
+    }
+
+    @keyframes modalPop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .oauth-header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .oauth-title-text h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+
+    .oauth-title-text p {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .oauth-body {
+      padding: 16px 24px;
+    }
+
+    .account-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border: 1px solid transparent;
+    }
+
+    .account-item:hover {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+    }
+
+    .user-avatar-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #0f62fe;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .account-info strong {
+      display: block;
+      font-size: 14px;
+      color: #1f2937;
+    }
+
+    .account-info span {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .oauth-footer {
+      padding: 14px 24px;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .btn-cancel-oauth {
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .btn-cancel-oauth:hover {
+      color: #1f2937;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    
+    <!-- Left: Ancient Rishi Kanada Artwork -->
+    <div class="rishi-image-panel">
+      <img src="assets/ancient_rishi.jpg" alt="Maharshi Kanada Meditating with Quantum Atomic Orbits" class="rishi-img">
+      <div class="rishi-overlay-gradient"></div>
+      <div class="rishi-caption-box">
+        <div class="sanskrit-verse">"सर्वं द्रव्यं परमाणु रूपम्"</div>
+        <div class="rishi-title">Maharshi Kanada — The Genesis of Atomic Theory</div>
+        <p class="rishi-desc">
+          Author of the <em>Vaisheshika Sutra</em> (6th Century BCE), who established that all physical reality consists of eternal, vibrating, indivisible quanta (<em>Parmanu</em>).
+        </p>
+      </div>
+    </div>
+
+    <!-- Right: Clean White Sign-In Card -->
+    <div class="signin-form-panel">
+      <div class="brand-header">
+        <svg class="brand-svg" viewBox="0 0 44 44">
+          <path d="M 22 22 C 16 12, 6 12, 6 22 C 6 32, 16 32, 22 22 C 28 12, 38 12, 38 22 C 38 32, 28 32, 22 22 Z" 
+                fill="none" stroke="#0f62fe" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="14" cy="22" r="2.5" fill="#0f62fe" />
+          <circle cx="30" cy="22" r="2.5" fill="#8b5cf6" />
+          <circle cx="22" cy="22" r="2" fill="#0f172a" />
+        </svg>
+        <span class="brand-text">Ananta</span>
+      </div>
+
+      <h1 class="form-title">Welcome</h1>
+      <p class="form-subtitle">Sign in to launch the Quantum Circuit Studio and access your quantum experiments.</p>
+
+      <!-- Google Sign In Button (Triggers interactive Google account selection) -->
+      <button class="btn-google" id="btn-google-signin" onclick="openGoogleDialog()">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+        </svg>
+        <span>Sign in with Google</span>
+      </button>
+
+      <div class="divider">
+        <span>or sign in with email</span>
+      </div>
+
+      <form onsubmit="event.preventDefault(); submitEmailLogin();">
+        <div class="input-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" class="text-input" placeholder="developer@ananta-quantum.io" value="anushkagupta200615@gmail.com" required>
+        </div>
+
+        <div class="input-group">
+          <label for="pass">Password</label>
+          <input type="password" id="pass" class="text-input" value="••••••••••••" required>
+        </div>
+
+        <button type="submit" class="btn-submit">Sign In</button>
+      </form>
+
+      <div class="guest-link-box">
+        <span>Looking to explore?</span>
+        <a href="index.html#simulator" class="guest-action" onclick="loginGuest()">Enter Simulator Directly →</a>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Interactive Google OAuth Account Picker Modal -->
+  <div class="google-modal-backdrop" id="google-modal">
+    <div class="google-oauth-dialog">
+      <div class="oauth-header">
+        <svg viewBox="0 0 24 24" width="28" height="28">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+        </svg>
+        <div class="oauth-title-text">
+          <h3>Choose an account</h3>
+          <p>to continue to Ananta Quantum Studio</p>
+        </div>
+      </div>
+
+      <div class="oauth-body">
+        <div class="account-item" onclick="selectGoogleAccount('Anushka Gupta', 'anushkagupta200615@gmail.com')">
+          <div class="user-avatar-circle">A</div>
+          <div class="account-info">
+            <strong>Anushka Gupta</strong>
+            <span>anushkagupta200615@gmail.com</span>
+          </div>
+        </div>
+        <div class="account-item" onclick="selectGoogleAccount('Quantum Researcher', 'researcher@ananta-quantum.io')">
+          <div class="user-avatar-circle" style="background:#8b5cf6;">Q</div>
+          <div class="account-info">
+            <strong>Quantum Researcher</strong>
+            <span>researcher@ananta-quantum.io</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="oauth-footer">
+        <button class="btn-cancel-oauth" onclick="closeGoogleDialog()">Cancel</button>
+        <span>Protected by Google OAuth</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openGoogleDialog() {
+      document.getElementById('google-modal').classList.add('active');
+    }
+
+    function closeGoogleDialog() {
+      document.getElementById('google-modal').classList.remove('active');
+    }
+
+    function selectGoogleAccount(name, email) {
+      const user = {
+        name: name,
+        email: email,
+        provider: 'google',
+        avatar: name.charAt(0).toUpperCase(),
+        loggedInAt: new Date().toISOString()
+      };
+      localStorage.setItem('ananta_user', JSON.stringify(user));
+      window.location.href = 'index.html#simulator';
+    }
+
+    function submitEmailLogin() {
+      const email = document.getElementById('email').value || 'developer@ananta-quantum.io';
+      const user = {
+        name: email.split('@')[0],
+        email: email,
+        provider: 'email',
+        avatar: email.charAt(0).toUpperCase(),
+        loggedInAt: new Date().toISOString()
+      };
+      localStorage.setItem('ananta_user', JSON.stringify(user));
+      window.location.href = 'index.html#simulator';
+    }
+
+    function loginGuest() {
+      const user = {
+        name: 'Guest User',
+        email: 'guest@ananta-quantum.io',
+        provider: 'guest',
+        avatar: 'G',
+        loggedInAt: new Date().toISOString()
+      };
+      localStorage.setItem('ananta_user', JSON.stringify(user));
+    }
+  </script>
+
+</body>
+</html>

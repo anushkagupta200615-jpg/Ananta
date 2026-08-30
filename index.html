@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ananta - Interactive Quantum Circuit Studio & State Simulator</title>
+  <meta name="description" content="A modern in-browser quantum development environment for visual circuit construction, 3D statevector analysis, and algorithm design.">
+  
+  <!-- Clean Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Roboto+Mono:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Three.js for 3D Bloch Sphere Visualizer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+
+  <!-- Main Navigation Bar -->
+  <header class="app-nav-bar">
+    <div class="nav-left">
+      <!-- Custom Geometric Infinity Logo for Ananta -->
+      <div class="brand-container" id="nav-logo-btn">
+        <svg class="brand-icon" viewBox="0 0 44 44">
+          <defs>
+            <linearGradient id="anantaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00f0ff" />
+              <stop offset="50%" stop-color="#3b82f6" />
+              <stop offset="100%" stop-color="#8b5cf6" />
+            </linearGradient>
+          </defs>
+          <!-- Infinity Lemniscate Ribbon (Infinite Hilbert Space) -->
+          <path d="M 22 22 C 16 12, 6 12, 6 22 C 6 32, 16 32, 22 22 C 28 12, 38 12, 38 22 C 38 32, 28 32, 22 22 Z" 
+                fill="none" stroke="url(#anantaGrad)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+          <!-- Quantum State Nodes -->
+          <circle cx="14" cy="22" r="2.5" fill="#00f0ff" />
+          <circle cx="30" cy="22" r="2.5" fill="#8b5cf6" />
+          <circle cx="22" cy="22" r="2" fill="#ffffff" />
+        </svg>
+        <div class="brand-titles">
+          <span class="brand-primary">Ananta</span>
+          <span class="brand-subtitle">QUANTUM STUDIO</span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs with Active Bottom Border -->
+      <nav class="nav-links" aria-label="Main Navigation">
+        <a href="#overview" class="nav-item active" data-tab="overview">Overview</a>
+        <a href="#simulator" class="nav-item" data-tab="simulator">Simulator</a>
+        <a href="#algorithms" class="nav-item" data-tab="algorithms">Algorithms</a>
+        <a href="#ai-assistant" class="nav-item" data-tab="ai-assistant">AI Mentor</a>
+        <a href="#challenges" class="nav-item" data-tab="challenges">Challenges</a>
+        <a href="#docs" class="nav-item" data-tab="docs">Docs</a>
+      </nav>
+    </div>
+
+    <div class="nav-right">
+      <button class="theme-switch-btn" id="btn-theme-toggle" title="Switch Theme">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+        </svg>
+      </button>
+
+      <!-- Authenticated User Profile Badge -->
+      <div id="nav-user-container" style="display: none;" class="user-profile-nav">
+        <div class="user-avatar-badge" id="nav-user-avatar">A</div>
+        <span class="user-name-label" id="nav-user-name">Anushka Gupta</span>
+        <button class="btn-signout" id="btn-signout" onclick="window.logoutUser()">Sign Out</button>
+      </div>
+
+      <!-- Sign In Button (shown when logged out) -->
+      <a href="#login" class="btn-nav-login" id="nav-login-btn">Sign In</a>
+      <button class="btn-nav-action" id="btn-quick-launch">Launch App</button>
+    </div>
+  </header>
+
+  <!-- Application Content Container -->
+  <main class="app-main-viewport">
+
+    <!-- ================= VIEW 1: HERO OVERVIEW ================= -->
+    <section class="viewport-section active" id="view-overview">
+      <div class="hero-layout">
+        
+        <!-- Left: Product Introduction & Real Capability Highlights -->
+        <div class="hero-intro-column">
+          <div class="hero-pill-tag">
+            <span class="pulse-indicator"></span> Next-Generation Quantum IDE
+          </div>
+
+          <h1 class="hero-main-title">
+            Design, Simulate, and Master <br>
+            <span class="accent-text">Quantum Algorithms</span>
+          </h1>
+
+          <p class="hero-description">
+            Ananta is an interactive quantum circuit studio built directly in your browser. Construct complex multi-qubit circuits, visualize statevector rotations on a 3D Bloch sphere, and export production-ready Qiskit code without installing local dependencies.
+          </p>
+
+          <!-- Core Capability Badges (Real Technical Features) -->
+          <div class="capabilities-grid">
+            <div class="cap-item">
+              <div class="cap-metric">3-Qubit</div>
+              <div class="cap-desc">Full Linear Algebra Engine</div>
+            </div>
+            <div class="cap-item">
+              <div class="cap-metric">3D</div>
+              <div class="cap-desc">Real-Time Bloch Dynamics</div>
+            </div>
+            <div class="cap-item">
+              <div class="cap-metric">OpenQASM</div>
+              <div class="cap-desc">IBM Quantum Cloud Ready</div>
+            </div>
+          </div>
+
+          <div class="hero-actions-container">
+            <button class="btn-primary-action" id="btn-hero-launch">
+              Open Circuit Studio ➔
+            </button>
+            <button class="btn-secondary-action" id="btn-hero-algorithms">
+              Explore Algorithm Presets
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Animated Quantum Pipeline -->
+        <div class="hero-visual-column">
+          <div class="circuit-preview-card">
+            <div class="preview-header-bar">
+              <div class="window-buttons">
+                <span></span><span></span><span></span>
+              </div>
+              <span class="preview-filename">quantum_entanglement_pipeline.qasm</span>
+            </div>
+
+            <div class="preview-svg-container">
+              <svg viewBox="0 0 540 330" class="pipeline-svg">
+                <!-- 4 Quantum Register Wires -->
+                <line x1="65" y1="45" x2="480" y2="45" class="circuit-line" />
+                <line x1="65" y1="115" x2="480" y2="115" class="circuit-line" />
+                <line x1="65" y1="185" x2="480" y2="185" class="circuit-line" />
+                <line x1="65" y1="255" x2="480" y2="255" class="circuit-line" />
+
+                <!-- Register Labels -->
+                <text x="20" y="50" class="qubit-tag">|0⟩ q₀</text>
+                <text x="20" y="120" class="qubit-tag">|0⟩ q₁</text>
+                <text x="20" y="190" class="qubit-tag">|0⟩ q₂</text>
+                <text x="20" y="260" class="qubit-tag">|0⟩ q₃</text>
+
+                <!-- Gate Nodes -->
+                <!-- q0: Hadamard & Phase -->
+                <g class="gate-node gate-coral" transform="translate(100, 27)">
+                  <rect width="36" height="36" rx="4" />
+                  <text x="18" y="23">H</text>
+                </g>
+                <g class="gate-node gate-cyan" transform="translate(240, 27)">
+                  <rect width="36" height="36" rx="4" />
+                  <text x="18" y="23">S</text>
+                </g>
+
+                <!-- CNOT 1: q0 -> q1 -->
+                <line x1="180" y1="45" x2="180" y2="115" class="entangle-line" />
+                <circle cx="180" cy="45" r="5" class="entangle-ctrl" />
+                <circle cx="180" cy="115" r="13" class="entangle-target-ring" />
+                <line x1="167" y1="115" x2="193" y2="115" class="target-cross" />
+                <line x1="180" y1="102" x2="180" y2="128" class="target-cross" />
+
+                <!-- q1: Phase rotation -->
+                <g class="gate-node gate-sky" transform="translate(240, 97)">
+                  <rect width="36" height="36" rx="4" />
+                  <text x="18" y="23">T</text>
+                </g>
+
+                <!-- CNOT 2: q1 -> q2 -->
+                <line x1="320" y1="115" x2="320" y2="185" class="entangle-line" />
+                <circle cx="320" cy="115" r="5" class="entangle-ctrl" />
+                <circle cx="320" cy="185" r="13" class="entangle-target-ring" />
+                <line x1="307" y1="185" x2="333" y2="185" class="target-cross" />
+                <line x1="320" y1="172" x2="320" y2="198" class="target-cross" />
+
+                <!-- q2: Pauli-X -->
+                <g class="gate-node gate-crimson" transform="translate(100, 167)">
+                  <rect width="36" height="36" rx="4" />
+                  <text x="18" y="23">X</text>
+                </g>
+                <g class="gate-node gate-purple" transform="translate(380, 167)">
+                  <rect width="36" height="36" rx="4" />
+                  <text x="18" y="23">Z</text>
+                </g>
+
+                <!-- CNOT 3: q2 -> q3 -->
+                <line x1="430" y1="185" x2="430" y2="255" class="entangle-line" />
+                <circle cx="430" cy="185" r="5" class="entangle-ctrl" />
+                <circle cx="430" cy="255" r="13" class="entangle-target-ring" />
+                <line x1="417" y1="255" x2="443" y2="255" class="target-cross" />
+                <line x1="430" y1="242" x2="430" y2="268" class="target-cross" />
+
+                <!-- q3: Hadamard -->
+                <g class="gate-node gate-coral" transform="translate(100, 237)">
+                  <rect width="36" height="36" rx="4" />
+                  <text x="18" y="23">H</text>
+                </g>
+
+                <!-- Traveling Quantum Wave Packets -->
+                <circle cx="65" cy="45" r="4.5" class="wave-packet wp-1" />
+                <circle cx="65" cy="115" r="4.5" class="wave-packet wp-2" />
+                <circle cx="65" cy="185" r="4.5" class="wave-packet wp-3" />
+                <circle cx="65" cy="255" r="4.5" class="wave-packet wp-4" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= VIEW 2: AUTHENTICATION / LOGIN ================= -->
+    <section class="viewport-section" id="view-login">
+      <div class="login-split-container">
+        
+        <!-- Left: Majestic Ancient Rishi Artwork (Maharshi Kanada - Pioneer of Indian Atomic Theory) -->
+        <div class="rishi-visual-panel">
+          <div class="rishi-photo-card">
+            <img src="assets/ancient_rishi.jpg" alt="Maharshi Kanada with Quantum Atomic Orbits" class="rishi-display-img">
+            <div class="rishi-photo-overlay"></div>
+            <div class="rishi-quote-box">
+              <div class="sanskrit-phrase">"सर्वं द्रव्यं परमाणु रूपम्"</div>
+              <div class="quote-attribution">
+                <strong>Maharshi Kanada</strong> (6th Century BCE)
+              </div>
+              <p class="quote-explanation">
+                Author of <em>Vaisheshika Sutra</em> and founder of Indian atomic theory (<em>Parmanu Vada</em>), proposing that all matter consists of eternal, vibrating, indivisible quanta millennia before modern quantum physics.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Simple, Clean Sign-In Card with "Sign In with Google" -->
+        <div class="login-card-panel">
+          <div class="clean-auth-card">
+            
+            <div class="auth-card-top">
+              <div class="auth-mini-brand">
+                <svg class="brand-icon-mini" viewBox="0 0 44 44">
+                  <path d="M 22 22 C 16 12, 6 12, 6 22 C 6 32, 16 32, 22 22 C 28 12, 38 12, 38 22 C 38 32, 28 32, 22 22 Z" 
+                        fill="none" stroke="#00f0ff" stroke-width="2.5" />
+                  <circle cx="14" cy="22" r="2.5" fill="#00f0ff" />
+                  <circle cx="30" cy="22" r="2.5" fill="#8b5cf6" />
+                </svg>
+                <span class="auth-app-title">Ananta</span>
+              </div>
+              <h2 class="auth-welcome-title">Welcome to Ananta</h2>
+              <p class="auth-welcome-desc">Sign in to access your quantum circuits, simulations, and saved experiments.</p>
+            </div>
+
+            <!-- Prominent Official Google Sign-In Button (Interactive Account Selector) -->
+            <button class="btn-google-signin" id="btn-google-login" onclick="window.openGoogleDialog()">
+              <svg class="google-svg-icon" viewBox="0 0 24 24" width="20" height="20">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+              <span>Sign in with Google</span>
+            </button>
+
+            <!-- Divider -->
+            <div class="simple-divider">
+              <span>or continue with email</span>
+            </div>
+
+            <!-- Email / Password Form -->
+            <form class="simple-auth-form" onsubmit="event.preventDefault(); window.loginFromForm();">
+              <div class="field-item">
+                <label for="login-email">Email address</label>
+                <input type="email" id="login-email" class="clean-input" placeholder="developer@ananta-quantum.io" value="researcher@ananta-quantum.io" required>
+              </div>
+
+              <div class="field-item">
+                <div class="label-split">
+                  <label for="login-pass">Password</label>
+                  <a href="#forgot" class="forgot-pass-link">Forgot?</a>
+                </div>
+                <input type="password" id="login-pass" class="clean-input" value="••••••••••••" required>
+              </div>
+
+              <button type="submit" class="btn-email-submit">
+                Sign In with Email
+              </button>
+            </form>
+
+            <!-- Guest Shortcut -->
+            <div class="auth-guest-footer">
+              <span>Just exploring?</span>
+              <button class="btn-link-guest" id="btn-guest-entry">Enter Simulator Directly →</button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= VIEW 3: QUANTUM SIMULATOR (COMPOSER) ================= -->
+    <section class="viewport-section" id="view-simulator">
+      <div class="studio-workspace-container">
+        
+        <!-- Workspace Header -->
+        <div class="studio-ribbon">
+          <div class="ribbon-meta">
+            <span class="file-name-label">untitled_circuit.q</span>
+            <div class="quick-tools">
+              <button class="tool-btn" id="btn-clear-circ">Clear Grid</button>
+              <button class="tool-btn" onclick="window.circuitUI.loadPreset(window.ALGORITHM_PRESETS.bell.grid)">Bell State</button>
+              <button class="tool-btn" onclick="window.circuitUI.loadPreset(window.ALGORITHM_PRESETS.grover.grid)">Grover's</button>
+              <button class="tool-btn" onclick="window.circuitUI.loadPreset(window.ALGORITHM_PRESETS.superposition.grid)">Superposition</button>
+            </div>
+          </div>
+          <div class="ribbon-execute">
+            <button class="btn-run-calc" onclick="window.circuitUI.updateSimulation()">
+              Run Circuit Simulation
+            </button>
+          </div>
+        </div>
+
+        <!-- Two Column Editor: Operations Palette + Clean White Circuit Canvas -->
+        <div class="studio-two-col">
+          
+          <!-- Left: Gate Operations Palette (IBM Style Color Codes) -->
+          <div class="operations-dock">
+            <div class="dock-title">
+              <h3>Operations</h3>
+            </div>
+
+            <!-- Square Gate Buttons -->
+            <div class="operations-grid">
+              <button class="gate-btn btn-coral" draggable="true" data-gate="H" title="Hadamard (H)">H</button>
+              <button class="gate-btn btn-blue" draggable="true" data-gate="CX" title="Controlled-NOT (CNOT) ⊕">⊕</button>
+              <button class="gate-btn btn-crimson" draggable="true" data-gate="X" title="Pauli-X (NOT)">X</button>
+              <button class="gate-btn btn-magenta" draggable="true" data-gate="Y" title="Pauli-Y">Y</button>
+              
+              <button class="gate-btn btn-purple" draggable="true" data-gate="Z" title="Pauli-Z">Z</button>
+              <button class="gate-btn btn-cyan" draggable="true" data-gate="S" title="Phase S">S</button>
+              <button class="gate-btn btn-sky" draggable="true" data-gate="T" title="Phase T">T</button>
+              <button class="gate-btn btn-slate" draggable="true" data-gate="M" title="Measurement">∿</button>
+            </div>
+
+            <div class="dock-instruction">
+              Click or drag gates onto wire slots to evaluate unitary transformations.
+            </div>
+
+            <!-- Live State Interpretation Card -->
+            <div class="state-analysis-box" id="ai-explanation-text">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Right: Clean White Circuit Canvas -->
+          <div class="circuit-canvas-white">
+            <div class="step-ruler">
+              <span>Step 1</span>
+              <span>Step 2</span>
+              <span>Step 3</span>
+              <span>Step 4</span>
+              <span>Step 5</span>
+              <span>Step 6</span>
+            </div>
+
+            <div class="circuit-grid" id="circuit-grid">
+              <!-- Rendered by CircuitUI -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Lower Visualizer Grid: State Probabilities & 3D Bloch Sphere -->
+        <div class="visualizer-strip">
+          
+          <!-- Measurement Amplitudes Chart -->
+          <div class="vis-dock-card">
+            <div class="vis-dock-header">
+              <h4>State Probabilities (%)</h4>
+              <span class="vis-dock-sub">Computational basis states</span>
+            </div>
+            <div class="probability-bars-container" id="probability-bars"></div>
+          </div>
+
+          <!-- 3D Bloch Sphere -->
+          <div class="vis-dock-card">
+            <div class="vis-dock-header">
+              <h4>3D Statevector Sphere</h4>
+              <select id="bloch-qubit-select" class="qubit-dropdown">
+                <option value="0">q[0]</option>
+                <option value="1">q[1]</option>
+                <option value="2">q[2]</option>
+              </select>
+            </div>
+            <div class="bloch-canvas-container" id="bloch-sphere-canvas"></div>
+            <div class="bloch-coords-badge" id="bloch-coords"></div>
+          </div>
+
+          <!-- Cloud Export Block -->
+          <div class="vis-dock-card">
+            <div class="vis-dock-header">
+              <h4>Qiskit / OpenQASM Export</h4>
+              <div class="copy-actions">
+                <button class="btn-copy-chip" id="btn-copy-qiskit">Copy Python</button>
+                <button class="btn-copy-chip" id="btn-copy-qasm">Copy QASM</button>
+              </div>
+            </div>
+            <div class="export-preview">
+              <pre><code id="qiskit-code"># Initializing Qiskit code...</code></pre>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= VIEW 4: ALGORITHM LABS ================= -->
+    <section class="viewport-section" id="view-algorithms">
+      <div class="standard-page-container">
+        <div class="page-lead-header">
+          <h2>Quantum Algorithm Benchmark Labs</h2>
+          <p>Canonical circuit configurations demonstrating quantum advantage, interference, and entanglement.</p>
+        </div>
+
+        <div class="algorithms-grid" id="algorithm-cards-container">
+          <!-- Populated by algorithms.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 5: AI MENTOR ================= -->
+    <section class="viewport-section" id="view-ai-assistant">
+      <div class="standard-page-container">
+        <div class="mentor-console">
+          <div class="mentor-header">
+            <div>
+              <h3>AI Quantum Mentor</h3>
+              <p>Statevector diagnostics, unitary matrix explanations, and conceptual guidance.</p>
+            </div>
+            <div class="mentor-mode-switch">
+              <span id="ai-mode-label">Intuitive (ELI5)</span>
+              <label class="custom-toggle">
+                <input type="checkbox" id="ai-mode-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="prompt-chips-bar">
+            <span>Explore concepts:</span>
+            <button class="prompt-chip" data-query="Explain Superposition in simple terms">Superposition</button>
+            <button class="prompt-chip" data-query="Why do we combine Hadamard and CNOT to create an entangled Bell state?">Entanglement</button>
+            <button class="prompt-chip" data-query="How does Grover's diffusion operator amplify marked states?">Grover's Search</button>
+            <button class="prompt-chip" data-query="What is the Bloch Sphere and how does it represent a qubit?">Bloch Sphere</button>
+          </div>
+
+          <div class="mentor-chat-stream" id="ai-chat-history">
+            <div class="chat-bubble chat-ai">
+              <div class="chat-sender-label">AI Mentor</div>
+              <div class="chat-text">
+                Welcome to Ananta. I can break down the mathematics behind your active circuit, explain how phase shifts alter amplitudes, or guide you through creating entangled pairs. Ask anything below!
+              </div>
+            </div>
+          </div>
+
+          <div class="mentor-input-row">
+            <input type="text" id="ai-chat-input" class="chat-text-input" placeholder="Ask about quantum states, gates, or algorithms..." autocomplete="off">
+            <button class="btn-mentor-send" id="btn-send-ai">Send</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 6: GUIDED CHALLENGES ================= -->
+    <section class="viewport-section" id="view-challenges">
+      <div class="standard-page-container">
+        <div class="challenges-panel">
+          <div class="challenges-header-row">
+            <div>
+              <h2>Interactive Circuit Challenges</h2>
+              <p>Synthesize target quantum states by arranging gates on the register.</p>
+            </div>
+            <div class="challenges-score-badge">
+              <span id="missions-progress-label">0 / 4 Solved</span>
+              <div class="score-bar-bg">
+                <div class="score-bar-fg" id="missions-progress-fill" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="challenges-grid" id="missions-list">
+            <!-- Populated by algorithms.js -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 7: DOCUMENTATION ================= -->
+    <section class="viewport-section" id="view-docs">
+      <div class="standard-page-container">
+        <div class="docs-container-card">
+          <h2>Ananta Architecture & State Mechanics</h2>
+          <p class="docs-intro">Comprehensive technical guide on statevector evolution, density matrix reduction, and gate unitaries.</p>
+          
+          <div class="doc-block">
+            <h3>1. Statevector Formulation</h3>
+            <p>For an $n$-qubit register, the state $|\psi\rangle$ is represented as a unit complex vector in $\mathbb{C}^{2^n}$:</p>
+            <pre class="math-snippet">|ψ⟩ = ∑ cᵢ |i⟩, where ∑ |cᵢ|² = 1.0</pre>
+          </div>
+
+          <div class="doc-block">
+            <h3>2. Unitary Operations</h3>
+            <p>Single-qubit operations and multi-qubit entangling gates execute via tensor products and matrix multiplication:</p>
+            <pre class="math-snippet">H = (1/√2) [[1, 1], [1, -1]],  X = [[0, 1], [1, 0]],  CX = [[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]]</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Interactive Google OAuth Account Picker Modal -->
+  <div class="google-modal-backdrop" id="google-modal">
+    <div class="google-oauth-dialog">
+      <div class="oauth-header">
+        <svg viewBox="0 0 24 24" width="28" height="28">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+        </svg>
+        <div class="oauth-title-text">
+          <h3>Choose an account</h3>
+          <p>to continue to Ananta Quantum Studio</p>
+        </div>
+      </div>
+
+      <div class="oauth-body">
+        <div class="account-item" onclick="window.selectGoogleAccount('Anushka Gupta', 'anushkagupta200615@gmail.com')">
+          <div class="user-avatar-circle">A</div>
+          <div class="account-info">
+            <strong>Anushka Gupta</strong>
+            <span>anushkagupta200615@gmail.com</span>
+          </div>
+        </div>
+        <div class="account-item" onclick="window.selectGoogleAccount('Quantum Researcher', 'researcher@ananta-quantum.io')">
+          <div class="user-avatar-circle" style="background:#8b5cf6;">Q</div>
+          <div class="account-info">
+            <strong>Quantum Researcher</strong>
+            <span>researcher@ananta-quantum.io</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="oauth-footer">
+        <button class="btn-cancel-oauth" onclick="window.closeGoogleDialog()">Cancel</button>
+        <span>Protected by Google OAuth</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script Pipeline -->
+  <script src="js/quantum-engine.js"></script>
+  <script src="js/bloch-sphere.js"></script>
+  <script src="js/circuit-ui.js"></script>
+  <script src="js/ai-tutor.js"></script>
+  <script src="js/algorithms.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
