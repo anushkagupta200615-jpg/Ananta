@@ -87,6 +87,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function switchView(tabKey) {
     if (!tabKey) tabKey = 'simulator';
 
+    // Normalize tabKey
+    if (tabKey === 'hardware') tabKey = 'overview';
+    if (tabKey === 'software') tabKey = 'simulator';
+
+    // Update active class on nav items
     navItems.forEach(item => {
       if (item.getAttribute('data-tab') === tabKey) {
         item.classList.add('active');
@@ -95,6 +100,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // Also highlight dropdown parent if a child view is selected
+    const learnTabs = ['overview', 'docs', 'intuition', 'ai-assistant'];
+    const learnNav = document.querySelector('.nav-item[data-tab="overview"]');
+    if (learnNav && learnTabs.includes(tabKey)) {
+      learnNav.classList.add('active');
+    }
+
+    // Toggle viewport sections
     sections.forEach(sec => {
       if (sec.id === `view-${tabKey}`) {
         sec.classList.add('active');
@@ -104,6 +117,18 @@ document.addEventListener('DOMContentLoaded', () => {
         sec.style.display = 'none';
       }
     });
+
+    // Sync URL hash safely without duplicate entries
+    if (window.location.hash !== '#' + tabKey) {
+      try {
+        window.history.replaceState(null, '', '#' + tabKey);
+      } catch (err) {
+        window.location.hash = tabKey;
+      }
+    }
+
+    // Scroll viewport to top on tab switch
+    window.scrollTo({ top: 0, behavior: 'instant' });
 
     // Resize Bloch sphere & refresh microwave pulse canvas when entering simulator
     if (tabKey === 'simulator') {
@@ -139,14 +164,28 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => window.algorithmLibrary.render(), 40);
     }
   }
-  window.switchView = switchView;
 
-  navItems.forEach(item => {
+  window.switchView = switchView;
+  window.switchTab = switchView;
+
+  // Bind click on all nav items and dropdown links
+  document.querySelectorAll('.nav-item, .dropdown-link').forEach(item => {
     item.addEventListener('click', (e) => {
-      e.preventDefault();
       const tab = item.getAttribute('data-tab');
-      switchView(tab);
+      if (tab) {
+        e.preventDefault();
+        switchView(tab);
+      }
     });
+  });
+
+  // Listen for browser hash changes (back/forward or URL typing)
+  window.addEventListener('hashchange', () => {
+    const h = window.location.hash.replace('#', '');
+    const valid = ['overview', 'simulator', 'algorithms', 'intuition', 'research', 'ai-assistant', 'challenges', 'docs', 'login'];
+    if (h && valid.includes(h)) {
+      switchView(h);
+    }
   });
 
   // Logo Click -> Overview

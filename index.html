@@ -43,39 +43,40 @@
             Learn <span class="nav-caret">▾</span>
           </a>
           <div class="nav-dropdown-menu">
-            <a href="#overview" class="dropdown-link" onclick="window.switchTab('overview')">What is quantum computing?</a>
-            <a href="#docs" class="dropdown-link" onclick="window.switchTab('docs')">Educational resources</a>
-            <a href="#intuition" class="dropdown-link" onclick="window.switchTab('intuition')">Intuition Lab</a>
-            <a href="#ai-assistant" class="dropdown-link" onclick="window.switchTab('ai-assistant')">AI Mentor</a>
+            <a href="#overview" class="dropdown-link" data-tab="overview">What is quantum computing?</a>
+            <a href="#docs" class="dropdown-link" data-tab="docs">Educational & Technical Specs</a>
+            <a href="#intuition" class="dropdown-link" data-tab="intuition">Intuition Lab (Wave Collapse)</a>
+            <a href="#ai-assistant" class="dropdown-link" data-tab="ai-assistant">AI Mentor (IISc/IIT Guidance)</a>
           </div>
         </div>
 
         <!-- Hardware Dropdown -->
         <div class="nav-dropdown-item">
-          <a href="#overview" class="nav-item" data-tab="hardware" onclick="window.scrollToSection('mission-section'); return false;">
+          <a href="#overview" class="nav-item" data-tab="overview" onclick="window.scrollToSection('mission-section'); return false;">
             Hardware <span class="nav-caret">▾</span>
           </a>
           <div class="nav-dropdown-menu">
             <a href="#overview" class="dropdown-link" onclick="window.scrollToSection('mission-section')">Quantum Computer (Cryo-Array)</a>
             <a href="#overview" class="dropdown-link" onclick="window.scrollToSection('roadmap-section')">Roadmap (6 Milestones)</a>
-            <a href="#simulator" class="dropdown-link" onclick="window.switchTab('simulator')">Noise & Decoherence Lab</a>
+            <a href="#simulator" class="dropdown-link" data-tab="simulator">Noise & Decoherence Lab</a>
           </div>
         </div>
 
         <!-- Software Dropdown -->
         <div class="nav-dropdown-item">
-          <a href="#simulator" class="nav-item" data-tab="software" onclick="window.switchTab('simulator'); return false;">
+          <a href="#simulator" class="nav-item" data-tab="simulator">
             Software <span class="nav-caret">▾</span>
           </a>
           <div class="nav-dropdown-menu">
-            <a href="#simulator" class="dropdown-link" onclick="window.switchTab('simulator')">Cirq Open Source Tools</a>
-            <a href="#algorithms" class="dropdown-link" onclick="window.switchTab('algorithms')">Algorithm Presets (Grover, Shor, VQE)</a>
-            <a href="#challenges" class="dropdown-link" onclick="window.switchTab('challenges')">Quantum Circuit Challenges</a>
+            <a href="#simulator" class="dropdown-link" data-tab="simulator">Cirq Open Source Tools</a>
+            <a href="#algorithms" class="dropdown-link" data-tab="algorithms">Algorithm Library (Grover, Shor, VQE)</a>
+            <a href="#challenges" class="dropdown-link" data-tab="challenges">Quantum Circuit Challenges</a>
           </div>
         </div>
 
-        <a href="#research" class="nav-item" data-tab="research">Research</a>
         <a href="#simulator" class="nav-item nav-item-composer-highlight" data-tab="simulator">Composer</a>
+        <a href="#algorithms" class="nav-item" data-tab="algorithms">Algorithms</a>
+        <a href="#research" class="nav-item" data-tab="research">Research</a>
         <a href="#docs" class="nav-item" data-tab="docs">Docs</a>
       </nav>
     </div>
@@ -83,10 +84,10 @@
     <!-- DevSite Search Bar -->
     <div class="nav-center-search">
       <div class="devsite-nav-search" id="devsite-header-search-bar" onclick="window.focusKnowledgeEngineSearch()" title="Search quantum topics, Cirq, and hardware (Press /)">
-        <svg class="devsite-search-svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-          <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+        <svg class="devsite-search-svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 14z"/>
         </svg>
-        <span class="devsite-search-placeholder">Search Cirq, hardware, topics...</span>
+        <span class="devsite-search-placeholder">Search Cirq, topics...</span>
         <kbd class="devsite-search-kbd">/</kbd>
       </div>
     </div>
@@ -100,13 +101,12 @@
       <!-- Authenticated User Profile Badge -->
       <div id="nav-user-container" style="display: none;" class="user-profile-nav">
         <div class="user-avatar-badge" id="nav-user-avatar">A</div>
-        <span class="user-name-label" id="nav-user-name">Anushka Gupta</span>
+        <span class="user-name-label" id="nav-user-name">User</span>
         <button class="btn-signout" id="btn-signout" onclick="window.logoutUser()">Sign Out</button>
       </div>
 
       <!-- Sign In Button (shown when logged out) -->
       <a href="#login" class="btn-nav-login" id="nav-login-btn">Sign In</a>
-      <button class="btn-nav-action" id="btn-quick-launch">Launch Composer ↗</button>
     </div>
   </header>
 
