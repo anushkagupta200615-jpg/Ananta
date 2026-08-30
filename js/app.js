@@ -297,25 +297,201 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 100);
 
   // ==========================================
-  // 8. Determine Initial Active View
+  // 8. Research Library Engine
   // ==========================================
+  const researchGrid = document.getElementById('research-grid-container');
+  const searchInput = document.getElementById('research-search-input');
+  const clearSearchBtn = document.getElementById('btn-clear-search');
+  const catPills = document.querySelectorAll('.cat-pill');
+  const resultsCounter = document.getElementById('research-results-count');
+
+  let activeCategory = 'all';
+  let searchQuery = '';
+
+  function renderResearchLibrary() {
+    if (!researchGrid || !window.QUANTUM_RESEARCH_PAPERS) return;
+
+    // Filter papers
+    const filtered = window.QUANTUM_RESEARCH_PAPERS.filter(p => {
+      const matchesCat = activeCategory === 'all' || p.category === activeCategory;
+      if (!matchesCat) return false;
+
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      const titleMatch = p.title && p.title.toLowerCase().includes(q);
+      const authorMatch = p.authors && p.authors.toLowerCase().includes(q);
+      const abstractMatch = p.abstract && p.abstract.toLowerCase().includes(q);
+      const venueMatch = p.venue && p.venue.toLowerCase().includes(q);
+      const yearMatch = p.year && p.year.toString().includes(q);
+      const arxivMatch = p.arxiv && p.arxiv.toLowerCase().includes(q);
+      return titleMatch || authorMatch || abstractMatch || venueMatch || yearMatch || arxivMatch;
+    });
+
+    // Update counts
+    updateCategoryCounts();
+
+    if (resultsCounter) {
+      resultsCounter.textContent = `Showing ${filtered.length} of ${window.QUANTUM_RESEARCH_PAPERS.length} publications`;
+    }
+
+    if (filtered.length === 0) {
+      researchGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+          <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-white);">No matching publications found</h3>
+          <p style="font-size: 13px; color: var(--text-dim);">Try adjusting your search query or switching categories.</p>
+        </div>
+      `;
+      return;
+    }
+
+    researchGrid.innerHTML = '';
+    filtered.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'paper-card';
+
+      const catBadgeClass = `badge-${p.category}`;
+      const catBadgeLabel = p.category.replace('-', ' ').toUpperCase();
+
+      const simulateBtn = p.circuitPreset ? `
+        <button class="btn-paper-simulate" onclick="window.loadCircuitFromPaper('${p.circuitPreset}')">
+          ⚡ Simulate in Ananta
+        </button>
+      ` : '';
+
+      const pdfLink = p.pdfUrl ? `
+        <a href="${p.pdfUrl}" target="_blank" rel="noopener noreferrer" class="btn-paper-pdf">
+          📄 View PDF / Source ↗
+        </a>
+      ` : '';
+
+      card.innerHTML = `
+        <div class="paper-top-row">
+          <span class="paper-badge ${catBadgeClass}">${catBadgeLabel}</span>
+          <span class="paper-year">${p.year}</span>
+        </div>
+        <h3 class="paper-title">${p.title}</h3>
+        <div class="paper-authors">${p.authors}</div>
+        <div class="paper-venue">${p.venue}</div>
+        <p class="paper-abstract">${p.abstract}</p>
+        <div class="paper-actions-bar">
+          ${simulateBtn}
+          <button class="btn-paper-cite" onclick="window.openBibtexModal('${p.id}')">
+            Cite BibTeX
+          </button>
+          ${pdfLink}
+        </div>
+      `;
+      researchGrid.appendChild(card);
+    });
+  }
+
+  function updateCategoryCounts() {
+    if (!window.QUANTUM_RESEARCH_PAPERS) return;
+    const all = window.QUANTUM_RESEARCH_PAPERS.length;
+    const counts = { all };
+
+    window.QUANTUM_RESEARCH_PAPERS.forEach(p => {
+      counts[p.category] = (counts[p.category] || 0) + 1;
+    });
+
+    Object.keys(counts).forEach(cat => {
+      const el = document.getElementById(`count-${cat}`);
+      if (el) el.textContent = counts[cat];
+    });
+  }
+
+  // Category pill handlers
+  catPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      catPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeCategory = pill.getAttribute('data-cat');
+      renderResearchLibrary();
+    });
+  });
+
+  // Search input handler
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value.trim();
+      if (clearSearchBtn) {
+        clearSearchBtn.style.display = searchQuery ? 'inline-block' : 'none';
+      }
+      renderResearchLibrary();
+    });
+  }
+
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchQuery = '';
+      clearSearchBtn.style.display = 'none';
+      renderResearchLibrary();
+    });
+  }
+
+  // BibTeX Modal Handlers
+  window.openBibtexModal = function(paperId) {
+    const paper = window.QUANTUM_RESEARCH_PAPERS.find(p => p.id === paperId);
+    if (!paper) return;
+
+    const modal = document.getElementById('bibtex-modal');
+    const titleEl = document.getElementById('bibtex-modal-title');
+    const codeEl = document.getElementById('bibtex-code-content');
+    const copyBtn = document.getElementById('btn-copy-bibtex');
+
+    if (titleEl) titleEl.textContent = `BibTeX: ${paper.title}`;
+    if (codeEl) codeEl.textContent = paper.bibtex;
+    if (copyBtn) copyBtn.textContent = 'Copy Citation to Clipboard';
+    if (modal) modal.classList.add('active');
+  };
+
+  window.closeBibtexModal = function() {
+    const modal = document.getElementById('bibtex-modal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.copyBibtex = function() {
+    const codeEl = document.getElementById('bibtex-code-content');
+    const copyBtn = document.getElementById('btn-copy-bibtex');
+    if (codeEl) {
+      navigator.clipboard.writeText(codeEl.textContent);
+      if (copyBtn) {
+        copyBtn.textContent = 'Copied to Clipboard!';
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy Citation to Clipboard';
+        }, 2000);
+      }
+    }
+  };
+
+  window.loadCircuitFromPaper = function(presetKey) {
+    window.loadPresetSafe(presetKey);
+    switchView('simulator');
+  };
+
+  // Initial render of research library
+  renderResearchLibrary();
+
+  // ==========================================
+  // 9. Determine Initial Active View & Routing
+  // ==========================================
+  const validTabs = ['overview', 'simulator', 'algorithms', 'research', 'ai-assistant', 'challenges', 'docs', 'login'];
   const isLoggedIn = updateNavUser();
   const hash = window.location.hash.replace('#', '');
 
-  if (hash && ['overview', 'simulator', 'algorithms', 'ai-assistant', 'challenges', 'docs', 'login'].includes(hash)) {
+  if (hash && validTabs.includes(hash)) {
     switchView(hash);
   } else if (isLoggedIn) {
-    // If logged in and no specific hash, jump straight into Simulator
     switchView('simulator');
   } else {
-    // If not logged in, present Login view
     switchView('login');
   }
 
   // Listen for hash changes dynamically
   window.addEventListener('hashchange', () => {
     const h = window.location.hash.replace('#', '');
-    if (h && ['overview', 'simulator', 'algorithms', 'ai-assistant', 'challenges', 'docs', 'login'].includes(h)) {
+    if (h && validTabs.includes(h)) {
       switchView(h);
     }
   });

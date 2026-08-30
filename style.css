@@ -1852,3 +1852,405 @@ input:checked + .toggle-slider:before {
   gap: 12px;
   z-index: 999;
 }
+
+/* ==========================================================================
+   VIEW 8: Research Archive & Textbooks Library
+   ========================================================================== */
+
+.research-container {
+  max-width: 1240px;
+}
+
+.research-hero-banner {
+  margin-bottom: 28px;
+}
+
+.research-pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--accent-blue);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 20px;
+  margin-bottom: 14px;
+}
+
+.research-hero-title {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.research-hero-desc {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  max-width: 780px;
+}
+
+/* Toolbar & Category Pills */
+.research-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 30px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+}
+
+.research-search-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 16px;
+  position: relative;
+}
+
+.research-search-box svg {
+  color: var(--text-subtle);
+  flex-shrink: 0;
+}
+
+.research-search-box input {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-white);
+  font-size: 14px;
+  outline: none;
+  font-family: var(--font-sans);
+}
+
+.btn-clear-search {
+  background: none;
+  border: none;
+  color: var(--text-subtle);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+}
+
+.btn-clear-search:hover {
+  color: var(--text-white);
+}
+
+.research-category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cat-pill {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cat-pill:hover {
+  color: var(--text-white);
+  border-color: var(--accent-blue);
+}
+
+.cat-pill.active {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border-color: var(--accent-blue);
+  font-weight: 700;
+}
+
+.research-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-subtle);
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+}
+
+.research-counter-badge {
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+/* Research Grid */
+.research-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .research-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.paper-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.paper-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-blue);
+  box-shadow: 0 8px 24px rgba(15, 98, 254, 0.12);
+}
+
+.paper-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.paper-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.badge-foundations { background: #eff6ff; color: #0f62fe; }
+.badge-algorithms { background: #f0fdf4; color: #16a34a; }
+.badge-error-correction { background: #faf5ff; color: #9333ea; }
+.badge-hardware { background: #fff7ed; color: #ea580c; }
+.badge-qml { background: #ecfeff; color: #0891b2; }
+.badge-textbooks { background: #fdf2f8; color: #db2777; }
+.badge-ancient-heritage { background: #fefce8; color: #b45309; }
+
+body.dark-theme .badge-foundations { background: rgba(15, 98, 254, 0.2); color: #60a5fa; }
+body.dark-theme .badge-algorithms { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
+body.dark-theme .badge-error-correction { background: rgba(147, 51, 234, 0.2); color: #c084fc; }
+body.dark-theme .badge-hardware { background: rgba(234, 88, 12, 0.2); color: #fb923c; }
+body.dark-theme .badge-qml { background: rgba(8, 145, 178, 0.2); color: #22d3ee; }
+body.dark-theme .badge-textbooks { background: rgba(219, 39, 119, 0.2); color: #f472b6; }
+body.dark-theme .badge-ancient-heritage { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+.paper-year {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+
+.paper-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-white);
+  line-height: 1.35;
+}
+
+.paper-authors {
+  font-size: 12px;
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+
+.paper-venue {
+  font-size: 11px;
+  color: var(--text-subtle);
+  font-style: italic;
+}
+
+.paper-abstract {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  flex-grow: 1;
+}
+
+.paper-actions-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border-color);
+  padding-top: 14px;
+  margin-top: 4px;
+}
+
+.btn-paper-simulate {
+  background: #eff6ff;
+  color: var(--accent-blue);
+  border: 1px solid #bfdbfe;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+
+body.dark-theme .btn-paper-simulate {
+  background: rgba(15, 98, 254, 0.2);
+  border-color: rgba(15, 98, 254, 0.4);
+  color: #60a5fa;
+}
+
+.btn-paper-simulate:hover {
+  background: var(--accent-blue);
+  color: #ffffff;
+}
+
+.btn-paper-cite {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-paper-cite:hover {
+  color: var(--text-white);
+  border-color: var(--border-darker);
+}
+
+.btn-paper-pdf {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+
+.btn-paper-pdf:hover {
+  color: var(--text-white);
+  border-color: var(--border-darker);
+}
+
+/* BibTeX Modal */
+.bibtex-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.bibtex-modal-backdrop.active {
+  display: flex;
+}
+
+.bibtex-modal-dialog {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  animation: modalPop 0.2s ease-out;
+}
+
+.bibtex-modal-header {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bibtex-modal-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  color: var(--text-subtle);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn-close-modal:hover {
+  color: var(--text-white);
+}
+
+.bibtex-modal-body {
+  padding: 20px;
+  background: var(--bg-subtle);
+}
+
+.bibtex-modal-body pre {
+  margin: 0;
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 14px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-x: auto;
+}
+
+.bibtex-modal-footer {
+  padding: 14px 20px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+.btn-copy-bibtex {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-copy-bibtex:hover {
+  background: var(--accent-blue-hover);
+}
