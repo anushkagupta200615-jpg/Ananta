@@ -35,17 +35,48 @@
         </div>
       </div>
 
-      <!-- DevSite Navigation Tabs -->
+      <!-- DevSite Navigation Tabs with Animated Dropdowns -->
       <nav class="nav-links" aria-label="Main Navigation">
-        <a href="#overview" class="nav-item active" data-tab="overview">Overview</a>
-        <a href="#simulator" class="nav-item" data-tab="simulator">Composer</a>
-        <a href="#algorithms" class="nav-item" data-tab="algorithms">Algorithms</a>
-        <a href="#intuition" class="nav-item" data-tab="intuition">Intuition Lab</a>
+        <!-- Learn Dropdown -->
+        <div class="nav-dropdown-item">
+          <a href="#overview" class="nav-item active" data-tab="overview">
+            Learn <span class="nav-caret">▾</span>
+          </a>
+          <div class="nav-dropdown-menu">
+            <a href="#overview" class="dropdown-link" onclick="window.switchTab('overview')">What is quantum computing?</a>
+            <a href="#docs" class="dropdown-link" onclick="window.switchTab('docs')">Educational resources</a>
+            <a href="#intuition" class="dropdown-link" onclick="window.switchTab('intuition')">Intuition Lab</a>
+            <a href="#ai-assistant" class="dropdown-link" onclick="window.switchTab('ai-assistant')">AI Mentor</a>
+          </div>
+        </div>
+
+        <!-- Hardware Dropdown -->
+        <div class="nav-dropdown-item">
+          <a href="#overview" class="nav-item" data-tab="hardware" onclick="window.scrollToSection('mission-section'); return false;">
+            Hardware <span class="nav-caret">▾</span>
+          </a>
+          <div class="nav-dropdown-menu">
+            <a href="#overview" class="dropdown-link" onclick="window.scrollToSection('mission-section')">Quantum Computer (Cryo-Array)</a>
+            <a href="#overview" class="dropdown-link" onclick="window.scrollToSection('roadmap-section')">Roadmap (6 Milestones)</a>
+            <a href="#simulator" class="dropdown-link" onclick="window.switchTab('simulator')">Noise & Decoherence Lab</a>
+          </div>
+        </div>
+
+        <!-- Software Dropdown -->
+        <div class="nav-dropdown-item">
+          <a href="#simulator" class="nav-item" data-tab="software" onclick="window.switchTab('simulator'); return false;">
+            Software <span class="nav-caret">▾</span>
+          </a>
+          <div class="nav-dropdown-menu">
+            <a href="#simulator" class="dropdown-link" onclick="window.switchTab('simulator')">Cirq Open Source Tools</a>
+            <a href="#algorithms" class="dropdown-link" onclick="window.switchTab('algorithms')">Algorithm Presets (Grover, Shor, VQE)</a>
+            <a href="#challenges" class="dropdown-link" onclick="window.switchTab('challenges')">Quantum Circuit Challenges</a>
+          </div>
+        </div>
+
         <a href="#research" class="nav-item" data-tab="research">Research</a>
-        <a href="#ai-assistant" class="nav-item" data-tab="ai-assistant">AI Mentor</a>
-        <a href="#challenges" class="nav-item" data-tab="challenges">Challenges</a>
+        <a href="#simulator" class="nav-item nav-item-composer-highlight" data-tab="simulator">Composer</a>
         <a href="#docs" class="nav-item" data-tab="docs">Docs</a>
-        <a href="#login" class="nav-item" data-tab="login">Portal</a>
       </nav>
     </div>
 
@@ -82,143 +113,289 @@
   <!-- Application Content Container -->
   <main class="app-main-viewport">
 
-    <!-- ================= VIEW 1: HERO OVERVIEW ================= -->
+    <!-- ================= VIEW 1: HERO OVERVIEW (Google Quantum AI Flagship Experience) ================= -->
     <section class="viewport-section" id="view-overview">
-      <div class="hero-layout">
-        
-        <!-- Left: Product Introduction & Real Capability Highlights -->
-        <!-- Left: Google Quantum AI Editorial Column -->
-        <div class="hero-intro-column">
-          <div class="hero-pill-tag">
-            <span class="pulse-indicator"></span> Google Quantum AI // Cirq Ecosystem
-          </div>
 
-          <h1 class="hero-main-title">
-            Advancing Computation Beyond <br>
-            <span class="accent-text">Classical Capabilities</span>
-          </h1>
-
-          <p class="hero-description">
-            Google Quantum AI is developing hardware and software tools to operate beyond classical supercomputing capabilities. Explore our 105-qubit Willow QPU architecture, write and compile quantum algorithms with Cirq, and simulate statevectors in real time.
-          </p>
-
-          <!-- Core Capability Badges (Real Technical Features) -->
-          <div class="capabilities-grid">
-            <div class="cap-item">
-              <div class="cap-metric">Willow QPU</div>
-              <div class="cap-desc">105 Qubits @ 15 mK Cryo-Array</div>
-            </div>
-            <div class="cap-item">
-              <div class="cap-metric">Cirq >= 1.4</div>
-              <div class="cap-desc">Google Native Python SDK</div>
-            </div>
-            <div class="cap-item">
-              <div class="cap-metric">Fault-Tolerant</div>
-              <div class="cap-desc">Below-Threshold Surface Codes</div>
-            </div>
-          </div>
-
-          <div class="hero-actions-container">
-            <button class="btn-primary-action" id="btn-hero-launch">
-              Launch Quantum Composer ➔
-            </button>
-            <button class="btn-secondary-action" id="btn-hero-algorithms">
-              Explore Cirq Algorithms
-            </button>
-          </div>
+      <!-- SECTION 1: Google Quantum AI 3-Fold Floating 3D Animated Chip Hero (Screenshot 1) -->
+      <div class="qsite-hero-tri-fold">
+        <div class="tri-fold-bg-media">
+          <img src="assets/quantum_coral_hero_bg.jpg" alt="Google Quantum AI Organic Visual" class="tri-fold-bg-img" />
+          <div class="tri-fold-overlay"></div>
         </div>
 
-        <!-- Right: Animated Quantum Pipeline -->
-        <div class="hero-visual-column">
-          <div class="circuit-preview-card">
-            <div class="preview-header-bar">
-              <div class="window-buttons">
-                <span></span><span></span><span></span>
+        <div class="tri-fold-container">
+          <div class="tri-fold-col tri-fold-left">
+            <h1 class="tri-fold-title">DISCOVER</h1>
+          </div>
+
+          <div class="tri-fold-col tri-fold-center">
+            <!-- Interactive 3D Floating Quantum Processor Chip -->
+            <div class="floating-chip-scene" id="chip-scene">
+              <div class="chip-3d-card" id="chip-card">
+                <img src="assets/quantum_processor_chip.jpg" alt="Google Willow Quantum Processor Die" class="chip-die-img" />
+                <div class="chip-sheen"></div>
+                <div class="chip-glow-ring"></div>
               </div>
-              <span class="preview-filename">google_quantum_cirq_pipeline.py</span>
+              <div class="chip-ground-shadow"></div>
             </div>
+          </div>
 
-            <div class="preview-svg-container">
-              <svg viewBox="0 0 540 330" class="pipeline-svg">
-                <!-- 4 Quantum Register Wires -->
-                <line x1="65" y1="45" x2="480" y2="45" class="circuit-line" />
-                <line x1="65" y1="115" x2="480" y2="115" class="circuit-line" />
-                <line x1="65" y1="185" x2="480" y2="185" class="circuit-line" />
-                <line x1="65" y1="255" x2="480" y2="255" class="circuit-line" />
-
-                <!-- Register Labels -->
-                <text x="20" y="50" class="qubit-tag">q(0,0)</text>
-                <text x="20" y="120" class="qubit-tag">q(0,1)</text>
-                <text x="20" y="190" class="qubit-tag">q(1,0)</text>
-                <text x="20" y="260" class="qubit-tag">q(1,1)</text>
-
-                <!-- Gate Nodes -->
-                <!-- q0: Hadamard & Phase -->
-                <g class="gate-node gate-coral" transform="translate(100, 27)">
-                  <rect width="36" height="36" rx="4" />
-                  <text x="18" y="23">H</text>
-                </g>
-                <g class="gate-node gate-cyan" transform="translate(240, 27)">
-                  <rect width="36" height="36" rx="4" />
-                  <text x="18" y="23">S</text>
-                </g>
-
-                <!-- CNOT 1: q0 -> q1 -->
-                <line x1="180" y1="45" x2="180" y2="115" class="entangle-line" />
-                <circle cx="180" cy="45" r="5" class="entangle-ctrl" />
-                <circle cx="180" cy="115" r="13" class="entangle-target-ring" />
-                <line x1="167" y1="115" x2="193" y2="115" class="target-cross" />
-                <line x1="180" y1="102" x2="180" y2="128" class="target-cross" />
-
-                <!-- q1: Phase rotation -->
-                <g class="gate-node gate-sky" transform="translate(240, 97)">
-                  <rect width="36" height="36" rx="4" />
-                  <text x="18" y="23">T</text>
-                </g>
-
-                <!-- CNOT 2: q1 -> q2 -->
-                <line x1="320" y1="115" x2="320" y2="185" class="entangle-line" />
-                <circle cx="320" cy="115" r="5" class="entangle-ctrl" />
-                <circle cx="320" cy="185" r="13" class="entangle-target-ring" />
-                <line x1="307" y1="185" x2="333" y2="185" class="target-cross" />
-                <line x1="320" y1="172" x2="320" y2="198" class="target-cross" />
-
-                <!-- q2: Pauli-X -->
-                <g class="gate-node gate-crimson" transform="translate(100, 167)">
-                  <rect width="36" height="36" rx="4" />
-                  <text x="18" y="23">X</text>
-                </g>
-                <g class="gate-node gate-purple" transform="translate(380, 167)">
-                  <rect width="36" height="36" rx="4" />
-                  <text x="18" y="23">Z</text>
-                </g>
-
-                <!-- CNOT 3: q2 -> q3 -->
-                <line x1="430" y1="185" x2="430" y2="255" class="entangle-line" />
-                <circle cx="430" cy="185" r="5" class="entangle-ctrl" />
-                <circle cx="430" cy="255" r="13" class="entangle-target-ring" />
-                <line x1="417" y1="255" x2="443" y2="255" class="target-cross" />
-                <line x1="430" y1="242" x2="430" y2="268" class="target-cross" />
-
-                <!-- q3: Hadamard -->
-                <g class="gate-node gate-coral" transform="translate(100, 237)">
-                  <rect width="36" height="36" rx="4" />
-                  <text x="18" y="23">H</text>
-                </g>
-
-                <!-- Traveling Quantum Wave Packets -->
-                <circle cx="65" cy="45" r="4.5" class="wave-packet wp-1" />
-                <circle cx="65" cy="115" r="4.5" class="wave-packet wp-2" />
-                <circle cx="65" cy="185" r="4.5" class="wave-packet wp-3" />
-                <circle cx="65" cy="255" r="4.5" class="wave-packet wp-4" />
-              </svg>
-            </div>
+          <div class="tri-fold-col tri-fold-right">
+            <div class="tri-fold-title">GOOGLE<br>QUANTUM AI</div>
           </div>
         </div>
 
+        <!-- Scroll Down Circle Indicator -->
+        <a href="#mission-section" class="tri-fold-scroll-btn" onclick="window.scrollToSection('mission-section'); return false;" aria-label="Discover more">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="8 12 12 16 16 12" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+          </svg>
+        </a>
       </div>
 
-      <!-- Google Quantum AI QSite 3-Up Feature Grid -->
+      <!-- SECTION 2: Google Quantum AI Mission & Featured Hardware Section (Screenshot 2) -->
+      <div class="qsite-mission-section" id="mission-section">
+        <div class="qsite-mission-container">
+          <span class="qsite-mission-eyebrow">MISSION</span>
+          <h2 class="qsite-mission-heading">BUILDING QUANTUM COMPUTING FOR OTHERWISE UNSOLVABLE PROBLEMS</h2>
+
+          <!-- Featured Rounded Split Card (Screenshot 2) -->
+          <div class="qsite-featured-card">
+            <div class="featured-card-media">
+              <img src="assets/cryostat_hardware.jpg" alt="Google Quantum AI Dilution Refrigerator Cryostat" class="featured-card-img" />
+            </div>
+            <div class="featured-card-panel">
+              <span class="featured-panel-eyebrow">FEATURED</span>
+              <h3 class="featured-panel-title">Verifiable quantum advantage towards real world applications</h3>
+              <p class="featured-panel-desc">
+                Our superconducting quantum processors enable computations that would take classical supercomputers thousands of years to compute. Experience interactive simulations with Cirq and verify statevector outputs on our in-browser engine.
+              </p>
+              <div class="featured-panel-actions">
+                <button class="btn-primary-action" onclick="window.switchTab('simulator')">
+                  Launch Quantum Composer ➔
+                </button>
+                <button class="btn-secondary-action" onclick="window.switchTab('research')">
+                  Explore Research Papers
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: Google Quantum AI 6-Milestone Interactive Roadmap (Screenshot 3) -->
+      <div class="qsite-roadmap-section" id="roadmap-section">
+        <div class="roadmap-container">
+          <div class="roadmap-header">
+            <h2 class="roadmap-title">OUR QUANTUM COMPUTING ROADMAP</h2>
+            <p class="roadmap-subtitle">
+              Our focus is to unlock the full potential of quantum computing by developing a large-scale computer capable of complex, error-corrected computations. We are guided by a roadmap featuring six milestones that will lead us toward top-quality quantum hardware and software for meaningful applications.
+            </p>
+          </div>
+
+          <!-- 6 Milestone Interactive Cards Grid -->
+          <div class="roadmap-cards-grid">
+            <!-- Milestone 1 -->
+            <div class="roadmap-card" data-milestone="1">
+              <div class="roadmap-isometric-box">
+                <!-- Isometric Wireframe Bloch Sphere -->
+                <svg viewBox="0 0 160 140" class="isometric-svg">
+                  <circle cx="80" cy="70" r="46" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.85" />
+                  <ellipse cx="80" cy="70" rx="46" ry="18" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.6" />
+                  <ellipse cx="80" cy="70" rx="18" ry="46" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.6" />
+                  <line x1="80" y1="24" x2="80" y2="116" stroke="currentColor" stroke-width="1.6" />
+                  <!-- Statevector Arrow -->
+                  <line x1="80" y1="70" x2="116" y2="92" stroke="#1a73e8" stroke-width="2.5" stroke-linecap="round" />
+                  <circle cx="116" cy="92" r="3.5" fill="#1a73e8" />
+                </svg>
+              </div>
+              <div class="roadmap-meta">
+                <span class="roadmap-eyebrow">MILESTONE 1</span>
+                <h3 class="roadmap-card-title">Beyond classical</h3>
+                <div class="roadmap-specs">
+                  <span>Physical Qubits: 54</span>
+                  <span>Logical Qubit Error Rate: -</span>
+                </div>
+                <div class="roadmap-year-badge">2019</div>
+              </div>
+            </div>
+
+            <!-- Milestone 2 -->
+            <div class="roadmap-card active" data-milestone="2">
+              <div class="roadmap-isometric-box">
+                <!-- Isometric 3x3 Surface Code Tile -->
+                <svg viewBox="0 0 160 140" class="isometric-svg">
+                  <g transform="translate(20, 25)">
+                    <polygon points="60,10 110,35 60,60 10,35" fill="rgba(26,115,232,0.08)" stroke="currentColor" stroke-width="1.5" />
+                    <polygon points="10,35 60,60 60,75 10,50" fill="rgba(26,115,232,0.15)" stroke="currentColor" stroke-width="1.5" />
+                    <polygon points="60,60 110,35 110,50 60,75" fill="rgba(26,115,232,0.22)" stroke="currentColor" stroke-width="1.5" />
+                    <!-- Qubit Dots -->
+                    <circle cx="35" cy="35" r="4" fill="#1a73e8" />
+                    <circle cx="60" cy="22" r="4" fill="#ea4335" />
+                    <circle cx="85" cy="35" r="4" fill="#1a73e8" />
+                    <circle cx="35" cy="48" r="4" fill="#fbbc04" />
+                    <circle cx="60" cy="35" r="5" fill="#34a853" />
+                    <circle cx="85" cy="48" r="4" fill="#fbbc04" />
+                    <circle cx="35" cy="60" r="4" fill="#1a73e8" />
+                    <circle cx="60" cy="48" r="4" fill="#ea4335" />
+                    <circle cx="85" cy="60" r="4" fill="#1a73e8" />
+                  </g>
+                </svg>
+              </div>
+              <div class="roadmap-meta">
+                <span class="roadmap-eyebrow">MILESTONE 2</span>
+                <h3 class="roadmap-card-title">Quantum error correction</h3>
+                <div class="roadmap-specs">
+                  <span>Physical Qubits: 10²</span>
+                  <span>Logical Qubit Error Rate: 10⁻²</span>
+                </div>
+                <div class="roadmap-year-badge">2023</div>
+              </div>
+            </div>
+
+            <!-- Milestone 3 -->
+            <div class="roadmap-card" data-milestone="3">
+              <div class="roadmap-isometric-box">
+                <!-- Isometric Lattice with Vertical Stabilizer Beams -->
+                <svg viewBox="0 0 160 140" class="isometric-svg">
+                  <g transform="translate(20, 25)">
+                    <polygon points="60,20 110,45 60,70 10,45" fill="rgba(26,115,232,0.06)" stroke="currentColor" stroke-width="1.5" />
+                    <polygon points="10,45 60,70 60,82 10,57" fill="rgba(26,115,232,0.12)" stroke="currentColor" stroke-width="1.5" />
+                    <polygon points="60,70 110,45 110,57 60,82" fill="rgba(26,115,232,0.18)" stroke="currentColor" stroke-width="1.5" />
+                    <!-- Vertical Beams -->
+                    <line x1="35" y1="45" x2="35" y2="15" stroke="#1a73e8" stroke-width="1.5" stroke-dasharray="2 2" />
+                    <line x1="60" y1="32" x2="60" y2="5" stroke="#1a73e8" stroke-width="1.5" stroke-dasharray="2 2" />
+                    <line x1="85" y1="45" x2="85" y2="15" stroke="#1a73e8" stroke-width="1.5" stroke-dasharray="2 2" />
+                    <line x1="60" y1="58" x2="60" y2="28" stroke="#1a73e8" stroke-width="1.5" stroke-dasharray="2 2" />
+                  </g>
+                </svg>
+              </div>
+              <div class="roadmap-meta">
+                <span class="roadmap-eyebrow">MILESTONE 3</span>
+                <h3 class="roadmap-card-title">Building a long-lived logical qubit</h3>
+                <div class="roadmap-specs">
+                  <span>Physical Qubits: 10³</span>
+                  <span>Logical Qubit Error Rate: 10⁻⁴</span>
+                </div>
+                <div class="roadmap-year-badge">Current</div>
+              </div>
+            </div>
+
+            <!-- Milestone 4 -->
+            <div class="roadmap-card" data-milestone="4">
+              <div class="roadmap-isometric-box">
+                <!-- Two Connected Isometric Qubit Tiles with Bridge -->
+                <svg viewBox="0 0 160 140" class="isometric-svg">
+                  <g transform="translate(15, 30)">
+                    <polygon points="40,15 75,32 40,50 5,32" fill="rgba(26,115,232,0.08)" stroke="currentColor" stroke-width="1.5" />
+                    <polygon points="95,15 130,32 95,50 60,32" fill="rgba(26,115,232,0.08)" stroke="currentColor" stroke-width="1.5" />
+                    <!-- Interconnect Bridge -->
+                    <line x1="40" y1="50" x2="95" y2="15" stroke="#1a73e8" stroke-width="2.5" />
+                    <circle cx="40" cy="32" r="3.5" fill="#1a73e8" />
+                    <circle cx="95" cy="32" r="3.5" fill="#1a73e8" />
+                  </g>
+                </svg>
+              </div>
+              <div class="roadmap-meta">
+                <span class="roadmap-eyebrow">MILESTONE 4</span>
+                <h3 class="roadmap-card-title">Creating a logical gate</h3>
+                <div class="roadmap-specs">
+                  <span>Physical Qubits: 10⁴</span>
+                  <span>Logical Qubit Error Rate: 10⁻⁶</span>
+                </div>
+                <div class="roadmap-year-badge">Phase 4</div>
+              </div>
+            </div>
+
+            <!-- Milestone 5 -->
+            <div class="roadmap-card" data-milestone="5">
+              <div class="roadmap-isometric-box">
+                <!-- Scalable Lattice Array -->
+                <svg viewBox="0 0 160 140" class="isometric-svg">
+                  <g transform="translate(15, 25)">
+                    <polygon points="65,10 125,40 65,70 5,40" fill="rgba(26,115,232,0.06)" stroke="currentColor" stroke-width="1.5" />
+                    <polygon points="5,40 65,70 65,78 5,48" fill="rgba(26,115,232,0.12)" stroke="currentColor" stroke-width="1.5" />
+                    <polygon points="65,70 125,40 125,48 65,78" fill="rgba(26,115,232,0.18)" stroke="currentColor" stroke-width="1.5" />
+                    <!-- Micro Grid Pattern -->
+                    <line x1="25" y1="30" x2="85" y2="60" stroke="#5f6368" stroke-width="0.8" stroke-dasharray="2 2" />
+                    <line x1="45" y1="20" x2="105" y2="50" stroke="#5f6368" stroke-width="0.8" stroke-dasharray="2 2" />
+                  </g>
+                </svg>
+              </div>
+              <div class="roadmap-meta">
+                <span class="roadmap-eyebrow">MILESTONE 5</span>
+                <h3 class="roadmap-card-title">Engineering scale up</h3>
+                <div class="roadmap-specs">
+                  <span>Physical Qubits: 10⁵</span>
+                  <span>Logical Qubit Error Rate: 10⁻⁶</span>
+                </div>
+                <div class="roadmap-year-badge">Phase 5</div>
+              </div>
+            </div>
+
+            <!-- Milestone 6 -->
+            <div class="roadmap-card" data-milestone="6">
+              <div class="roadmap-isometric-box">
+                <!-- Cryostat Enclosure with Human Silhouette -->
+                <svg viewBox="0 0 160 140" class="isometric-svg">
+                  <g transform="translate(20, 20)">
+                    <path d="M20,30 L60,10 L100,30 L100,75 C100,95 60,105 20,75 Z" fill="rgba(26,115,232,0.08)" stroke="currentColor" stroke-width="1.5" />
+                    <line x1="60" y1="10" x2="60" y2="85" stroke="currentColor" stroke-width="1.5" />
+                    <!-- Human Silhouette for scale -->
+                    <circle cx="75" cy="45" r="2.5" fill="currentColor" />
+                    <line x1="75" y1="48" x2="75" y2="58" stroke="currentColor" stroke-width="1.5" />
+                  </g>
+                </svg>
+              </div>
+              <div class="roadmap-meta">
+                <span class="roadmap-eyebrow">MILESTONE 6</span>
+                <h3 class="roadmap-card-title">Large error-corrected quantum computer</h3>
+                <div class="roadmap-specs">
+                  <span>Physical Qubits: 10⁶</span>
+                  <span>Logical Qubit Error Rate: 10⁻¹³</span>
+                </div>
+                <div class="roadmap-year-badge">Goal</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Horizontal Interactive Timeline Track -->
+          <div class="roadmap-timeline-track">
+            <div class="timeline-line-bg"></div>
+            <div class="timeline-line-progress"></div>
+            <div class="timeline-points-row">
+              <div class="timeline-node completed" onclick="window.selectMilestone(1)">
+                <div class="node-bullet"></div>
+                <span class="node-label">2019</span>
+              </div>
+              <div class="timeline-node completed active" onclick="window.selectMilestone(2)">
+                <div class="node-bullet"></div>
+                <span class="node-label">2023</span>
+              </div>
+              <div class="timeline-node current" onclick="window.selectMilestone(3)">
+                <div class="node-bullet"></div>
+                <span class="node-label">Logical Qubit</span>
+              </div>
+              <div class="timeline-node" onclick="window.selectMilestone(4)">
+                <div class="node-bullet"></div>
+                <span class="node-label">Logical Gate</span>
+              </div>
+              <div class="timeline-node" onclick="window.selectMilestone(5)">
+                <div class="node-bullet"></div>
+                <span class="node-label">Scale Up</span>
+              </div>
+              <div class="timeline-node" onclick="window.selectMilestone(6)">
+                <div class="node-bullet"></div>
+                <span class="node-label">10⁶ Qubits</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: Google Quantum AI 3-Up Feature Grid -->
       <div class="gqai-cards-container">
         <div class="gqai-section-heading">
           <span class="gqai-eyebrow">RESEARCH & HARDWARE MILESTONES</span>
@@ -233,7 +410,7 @@
               <span class="gqai-card-eyebrow">HARDWARE MILESTONE</span>
               <h3 class="gqai-card-title">Willow QPU Architecture</h3>
               <p class="gqai-card-body">105 physical qubits operating at 15 millikelvin with real-time feedback. First experimental proof that scaling physical qubit counts decreases logical error rates exponentially.</p>
-              <a href="#simulator" class="gqai-card-link">Explore QPU Simulation →</a>
+              <a href="#simulator" class="gqai-card-link" onclick="window.switchTab('simulator')">Explore QPU Simulation →</a>
             </div>
           </div>
 
@@ -243,7 +420,7 @@
               <span class="gqai-card-eyebrow">OPEN-SOURCE CIRQ</span>
               <h3 class="gqai-card-title">Algorithmic Software Stack</h3>
               <p class="gqai-card-body">Write quantum algorithms with Cirq, Google's open-source library for NISQ architectures. Synthesize circuits, analyze Pauli expectations, and compile to physical pulses.</p>
-              <a href="#algorithms" class="gqai-card-link">Explore Cirq Algorithms →</a>
+              <a href="#algorithms" class="gqai-card-link" onclick="window.switchTab('algorithms')">Explore Cirq Algorithms →</a>
             </div>
           </div>
 
@@ -253,7 +430,7 @@
               <span class="gqai-card-eyebrow">SCIENCE & NATURE PAPERS</span>
               <h3 class="gqai-card-title">Peer-Reviewed Archives</h3>
               <p class="gqai-card-body">Interactive reproductions of landmark publications including random circuit sampling, topological surface codes distance-5, and Hartree-Fock molecular electronic simulations.</p>
-              <a href="#research" class="gqai-card-link">Browse Research Papers →</a>
+              <a href="#research" class="gqai-card-link" onclick="window.switchTab('research')">Browse Research Papers →</a>
             </div>
           </div>
         </div>

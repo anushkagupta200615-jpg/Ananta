@@ -740,11 +740,69 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 150);
   };
 
-  // Keyboard shortcut: '/' opens DevSite / Knowledge Engine Search
-  window.addEventListener('keydown', (e) => {
-    if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
-      e.preventDefault();
-      window.focusKnowledgeEngineSearch();
+  // Google Quantum AI Smooth Section Scrolling
+  window.scrollToSection = function(sectionId) {
+    switchView('overview');
+    setTimeout(() => {
+      const target = document.getElementById(sectionId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 120);
+  };
+
+  // 6-Milestone Interactive Roadmap Selection
+  window.selectMilestone = function(idx) {
+    const cards = document.querySelectorAll('.roadmap-card');
+    cards.forEach(c => {
+      if (parseInt(c.dataset.milestone) === idx) {
+        c.classList.add('active');
+        c.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      } else {
+        c.classList.remove('active');
+      }
+    });
+
+    const nodes = document.querySelectorAll('.timeline-node');
+    nodes.forEach((n, i) => {
+      if (i + 1 === idx) {
+        n.classList.add('active');
+      } else {
+        n.classList.remove('active');
+      }
+    });
+
+    const progressBar = document.querySelector('.timeline-line-progress');
+    if (progressBar) {
+      const pct = Math.min(100, Math.max(0, ((idx - 1) / 5) * 100));
+      progressBar.style.width = pct + '%';
     }
+  };
+
+  // Wire click events on roadmap cards
+  document.querySelectorAll('.roadmap-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const mId = parseInt(card.dataset.milestone);
+      if (mId) window.selectMilestone(mId);
+    });
   });
+
+  // Interactive 3D Mouse Parallax for Floating Quantum Processor Chip
+  const chipScene = document.getElementById('chip-scene');
+  const chipCard = document.getElementById('chip-card');
+  if (chipScene && chipCard) {
+    chipScene.addEventListener('mousemove', (e) => {
+      const rect = chipScene.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      const rotX = 24 - (y / rect.height) * 28;
+      const rotY = -18 + (x / rect.width) * 28;
+      chipCard.style.animation = 'none';
+      chipCard.style.transform = `perspective(900px) rotateX(${rotX.toFixed(1)}deg) rotateY(${rotY.toFixed(1)}deg) rotateZ(12deg)`;
+    });
+
+    chipScene.addEventListener('mouseleave', () => {
+      chipCard.style.animation = 'floatQuantumChip 7s ease-in-out infinite alternate';
+    });
+  }
 });
