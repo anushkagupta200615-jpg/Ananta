@@ -37,6 +37,14 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Hadamard Rotation",
+        "text": "Hadamard gate applied to Qubit 0 rotates the statevector from the north pole |0> to the equator |+> = (|0> + |1>)/sqrt(2). Probability is evenly split at 50% for |000> and 50% for |100>."
+      }
     ]
   },
   {
@@ -77,6 +85,14 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Bit Flip",
+        "text": "Pauli-X applies a 180-degree rotation around the X-axis, inverting the ground state |0> to excited state |1>."
+      }
     ]
   },
   {
@@ -117,6 +133,14 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Y-Axis Rotation",
+        "text": "Pauli-Y introduces an imaginary phase component: |0> maps to i|1>."
+      }
     ]
   },
   {
@@ -124,7 +148,7 @@ const ALGORITHM_CATALOG = [
     "category": "Foundational",
     "title": "Pauli-Z (Phase Flip)",
     "subtitle": "Z Gate",
-    "desc": "Applies a 180 degree phase flip. |0> stays unchanged but |1> acquires a minus sign. Invisible in the computational basis but crucial for interference.",
+    "desc": "Applies a 180 degree phase flip. |0> stays unchanged but |1> acquires a minus sign. Invisible in computational basis but crucial for interference.",
     "realWorld": "Phase kickback mechanism used in Grover search and Quantum Fourier Transform.",
     "math": "|0> to |0>,  |1> to -|1>",
     "difficulty": "Beginner",
@@ -157,6 +181,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Create Superposition",
+        "text": "Hadamard creates the equal superposition state |+>."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Apply Phase Flip (Z)",
+        "text": "Pauli-Z flips the phase of |1> to negative, transforming |+> into |-> = (|0> - |1>)/sqrt(2). Observe the phase clock rotate 180 degrees!"
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Interference to |1>",
+        "text": "The second Hadamard creates destructive interference for |0> and constructive interference for |1>, demonstrating HZH = X!"
+      }
     ]
   },
   {
@@ -197,6 +241,20 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Hadamard Base",
+        "text": "Puts Qubit 0 into superposition."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Quarter Phase Shift (90 deg)",
+        "text": "S gate rotates the phase needle by 90 degrees along the equator. State is |0> + i|1>."
+      }
     ]
   },
   {
@@ -237,6 +295,20 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Superposition",
+        "text": "Create equal superposition on q0."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Magic Non-Clifford Rotation",
+        "text": "T gate applies a precise 45-degree (pi/4) phase angle. Look at the Phase Clock dial point at 45 degrees!"
+      }
     ]
   },
   {
@@ -277,6 +349,14 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Parallel Superposition",
+        "text": "Simultaneous Hadamard gates generate 2^3 = 8 quantum pathways simultaneously with equal 12.5% probabilities."
+      }
     ]
   },
   {
@@ -317,6 +397,20 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Step 1: Superposition on Control",
+        "text": "Hadamard on q0 creates (|0> + |1>)/sqrt(2). The combined state is (|00> + |10>)/sqrt(2)."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Step 2: CNOT Entangling Operation",
+        "text": "CNOT uses q0 as control and q1 as target. When q0 is |1>, q1 flips to |1>. The state collapses into the Bell pair (|00> + |11>)/sqrt(2). Look at the pulsing Entanglement Badge and the Density Matrix off-diagonal peaks!"
+      }
     ]
   },
   {
@@ -357,6 +451,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Bit Flip",
+        "text": "X gate sets q0 to |1>."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Superposition with Negative Phase",
+        "text": "Hadamard on |1> creates (|0> - |1>)/sqrt(2)."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "CNOT Entanglement",
+        "text": "CNOT entangles both wires into (|00> - |11>)/sqrt(2)."
+      }
     ]
   },
   {
@@ -397,6 +511,20 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Superposition + Bit Flip",
+        "text": "q0 is put into superposition while q1 is flipped to |1>."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Anti-Correlated Entanglement",
+        "text": "CNOT entangles the pair into (|01> + |10>)/sqrt(2). Measuring one qubit always reveals the opposite value for the other!"
+      }
     ]
   },
   {
@@ -437,6 +565,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Initialize States",
+        "text": "q0 enters superposition, q1 is set to |1>."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Phase Inversion",
+        "text": "Pauli-Z inverts relative phase."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Singlet State Synthesis",
+        "text": "CNOT binds qubits into the famous Singlet state (|01> - |10>)/sqrt(2)."
+      }
     ]
   },
   {
@@ -478,6 +626,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Superposition on Qubit 0",
+        "text": "q0 enters equal superposition |+>."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "First CNOT (q0 to q1)",
+        "text": "Creates Bell pair on wires q0 and q1: (|000> + |110>)/sqrt(2)."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Second CNOT (q1 to q2)",
+        "text": "Cascades entanglement to q2, creating the 3-qubit GHZ state (|000> + |111>)/sqrt(2). Measuring any single qubit now collapses all three!"
+      }
     ]
   },
   {
@@ -519,6 +687,38 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Equal Superposition",
+        "text": "Hadamard layer puts database into uniform superposition (25% probability for each of the 4 states)."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Oracle Phase Marking",
+        "text": "The oracle marks the target state |11> by flipping its quantum phase to -180 degrees (notice the phase clock for |11> rotates to red!)."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Basis Change",
+        "text": "Hadamard gates transform the phase difference into computational amplitude differences."
+      },
+      {
+        "step": 4,
+        "col": 3,
+        "title": "Inversion About Mean (X)",
+        "text": "Pauli-X reflection gates prepare the amplitude inversion."
+      },
+      {
+        "step": 5,
+        "col": 4,
+        "title": "Constructive Wave Amplification",
+        "text": "Final Hadamard layer causes destructive interference on all wrong states, amplifying the target |11> to 100%!"
+      }
     ]
   },
   {
@@ -559,6 +759,32 @@ const ALGORITHM_CATALOG = [
         "CX_TGT",
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Superposition on 8 items",
+        "text": "Hadamards prepare all 8 states with 12.5% each."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Phase Oracle",
+        "text": "Phase gates mark the target item."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Diffusion Transform",
+        "text": "Hadamard layers invert amplitudes about the mean."
+      },
+      {
+        "step": 4,
+        "col": 3,
+        "title": "Multi-Qubit Amplification",
+        "text": "Controlled gates amplify target state |111> probability."
+      }
     ]
   },
   {
@@ -599,6 +825,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Ansatz Superposition",
+        "text": "Prepares trial subspace amplitudes."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Subspace Oracle",
+        "text": "Marks good subspace solutions."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Diffusion Reflection",
+        "text": "Amplifies target amplitudes."
+      }
     ]
   },
   {
@@ -639,6 +885,32 @@ const ALGORITHM_CATALOG = [
         "X",
         "Z"
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Shared EPR Pair Creation",
+        "text": "Entangled Bell pair shared between Alice (q1) and Bob (q2)."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Alice's Bell Measurement",
+        "text": "Alice entangles the unknown state q0 with her half of the Bell pair q1."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Measurement Collapse",
+        "text": "Alice measures both qubits into classical bits, destroying the quantum state in her laboratory."
+      },
+      {
+        "step": 4,
+        "col": 4,
+        "title": "Bob's Classical Correction",
+        "text": "Bob applies X and Z conditional rotations based on Alice's classical bits to perfectly reconstruct the original state on q2!"
+      }
     ]
   },
   {
@@ -679,6 +951,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Bell Pair Sharing",
+        "text": "Alice and Bob share an entangled Bell pair."
+      },
+      {
+        "step": 2,
+        "col": 2,
+        "title": "Alice Encodes 2 Bits",
+        "text": "Alice applies Z and X gates to encode 2 classical bits into her single qubit."
+      },
+      {
+        "step": 3,
+        "col": 4,
+        "title": "Bob Decodes with Bell Measurement",
+        "text": "Bob receives Alice's single qubit and performs a Bell measurement to recover both classical bits."
+      }
     ]
   },
   {
@@ -719,6 +1011,14 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Random Basis Selection",
+        "text": "Alice encodes key bits randomly in Z or X basis using Hadamard gates."
+      }
     ]
   },
   {
@@ -759,6 +1059,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Initialization & Superposition",
+        "text": "Query qubit set to |+>, answer qubit set to |-> for phase kickback."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Oracle Query",
+        "text": "Evaluates balanced function f(x) in a single parallel query."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Interference Reading",
+        "text": "Second Hadamard converts phase information: outcome is NOT |00>, certifying the function is balanced!"
+      }
     ]
   },
   {
@@ -799,6 +1119,20 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Superposition",
+        "text": "Qubits enter superposition."
+      },
+      {
+        "step": 2,
+        "col": 2,
+        "title": "Deterministic Zero Outcome",
+        "text": "Because oracle is constant (no phase flips), Hadamards reconstruct |00> with 100% certainty."
+      }
     ]
   },
   {
@@ -839,6 +1173,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Superposition of All Queries",
+        "text": "Evaluates all 2^n inputs simultaneously."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Oracle Inner Product",
+        "text": "Encodes hidden bitstring s into quantum phases via CNOT gates."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Instant Reading of s",
+        "text": "Hadamard layer reads out the entire hidden bitstring s in a single measurement!"
+      }
     ]
   },
   {
@@ -880,6 +1234,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Query Superposition",
+        "text": "Parallel query across all inputs."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Periodic Function Evaluation",
+        "text": "Entangles input register with function output."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Orthogonal Period Measurement",
+        "text": "Measures vectors orthogonal to hidden period s."
+      }
     ]
   },
   {
@@ -921,6 +1295,32 @@ const ALGORITHM_CATALOG = [
         "CX_TGT",
         "H"
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Most Significant Qubit Hadamard",
+        "text": "Splits q0 into phase superposition."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Controlled Phase Rotation (S)",
+        "text": "Applies pi/2 controlled phase shift."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Fine Phase Rotation (T)",
+        "text": "Applies pi/4 controlled phase shift."
+      },
+      {
+        "step": 4,
+        "col": 4,
+        "title": "Butterfly Permutation",
+        "text": "Completes Fourier frequency decomposition across the register."
+      }
     ]
   },
   {
@@ -962,6 +1362,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Counting Register Superposition",
+        "text": "Prepares measurement precision registers."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Controlled Unitary Power",
+        "text": "Applies powers of unitary U to inject eigenphase into phases."
+      },
+      {
+        "step": 3,
+        "col": 3,
+        "title": "Inverse QFT",
+        "text": "Extracts the exact binary digits of the unknown phase phi!"
+      }
     ]
   },
   {
@@ -1003,6 +1423,26 @@ const ALGORITHM_CATALOG = [
         "CX_TGT",
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Hartree-Fock Initial State",
+        "text": "Prepares mean-field reference molecular state."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Entangling Layer",
+        "text": "Generates electronic correlation between orbitals."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Parameterized Rotations",
+        "text": "Applies parameterized angles theta optimized by classical computer to find ground state energy."
+      }
     ]
   },
   {
@@ -1043,6 +1483,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Superposition Input",
+        "text": "Logical qubit initialized in state alpha|0> + beta|1>."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "First Ancilla Entanglement",
+        "text": "CNOT copies parity to physical qubit 1."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Complete 3-Qubit Encoding",
+        "text": "Second CNOT encodes logical state across all 3 physical qubits: alpha|000> + beta|111>. Any single bit-flip error can now be identified by majority voting!"
+      }
     ]
   },
   {
@@ -1083,6 +1543,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Basis Change to X-Basis",
+        "text": "Hadamards rotate phase errors into bit flips."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Entanglement Protection",
+        "text": "Repetition code applied in the Hadamard basis."
+      },
+      {
+        "step": 3,
+        "col": 3,
+        "title": "Return to Z-Basis",
+        "text": "Final Hadamards decode back to computational basis with phase errors corrected."
+      }
     ]
   },
   {
@@ -1124,6 +1604,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Ancilla Superposition",
+        "text": "Ancilla placed in superposition to control swap operation."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Controlled Overlap Test",
+        "text": "Controlled operations compare quantum state vectors."
+      },
+      {
+        "step": 3,
+        "col": 2,
+        "title": "Interference Measurement",
+        "text": "Ancilla measurement probability directly yields state similarity |<psi|phi>|^2!"
+      }
     ]
   },
   {
@@ -1165,6 +1665,20 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Quantum Coin Flip",
+        "text": "Hadamard applies quantum coin toss into superposition."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Conditional Position Shift",
+        "text": "CNOT moves position walker based on coin state with coherent wave interference."
+      }
     ]
   },
   {
@@ -1206,6 +1720,26 @@ const ALGORITHM_CATALOG = [
         "CX_TGT",
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Equal Superposition Initialization",
+        "text": "All candidate graph partitions are explored in parallel."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Problem Hamiltonian Layer (Cost)",
+        "text": "Phase shifts apply penalties for uncut graph edges."
+      },
+      {
+        "step": 3,
+        "col": 3,
+        "title": "Mixer Hamiltonian Layer (Driver)",
+        "text": "Transverse field drives quantum tunneling across cut partitions."
+      }
     ]
   },
   {
@@ -1247,6 +1781,20 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Unknown Superposition State",
+        "text": "Source qubit enters superposition alpha|0> + beta|1>."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Attempted Copy via CNOT",
+        "text": "CNOT results in entangled state alpha|00> + beta|11>, NOT the cloned state (alpha|0>+beta|1>)(alpha|0>+beta|1>). Proves universal quantum cloning is impossible!"
+      }
     ]
   },
   {
@@ -1288,6 +1836,26 @@ const ALGORITHM_CATALOG = [
         null,
         null
       ]
+    ],
+    "tourSteps": [
+      {
+        "step": 1,
+        "col": 0,
+        "title": "Initial Superposition",
+        "text": "Photon path enters superposition."
+      },
+      {
+        "step": 2,
+        "col": 1,
+        "title": "Which-Way Marker Tagging",
+        "text": "Entanglement tags which-path information, destroying interference."
+      },
+      {
+        "step": 3,
+        "col": 4,
+        "title": "Erasing Which-Way Info",
+        "text": "Hadamard erases which-path knowledge, restoring quantum interference!"
+      }
     ]
   }
 ];
@@ -1299,13 +1867,15 @@ const ALGORITHM_CATALOG = [
 class AlgorithmLibrary {
   constructor() {
     this.currentCategory = 'All';
-    this.categories = ['All','Foundational','Entanglement','Search & Optimization','Communication','Oracle Algorithms','Phase Estimation & QFT','Quantum Error Correction','Advanced & NISQ'];
+    this.categories = ['All', 'Foundational', 'Entanglement', 'Search & Optimization', 'Communication', 'Oracle Algorithms', 'Phase Estimation & QFT', 'Quantum Error Correction', 'Advanced & NISQ'];
     this.difficultyColors = {
       'Beginner':     { text: '#10b981', bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.3)' },
       'Intermediate': { text: '#fbbf24', bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.3)' },
       'Advanced':     { text: '#f97316', bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.3)' },
-      'Expert':       { text: '#fa4d56', bg: 'rgba(250,77,86,0.10)', border: 'rgba(250,77,86,0.3)' },
+      'Expert':       { text: '#fa4d56', bg: 'rgba(250,77,86,0.10)', border: 'rgba(250,77,86,0.3)' }
     };
+    this.isRaceRunning = false;
+    this.raceTarget = 11;
     this.render();
   }
 
@@ -1314,9 +1884,15 @@ class AlgorithmLibrary {
     if (!container) return;
     container.innerHTML = '';
 
+    // 1. Classical vs Quantum Benchmark Race Card
+    const raceCard = this.buildRaceBenchmarkCard();
+    container.appendChild(raceCard);
+
+    // 2. Category Filter Bar
     const filterBar = document.createElement('div');
     filterBar.className = 'algo-filter-bar';
     filterBar.innerHTML = '<span class="algo-filter-label">Filter by Category:</span>';
+
     const grid = document.createElement('div');
     grid.className = 'algo-cards-grid';
     grid.id = 'algo-cards-grid';
@@ -1335,15 +1911,157 @@ class AlgorithmLibrary {
     });
     container.appendChild(filterBar);
 
+    // 3. Stats Bar
     const statsBar = document.createElement('div');
     statsBar.className = 'algo-stats-bar';
     statsBar.innerHTML =
       '<div class="algo-stat"><span class="algo-stat-num">' + ALGORITHM_CATALOG.length + '</span><span class="algo-stat-lbl">Total Algorithms</span></div>' +
       '<div class="algo-stat"><span class="algo-stat-num">' + (this.categories.length - 1) + '</span><span class="algo-stat-lbl">Categories</span></div>' +
-      '<div class="algo-stat"><span class="algo-stat-num">100%</span><span class="algo-stat-lbl">Simulator Ready</span></div>';
+      '<div class="algo-stat"><span class="algo-stat-num">100%</span><span class="algo-stat-lbl">Interactive Tours Included</span></div>';
     container.appendChild(statsBar);
+
     container.appendChild(grid);
     this.renderCards(grid);
+    this.bindRaceEvents();
+  }
+
+  buildRaceBenchmarkCard() {
+    const card = document.createElement('div');
+    card.className = 'quantum-race-card';
+    card.innerHTML = `
+      <div class="race-header">
+        <div class="race-title-group">
+          <span class="race-badge">⚡ Quantum Speedup Benchmark</span>
+          <h3>Classical vs Quantum Search Race</h3>
+          <p>Unsorted database of N = 16 items. Watch classical linear search O(N) struggle against Grover's quantum wave search O(√N).</p>
+        </div>
+        <button id="btn-start-race" class="btn-start-race">Start Benchmark Race 🏁</button>
+      </div>
+
+      <div class="race-tracks-grid">
+        <!-- Classical Track -->
+        <div class="race-track-box">
+          <div class="track-header">
+            <span class="track-tag classical">Classical CPU: O(N)</span>
+            <span id="classical-counter" class="track-counter">Step: 0 / 16 (0 queries)</span>
+          </div>
+          <div class="track-bar-bg">
+            <div id="classical-bar-fill" class="track-bar-fill classical" style="width: 0%;"></div>
+          </div>
+          <div class="track-items-row" id="classical-items-row">
+            ${Array.from({length: 16}, (_, i) => `<span class="db-item-chip" id="c-item-${i}">#${i}</span>`).join('')}
+          </div>
+        </div>
+
+        <!-- Quantum Track -->
+        <div class="race-track-box">
+          <div class="track-header">
+            <span class="track-tag quantum">Quantum QPU (Grover): O(√N)</span>
+            <span id="quantum-counter" class="track-counter">Iteration: 0 / 3 (Target locked)</span>
+          </div>
+          <div class="track-bar-bg">
+            <div id="quantum-bar-fill" class="track-bar-fill quantum" style="width: 0%;"></div>
+          </div>
+          <div class="track-items-row" id="quantum-items-row">
+            ${Array.from({length: 16}, (_, i) => `<span class="db-item-chip quantum" id="q-item-${i}">#${i}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div id="race-verdict" class="race-verdict-box" style="display: none;">
+        <strong>🚀 Quantum Victory:</strong> Grover's search amplified target #11 in <strong>3 quantum queries</strong>, while classical search needed <strong>12 queries</strong> (4x faster)!
+      </div>
+    `;
+    return card;
+  }
+
+  bindRaceEvents() {
+    const btn = document.getElementById('btn-start-race');
+    if (!btn) return;
+    btn.addEventListener('click', () => this.runRace());
+  }
+
+  runRace() {
+    if (this.isRaceRunning) return;
+    this.isRaceRunning = true;
+    const btn = document.getElementById('btn-start-race');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Racing...';
+    }
+
+    const verdict = document.getElementById('race-verdict');
+    if (verdict) verdict.style.display = 'none';
+
+    // Reset items
+    for (let i = 0; i < 16; i++) {
+      const c = document.getElementById(`c-item-${i}`);
+      const q = document.getElementById(`q-item-${i}`);
+      if (c) c.className = 'db-item-chip';
+      if (q) q.className = 'db-item-chip quantum';
+    }
+
+    const cFill = document.getElementById('classical-bar-fill');
+    const qFill = document.getElementById('quantum-bar-fill');
+    const cCount = document.getElementById('classical-counter');
+    const qCount = document.getElementById('quantum-counter');
+
+    let cStep = 0;
+    const target = 11;
+
+    // Quantum Grover runs in 3 steps
+    setTimeout(() => {
+      if (qCount) qCount.textContent = 'Iteration 1/3: Hadamard Superposition across all 16 items';
+      if (qFill) qFill.style.width = '33%';
+      for (let i = 0; i < 16; i++) {
+        const el = document.getElementById(`q-item-${i}`);
+        if (el) el.classList.add('q-superposed');
+      }
+    }, 400);
+
+    setTimeout(() => {
+      if (qCount) qCount.textContent = 'Iteration 2/3: Oracle phase mark on target #11';
+      if (qFill) qFill.style.width = '66%';
+      const el = document.getElementById(`q-item-${target}`);
+      if (el) el.classList.add('q-marked');
+    }, 1100);
+
+    setTimeout(() => {
+      if (qCount) qCount.textContent = 'Iteration 3/3: Wave Interference Amplification complete (96% probability!)';
+      if (qFill) qFill.style.width = '100%';
+      const el = document.getElementById(`q-item-${target}`);
+      if (el) el.classList.add('q-found');
+    }, 1800);
+
+    // Classical sequential search steps
+    const cInterval = setInterval(() => {
+      if (cStep <= target) {
+        const prev = document.getElementById(`c-item-${cStep - 1}`);
+        if (prev) prev.classList.remove('checking');
+        const cur = document.getElementById(`c-item-${cStep}`);
+        if (cur) cur.classList.add('checking');
+
+        cStep++;
+        const pct = (cStep / 16) * 100;
+        if (cFill) cFill.style.width = `${pct}%`;
+        if (cCount) cCount.textContent = `Checking box #${cStep - 1}... (query ${cStep})`;
+
+        if (cStep > target) {
+          clearInterval(cInterval);
+          if (cur) cur.classList.add('found');
+          if (cCount) cCount.textContent = `Found target #${target} after ${target + 1} queries!`;
+          this.isRaceRunning = false;
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Re-Run Benchmark Race 🏁';
+          }
+          if (verdict) {
+            verdict.style.display = 'block';
+            verdict.innerHTML = `<strong>🚀 Quantum Advantage Demonstrated:</strong> Grover's quantum wave search amplified target #${target} in <strong>3 queries</strong>, while classical CPU required <strong>${target + 1} queries</strong> (~${((target + 1)/3).toFixed(1)}x speedup)!`;
+          }
+        }
+      }
+    }, 280);
   }
 
   renderCards(grid) {
@@ -1374,20 +2092,29 @@ class AlgorithmLibrary {
         '<div class="algo-circuit-preview"><div class="circuit-preview-label">Circuit Preview</div>' + this.buildMiniCircuit(algo.grid) + '</div>' +
         '<div class="algo-card-actions">' +
           '<div class="algo-tags-row">' + algo.tags.map(t => '<span class="algo-tag">' + t + '</span>').join('') + '</div>' +
-          '<button class="btn-run-in-sim">&#9654; Run in Simulator</button>' +
+          '<div class="algo-btn-group">' +
+            '<button class="btn-tour-algo" data-algo-id="' + algo.id + '">🎓 Guided Tour</button>' +
+            '<button class="btn-run-in-sim" data-algo-id="' + algo.id + '">▶ Run in Simulator</button>' +
+          '</div>' +
         '</div>';
 
       card.querySelector('.btn-run-in-sim').addEventListener('click', (e) => {
         e.stopPropagation();
-        this.loadIntoSimulator(algo);
+        this.loadIntoSimulator(algo, false);
       });
+
+      card.querySelector('.btn-tour-algo').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.loadIntoSimulator(algo, true);
+      });
+
       grid.appendChild(card);
     });
   }
 
   buildMiniCircuit(grid) {
-    const gc = { H:'#0f62fe',X:'#10b981',Y:'#8b5cf6',Z:'#ea580c',S:'#0891b2',T:'#06b6d4',M:'#f97316',CX_CTRL:'#00f0ff',CX_TGT:'#00f0ff' };
-    const gl = { H:'H', X:'X', Y:'Y', Z:'Z', S:'S', T:'T', M:'M', CX_CTRL:'ctrl', CX_TGT:'tgt' };
+    const gc = { H:'#0f62fe', X:'#10b981', Y:'#8b5cf6', Z:'#ea580c', S:'#0891b2', T:'#06b6d4', M:'#f97316', CX_CTRL:'#00f0ff', CX_TGT:'#00f0ff' };
+    const gl = { H:'H', X:'X', Y:'Y', Z:'Z', S:'S', T:'T', M:'M', CX_CTRL:'●', CX_TGT:'⊕' };
     let html = '<div class="mini-circuit-grid">';
     grid.forEach((row, r) => {
       html += '<div class="mini-circuit-row"><span class="mini-wire-label">q' + r + '</span><div class="mini-wire-line">';
@@ -1404,7 +2131,7 @@ class AlgorithmLibrary {
     return html + '</div>';
   }
 
-  loadIntoSimulator(algo) {
+  loadIntoSimulator(algo, startTour = false) {
     if (!window.circuitUI) return;
     if (window.circuitUI.loadCircuit) {
       window.circuitUI.loadCircuit(algo.grid);
@@ -1413,6 +2140,11 @@ class AlgorithmLibrary {
       if (window.circuitUI.renderGrid) window.circuitUI.renderGrid();
       if (window.circuitUI.updateSimulation) window.circuitUI.updateSimulation();
     }
+
+    if (startTour && window.circuitUI.startAlgorithmTour) {
+      window.circuitUI.startAlgorithmTour(algo);
+    }
+
     const simTab = document.querySelector('[data-tab="simulator"]');
     if (simTab) simTab.click();
     this.showLoadBanner(algo.title, algo.math);
@@ -1424,7 +2156,7 @@ class AlgorithmLibrary {
     const b = document.createElement('div');
     b.id = 'algo-load-banner';
     b.className = 'algo-load-banner';
-    b.innerHTML = '<div class="banner-icon">&#128300;</div><div class="banner-text"><strong>' + title + '</strong><code>' + math + '</code></div>';
+    b.innerHTML = '<div class="banner-icon">🔬</div><div class="banner-text"><strong>' + title + '</strong><code>' + math + '</code></div>';
     document.body.appendChild(b);
     setTimeout(() => b.classList.add('banner-show'), 20);
     setTimeout(() => { b.classList.remove('banner-show'); setTimeout(() => b.remove(), 400); }, 4000);
@@ -1437,71 +2169,12 @@ class AlgorithmLibrary {
 class MissionManager {
   constructor() {
     this.missions = [
-      {
-        id: 1,
-        title: 'Mission 1: The Quantum Coin Flip',
-        desc: 'Put Qubit 0 into equal superposition using a Hadamard (H) gate.',
-        hint: "Drag the 'H' gate from the palette onto Qubit 0, column 1.",
-        check: (grid, probs) => grid[0].some(g => g === 'H') && probs.filter(p => p.probability > 0.4).length >= 2,
-        completed: false
-      },
-      {
-        id: 2,
-        title: 'Mission 2: Spooky Entanglement',
-        desc: 'Create a Bell pair (|Phi+>) using H on Qubit 0 and CNOT across Qubits 0 and 1.',
-        hint: "H on q[0], then CX with q[0] as control and q[1] as target.",
-        check: (grid, probs) => {
-          const hasH = grid[0].some(g => g === 'H');
-          const hasCX = grid[0].some((g, c) => g === 'CX_CTRL' && grid[1][c] === 'CX_TGT');
-          const p00 = probs.find(p => p.state === '|000\u27e9')?.probability || 0;
-          return hasH && hasCX && p00 > 0.4;
-        },
-        completed: false
-      },
-      {
-        id: 3,
-        title: 'Mission 3: The Quantum NOT Gate',
-        desc: 'Flip Qubit 0 from state |0> to state |1> using a Pauli-X gate.',
-        hint: "Drag the 'X' gate onto Qubit 0.",
-        check: (grid, probs) => {
-          const hasX = grid[0].some(g => g === 'X');
-          const p1 = probs.find(p => p.state.startsWith('|1'))?.probability || 0;
-          return hasX && p1 > 0.9;
-        },
-        completed: false
-      },
-      {
-        id: 4,
-        title: 'Mission 4: Interference Cancellation',
-        desc: 'Demonstrate that H is its own inverse by applying H twice on Qubit 0 to return to |0>.',
-        hint: "Place 'H' in column 1 and another 'H' in column 2 on Qubit 0.",
-        check: (grid, probs) => {
-          const hCount = grid[0].filter(g => g === 'H').length;
-          const p0 = probs.find(p => p.state === '|000\u27e9')?.probability || 0;
-          return hCount >= 2 && p0 > 0.9;
-        },
-        completed: false
-      },
-      {
-        id: 5,
-        title: 'Mission 5: GHZ Tri-Entanglement',
-        desc: 'Entangle all 3 qubits into a GHZ state using H and two CNOT gates.',
-        hint: "H on q[0], CX from q[0] to q[1], then CX from q[1] to q[2].",
-        check: (grid, probs) => {
-          const p000 = probs.find(p => p.state === '|000\u27e9')?.probability || 0;
-          const p111 = probs.find(p => p.state === '|111\u27e9')?.probability || 0;
-          return p000 > 0.4 && p111 > 0.4;
-        },
-        completed: false
-      },
-      {
-        id: 6,
-        title: 'Mission 6: Phase Alchemist',
-        desc: 'Use T or S gates to add a complex phase without changing state probabilities.',
-        hint: "Place H then S or T on any qubit and watch the phase clocks rotate.",
-        check: (grid) => grid.some(row => row.some(g => g === 'T' || g === 'S')),
-        completed: false
-      }
+      { id: 1, title: 'Mission 1: The Quantum Coin Flip', desc: 'Put Qubit 0 into equal superposition using a Hadamard (H) gate.', hint: "Drag the 'H' gate from the palette onto Qubit 0, column 1.", check: (grid, probs) => grid[0].some(g => g === 'H') && probs.filter(p => p.probability > 0.4).length >= 2, completed: false },
+      { id: 2, title: 'Mission 2: Spooky Entanglement', desc: 'Create a Bell pair (|Phi+>) using H on Qubit 0 and CNOT across Qubits 0 and 1.', hint: "H on q[0], then CX with q[0] as control and q[1] as target.", check: (grid, probs) => { const hasH = grid[0].some(g => g === 'H'); const hasCX = grid[0].some((g, c) => g === 'CX_CTRL' && grid[1][c] === 'CX_TGT'); const p00 = probs.find(p => p.state === '|000⟩')?.probability || 0; return hasH && hasCX && p00 > 0.4; }, completed: false },
+      { id: 3, title: 'Mission 3: The Quantum NOT Gate', desc: 'Flip Qubit 0 from state |0> to state |1> using a Pauli-X gate.', hint: "Drag the 'X' gate onto Qubit 0.", check: (grid, probs) => { const hasX = grid[0].some(g => g === 'X'); const p1 = probs.find(p => p.state.startsWith('|1'))?.probability || 0; return hasX && p1 > 0.9; }, completed: false },
+      { id: 4, title: 'Mission 4: Interference Cancellation', desc: 'Demonstrate that H is its own inverse by applying H twice on Qubit 0 to return to |0>.', hint: "Place 'H' in column 1 and another 'H' in column 2 on Qubit 0.", check: (grid, probs) => { const hCount = grid[0].filter(g => g === 'H').length; const p0 = probs.find(p => p.state === '|000⟩')?.probability || 0; return hCount >= 2 && p0 > 0.9; }, completed: false },
+      { id: 5, title: 'Mission 5: GHZ Tri-Entanglement', desc: 'Entangle all 3 qubits into a GHZ state using H and two CNOT gates.', hint: "H on q[0], CX from q[0] to q[1], then CX from q[1] to q[2].", check: (grid, probs) => { const p000 = probs.find(p => p.state === '|000⟩')?.probability || 0; const p111 = probs.find(p => p.state === '|111⟩')?.probability || 0; return p000 > 0.4 && p111 > 0.4; }, completed: false },
+      { id: 6, title: 'Mission 6: Phase Alchemist', desc: 'Use T or S gates to add a complex phase without changing state probabilities.', hint: "Place H then S or T on any qubit and watch the phase clocks rotate.", check: (grid) => grid.some(row => row.some(g => g === 'T' || g === 'S')), completed: false }
     ];
     this.activeMission = 0;
     this.renderMissions();
@@ -1514,14 +2187,7 @@ class MissionManager {
     this.missions.forEach((m, idx) => {
       const card = document.createElement('div');
       card.className = 'mission-card' + (m.completed ? ' mission-completed' : '') + (idx === this.activeMission ? ' mission-active' : '');
-      card.innerHTML =
-        '<div class="mission-header">' +
-          '<span class="mission-status-icon">' + (m.completed ? '\u2713' : idx + 1) + '</span>' +
-          '<h4 class="mission-title">' + m.title + '</h4>' +
-        '</div>' +
-        '<p class="mission-desc">' + m.desc + '</p>' +
-        '<div class="mission-hint"><strong>Hint:</strong> ' + m.hint + '</div>' +
-        '<button class="btn-load-mission">' + (m.completed ? 'Solved (Retry)' : 'Attempt Mission \u2192') + '</button>';
+      card.innerHTML = '<div class="mission-header"><span class="mission-status-icon">' + (m.completed ? '✓' : idx + 1) + '</span><h4 class="mission-title">' + m.title + '</h4></div><p class="mission-desc">' + m.desc + '</p><div class="mission-hint"><strong>Hint:</strong> ' + m.hint + '</div><button class="btn-load-mission">' + (m.completed ? 'Solved (Retry)' : 'Attempt Mission →') + '</button>';
       card.querySelector('.btn-load-mission').addEventListener('click', () => {
         this.activeMission = idx;
         if (window.circuitUI) {
@@ -1548,7 +2214,7 @@ class MissionManager {
   showSuccessNotification(title) {
     const t = document.createElement('div');
     t.className = 'mission-toast';
-    t.innerHTML = '<div class="toast-icon">\ud83c\udfc6</div><div><strong>Mission Completed!</strong><div>' + title + '</div></div>';
+    t.innerHTML = '<div class="toast-icon">🏆</div><div><strong>Mission Completed!</strong><div>' + title + '</div></div>';
     document.body.appendChild(t);
     setTimeout(() => { t.classList.add('toast-fade'); setTimeout(() => t.remove(), 600); }, 3000);
   }

@@ -360,6 +360,26 @@
 
           <!-- Right: Clean White Circuit Canvas -->
           <div class="circuit-canvas-white">
+            <!-- Guided Algorithm Tour Banner -->
+            <div id="guided-algo-tour-bar" class="guided-algo-tour-bar" style="display: none;">
+              <div class="tour-header-row">
+                <div class="tour-meta">
+                  <span class="tour-badge">🎓 Guided Algorithm Tour</span>
+                  <strong id="tour-algo-title" class="tour-algo-title">Algorithm Walkthrough</strong>
+                  <span id="tour-step-badge" class="tour-step-badge">Step 1 of 2</span>
+                </div>
+                <div class="tour-nav-actions">
+                  <button id="btn-tour-prev" class="tour-nav-btn">◀ Previous</button>
+                  <button id="btn-tour-next" class="tour-nav-btn tour-primary">Next Step ▶</button>
+                  <button id="btn-tour-auto" class="tour-nav-btn">Auto-Play ⏩</button>
+                  <button id="btn-tour-exit" class="tour-exit-btn" title="Close Tour">✕</button>
+                </div>
+              </div>
+              <p id="tour-explanation-text" class="tour-explanation-text">
+                Follow the highlighted column to observe state evolution step by step.
+              </p>
+            </div>
+
             <!-- Stepper Playback Toolbar ("Quantum Time Machine") -->
             <div class="circuit-stepper-bar">
               <div class="stepper-controls-group">
@@ -398,7 +418,12 @@
             <span class="dirac-hud-tag">Live Statevector |ψ⟩</span>
             <code id="dirac-math-hud" class="dirac-math-code">|ψ⟩ = 1.00 |000⟩</code>
           </div>
-          <span class="dirac-hud-hint">Normalized superposition across 8 computational basis states</span>
+          <div class="dirac-hud-right">
+            <button id="btn-toggle-quantum-audio" class="btn-audio-harmony" title="Synthesize quantum state into harmonic soundscape">
+              <span id="audio-btn-icon">🔊</span> Listen to State
+            </button>
+            <span class="dirac-hud-hint">Normalized superposition across 8 computational basis states</span>
+          </div>
         </div>
 
         <!-- Lower Visualizer Grid: State Probabilities, 3D Bloch Sphere, Physical Shots & Export -->
@@ -430,14 +455,34 @@
           <div class="vis-dock-card">
             <div class="vis-dock-header">
               <h4>3D Statevector Sphere</h4>
-              <select id="bloch-qubit-select" class="qubit-dropdown">
-                <option value="0">q[0]</option>
-                <option value="1">q[1]</option>
-                <option value="2">q[2]</option>
-              </select>
+              <div class="bloch-control-actions">
+                <div class="bloch-quick-pills">
+                  <button class="bloch-pill-btn active" data-qubit="0">q[0]</button>
+                  <button class="bloch-pill-btn" data-qubit="1">q[1]</button>
+                  <button class="bloch-pill-btn" data-qubit="2">q[2]</button>
+                </div>
+                <select id="bloch-qubit-select" class="qubit-dropdown" style="display:none;">
+                  <option value="0">q[0]</option>
+                  <option value="1">q[1]</option>
+                  <option value="2">q[2]</option>
+                </select>
+              </div>
             </div>
             <div class="bloch-canvas-container" id="bloch-sphere-canvas"></div>
             <div class="bloch-coords-badge" id="bloch-coords"></div>
+          </div>
+
+          <!-- Quantum Density Matrix (rho = |psi><psi|) Heatmap -->
+          <div class="vis-dock-card density-matrix-card">
+            <div class="vis-dock-header">
+              <h4>Density Matrix (ρ = |ψ⟩⟨ψ|)</h4>
+              <span id="density-entropy-badge" class="vis-dock-sub">Entropy S = 0.00</span>
+            </div>
+            <div id="density-matrix-container" class="density-matrix-grid-box"></div>
+            <div class="density-matrix-legend">
+              <span class="legend-item"><span class="legend-dot dot-pop"></span> Diagonal: Population |cᵢ|²</span>
+              <span class="legend-item"><span class="legend-dot dot-coh"></span> Off-Diagonal: Coherence</span>
+            </div>
           </div>
 
           <!-- Cloud Export Block -->
@@ -1047,6 +1092,7 @@
 
   <!-- Script Pipeline -->
   <script src="js/quantum-engine.js"></script>
+  <script src="js/quantum-audio.js"></script>
   <script src="js/bloch-sphere.js"></script>
   <script src="js/circuit-ui.js"></script>
   <script src="js/ai-tutor.js"></script>

@@ -22,10 +22,22 @@ class CircuitUI {
     this.isPlaying = false;
     this.playInterval = null;
 
+    // Guided Algorithm Tour Controller
+    this.currentTour = null;
+    this.tourStep = 0;
+    this.isTourAutoPlaying = false;
+    this.tourAutoTimer = null;
+
+    // Quantum Audio Synthesizer
+    this.audio = window.QuantumAudioSynthesizer ? new window.QuantumAudioSynthesizer() : null;
+
     this.initDOM();
     this.bindEvents();
     this.bindStepperEvents();
     this.bindMeasurementEvents();
+    this.bindTourEvents();
+    this.bindAudioEvents();
+    this.bindBlochPillEvents();
     this.updateSimulation();
   }
 
@@ -38,6 +50,9 @@ class CircuitUI {
     this.qiskitCodeBlock = document.getElementById('qiskit-code');
     this.qasmCodeBlock = document.getElementById('qasm-code');
     this.diracHud = document.getElementById('dirac-math-hud');
+    this.densityContainer = document.getElementById('density-matrix-container');
+    this.densityEntropyBadge = document.getElementById('density-entropy-badge');
+    this.tourBar = document.getElementById('guided-algo-tour-bar');
 
     this.renderGrid();
   }
@@ -326,6 +341,19 @@ class CircuitUI {
       window.hwStudio.checkSkillUnlocks();
     }
 
+    // Render Quantum Density Matrix Heatmap
+    this.renderDensityMatrix();
+
+    // Play Quantum State Harmony Audio if enabled
+    if (this.audio && this.audio.isEnabled) {
+      this.audio.playStatevectorChord(probs);
+    }
+
+    // Update Guided Algorithm Tour banner
+    if (this.currentTour) {
+      this.updateTourBanner();
+    }
+
     this.updateStepperDisplay();
   }
 
@@ -442,6 +470,11 @@ class CircuitUI {
       return;
     }
 
+    // Play crisp measurement detector collapse sound
+    if (this.audio && this.audio.isEnabled && activeResults[0]) {
+      this.audio.playMeasurementClick(activeResults[0].state);
+    }
+
     activeResults.forEach(item => {
       const row = document.createElement('div');
       row.className = 'shot-result-row';
@@ -514,6 +547,253 @@ class CircuitUI {
         setTimeout(() => copyQasmBtn.textContent = 'Copy QASM', 2000);
       });
     }
+  }
+
+  // =========================================================================
+  // QUANTUM DENSITY MATRIX (ρ = |ψ⟩⟨ψ|) HEATMAP
+  // =========================================================================
+  renderDensityMatrix() {
+    if (!this.densityContainer) return;
+    const matrix = this.engine.getDensityMatrix();
+    const entropy = this.engine.getEntanglementEntropy();
+
+    if (this.densityEntropyBadge) {
+      this.densityEntropyBadge.textContent = `Entropy S = ${entropy.toFixed(2)}`;
+      if (entropy > 0.05) {
+        this.densityEntropyBadge.style.color = '#00f0ff';
+      } else {
+        this.densityEntropyBadge.style.color = 'var(--text-dim)';
+      }
+    }
+
+    this.densityContainer.innerHTML = '';
+    const table = document.createElement('div');
+    table.className = 'density-matrix-table';
+
+    for (let r = 0; r < 8; r++) {
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'density-matrix-row';
+
+      for (let c = 0; c < 8; c++) {
+        const cell = matrix[r][c];
+        const cellDiv = document.createElement('div');
+        cellDiv.className = 'density-cell' + (cell.isDiagonal ? ' diag-cell' : '');
+
+        // Color intensity based on magnitude
+        const mag = cell.mag;
+        if (mag > 0.005) {
+          if (cell.isDiagonal) {
+            cellDiv.style.background = `rgba(15, 98, 254, ${Math.min(1, mag * 1.1)})`;
+          } else {
+            cellDiv.style.background = `rgba(0, 240, 255, ${Math.min(0.9, mag * 0.95)})`;
+          }
+        } else {
+          cellDiv.style.background = 'transparent';
+        }
+
+        const stateR = `|${r.toString(2).padStart(3, '0')}⟩`;
+        const stateC = `⟨${c.toString(2).padStart(3, '0')}|`;
+        cellDiv.title = `ρ(${stateR}, ${stateC})\nRe: ${cell.re.toFixed(3)}\nIm: ${cell.im.toFixed(3)}\n|ρ|: ${cell.mag.toFixed(3)}`;
+
+        rowDiv.appendChild(cellDiv);
+      }
+      table.appendChild(rowDiv);
+    }
+    this.densityContainer.appendChild(table);
+  }
+
+  // =========================================================================
+  // BLOCH QUICK PILL BUTTONS
+  // =========================================================================
+  bindBlochPillEvents() {
+    const pills = document.querySelectorAll('.bloch-pill-btn');
+    pills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        pills.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        this.selectedQubitForBloch = parseInt(pill.dataset.qubit, 10);
+        if (this.qubitSelect) {
+          this.qubitSelect.value = this.selectedQubitForBloch.toString();
+        }
+        this.updateSimulation();
+      });
+    });
+  }
+
+  // =========================================================================
+  // QUANTUM AUDIO EVENTS
+  // =========================================================================
+  bindAudioEvents() {
+    const audioBtn = document.getElementById('btn-toggle-quantum-audio');
+    if (!audioBtn || !this.audio) return;
+
+    audioBtn.addEventListener('click', () => {
+      const isEnabled = this.audio.toggleAudio();
+      audioBtn.classList.toggle('audio-active', isEnabled);
+      const icon = document.getElementById('audio-btn-icon');
+      if (icon) icon.textContent = isEnabled ? '🔊' : '🔇';
+      audioBtn.title = isEnabled ? 'Quantum sound synthesis active (Click to mute)' : 'Click to hear quantum state harmony';
+
+      if (isEnabled) {
+        this.audio.playStatevectorChord(this.engine.getProbabilities());
+      }
+    });
+  }
+
+  // =========================================================================
+  // GUIDED ALGORITHM TOUR CONTROLLER
+  // =========================================================================
+  bindTourEvents() {
+    const btnNext = document.getElementById('btn-tour-next');
+    const btnPrev = document.getElementById('btn-tour-prev');
+    const btnExit = document.getElementById('btn-tour-exit');
+    const btnAuto = document.getElementById('btn-tour-auto');
+
+    if (btnNext) btnNext.addEventListener('click', () => this.nextTourStep());
+    if (btnPrev) btnPrev.addEventListener('click', () => this.prevTourStep());
+    if (btnExit) btnExit.addEventListener('click', () => this.exitTour());
+    if (btnAuto) {
+      btnAuto.addEventListener('click', () => {
+        if (this.isTourAutoPlaying) {
+          this.stopTourAutoPlay();
+        } else {
+          this.startTourAutoPlay();
+        }
+      });
+    }
+  }
+
+  startAlgorithmTour(algo) {
+    this.currentTour = algo;
+    this.tourStep = 0;
+    this.stopTourAutoPlay();
+
+    if (this.tourBar) {
+      this.tourBar.style.display = 'block';
+    }
+
+    // Seek playback to first step
+    this.playbackStep = 1;
+    this.renderGrid();
+    this.updateSimulation();
+    this.updateTourBanner();
+  }
+
+  updateTourBanner() {
+    if (!this.currentTour) return;
+    const titleEl = document.getElementById('tour-algo-title');
+    const badgeEl = document.getElementById('tour-step-badge');
+    const textEl = document.getElementById('tour-explanation-text');
+
+    const steps = this.currentTour.tourSteps || this.generateDefaultTourSteps(this.currentTour);
+    const total = steps.length;
+    const idx = Math.min(this.tourStep, total - 1);
+    const cur = steps[idx];
+
+    if (titleEl) titleEl.textContent = this.currentTour.title;
+    if (badgeEl) badgeEl.textContent = `Step ${idx + 1} of ${total}`;
+    if (textEl && cur) {
+      textEl.innerHTML = `<strong>${cur.title}:</strong> ${cur.text}`;
+    }
+  }
+
+  generateDefaultTourSteps(algo) {
+    // Generate intelligent tour steps based on gates in each column
+    const steps = [];
+    for (let c = 0; c < this.numCols; c++) {
+      const colGates = [];
+      for (let q = 0; q < this.numQubits; q++) {
+        const g = algo.grid[q][c];
+        if (g) colGates.push(`q${q}: ${g}`);
+      }
+      if (colGates.length > 0) {
+        steps.push({
+          step: c + 1,
+          col: c,
+          title: `Column ${c + 1} Evaluation`,
+          text: `Executing operations: ${colGates.join(', ')}. Observe the live Dirac math equation and phase clock dials adjusting to the new state.`
+        });
+      }
+    }
+    if (steps.length === 0) {
+      steps.push({ step: 1, col: 0, title: 'Ground State', text: 'All qubits initialized in |000⟩.' });
+    }
+    return steps;
+  }
+
+  nextTourStep() {
+    if (!this.currentTour) return;
+    const steps = this.currentTour.tourSteps || this.generateDefaultTourSteps(this.currentTour);
+    if (this.tourStep < steps.length - 1) {
+      this.tourStep++;
+      const cur = steps[this.tourStep];
+      this.playbackStep = cur.col !== undefined ? cur.col + 1 : this.tourStep + 1;
+      this.renderGrid();
+      this.updateSimulation();
+      this.updateTourBanner();
+    } else {
+      // Finished tour
+      this.stopTourAutoPlay();
+      this.playbackStep = -1; // Full circuit
+      this.renderGrid();
+      this.updateSimulation();
+      const badgeEl = document.getElementById('tour-step-badge');
+      if (badgeEl) badgeEl.textContent = 'Tour Complete ✓';
+    }
+  }
+
+  prevTourStep() {
+    if (!this.currentTour) return;
+    const steps = this.currentTour.tourSteps || this.generateDefaultTourSteps(this.currentTour);
+    if (this.tourStep > 0) {
+      this.tourStep--;
+      const cur = steps[this.tourStep];
+      this.playbackStep = cur.col !== undefined ? cur.col + 1 : this.tourStep + 1;
+      this.renderGrid();
+      this.updateSimulation();
+      this.updateTourBanner();
+    }
+  }
+
+  startTourAutoPlay() {
+    this.isTourAutoPlaying = true;
+    const btnAuto = document.getElementById('btn-tour-auto');
+    if (btnAuto) {
+      btnAuto.textContent = 'Pause ⏸';
+      btnAuto.classList.add('tour-playing');
+    }
+    this.tourAutoTimer = setInterval(() => {
+      const steps = this.currentTour.tourSteps || this.generateDefaultTourSteps(this.currentTour);
+      if (this.tourStep >= steps.length - 1) {
+        this.stopTourAutoPlay();
+      } else {
+        this.nextTourStep();
+      }
+    }, 2200);
+  }
+
+  stopTourAutoPlay() {
+    this.isTourAutoPlaying = false;
+    if (this.tourAutoTimer) {
+      clearInterval(this.tourAutoTimer);
+      this.tourAutoTimer = null;
+    }
+    const btnAuto = document.getElementById('btn-tour-auto');
+    if (btnAuto) {
+      btnAuto.textContent = 'Auto-Play ⏩';
+      btnAuto.classList.remove('tour-playing');
+    }
+  }
+
+  exitTour() {
+    this.stopTourAutoPlay();
+    this.currentTour = null;
+    if (this.tourBar) {
+      this.tourBar.style.display = 'none';
+    }
+    this.playbackStep = -1;
+    this.renderGrid();
+    this.updateSimulation();
   }
 }
 

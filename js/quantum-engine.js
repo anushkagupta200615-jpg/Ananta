@@ -212,6 +212,62 @@ class QuantumCircuitEngine {
     };
   }
 
+  // Compute 8x8 full density matrix rho = |psi><psi|
+  getDensityMatrix() {
+    const matrix = [];
+    for (let i = 0; i < this.numStates; i++) {
+      const row = [];
+      const ai = this.state[i];
+      for (let j = 0; j < this.numStates; j++) {
+        const aj = this.state[j];
+        // rho_ij = ai * aj* = (re_i + i*im_i)(re_j - i*im_j)
+        const re = ai.re * aj.re + ai.im * aj.im;
+        const im = ai.im * aj.re - ai.re * aj.im;
+        const mag = Math.sqrt(re * re + im * im);
+        row.push({
+          re: parseFloat(re.toFixed(4)),
+          im: parseFloat(im.toFixed(4)),
+          mag: parseFloat(mag.toFixed(4)),
+          isDiagonal: i === j
+        });
+      }
+      matrix.push(row);
+    }
+    return matrix;
+  }
+
+  // Calculate Von Neumann Entanglement Entropy for bipartite split q0 vs (q1, q2)
+  getEntanglementEntropy() {
+    // Reduced density matrix for qubit 0 (2x2 matrix)
+    let rho00 = 0, rho01_re = 0, rho01_im = 0, rho11 = 0;
+    for (let i = 0; i < this.numStates; i++) {
+      const bit0 = (i >> (this.numQubits - 1)) & 1;
+      const magSq = this.state[i].absSq();
+      if (bit0 === 0) {
+        rho00 += magSq;
+        // Off-diagonal with i ^ 4 (qubit 0 flipped)
+        const j = i ^ (1 << (this.numQubits - 1));
+        const ai = this.state[i];
+        const aj = this.state[j];
+        rho01_re += (ai.re * aj.re + ai.im * aj.im);
+        rho01_im += (ai.im * aj.re - ai.re * aj.im);
+      } else {
+        rho11 += magSq;
+      }
+    }
+    // Eigenvalues of 2x2 Hermitian matrix
+    const tr = rho00 + rho11;
+    const det = (rho00 * rho11) - (rho01_re * rho01_re + rho01_im * rho01_im);
+    const disc = Math.max(0, (tr * tr) / 4 - det);
+    const l1 = Math.max(0, tr / 2 + Math.sqrt(disc));
+    const l2 = Math.max(0, tr / 2 - Math.sqrt(disc));
+
+    let entropy = 0;
+    if (l1 > 0.0001) entropy -= l1 * Math.log2(l1);
+    if (l2 > 0.0001) entropy -= l2 * Math.log2(l2);
+    return Math.max(0, parseFloat(entropy.toFixed(3)));
+  }
+
   // Get Dirac Bra-Ket String formatted for live HUD
   getDiracNotation() {
     const probs = this.getProbabilities();
