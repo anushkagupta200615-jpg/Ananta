@@ -57,6 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const missionManager = new MissionManager();
   window.missionManager = missionManager;
 
+  const intuitionLab = new IntuitionLab();
+  window.intuitionLab = intuitionLab;
+
   // ==========================================
   // 3. View & Tab Routing
   // ==========================================
@@ -90,6 +93,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.dispatchEvent(new Event('resize'));
         if (circuitUI) circuitUI.updateSimulation();
       }, 60);
+    }
+
+    // Refresh Wave Canvas when entering Intuition Lab
+    if (tabKey === 'intuition' && window.intuitionLab) {
+      setTimeout(() => window.intuitionLab.initWaveCanvas(), 60);
     }
   }
   window.switchView = switchView;
@@ -476,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 9. Determine Initial Active View & Routing
   // ==========================================
-  const validTabs = ['overview', 'simulator', 'algorithms', 'research', 'ai-assistant', 'challenges', 'docs', 'login'];
+  const validTabs = ['overview', 'simulator', 'algorithms', 'intuition', 'research', 'ai-assistant', 'challenges', 'docs', 'login'];
   const isLoggedIn = updateNavUser();
   const hash = window.location.hash.replace('#', '');
 

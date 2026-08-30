@@ -50,6 +50,7 @@
         <a href="#overview" class="nav-item active" data-tab="overview">Overview</a>
         <a href="#simulator" class="nav-item" data-tab="simulator">Simulator</a>
         <a href="#algorithms" class="nav-item" data-tab="algorithms">Algorithms</a>
+        <a href="#intuition" class="nav-item" data-tab="intuition">Intuition Lab</a>
         <a href="#research" class="nav-item" data-tab="research">Research</a>
         <a href="#ai-assistant" class="nav-item" data-tab="ai-assistant">AI Mentor</a>
         <a href="#challenges" class="nav-item" data-tab="challenges">Challenges</a>
@@ -572,6 +573,196 @@
       </div>
     </section>
 
+    <!-- ================= VIEW 9: REAL-WORLD INTUITION LAB ================= -->
+    <section class="viewport-section" id="view-intuition">
+      <div class="standard-page-container intuition-container">
+        
+        <div class="intuition-hero-banner">
+          <div class="intuition-pill-tag">
+            <span>💡</span> Physical Analogies & Intuition Bridges
+          </div>
+          <h1 class="intuition-hero-title">Real-World Quantum Intuition Lab</h1>
+          <p class="intuition-hero-desc">
+            Why is quantum mechanics hard to grasp? Because human intuition evolved throwing rocks in a macro world. Explore hands-on physical simulations that make superposition, wave interference, and entanglement obvious.
+          </p>
+        </div>
+
+        <div class="intuition-grid">
+
+          <!-- EXPERIMENT 1: The Spinning Coin -->
+          <div class="intuition-card">
+            <div class="exp-header">
+              <span class="exp-tag">Concept 1: Superposition & Measurement</span>
+              <h2>The Spinning Coin on a Table</h2>
+              <p>A classical bit is a coin flat on a table: definitively Heads ($|0\rangle$) or Tails ($|1\rangle$). Superposition is spinning the coin on its edge: it is a continuous blur of both until you slap your hand down (measurement).</p>
+            </div>
+
+            <div class="coin-stage-container">
+              <div class="coin-pedestal">
+                <div id="quantum-coin-3d" class="quantum-coin-disc coin-resting">
+                  <div class="coin-face coin-front">|0⟩</div>
+                  <div class="coin-face coin-back">|1⟩</div>
+                </div>
+              </div>
+              <div class="coin-readout-box">
+                <div id="coin-status-text" class="coin-status">Coin is resting flat on Heads (|0⟩). Click Spin to create Superposition.</div>
+                <div id="coin-state-formula" class="coin-formula">|ψ⟩ = 1.0 |0⟩</div>
+              </div>
+            </div>
+
+            <div class="exp-controls-row">
+              <button id="btn-spin-coin" class="btn-intuition-primary">Spin Coin (Hadamard Gate)</button>
+              <button id="btn-measure-coin" class="btn-intuition-action" disabled>Measure (Slap Hand Down)</button>
+              <button id="btn-reset-coin" class="btn-intuition-secondary">Reset</button>
+            </div>
+
+            <div class="exp-metrics-box">
+              <div class="metric-row">
+                <span>Flips: <strong id="coin-stat-total">0</strong></span>
+                <span>Heads (|0⟩): <strong id="coin-stat-heads" style="color:#0f62fe;">0</strong></span>
+                <span>Tails (|1⟩): <strong id="coin-stat-tails" style="color:#ee5396;">0</strong></span>
+              </div>
+              <div class="ratio-bar-track">
+                <div id="coin-bar-heads" class="ratio-bar-fill-heads" style="width: 50%;"></div>
+                <div id="coin-bar-tails" class="ratio-bar-fill-tails" style="width: 50%;"></div>
+              </div>
+            </div>
+
+            <div class="exp-bridge-footer">
+              <button class="btn-bridge-simulator" onclick="window.loadPresetSafe('superposition'); window.switchView('simulator');">
+                ⚡ Open Superposition in Circuit Studio →
+              </button>
+            </div>
+          </div>
+
+          <!-- EXPERIMENT 2: Noise-Canceling Headphones -->
+          <div class="intuition-card">
+            <div class="exp-header">
+              <span class="exp-tag">Concept 2: Phase & Interference</span>
+              <h2>Noise-Canceling Headphones</h2>
+              <p>Why do quantum algorithms use complex phase ($\phi$) and negative signs? Just like AirPods emit an inverted sound wave to cancel airplane engine roar into silence, quantum algorithms cancel wrong answers so only the solution remains.</p>
+            </div>
+
+            <div class="wave-canvas-wrapper">
+              <canvas id="wave-interference-canvas" class="wave-canvas"></canvas>
+            </div>
+
+            <div class="phase-control-panel">
+              <div class="slider-label-row">
+                <span>Phase Shift (φ): <strong id="wave-phase-val">180° (1.00π rad)</strong></span>
+                <span id="wave-interp-type">100% Destructive Cancellation (Absolute Silence)</span>
+              </div>
+              <input type="range" id="wave-phase-slider" min="0" max="6.28318" step="0.05" value="3.14159" class="phase-slider" />
+              
+              <div class="preset-pills-row">
+                <button id="btn-preset-destructive" class="btn-phase-preset active">180° Destructive (Cancel to 0)</button>
+                <button id="btn-preset-constructive" class="btn-phase-preset">0° Constructive (Amplify 2x)</button>
+                <button id="btn-preset-quarter" class="btn-phase-preset">90° Quarter Phase (S Gate)</button>
+              </div>
+            </div>
+
+            <div class="exp-bridge-footer">
+              <button class="btn-bridge-simulator" onclick="window.loadPresetSafe('grover'); window.switchView('simulator');">
+                ⚡ Open Grover's Interference Search in Studio →
+              </button>
+            </div>
+          </div>
+
+          <!-- EXPERIMENT 3: Synchronized Magic Dice -->
+          <div class="intuition-card">
+            <div class="exp-header">
+              <span class="exp-tag">Concept 3: Entanglement & Non-Locality</span>
+              <h2>Synchronized Magic Dice</h2>
+              <p>Two dice separated across the world. Roll Die A in New Delhi and Die B in New York. While each roll is individually 100% random, an entangled Bell pair guarantees both dice always land on the exact same face simultaneously.</p>
+            </div>
+
+            <div class="dice-stage">
+              <div class="die-station">
+                <div class="die-station-label">Die A (New Delhi)</div>
+                <div id="die-cube-a" class="dice-cube">
+                  <div class="dice-dot active" style="grid-column:2; grid-row:2;"></div>
+                </div>
+              </div>
+
+              <div class="dice-bridge-center">
+                <div id="entanglement-beam" class="entanglement-laser-beam beam-active"></div>
+                <span id="dice-mode-label" class="beam-status-tag">Quantum Entangled (Bell State |Φ⁺⟩)</span>
+              </div>
+
+              <div class="die-station">
+                <div class="die-station-label">Die B (New York)</div>
+                <div id="die-cube-b" class="dice-cube">
+                  <div class="dice-dot active" style="grid-column:2; grid-row:2;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dice-controls-panel">
+              <div class="toggle-mode-row">
+                <label class="switch-control">
+                  <input type="checkbox" id="toggle-entangled-dice" checked />
+                  <span class="slider-round"></span>
+                </label>
+                <span id="dice-state-badge" class="state-math-badge">|ψ⟩ = (1/√2) |00⟩ + (1/√2) |11⟩</span>
+              </div>
+
+              <div class="dice-actions-row">
+                <button id="btn-roll-dice" class="btn-intuition-primary">Roll Entangled Dice</button>
+                <span id="dice-stats-counter" class="dice-stats-text">Rolls: 0 | Matches: 0 (100% correlation)</span>
+              </div>
+
+              <div id="dice-result-log" class="dice-log-box">
+                Click <strong>Roll Entangled Dice</strong> to observe non-local correlation.
+              </div>
+            </div>
+
+            <div class="exp-bridge-footer">
+              <button class="btn-bridge-simulator" onclick="window.loadPresetSafe('bell'); window.switchView('simulator');">
+                ⚡ Open Bell State in Circuit Studio →
+              </button>
+            </div>
+          </div>
+
+          <!-- EXPERIMENT 4: Real-World Industry Impact Showcase -->
+          <div class="intuition-card intuition-card-wide">
+            <div class="exp-header">
+              <span class="exp-tag">Real-World Problem Solving</span>
+              <h2>Where Quantum Computing Changes Humanity</h2>
+              <p>Why do governments and scientists invest billions? Because quantum computing solves problems that would take every classical computer on Earth millions of years.</p>
+            </div>
+
+            <div class="industry-showcase-grid">
+              <div class="industry-item">
+                <div class="ind-icon">💊</div>
+                <h3>Drug Discovery & Cancer Therapies</h3>
+                <p>Molecules are quantum mechanical. Simulating the entangled electrons in penicillin or caffeine exceeds classical supercomputer memory. Quantum simulators design targeted cancer therapies in hours.</p>
+              </div>
+
+              <div class="industry-item">
+                <div class="ind-icon">🌱</div>
+                <h3>Clean Energy & Global Fertilizer</h3>
+                <p>Humanity uses 2-3% of all global electricity making fertilizer at 500°C (Haber-Bosch). Soil bacteria do this at room temperature using a quantum enzyme (Nitrogenase). Quantum simulation could save gigawatts of energy.</p>
+              </div>
+
+              <div class="industry-item">
+                <div class="ind-icon">🛡️</div>
+                <h3>Physics-Proof Cybersecurity</h3>
+                <p>Quantum Key Distribution (QKD) utilizes the observer effect: if an eavesdropper listens to your bank encryption key, the quantum wavefunction collapses, instantly revealing the spy.</p>
+              </div>
+
+              <div class="industry-item">
+                <div class="ind-icon">🚢</div>
+                <h3>Global Maritime & Climate Logistics</h3>
+                <p>Optimizing flight paths, cargo ships, and energy grids with millions of variables via QAOA algorithms to reduce global carbon emissions.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
   </main>
 
   <!-- Interactive Google OAuth Account Picker Modal -->
@@ -637,6 +828,7 @@
   <script src="js/ai-tutor.js"></script>
   <script src="js/algorithms.js"></script>
   <script src="js/research-papers.js"></script>
+  <script src="js/intuition-lab.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

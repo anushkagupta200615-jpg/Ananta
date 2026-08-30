@@ -2255,3 +2255,594 @@ body.dark-theme .btn-paper-simulate {
 .btn-copy-bibtex:hover {
   background: var(--accent-blue-hover);
 }
+
+/* ==========================================================================
+   VIEW 9: Real-World Intuition Lab Styles
+   ========================================================================== */
+
+.intuition-container {
+  max-width: 1240px;
+}
+
+.intuition-hero-banner {
+  margin-bottom: 28px;
+}
+
+.intuition-pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--accent-blue);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 20px;
+  margin-bottom: 14px;
+}
+
+.intuition-hero-title {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.intuition-hero-desc {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  max-width: 800px;
+}
+
+.intuition-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .intuition-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.intuition-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--card-shadow);
+}
+
+.intuition-card-wide {
+  grid-column: 1 / -1;
+}
+
+.exp-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exp-tag {
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent-blue);
+  background: var(--bg-subtle);
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+.exp-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.exp-header p {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* 1. Coin Stage */
+.coin-stage-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  perspective: 800px;
+}
+
+.coin-pedestal {
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quantum-coin-disc {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.coin-resting {
+  transform: rotateY(0deg);
+}
+
+.coin-heads {
+  transform: rotateY(0deg);
+}
+
+.coin-tails {
+  transform: rotateY(180deg);
+}
+
+.coin-spinning-active {
+  animation: spinCoin3D 0.22s linear infinite;
+}
+
+@keyframes spinCoin3D {
+  0% { transform: rotateY(0deg) rotateX(15deg); }
+  50% { transform: rotateY(180deg) rotateX(-15deg); }
+  100% { transform: rotateY(360deg) rotateX(15deg); }
+}
+
+.coin-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.coin-front {
+  background: linear-gradient(135deg, #0f62fe 0%, #0043ce 100%);
+}
+
+.coin-back {
+  background: linear-gradient(135deg, #ee5396 0%, #9f1853 100%);
+  transform: rotateY(180deg);
+}
+
+.coin-readout-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.coin-status {
+  font-size: 13px;
+  color: var(--text-white);
+  line-height: 1.4;
+}
+
+.coin-formula {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent-blue);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+/* Coin Controls & Metrics */
+.exp-controls-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-intuition-primary {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-intuition-primary:hover {
+  background: var(--accent-blue-hover);
+}
+
+.btn-intuition-action {
+  background: #fa4d56;
+  color: #ffffff;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-intuition-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-intuition-secondary {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-intuition-secondary:hover {
+  color: var(--text-white);
+}
+
+.exp-metrics-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.ratio-bar-track {
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  display: flex;
+  overflow: hidden;
+}
+
+.ratio-bar-fill-heads {
+  background: #0f62fe;
+  transition: width 0.3s;
+}
+
+.ratio-bar-fill-tails {
+  background: #ee5396;
+  transition: width 0.3s;
+}
+
+/* 2. Wave Canvas */
+.wave-canvas-wrapper {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  height: 200px;
+}
+
+.wave-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.phase-control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.slider-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.phase-slider {
+  width: 100%;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+
+.preset-pills-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-phase-preset {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-phase-preset:hover {
+  border-color: var(--accent-blue);
+  color: var(--text-white);
+}
+
+/* 3. Dice Stage */
+.dice-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 24px;
+  position: relative;
+}
+
+.die-station {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.die-station-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.dice-cube {
+  width: 60px;
+  height: 60px;
+  background: #ffffff;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.dice-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  align-self: center;
+  justify-self: center;
+}
+
+.dice-dot.active {
+  background: #0f172a;
+}
+
+.dice-rolling-anim {
+  animation: diceRollShake 0.4s ease-in-out;
+}
+
+@keyframes diceRollShake {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(20deg) scale(1.1); }
+  50% { transform: rotate(-20deg) scale(1.1); }
+  75% { transform: rotate(10deg) scale(1.05); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+.dice-bridge-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  flex-grow: 1;
+  padding: 0 16px;
+}
+
+.entanglement-laser-beam {
+  width: 100%;
+  height: 3px;
+  background: var(--border-darker);
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+.entanglement-laser-beam.beam-active {
+  background: linear-gradient(90deg, #0f62fe 0%, #00f0ff 50%, #0f62fe 100%);
+  box-shadow: 0 0 12px #00f0ff, 0 0 24px rgba(15, 98, 254, 0.8);
+  animation: pulseLaser 1.5s infinite alternate;
+}
+
+@keyframes pulseLaser {
+  from { opacity: 0.7; filter: drop-shadow(0 0 6px #00f0ff); }
+  to { opacity: 1; filter: drop-shadow(0 0 16px #00f0ff); }
+}
+
+.beam-status-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dice-controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toggle-mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.switch-control {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+
+.switch-control input { opacity: 0; width: 0; height: 0; }
+
+.slider-round {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--border-darker);
+  border-radius: 22px;
+  transition: .2s;
+}
+
+.slider-round:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: .2s;
+}
+
+input:checked + .slider-round {
+  background-color: var(--accent-blue);
+}
+
+input:checked + .slider-round:before {
+  transform: translateX(18px);
+}
+
+.state-math-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-blue);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.dice-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dice-stats-text {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.dice-log-box {
+  font-size: 12px;
+  color: var(--text-white);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+/* 4. Industry Impact Grid */
+.industry-showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.industry-item {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s;
+}
+
+.industry-item:hover {
+  border-color: var(--accent-blue);
+}
+
+.ind-icon {
+  font-size: 24px;
+}
+
+.industry-item h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.industry-item p {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* Bridge Footer Buttons */
+.exp-bridge-footer {
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.btn-bridge-simulator {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--accent-blue);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  text-align: left;
+}
+
+.btn-bridge-simulator:hover {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border-color: var(--accent-blue);
+}
+
