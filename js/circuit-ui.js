@@ -1,6 +1,8 @@
 /**
- * Circuit UI Controller
- * Handles drag-and-drop / click-to-place gate grid, wire state changes, probability bars, and code generation.
+ * Circuit UI Controller - Enhanced for Ananta Quantum Studio
+ * Handles drag-and-drop / click-to-place gate grid, wire state changes,
+ * step-by-step playback ("Quantum Time Machine"), phase clock dials,
+ * live Dirac Bra-Ket math HUD, and Monte Carlo 1024-shot measurement laboratory.
  */
 
 class CircuitUI {
@@ -15,8 +17,15 @@ class CircuitUI {
     this.grid = Array.from({ length: this.numQubits }, () => Array(this.numCols).fill(null));
     this.activeDragGate = null;
 
+    // Step-by-Step Playback Controller (-1 = full circuit, 0 = init |000⟩, 1..6 = after col 0..5)
+    this.playbackStep = -1;
+    this.isPlaying = false;
+    this.playInterval = null;
+
     this.initDOM();
     this.bindEvents();
+    this.bindStepperEvents();
+    this.bindMeasurementEvents();
     this.updateSimulation();
   }
 
@@ -28,6 +37,7 @@ class CircuitUI {
     this.coordsBadge = document.getElementById('bloch-coords');
     this.qiskitCodeBlock = document.getElementById('qiskit-code');
     this.qasmCodeBlock = document.getElementById('qasm-code');
+    this.diracHud = document.getElementById('dirac-math-hud');
 
     this.renderGrid();
   }
@@ -58,36 +68,32 @@ class CircuitUI {
         slot.setAttribute('data-col', c);
         slot.id = `slot-${q}-${c}`;
 
-        const currentGate = this.grid[q][c];
-        if (currentGate) {
-          slot.appendChild(this.createGateElement(currentGate, q, c));
-          slot.classList.add('has-gate');
+        // If step playback is active, highlight active column
+        if (this.playbackStep >= 1 && c === (this.playbackStep - 1)) {
+          slot.classList.add('active-step-col');
         }
 
-        // Drag-and-drop target
-        slot.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          slot.classList.add('drag-over');
-        });
-        slot.addEventListener('dragleave', () => {
-          slot.classList.remove('drag-over');
-        });
+        // Render placed gate if any
+        const gate = this.grid[q][c];
+        if (gate) {
+          slot.appendChild(this.createGateElement(gate, q, c));
+        }
+
+        // Dragover / Drop handlers
+        slot.addEventListener('dragover', (e) => e.preventDefault());
         slot.addEventListener('drop', (e) => {
           e.preventDefault();
-          slot.classList.remove('drag-over');
-          const gateType = e.dataTransfer.getData('text/plain') || this.activeDragGate;
-          if (gateType) {
-            this.setGate(q, c, gateType);
+          const droppedGate = e.dataTransfer.getData('text/plain') || this.activeDragGate;
+          if (droppedGate) {
+            this.placeGate(droppedGate, q, c);
           }
         });
 
-        // Click to place if a palette item was selected
         slot.addEventListener('click', () => {
           if (window.selectedPaletteGate) {
-            this.setGate(q, c, window.selectedPaletteGate);
+            this.placeGate(window.selectedPaletteGate, q, c);
           } else if (this.grid[q][c]) {
-            // Click existing gate to remove
-            this.setGate(q, c, null);
+            this.removeGate(q, c);
           }
         });
 
@@ -99,37 +105,50 @@ class CircuitUI {
     }
   }
 
-  createGateElement(gateType, q, c) {
+  createGateElement(gateName, qubit, col) {
     const el = document.createElement('div');
-    el.className = `gate-chip gate-${gateType.toLowerCase()}`;
-    el.setAttribute('data-gate', gateType);
-    el.setAttribute('title', `Click to remove | ${gateType}`);
+    el.className = `placed-gate gate-color-${gateName.toLowerCase()}`;
+    el.setAttribute('data-gate', gateName);
 
-    if (gateType === 'CX_CTRL') {
-      el.innerHTML = '<span class="cnot-control-dot">●</span>';
-      el.classList.add('gate-cnot-ctrl');
-    } else if (gateType === 'CX_TGT') {
-      el.innerHTML = '<span class="cnot-target-cross">⊕</span>';
-      el.classList.add('gate-cnot-tgt');
+    if (gateName === 'CX_CTRL') {
+      el.className += ' gate-cx-ctrl';
+      el.innerHTML = '<span class="cnot-dot">●</span>';
+    } else if (gateName === 'CX_TGT') {
+      el.className += ' gate-cx-tgt';
+      el.innerHTML = '<span class="cnot-cross">⊕</span>';
     } else {
-      el.textContent = gateType;
+      el.textContent = gateName;
     }
 
+    el.title = `${gateName} on q[${qubit}] col ${col + 1} (Click to remove)`;
     return el;
   }
 
-  setGate(qubit, col, gateType) {
-    if (gateType === 'CX') {
-      // Special logic for 2-qubit CNOT:
-      // If placed on q0, control is q0, target is q1. If on q1, target is q2.
-      const ctrl = qubit;
-      const tgt = (qubit + 1) % this.numQubits;
-
-      // Clear existing in this column for both
-      this.grid[ctrl][col] = 'CX_CTRL';
-      this.grid[tgt][col] = 'CX_TGT';
+  placeGate(gateName, qubit, col) {
+    if (gateName === 'CX') {
+      // Find other qubit for CNOT target
+      const targetQubit = (qubit + 1) % this.numQubits;
+      this.grid[qubit][col] = 'CX_CTRL';
+      this.grid[targetQubit][col] = 'CX_TGT';
     } else {
-      this.grid[qubit][col] = gateType;
+      this.grid[qubit][col] = gateName;
+    }
+
+    this.renderGrid();
+    this.updateSimulation();
+  }
+
+  removeGate(qubit, col) {
+    const current = this.grid[qubit][col];
+    if (current === 'CX_CTRL' || current === 'CX_TGT') {
+      for (let q = 0; q < this.numQubits; q++) {
+        const c = this.grid[q][col];
+        if (c === 'CX_CTRL' || c === 'CX_TGT') {
+          this.grid[q][col] = null;
+        }
+      }
+    } else {
+      this.grid[qubit][col] = null;
     }
 
     this.renderGrid();
@@ -137,21 +156,127 @@ class CircuitUI {
   }
 
   clearCircuit() {
+    this.playbackStep = -1;
+    this.stopPlayback();
     this.grid = Array.from({ length: this.numQubits }, () => Array(this.numCols).fill(null));
     this.renderGrid();
     this.updateSimulation();
   }
 
   loadPreset(gridData) {
+    this.playbackStep = -1;
+    this.stopPlayback();
     this.grid = gridData.map(row => [...row]);
     this.renderGrid();
     this.updateSimulation();
   }
 
+  // =========================================================================
+  // STEP-BY-STEP PLAYBACK CONTROLLER ("Quantum Time Machine")
+  // =========================================================================
+  bindStepperEvents() {
+    const btnStart = document.getElementById('btn-step-start');
+    const btnPrev = document.getElementById('btn-step-prev');
+    const btnPlay = document.getElementById('btn-step-play');
+    const btnNext = document.getElementById('btn-step-next');
+    const btnEnd = document.getElementById('btn-step-end');
+
+    if (btnStart) btnStart.addEventListener('click', () => this.seekStep(0));
+    if (btnPrev) btnPrev.addEventListener('click', () => this.stepBackward());
+    if (btnPlay) btnPlay.addEventListener('click', () => this.togglePlayPause());
+    if (btnNext) btnNext.addEventListener('click', () => this.stepForward());
+    if (btnEnd) btnEnd.addEventListener('click', () => this.seekStep(this.numCols));
+  }
+
+  seekStep(stepIndex) {
+    this.playbackStep = stepIndex;
+    this.updateSimulation();
+    this.renderGrid();
+    this.updateStepperDisplay();
+  }
+
+  stepForward() {
+    if (this.playbackStep === -1) this.playbackStep = 0;
+    if (this.playbackStep < this.numCols) {
+      this.seekStep(this.playbackStep + 1);
+    }
+  }
+
+  stepBackward() {
+    if (this.playbackStep > 0) {
+      this.seekStep(this.playbackStep - 1);
+    }
+  }
+
+  togglePlayPause() {
+    if (this.isPlaying) {
+      this.stopPlayback();
+    } else {
+      this.startPlayback();
+    }
+  }
+
+  startPlayback() {
+    this.isPlaying = true;
+    const playBtn = document.getElementById('btn-step-play');
+    if (playBtn) playBtn.innerHTML = '⏸ Pause';
+
+    if (this.playbackStep === -1 || this.playbackStep >= this.numCols) {
+      this.seekStep(0);
+    }
+
+    this.playInterval = setInterval(() => {
+      if (this.playbackStep < this.numCols) {
+        this.stepForward();
+      } else {
+        this.stopPlayback();
+      }
+    }, 850);
+  }
+
+  stopPlayback() {
+    this.isPlaying = false;
+    if (this.playInterval) {
+      clearInterval(this.playInterval);
+      this.playInterval = null;
+    }
+    const playBtn = document.getElementById('btn-step-play');
+    if (playBtn) playBtn.innerHTML = '▶ Play';
+  }
+
+  updateStepperDisplay() {
+    const counter = document.getElementById('step-counter-display');
+    if (!counter) return;
+
+    if (this.playbackStep === -1 || this.playbackStep === this.numCols) {
+      counter.innerHTML = `<strong>Full Circuit State</strong> (Step ${this.numCols} of ${this.numCols})`;
+    } else if (this.playbackStep === 0) {
+      counter.innerHTML = `<strong>Initial Ground State</strong> (|000⟩ Before Gates)`;
+    } else {
+      counter.innerHTML = `<strong>Step ${this.playbackStep} of ${this.numCols}</strong> (Column ${this.playbackStep} Evaluated)`;
+    }
+  }
+
+  // =========================================================================
+  // SIMULATION PIPELINE & DIAGNOSTICS
+  // =========================================================================
   updateSimulation() {
-    this.engine.runCircuit(this.grid);
+    // Run up to current playback step or full circuit
+    if (this.playbackStep === -1 || this.playbackStep >= this.numCols) {
+      this.engine.runCircuit(this.grid);
+    } else if (this.playbackStep === 0) {
+      this.engine.reset();
+    } else {
+      this.engine.runCircuitUpToCol(this.grid, this.playbackStep - 1);
+    }
+
     const probs = this.engine.getProbabilities();
     this.renderProbabilities(probs);
+
+    // Update Dirac Math HUD
+    if (this.diracHud) {
+      this.diracHud.textContent = this.engine.getDiracNotation();
+    }
 
     // Update Bloch Sphere for chosen qubit
     const blochCoords = this.engine.getBlochCoordinates(this.selectedQubitForBloch);
@@ -170,6 +295,9 @@ class CircuitUI {
       `;
     }
 
+    // Check for Multi-Qubit Entanglement in Circuit
+    this.updateEntanglementBadge(probs);
+
     // Update Export Code
     if (this.qiskitCodeBlock) {
       this.qiskitCodeBlock.textContent = this.engine.toQiskit(this.grid);
@@ -187,8 +315,29 @@ class CircuitUI {
     if (window.missionManager) {
       window.missionManager.evaluate(this.grid, probs);
     }
+
+    this.updateStepperDisplay();
   }
 
+  updateEntanglementBadge(probs) {
+    const badge = document.getElementById('entanglement-status-indicator');
+    if (!badge) return;
+
+    // Check if state is in Bell or GHZ pattern (e.g. 000 and 110 or 00 and 11)
+    const activeStates = probs.filter(p => p.probability > 0.05);
+    const isBell = activeStates.length === 2 && Math.abs(activeStates[0].probability - 0.5) < 0.1 && Math.abs(activeStates[1].probability - 0.5) < 0.1;
+
+    if (isBell) {
+      badge.style.display = 'inline-flex';
+      badge.innerHTML = `⚡ Entangled Bell State Detected`;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // =========================================================================
+  // STATEVECTOR PROBABILITIES & PHASE CLOCKS (Q-Sphere Representation)
+  // =========================================================================
   renderProbabilities(probs) {
     if (!this.probsContainer) return;
     this.probsContainer.innerHTML = '';
@@ -199,8 +348,13 @@ class CircuitUI {
 
       const barRow = document.createElement('div');
       barRow.className = `prob-bar-row ${isDominant ? 'active-state' : 'inactive-state'}`;
+      
+      // Build Phase Clock SVG
+      const phaseClockHtml = this.createPhaseClockSVG(item);
+
       barRow.innerHTML = `
         <div class="prob-state-label">${item.state}</div>
+        ${phaseClockHtml}
         <div class="prob-bar-track">
           <div class="prob-bar-fill" style="width: ${pct}%"></div>
         </div>
@@ -210,9 +364,94 @@ class CircuitUI {
     });
   }
 
+  createPhaseClockSVG(item) {
+    const rad = item.phase;
+    const deg = Math.round((rad / Math.PI) * 180);
+    const amp = Math.sqrt(item.probability);
+    const cx = 11, cy = 11;
+    const radius = 8;
+    const nx = cx + Math.cos(rad) * (radius * Math.max(0.35, amp));
+    const ny = cy + Math.sin(rad) * (radius * Math.max(0.35, amp));
+
+    let color = '#00f0ff'; // 0 rad
+    if (Math.abs(deg) > 150) color = '#fa4d56'; // pi rad (inverted)
+    else if (deg > 45 && deg <= 135) color = '#ee5396'; // +pi/2 (i)
+    else if (deg < -45 && deg >= -135) color = '#a56eff'; // -pi/2 (-i)
+
+    return `
+      <div class="phase-clock-wrap" title="Basis State: ${item.state} | Phase: ${deg}° (${(rad / Math.PI).toFixed(2)}π rad) | Amplitude: ${amp.toFixed(2)}">
+        <svg viewBox="0 0 22 22" width="20" height="20" class="phase-clock-svg">
+          <circle cx="11" cy="11" r="8.5" fill="none" stroke="var(--border-color)" stroke-width="1.2" />
+          <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${color}" stroke-width="2" stroke-linecap="round" />
+          <circle cx="${cx}" cy="${cy}" r="2" fill="${color}" />
+        </svg>
+        <span class="phase-clock-val" style="color: ${color}">${deg}°</span>
+      </div>
+    `;
+  }
+
+  // =========================================================================
+  // PHYSICAL MEASUREMENT LABORATORY (1024 SHOTS MONTE CARLO)
+  // =========================================================================
+  bindMeasurementEvents() {
+    const btnShots = document.getElementById('btn-run-shots');
+    if (btnShots) {
+      btnShots.addEventListener('click', () => this.runMeasurementShots());
+    }
+  }
+
+  runMeasurementShots() {
+    const resultsBox = document.getElementById('shots-results-container');
+    const btn = document.getElementById('btn-run-shots');
+    if (!resultsBox) return;
+
+    if (btn) {
+      btn.textContent = 'Measuring 1024 Particles...';
+      btn.disabled = true;
+    }
+
+    setTimeout(() => {
+      const shotsData = this.engine.sampleShots(1024);
+      if (btn) {
+        btn.textContent = 'Run 1024 Physical Shots 🎲';
+        btn.disabled = false;
+      }
+      this.renderShotsResults(shotsData);
+    }, 350);
+  }
+
+  renderShotsResults(shotsData) {
+    const container = document.getElementById('shots-results-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const activeResults = shotsData.results.filter(r => r.measuredCount > 0);
+
+    if (activeResults.length === 0) {
+      container.innerHTML = `<div style="font-size:12px; color:var(--text-dim);">No physical shots registered yet. Click "Run 1024 Physical Shots".</div>`;
+      return;
+    }
+
+    activeResults.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'shot-result-row';
+      row.innerHTML = `
+        <div class="shot-state-name">${item.state}</div>
+        <div class="shot-bar-wrapper">
+          <div class="shot-bar-fill" style="width: ${item.measuredPct}%;"></div>
+        </div>
+        <div class="shot-metrics">
+          <strong>${item.measuredCount}</strong> shots (${item.measuredPct}%)
+          <span class="shot-expected-tag">Theory: ${item.theoreticalPct}%</span>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
   bindEvents() {
     // Gate Palette drag & click
-    const paletteChips = document.querySelectorAll('.palette-gate-chip');
+    const paletteChips = document.querySelectorAll('.gate-btn');
     paletteChips.forEach(chip => {
       const gate = chip.getAttribute('data-gate');
 
@@ -253,7 +492,7 @@ class CircuitUI {
       copyQiskitBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(this.qiskitCodeBlock.textContent);
         copyQiskitBtn.textContent = 'Copied!';
-        setTimeout(() => copyQiskitBtn.textContent = 'Copy Qiskit', 2000);
+        setTimeout(() => copyQiskitBtn.textContent = 'Copy Python', 2000);
       });
     }
 

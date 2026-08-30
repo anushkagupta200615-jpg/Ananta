@@ -3088,4 +3088,266 @@ input:checked + .slider-round:before {
   display: block;
 }
 
+/* ==========================================================================
+   ENHANCED SIMULATOR: Stepper ("Quantum Time Machine"), Dirac HUD & Shots Lab
+   ========================================================================== */
+
+/* 1. Stepper Playback Toolbar */
+.circuit-stepper-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stepper-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-btn {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-white);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.step-btn:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.step-btn-play {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border-color: var(--accent-blue);
+  font-weight: 700;
+  padding: 6px 16px;
+}
+
+.step-btn-play:hover {
+  background: var(--accent-blue-hover);
+  color: #ffffff;
+}
+
+.stepper-info-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-counter-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.step-counter-label strong {
+  color: var(--accent-blue);
+}
+
+.entanglement-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: #00f0ff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  animation: pulseEntangleBadge 2s infinite alternate;
+}
+
+@keyframes pulseEntangleBadge {
+  from { box-shadow: 0 0 4px rgba(0, 240, 255, 0.2); }
+  to { box-shadow: 0 0 12px rgba(0, 240, 255, 0.6); }
+}
+
+/* Active Step Column Highlight on Wire Grid */
+.gate-slot.active-step-col {
+  border-color: #00f0ff !important;
+  background: rgba(0, 240, 255, 0.08) !important;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+  position: relative;
+}
+
+.gate-slot.active-step-col::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: 50%;
+  width: 2px;
+  background: #00f0ff;
+  transform: translateX(-50%);
+  box-shadow: 0 0 8px #00f0ff;
+  pointer-events: none;
+}
+
+/* 2. Dirac Bra-Ket Math HUD */
+.dirac-math-strip {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.dirac-hud-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dirac-hud-tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.dirac-math-code {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-white);
+  letter-spacing: 0.3px;
+}
+
+.dirac-hud-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* 3. Phase Clock Dials in Probability List */
+.phase-clock-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: help;
+  flex-shrink: 0;
+  width: 58px;
+}
+
+.phase-clock-svg {
+  flex-shrink: 0;
+  display: block;
+}
+
+.phase-clock-val {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* 4. Physical Measurement Laboratory (1024 Shots) */
+.btn-run-shots {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-run-shots:hover {
+  background: var(--accent-blue-hover);
+}
+
+.btn-run-shots:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shots-results-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 230px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.shots-empty-prompt {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  padding: 12px 4px;
+}
+
+.shot-result-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.shot-state-name {
+  width: 44px;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.shot-bar-wrapper {
+  flex-grow: 1;
+  height: 10px;
+  background: var(--border-color);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.shot-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0f62fe 0%, #00f0ff 100%);
+  transition: width 0.4s ease;
+}
+
+.shot-metrics {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shot-metrics strong {
+  color: var(--text-white);
+}
+
+.shot-expected-tag {
+  font-size: 9.5px;
+  color: var(--text-subtle);
+  background: var(--bg-subtle);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+
 

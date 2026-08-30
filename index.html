@@ -360,6 +360,22 @@
 
           <!-- Right: Clean White Circuit Canvas -->
           <div class="circuit-canvas-white">
+            <!-- Stepper Playback Toolbar ("Quantum Time Machine") -->
+            <div class="circuit-stepper-bar">
+              <div class="stepper-controls-group">
+                <button id="btn-step-start" class="step-btn" title="Reset to Initial State (|000⟩)">⏮</button>
+                <button id="btn-step-prev" class="step-btn" title="Step Backward">◀</button>
+                <button id="btn-step-play" class="step-btn step-btn-play" title="Play / Pause Playback">▶ Play</button>
+                <button id="btn-step-next" class="step-btn" title="Step Forward">▶</button>
+                <button id="btn-step-end" class="step-btn" title="Seek to Full Circuit">⏭</button>
+              </div>
+
+              <div class="stepper-info-group">
+                <span id="step-counter-display" class="step-counter-label"><strong>Full Circuit State</strong> (Step 6 of 6)</span>
+                <span id="entanglement-status-indicator" class="entanglement-badge" style="display: none;">⚡ Entangled Bell State Detected</span>
+              </div>
+            </div>
+
             <div class="step-ruler">
               <span>Step 1</span>
               <span>Step 2</span>
@@ -376,16 +392,38 @@
 
         </div>
 
-        <!-- Lower Visualizer Grid: State Probabilities & 3D Bloch Sphere -->
+        <!-- Live Dirac Bra-Ket Math HUD -->
+        <div class="dirac-math-strip">
+          <div class="dirac-hud-left">
+            <span class="dirac-hud-tag">Live Statevector |ψ⟩</span>
+            <code id="dirac-math-hud" class="dirac-math-code">|ψ⟩ = 1.00 |000⟩</code>
+          </div>
+          <span class="dirac-hud-hint">Normalized superposition across 8 computational basis states</span>
+        </div>
+
+        <!-- Lower Visualizer Grid: State Probabilities, 3D Bloch Sphere, Physical Shots & Export -->
         <div class="visualizer-strip">
           
-          <!-- Measurement Amplitudes Chart -->
+          <!-- Measurement Amplitudes Chart & Phase Clocks -->
           <div class="vis-dock-card">
             <div class="vis-dock-header">
-              <h4>State Probabilities (%)</h4>
-              <span class="vis-dock-sub">Computational basis states</span>
+              <h4>State Probabilities & Phase Clocks</h4>
+              <span class="vis-dock-sub">Magnitude |cᵢ|² and phase angle φ</span>
             </div>
             <div class="probability-bars-container" id="probability-bars"></div>
+          </div>
+
+          <!-- Physical Measurement Laboratory (1024 Shots) -->
+          <div class="vis-dock-card">
+            <div class="vis-dock-header">
+              <h4>Physical Detector (1024 Shots)</h4>
+              <button id="btn-run-shots" class="btn-run-shots">Run 1024 Shots 🎲</button>
+            </div>
+            <div id="shots-results-container" class="shots-results-box">
+              <div class="shots-empty-prompt">
+                Click <strong>Run 1024 Shots 🎲</strong> to measure quantum particles and observe stochastic wavefunction collapse.
+              </div>
+            </div>
           </div>
 
           <!-- 3D Bloch Sphere -->

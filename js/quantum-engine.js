@@ -141,14 +141,15 @@ class QuantumCircuitEngine {
     this.state = newState;
   }
 
-  // Run a series of time-step columns
-  runCircuit(grid) {
+  // Run circuit up to a specific time-step column (-1 for full circuit)
+  runCircuitUpToCol(grid, upToCol = -1) {
     this.reset();
     if (!grid || !grid.length) return;
 
-    const numCols = grid[0].length;
-    for (let col = 0; col < numCols; col++) {
-      // Check for CNOT gates first in this column
+    const maxCols = grid[0].length;
+    const limit = upToCol === -1 ? maxCols : Math.min(upToCol + 1, maxCols);
+
+    for (let col = 0; col < limit; col++) {
       let cnotTarget = -1;
       let cnotControl = -1;
 
@@ -162,7 +163,6 @@ class QuantumCircuitEngine {
         this.applyCNOT(cnotControl, cnotTarget);
       }
 
-      // Apply single qubit gates
       for (let q = 0; q < this.numQubits; q++) {
         const cell = grid[q][col];
         if (cell && cell !== 'CX_CTRL' && cell !== 'CX_TGT' && cell !== 'M') {
@@ -170,6 +170,69 @@ class QuantumCircuitEngine {
         }
       }
     }
+  }
+
+  // Run full series of time-step columns
+  runCircuit(grid) {
+    this.runCircuitUpToCol(grid, -1);
+  }
+
+  // Run Monte Carlo physical measurement sampling (1024 shots)
+  sampleShots(numShots = 1024) {
+    const probs = this.getProbabilities();
+    const counts = {};
+    probs.forEach(p => counts[p.state] = 0);
+
+    const cdf = [];
+    let cumulative = 0;
+    for (let i = 0; i < probs.length; i++) {
+      cumulative += probs[i].probability;
+      cdf.push({ state: probs[i].state, cumulative });
+    }
+
+    for (let s = 0; s < numShots; s++) {
+      const rand = Math.random();
+      for (let i = 0; i < cdf.length; i++) {
+        if (rand <= cdf[i].cumulative || i === cdf.length - 1) {
+          counts[cdf[i].state]++;
+          break;
+        }
+      }
+    }
+
+    return {
+      totalShots: numShots,
+      counts: counts,
+      results: probs.map(p => ({
+        state: p.state,
+        theoreticalPct: (p.probability * 100).toFixed(1),
+        measuredCount: counts[p.state],
+        measuredPct: ((counts[p.state] / numShots) * 100).toFixed(1)
+      }))
+    };
+  }
+
+  // Get Dirac Bra-Ket String formatted for live HUD
+  getDiracNotation() {
+    const probs = this.getProbabilities();
+    const nonZero = probs.filter(p => p.probability > 0.005);
+    if (nonZero.length === 0) return '|ψ⟩ = |000⟩';
+
+    const terms = nonZero.map((p, idx) => {
+      const ampVal = Math.sqrt(p.probability).toFixed(2);
+      const phaseDeg = Math.round((p.phase / Math.PI) * 180);
+      let prefix = idx === 0 ? '' : '+ ';
+      if (Math.abs(phaseDeg - 180) < 15 || Math.abs(phaseDeg + 180) < 15) {
+        prefix = idx === 0 ? '- ' : '- ';
+      } else if (Math.abs(phaseDeg - 90) < 15) {
+        return `${prefix}${ampVal}i ${p.state}`;
+      } else if (Math.abs(phaseDeg + 90) < 15) {
+        return `${idx === 0 ? '-' : '- '}${ampVal}i ${p.state}`;
+      }
+      return `${prefix}${ampVal} ${p.state}`;
+    });
+
+    return `|ψ⟩ = ${terms.join(' ')}`;
   }
 
   // Get probabilities for each basis state (|000>, |001>, etc.)
