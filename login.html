@@ -17,24 +17,24 @@
       --border-color: #242424;
       --border-darker: #333333;
       --text-main: #ffffff;
-      --text-sub: #a3a3a3;
-      --text-muted: #737373;
-      --accent-blue: #0f62fe;
-      --accent-blue-hover: #2563eb;
-      --card-shadow: 0 16px 40px rgba(0, 0, 0, 0.95);
+      --text-sub: #94a3b8;
+      --text-muted: #64748b;
+      --accent-blue: #10b981;
+      --accent-blue-hover: #059669;
+      --card-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
     }
 
     /* Pure White Theme (Switchable Option) */
     body.light-theme, [data-theme="light"] {
-      --bg-page: #ffffff;
+      --bg-page: #f8fafc;
       --bg-card: #ffffff;
-      --border-color: #e4e4e7;
-      --border-darker: #d4d4d8;
-      --text-main: #09090b;
-      --text-sub: #52525b;
-      --text-muted: #71717a;
-      --accent-blue: #0f62fe;
-      --accent-blue-hover: #0043ce;
+      --border-color: #e2e8f0;
+      --border-darker: #cbd5e1;
+      --text-main: #0f172a;
+      --text-sub: #475569;
+      --text-muted: #64748b;
+      --accent-blue: #059669;
+      --accent-blue-hover: #047857;
       --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
     }
 
@@ -407,27 +407,36 @@
     }
 
     .text-input:focus {
-      border-color: var(--accent-blue);
-      box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.1);
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
     }
 
     .btn-submit {
       width: 100%;
-      background: var(--accent-blue);
+      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
       color: #ffffff;
-      border: none;
+      border: 1px solid #34d399;
       padding: 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       font-family: 'Lato', sans-serif;
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
       margin-top: 8px;
-      transition: background 0.15s;
+      box-shadow: 0 4px 0 0 #047857, 0 6px 18px rgba(16, 185, 129, 0.35);
+      transition: all 0.12s ease;
+      letter-spacing: 0.02em;
     }
 
     .btn-submit:hover {
-      background: var(--accent-blue-hover);
+      background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+      box-shadow: 0 5px 0 0 #047857, 0 8px 24px rgba(16, 185, 129, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-submit:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 0 #047857;
     }
 
     .guest-link-box {
@@ -527,7 +536,7 @@
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: #0f62fe;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: #ffffff;
       display: flex;
       align-items: center;
@@ -613,10 +622,10 @@
       <div class="brand-header">
         <svg class="brand-svg" viewBox="0 0 44 44">
           <path d="M 22 22 C 16 12, 6 12, 6 22 C 6 32, 16 32, 22 22 C 28 12, 38 12, 38 22 C 38 32, 28 32, 22 22 Z" 
-                fill="none" stroke="#0f62fe" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
-          <circle cx="14" cy="22" r="2.5" fill="#0f62fe" />
+                fill="none" stroke="#10b981" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="14" cy="22" r="2.5" fill="#10b981" />
           <circle cx="30" cy="22" r="2.5" fill="#8b5cf6" />
-          <circle cx="22" cy="22" r="2" fill="#0f62fe" />
+          <circle cx="22" cy="22" r="2" fill="#10b981" />
         </svg>
         <span class="brand-text">Ananta</span>
       </div>

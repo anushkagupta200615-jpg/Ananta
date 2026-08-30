@@ -717,9 +717,9 @@ class CircuitUI {
         const mag = cell.mag;
         if (mag > 0.005) {
           if (cell.isDiagonal) {
-            cellDiv.style.background = `rgba(15, 98, 254, ${Math.min(1, mag * 1.1)})`;
+            cellDiv.style.background = `rgba(16, 185, 129, ${Math.min(1, mag * 1.1)})`;
           } else {
-            cellDiv.style.background = `rgba(0, 240, 255, ${Math.min(0.9, mag * 0.95)})`;
+            cellDiv.style.background = `rgba(6, 182, 212, ${Math.min(0.9, mag * 0.95)})`;
           }
         } else {
           cellDiv.style.background = 'transparent';

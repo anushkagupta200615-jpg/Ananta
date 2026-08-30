@@ -2113,7 +2113,7 @@ class AlgorithmLibrary {
   }
 
   buildMiniCircuit(grid) {
-    const gc = { H:'#0f62fe', X:'#10b981', Y:'#8b5cf6', Z:'#ea580c', S:'#0891b2', T:'#06b6d4', M:'#f97316', CX_CTRL:'#00f0ff', CX_TGT:'#00f0ff' };
+    const gc = { H:'#f97316', X:'#ef4444', Y:'#ec4899', Z:'#8b5cf6', S:'#06b6d4', T:'#0ea5e9', M:'#64748b', CX_CTRL:'#6366f1', CX_TGT:'#6366f1' };
     const gl = { H:'H', X:'X', Y:'Y', Z:'Z', S:'S', T:'T', M:'M', CX_CTRL:'●', CX_TGT:'⊕' };
     let html = '<div class="mini-circuit-grid">';
     grid.forEach((row, r) => {

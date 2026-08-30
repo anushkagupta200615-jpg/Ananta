@@ -87,7 +87,7 @@ class IntuitionLab {
       this.headsCount++;
       coinEl.classList.add('coin-heads');
       if (statusText) {
-        statusText.innerHTML = `<span style="color:#0f62fe; font-weight:700;">Wavefunction Collapsed!</span> Result: <strong>Heads (|0⟩)</strong>`;
+        statusText.innerHTML = `<span style="color:#10b981; font-weight:700;">Wavefunction Collapsed!</span> Result: <strong>Heads (|0⟩)</strong>`;
       }
       if (stateFormula) {
         stateFormula.innerHTML = `|ψ⟩ = 1.0 |0⟩ (Definite Classical State)`;

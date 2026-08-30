@@ -351,7 +351,7 @@ class ConceptDoctor {
     const midY = h * 0.5;
 
     // Station Nodes
-    ctx.fillStyle = '#0f62fe';
+    ctx.fillStyle = '#10b981';
     ctx.beginPath(); ctx.arc(aliceX, midY, 26, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#8b5cf6';
     ctx.beginPath(); ctx.arc(bobX, midY, 26, 0, Math.PI * 2); ctx.fill();
@@ -404,7 +404,7 @@ class ConceptDoctor {
     const midY = h * 0.5;
 
     // Original Qubit
-    ctx.fillStyle = '#0f62fe';
+    ctx.fillStyle = '#10b981';
     ctx.beginPath(); ctx.arc(origX, midY, 30, 0, Math.PI * 2); ctx.fill();
     ctx.font = '13px Roboto Mono, monospace';
     ctx.fillStyle = '#ffffff';
@@ -519,7 +519,7 @@ class ConceptDoctor {
     ctx.beginPath(); ctx.ellipse(midX, midY, R, R * 0.35, 0, 0, Math.PI * 2); ctx.stroke();
 
     // North & South Poles
-    ctx.fillStyle = '#0f62fe';
+    ctx.fillStyle = '#10b981';
     ctx.fillText('|0⟩ (North Pole)', midX - 45, midY - R - 10);
     ctx.fillStyle = '#ee5396';
     ctx.fillText('|1⟩ (South Pole)', midX - 45, midY + R + 22);
