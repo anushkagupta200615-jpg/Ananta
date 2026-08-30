@@ -42,6 +42,7 @@ class CircuitUI {
     this.bindTourEvents();
     this.bindAudioEvents();
     this.bindBlochPillEvents();
+    this.initAnalyticsDeck();
     this.updateSimulation();
   }
 
@@ -471,6 +472,11 @@ class CircuitUI {
     // Render Quantum Density Matrix Heatmap
     this.renderDensityMatrix();
 
+    // Render Academic Suite (Unitary Matrix, LaTeX Derivations, Entanglement Metrics)
+    this.renderUnitaryInspector();
+    this.renderAnalyticalDerivation();
+    this.renderEntanglementMetrics();
+
     // Play Quantum State Harmony Audio if enabled
     if (this.audio && this.audio.isEnabled) {
       this.audio.playStatevectorChord(probs);
@@ -734,6 +740,235 @@ class CircuitUI {
       table.appendChild(rowDiv);
     }
     this.densityContainer.appendChild(table);
+  }
+
+  // =========================================================================
+  // 1. UNITARY MATRIX (U_total) INSPECTOR
+  // =========================================================================
+  renderUnitaryInspector() {
+    const gridEl = document.getElementById('unitary-matrix-grid');
+    const invariantsBar = document.getElementById('unitary-invariants-bar');
+    if (!gridEl) return;
+
+    const uData = this.engine.computeTotalUnitary(this.grid, this.playbackStep);
+    this.lastUnitaryData = uData;
+
+    if (invariantsBar) {
+      invariantsBar.innerHTML = `
+        <div class="matrix-invariant-chip ${uData.isUnitary ? 'chip-verified' : 'chip-warn'}">
+          <span class="chip-label">Unitarity:</span>
+          <strong>${uData.isUnitary ? 'U†U = I (Conserved ✓)' : 'Norm Degraded'}</strong>
+        </div>
+        <div class="matrix-invariant-chip">
+          <span class="chip-label">det(U):</span>
+          <code>${uData.detStr}</code>
+        </div>
+        <div class="matrix-invariant-chip">
+          <span class="chip-label">Tr(U):</span>
+          <code>${uData.traceStr}</code>
+        </div>
+        <div class="matrix-actions-group">
+          <button class="btn-copy-matrix-chip" id="btn-copy-latex-matrix" title="Copy LaTeX pmatrix code for papers and homework">LaTeX Matrix 📋</button>
+          <button class="btn-copy-matrix-chip" id="btn-copy-numpy-matrix" title="Copy NumPy complex array code">NumPy Array 📋</button>
+        </div>
+      `;
+
+      const btnLatex = document.getElementById('btn-copy-latex-matrix');
+      if (btnLatex) {
+        btnLatex.addEventListener('click', () => {
+          navigator.clipboard.writeText(uData.latexCode);
+          btnLatex.textContent = 'Copied LaTeX! ✓';
+          setTimeout(() => btnLatex.textContent = 'LaTeX Matrix 📋', 1800);
+        });
+      }
+      const btnNumPy = document.getElementById('btn-copy-numpy-matrix');
+      if (btnNumPy) {
+        btnNumPy.addEventListener('click', () => {
+          navigator.clipboard.writeText(uData.numpyCode);
+          btnNumPy.textContent = 'Copied NumPy! ✓';
+          setTimeout(() => btnNumPy.textContent = 'NumPy Array 📋', 1800);
+        });
+      }
+    }
+
+    // Build 8x8 Table
+    const basisLabels = ['000', '001', '010', '011', '100', '101', '110', '111'];
+    let html = '<table class="unitary-table"><thead><tr><th>⟨out|in⟩</th>';
+    for (let j = 0; j < 8; j++) {
+      html += `<th>|${basisLabels[j]}⟩</th>`;
+    }
+    html += '</tr></thead><tbody>';
+
+    for (let i = 0; i < 8; i++) {
+      html += `<tr><th>⟨${basisLabels[i]}|</th>`;
+      for (let j = 0; j < 8; j++) {
+        const c = uData.matrix[i][j];
+        const mag = c.abs();
+        let cls = 'u-cell-zero';
+        if (mag > 0.99) cls = 'u-cell-one';
+        else if (mag > 0.01) cls = 'u-cell-active';
+
+        const re = Math.abs(c.re) < 1e-3 ? 0 : c.re;
+        const im = Math.abs(c.im) < 1e-3 ? 0 : c.im;
+        let str = '0';
+        if (Math.abs(re - 1) < 1e-3 && im === 0) str = '1';
+        else if (Math.abs(re + 1) < 1e-3 && im === 0) str = '-1';
+        else if (re === 0 && Math.abs(im - 1) < 1e-3) str = 'i';
+        else if (re === 0 && Math.abs(im + 1) < 1e-3) str = '-i';
+        else if (Math.abs(mag - 0.707) < 0.02) {
+          str = (re < 0 || im < 0 ? '-' : '') + '1/√2';
+        } else if (mag > 0.001) {
+          str = c.re.toFixed(2) + (im !== 0 ? (im > 0 ? '+' : '') + c.im.toFixed(2) + 'i' : '');
+        }
+
+        html += `<td class="u-cell ${cls}" title="Row |${basisLabels[i]}⟩, Col |${basisLabels[j]}⟩: ${c.re.toFixed(4)}${c.im >= 0 ? '+' : ''}${c.im.toFixed(4)}i">${str}</td>`;
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    gridEl.innerHTML = html;
+  }
+
+  // =========================================================================
+  // 2. STEP-BY-STEP ANALYTICAL DERIVATION GENERATOR
+  // =========================================================================
+  renderAnalyticalDerivation() {
+    const container = document.getElementById('derivation-steps-container');
+    const btnCopyLatex = document.getElementById('btn-copy-latex-derivation');
+    if (!container) return;
+
+    const derivation = this.engine.generateAnalyticalDerivation(this.grid, this.playbackStep);
+    this.lastDerivationData = derivation;
+
+    let html = '';
+    derivation.steps.forEach((st) => {
+      html += `
+        <div class="derivation-step-item">
+          <div class="step-badge-row">
+            <span class="step-num-pill">Step ${st.stepNum}</span>
+            <span class="step-op-title">${st.operation}</span>
+          </div>
+          <div class="step-equation-box">
+            <code>${st.dirac}</code>
+          </div>
+          <p class="step-desc-text">${st.explanation}</p>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+
+    if (btnCopyLatex) {
+      btnCopyLatex.onclick = () => {
+        navigator.clipboard.writeText(derivation.fullLatex);
+        btnCopyLatex.textContent = 'Copied LaTeX Proof! ✓';
+        setTimeout(() => btnCopyLatex.textContent = 'Copy LaTeX Proof 📋', 2000);
+      };
+    }
+  }
+
+  // =========================================================================
+  // 3. RIGOROUS QUANTUM ENTANGLEMENT & PURITY METRICS
+  // =========================================================================
+  renderEntanglementMetrics() {
+    const panel = document.getElementById('entanglement-metrics-panel');
+    if (!panel) return;
+
+    const m = this.engine.getAdvancedEntanglementMetrics();
+
+    panel.innerHTML = `
+      <div class="entangle-summary-banner">
+        <div class="entangle-class-tag">
+          <span class="entangle-icon">⚛️</span>
+          <div>
+            <span class="entangle-eyebrow">Quantum State Classification</span>
+            <h4 class="entangle-class-name">${m.entanglementClass}</h4>
+          </div>
+        </div>
+        <div class="schmidt-pill">
+          <span>Schmidt Rank: <strong>${m.schmidtRank}</strong></span>
+        </div>
+      </div>
+
+      <div class="entangle-gauges-grid">
+        <div class="entangle-gauge-card">
+          <div class="gauge-header">
+            <span class="gauge-title">Wootters Concurrence C(ρ₀₁)</span>
+            <span class="gauge-val">${m.concurrence.toFixed(3)}</span>
+          </div>
+          <div class="gauge-bar-track">
+            <div class="gauge-bar-fill fill-cyan" style="width: ${(m.concurrence * 100).toFixed(0)}%"></div>
+          </div>
+          <span class="gauge-note">C=1.0: Bell State | C=0.0: Separable</span>
+        </div>
+
+        <div class="entangle-gauge-card">
+          <div class="gauge-header">
+            <span class="gauge-title">Von Neumann Entropy S(ρ₀)</span>
+            <span class="gauge-val">${m.vonNeumannEntropy.toFixed(3)}</span>
+          </div>
+          <div class="gauge-bar-track">
+            <div class="gauge-bar-fill fill-magenta" style="width: ${(m.vonNeumannEntropy * 100).toFixed(0)}%"></div>
+          </div>
+          <span class="gauge-note">Bipartite entanglement across q0 vs (q1, q2)</span>
+        </div>
+
+        <div class="entangle-gauge-card">
+          <div class="gauge-header">
+            <span class="gauge-title">State Purity γ = Tr(ρ²)</span>
+            <span class="gauge-val">${m.purity.toFixed(3)}</span>
+          </div>
+          <div class="gauge-bar-track">
+            <div class="gauge-bar-fill fill-green" style="width: ${(m.purity * 100).toFixed(0)}%"></div>
+          </div>
+          <span class="gauge-note">γ=1.0: Pure State | γ < 1.0: Mixed under decoherence</span>
+        </div>
+
+        <div class="entangle-gauge-card">
+          <div class="gauge-header">
+            <span class="gauge-title">Mutual Information I(q₀ : q₁)</span>
+            <span class="gauge-val">${m.mutualInformation.toFixed(3)}</span>
+          </div>
+          <div class="gauge-bar-track">
+            <div class="gauge-bar-fill fill-blue" style="width: ${(Math.min(2, m.mutualInformation) / 2 * 100).toFixed(0)}%"></div>
+          </div>
+          <span class="gauge-note">Total classical and quantum correlations</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // =========================================================================
+  // 4. ANALYTICS DECK TAB SWITCHER
+  // =========================================================================
+  initAnalyticsDeck() {
+    const tabs = document.querySelectorAll('.analytics-deck-tab');
+    const panels = document.querySelectorAll('.analytics-deck-panel');
+    if (!tabs || tabs.length === 0) return;
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.getAttribute('data-deck-tab');
+        if (!target) return;
+
+        tabs.forEach(t => t.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+
+        tab.classList.add('active');
+        const activePanel = document.getElementById(`deck-panel-${target}`);
+        if (activePanel) {
+          activePanel.classList.add('active');
+        }
+
+        // If bloch sphere selected, trigger canvas resize
+        if (target === 'bloch' && this.bloch) {
+          setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+            const coords = this.engine.getBlochCoordinates(this.selectedQubitForBloch);
+            this.bloch.updateCoordinates(coords);
+          }, 50);
+        }
+      });
+    });
   }
 
   // =========================================================================

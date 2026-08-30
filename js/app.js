@@ -325,6 +325,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const lbl = document.getElementById('circuit-filename-label');
       if (lbl) lbl.textContent = 'bell_state.qc';
       if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'bell_phi_plus');
+    } else if (presetKey === 'ghz') {
+      targetGrid = [
+        ['H', 'CX_CTRL', null, null, null, null],
+        [null, 'CX_TGT', 'CX_CTRL', null, null, null],
+        [null, null, 'CX_TGT', null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'ghz_state_tripartite.qc';
+    } else if (presetKey === 'teleport') {
+      targetGrid = [
+        ['H', null, 'CX_CTRL', 'H', null, null],
+        [null, 'H', 'CX_TGT', null, 'CX_CTRL', null],
+        [null, null, 'CX_TGT', null, 'CX_TGT', null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'quantum_teleportation.qc';
     } else if (presetKey === 'grover' || presetKey === 'grover_2qubit') {
       targetGrid = [
         ['H', 'Z', 'H', 'X', 'H', null],
@@ -334,6 +350,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const lbl = document.getElementById('circuit-filename-label');
       if (lbl) lbl.textContent = 'grover_search.qc';
       if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'grover_2qubit');
+    } else if (presetKey === 'vqe') {
+      targetGrid = [
+        ['X', 'H', 'CX_CTRL', 'H', null, null],
+        [null, 'H', 'CX_TGT', 'S', null, null],
+        [null, null, null, null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'vqe_molecular_h2.qc';
+    } else if (presetKey === 'chsh') {
+      targetGrid = [
+        ['H', 'CX_CTRL', 'H', null, null, null],
+        [null, 'CX_TGT', 'S', 'H', null, null],
+        [null, null, null, null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'chsh_bell_inequality.qc';
     } else if (presetKey === 'superposition') {
       targetGrid = [
         ['H', null, null, null, null, null],
@@ -344,7 +376,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (lbl) lbl.textContent = 'uniform_superposition.qc';
       if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'superposition_3' || a.id === 'superposition');
     } else if (presetKey === 'qft') {
-      // 3-qubit QFT: H + controlled-SWAP sequence
       targetGrid = [
         ['H', 'S', 'T', null, null, null],
         [null, null, 'H', 'S', null, null],
@@ -362,6 +393,33 @@ document.addEventListener('DOMContentLoaded', () => {
       if (targetAlgo && circuitUI.startAlgorithmTour) {
         circuitUI.startAlgorithmTour(targetAlgo);
       }
+    }
+  };
+
+  // Drawer Toggle Handlers for Clean Workspace
+  window.toggleKnowledgeEngineDrawer = function() {
+    const drawer = document.getElementById('ke-collapsible-drawer');
+    const btn = document.getElementById('btn-toggle-ke-drawer');
+    if (!drawer) return;
+    drawer.classList.toggle('drawer-open');
+    if (drawer.classList.contains('drawer-open')) {
+      const inp = document.getElementById('ke-search-input');
+      if (inp) inp.focus();
+      if (btn) btn.classList.add('active');
+    } else {
+      if (btn) btn.classList.remove('active');
+    }
+  };
+
+  window.toggleHardwareLabDrawer = function() {
+    const drawer = document.getElementById('hw-collapsible-drawer');
+    const btn = document.getElementById('btn-toggle-hw-drawer');
+    if (!drawer) return;
+    drawer.classList.toggle('drawer-open');
+    if (drawer.classList.contains('drawer-open')) {
+      if (btn) btn.classList.add('active');
+    } else {
+      if (btn) btn.classList.remove('active');
     }
   };
 
