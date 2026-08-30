@@ -5,36 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign In - Ananta Quantum Studio</title>
   
+  <!-- Google Quantum AI Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@400;500;700&family=Google+Sans+Text:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   
   <style>
-    /* Pure Jet Black Theme (Default) */
+    /* Google Quantum AI Official Theme Tokens */
     :root, body, body.dark-theme, [data-theme="dark"] {
-      --bg-page: #000000;
-      --bg-card: #0c0c0c;
-      --border-color: #242424;
-      --border-darker: #333333;
-      --text-main: #ffffff;
-      --text-sub: #94a3b8;
-      --text-muted: #64748b;
-      --accent-blue: #10b981;
-      --accent-blue-hover: #059669;
+      --bg-page: #202124;
+      --bg-card: #292a2d;
+      --border-color: #3c4043;
+      --border-darker: #5f6368;
+      --text-main: #e8eaed;
+      --text-sub: #9aa0a6;
+      --text-muted: #70757a;
+      --accent-blue: #8ab4f8;
+      --accent-blue-hover: #aecbfa;
+      --google-blue: #8ab4f8;
+      --btn-primary-bg: #8ab4f8;
+      --btn-primary-text: #202124;
+      --btn-primary-hover: #aecbfa;
       --card-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
     }
 
-    /* Pure White Theme (Switchable Option) */
     body.light-theme, [data-theme="light"] {
-      --bg-page: #f8fafc;
-      --bg-card: #ffffff;
-      --border-color: #e2e8f0;
-      --border-darker: #cbd5e1;
-      --text-main: #0f172a;
-      --text-sub: #475569;
-      --text-muted: #64748b;
-      --accent-blue: #059669;
-      --accent-blue-hover: #047857;
+      --bg-page: #ffffff;
+      --bg-card: #f8f9fa;
+      --border-color: #dadce0;
+      --border-darker: #bdc1c6;
+      --text-main: #202124;
+      --text-sub: #5f6368;
+      --text-muted: #80868b;
+      --accent-blue: #1a73e8;
+      --accent-blue-hover: #185abc;
+      --google-blue: #1a73e8;
+      --btn-primary-bg: #1a73e8;
+      --btn-primary-text: #ffffff;
+      --btn-primary-hover: #185abc;
       --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
     }
 
@@ -261,14 +269,15 @@
 
     /* Instant Simulator Launch Button */
     .btn-instant-launch {
-      background: rgba(15, 98, 254, 0.15);
-      border: 1px solid rgba(15, 98, 254, 0.4);
-      color: #93c5fd;
+      background: rgba(138, 180, 248, 0.08);
+      border: 1px solid rgba(138, 180, 248, 0.35);
+      color: var(--google-blue);
+      font-family: var(--font-sans);
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 500;
       width: 100%;
-      padding: 11px;
-      border-radius: 6px;
+      padding: 10px 16px;
+      border-radius: 24px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -280,10 +289,8 @@
     }
 
     .btn-instant-launch:hover {
-      background: rgba(15, 98, 254, 0.3);
-      border-color: #00f0ff;
-      color: #ffffff;
-      box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+      background: rgba(138, 180, 248, 0.18);
+      border-color: var(--google-blue);
       transform: translateY(-1px);
     }
 
@@ -335,15 +342,15 @@
       background: #ffffff;
       color: #1f2937;
       border: 1px solid var(--border-darker);
-      border-radius: 6px;
-      padding: 12px 16px;
+      border-radius: 24px;
+      padding: 11px 16px;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 12px;
-      font-family: 'Lato', sans-serif;
+      font-family: var(--font-sans);
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 500;
       cursor: pointer;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
       transition: all 0.15s ease;
@@ -407,36 +414,36 @@
     }
 
     .text-input:focus {
-      border-color: #10b981;
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+      border-color: var(--google-blue);
+      box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.25);
     }
 
     .btn-submit {
       width: 100%;
-      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-      color: #ffffff;
-      border: 1px solid #34d399;
-      padding: 12px;
-      border-radius: 8px;
-      font-family: 'Lato', sans-serif;
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-text);
+      border: none;
+      padding: 11px;
+      border-radius: 24px;
+      font-family: var(--font-sans);
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 500;
       cursor: pointer;
       margin-top: 8px;
-      box-shadow: 0 4px 0 0 #047857, 0 6px 18px rgba(16, 185, 129, 0.35);
-      transition: all 0.12s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      transition: all 0.2s ease;
       letter-spacing: 0.02em;
     }
 
     .btn-submit:hover {
-      background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
-      box-shadow: 0 5px 0 0 #047857, 0 8px 24px rgba(16, 185, 129, 0.5);
+      background: var(--btn-primary-hover);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
       transform: translateY(-1px);
     }
 
     .btn-submit:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 0 #047857;
+      transform: translateY(1px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     .guest-link-box {
@@ -620,14 +627,13 @@
       </div>
 
       <div class="brand-header">
-        <svg class="brand-svg" viewBox="0 0 44 44">
-          <path d="M 22 22 C 16 12, 6 12, 6 22 C 6 32, 16 32, 22 22 C 28 12, 38 12, 38 22 C 38 32, 28 32, 22 22 Z" 
-                fill="none" stroke="#10b981" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
-          <circle cx="14" cy="22" r="2.5" fill="#10b981" />
-          <circle cx="30" cy="22" r="2.5" fill="#8b5cf6" />
-          <circle cx="22" cy="22" r="2" fill="#10b981" />
+        <svg class="brand-svg" viewBox="0 0 48 48" width="30" height="30">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
         </svg>
-        <span class="brand-text">Ananta</span>
+        <span class="brand-text">Google Quantum AI</span>
       </div>
 
       <h1 class="form-title">Quantum Portal</h1>

@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const exportCodeEl = document.getElementById('qiskit-code');
   const exportCopyBtn = document.getElementById('btn-copy-qiskit');
   const exportFrameworkLabel = document.getElementById('export-framework-label');
-  let activeExportTab = 'qiskit';
+  let activeExportTab = 'cirq';
 
   function updateExportCode() {
     if (!circuitUI || !exportCodeEl) return;
@@ -464,15 +464,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!grid) return;
 
     let code = '';
-    if (activeExportTab === 'qiskit') {
+    if (activeExportTab === 'cirq') {
+      code = engine.toCirq(grid);
+      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'Google Cirq >= 1.3 - Willow & Sycamore QPU ready';
+    } else if (activeExportTab === 'qiskit') {
       code = engine.toQiskit(grid);
       if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'Qiskit 1.x compatible';
-    } else if (activeExportTab === 'qasm') {
-      code = engine.toQASM(grid);
-      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'OpenQASM 2.0 - IBM Cloud ready';
     } else if (activeExportTab === 'pennylane') {
       code = engine.toPennyLane(grid);
       if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'PennyLane >= 0.38 (Xanadu)';
+    } else if (activeExportTab === 'qasm') {
+      code = engine.toQASM(grid);
+      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'OpenQASM 2.0 standard';
     }
     exportCodeEl.textContent = code;
   }
@@ -720,11 +723,28 @@ document.addEventListener('DOMContentLoaded', () => {
     switchView('login');
   }
 
-  // Listen for hash changes dynamically
-  window.addEventListener('hashchange', () => {
-    const h = window.location.hash.replace('#', '');
-    if (h && validTabs.includes(h)) {
-      switchView(h);
+  // DevSite Header Search Integration
+  window.focusKnowledgeEngineSearch = function() {
+    switchView('simulator');
+    setTimeout(() => {
+      const searchInput = document.getElementById('ke-search-input');
+      const keBar = document.getElementById('knowledge-engine-container');
+      if (keBar && keBar.classList.contains('ke-collapsed')) {
+        keBar.classList.remove('ke-collapsed');
+      }
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 150);
+  };
+
+  // Keyboard shortcut: '/' opens DevSite / Knowledge Engine Search
+  window.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+      e.preventDefault();
+      window.focusKnowledgeEngineSearch();
     }
   });
 });
