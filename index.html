@@ -223,13 +223,18 @@
         
         <!-- Left: Majestic Ancient Rishi Artwork (Maharshi Kanada - Pioneer of Indian Atomic Theory) -->
         <div class="rishi-visual-panel">
-          <div class="rishi-photo-card">
+          <div class="rishi-photo-card" id="rishi-photo-card-main">
             <img src="assets/ancient_rishi.jpg" alt="Maharshi Kanada with Quantum Atomic Orbits" class="rishi-display-img">
+            <canvas id="rishi-quantum-canvas-main" class="rishi-quantum-canvas"></canvas>
             <div class="rishi-photo-overlay"></div>
             <div class="rishi-quote-box">
+              <div class="rishi-tag-row" style="justify-content: center; margin-bottom: 6px;">
+                <span class="rishi-era-badge">6th Century BCE</span>
+                <span class="rishi-interactive-hint">✦ Interactive Quantum Energy: Move cursor or click</span>
+              </div>
               <div class="sanskrit-phrase">"सर्वं द्रव्यं परमाणु रूपम्"</div>
               <div class="quote-attribution">
-                <strong>Maharshi Kanada</strong> (6th Century BCE)
+                <strong>Maharshi Kanada: The Genesis of Atomic Theory</strong>
               </div>
               <p class="quote-explanation">
                 Author of <em>Vaisheshika Sutra</em> and founder of Indian atomic theory (<em>Parmanu Vada</em>), proposing that all matter consists of eternal, vibrating, indivisible quanta millennia before modern quantum physics.
@@ -1141,6 +1146,7 @@
   <script src="js/intuition-lab.js"></script>
   <script src="js/concept-doctor.js"></script>
   <script src="js/hardware-control.js"></script>
+  <script src="js/rishi-canvas.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

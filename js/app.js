@@ -69,6 +69,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const algorithmLibrary = new AlgorithmLibrary();
   window.algorithmLibrary = algorithmLibrary;
 
+  // Initialize Living Rishi Quantum Canvas
+  if (window.RishiQuantumCanvas) {
+    try {
+      window.rishiCanvasMain = new window.RishiQuantumCanvas('rishi-quantum-canvas-main', 'rishi-photo-card-main');
+    } catch (err) {
+      console.warn('Rishi canvas init:', err);
+    }
+  }
+
   // ==========================================
   // 3. View & Tab Routing
   // ==========================================
@@ -107,6 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.hwStudio) {
         setTimeout(() => window.hwStudio.initPulseCanvas(), 80);
       }
+    }
+
+    // Refresh Rishi Canvas on login tab switch
+    if (tabKey === 'login' && window.rishiCanvasMain) {
+      setTimeout(() => window.rishiCanvasMain.initSize(), 50);
     }
 
     // Refresh Wave Canvas and Doctor Canvas when entering Intuition Lab
