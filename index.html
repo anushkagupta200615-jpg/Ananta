@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ananta - Interactive Quantum Circuit Studio & State Simulator</title>
-  <meta name="description" content="A modern in-browser quantum development environment for visual circuit construction, 3D statevector analysis, and algorithm design.">
+  <title>Ananta - Quantum Circuit Composer & Knowledge Engine</title>
+  <meta name="description" content="Ananta is a research-grade in-browser quantum computing platform for circuit composition, statevector analysis, algorithm design, and IIT/IISc-level quantum education.">
   
   <!-- Clean Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,7 +48,7 @@
       <!-- Navigation Tabs with Active Bottom Border -->
       <nav class="nav-links" aria-label="Main Navigation">
         <a href="#overview" class="nav-item active" data-tab="overview">Overview</a>
-        <a href="#simulator" class="nav-item" data-tab="simulator">Simulator</a>
+        <a href="#simulator" class="nav-item" data-tab="simulator">Composer</a>
         <a href="#algorithms" class="nav-item" data-tab="algorithms">Algorithms</a>
         <a href="#intuition" class="nav-item" data-tab="intuition">Intuition Lab</a>
         <a href="#research" class="nav-item" data-tab="research">Research</a>
@@ -309,95 +309,148 @@
       </div>
     </section>
 
-    <!-- ================= VIEW 3: QUANTUM SIMULATOR (COMPOSER) ================= -->
+    <!-- ================= VIEW 3: QUANTUM CIRCUIT COMPOSER ================= -->
     <section class="viewport-section" id="view-simulator">
       <div class="studio-workspace-container">
-        
+
+        <!-- ===== TOPIC KNOWLEDGE ENGINE ===== -->
+        <div class="knowledge-engine-bar" id="knowledge-engine-bar">
+          <div class="ke-header">
+            <div class="ke-title-group">
+              <span class="ke-icon">🔬</span>
+              <div>
+                <h3 class="ke-title">Quantum Knowledge Engine</h3>
+                <p class="ke-subtitle">Research-grade explanations for any quantum topic - designed for IIT, IISc, and advanced learners</p>
+              </div>
+            </div>
+            <button class="ke-collapse-btn" id="btn-ke-collapse" title="Collapse">▲ Collapse</button>
+          </div>
+          <div class="ke-search-row">
+            <div class="ke-input-wrapper">
+              <span class="ke-search-icon">⌕</span>
+              <input type="text" id="ke-search-input" class="ke-search-input" placeholder="Type a quantum topic: VQE, phase kickback, Shor's algorithm, surface codes, decoherence..." autocomplete="off" />
+              <button class="ke-search-btn" id="btn-ke-search">Explain ↗</button>
+            </div>
+            <div class="ke-quick-chips">
+              <span class="ke-chips-label">Quick topics:</span>
+              <button class="ke-chip" data-topic="superposition">Superposition</button>
+              <button class="ke-chip" data-topic="entanglement">Entanglement</button>
+              <button class="ke-chip" data-topic="phase kickback">Phase Kickback</button>
+              <button class="ke-chip" data-topic="quantum fourier transform">QFT</button>
+              <button class="ke-chip" data-topic="VQE">VQE</button>
+              <button class="ke-chip" data-topic="grover's algorithm">Grover's</button>
+              <button class="ke-chip" data-topic="density matrix">Density Matrix</button>
+              <button class="ke-chip" data-topic="surface codes">Surface Codes</button>
+              <button class="ke-chip" data-topic="decoherence">Decoherence</button>
+            </div>
+          </div>
+          <!-- Result Card rendered here -->
+          <div class="ke-result-panel" id="ke-result-panel" style="display:none;">
+            <div class="ke-result-inner" id="ke-result-inner"></div>
+          </div>
+        </div>
+
         <!-- Workspace Header -->
         <div class="studio-ribbon">
           <div class="ribbon-meta">
-            <span class="file-name-label">untitled_circuit.q</span>
+            <span class="file-name-label" id="circuit-filename-label">bell_state.qc</span>
             <div class="quick-tools">
-              <button class="tool-btn" id="btn-clear-circ" title="Reset all 3 wires to ground state |000⟩">Clear Grid</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('bell')" title="Load Entangled Bell Pair |Φ⁺⟩ = (|00⟩ + |11⟩)/√2">⚡ Bell State</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('grover')" title="Load Grover Quantum Search Algorithm">🔍 Grover's Search</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('superposition')" title="Load Uniform 3-Qubit Superposition (12.5% each)">🌊 Superposition</button>
+              <button class="tool-btn" id="btn-clear-circ" title="Reset all 3 qubit registers to ground state |000⟩">Reset Register</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('bell')" title="Bell State |Φ⁺⟩ = (|00⟩ + |11⟩)/√2 - Maximally entangled 2-qubit state">⚡ Bell State</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('grover')" title="Grover's Quantum Search - quadratic speedup over classical search">🔍 Grover Search</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('superposition')" title="Uniform 3-qubit superposition - equal amplitude across all 8 basis states">🌊 Superposition</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('qft')" title="Quantum Fourier Transform - backbone of Shor's and phase estimation algorithms">📡 QFT</button>
             </div>
           </div>
           <div class="ribbon-execute">
-            <button class="btn-run-calc" id="btn-run-calc" onclick="window.circuitUI.runInteractiveSimulation()" title="Click to run real-time quantum statevector simulation across all wires">
-              Run Circuit Simulation ⚡
+            <button class="btn-run-calc" id="btn-run-calc" onclick="window.circuitUI.runInteractiveSimulation()" title="Execute unitary propagation and compute the full statevector |ψ⟩ = U|0⟩^n">
+              Execute Propagation ⚡
             </button>
           </div>
         </div>
 
-        <!-- Simulator Quick Guide: 3 Easy Steps -->
+        <!-- Composer Quick-Start Guide -->
         <div class="sim-quick-guide-strip">
           <div class="guide-item">
             <span class="guide-num">1</span>
-            <span class="guide-desc"><strong>Choose Gate:</strong> Click any gate (e.g. <strong>H</strong> for Superposition or <strong>⊕</strong> for CNOT).</span>
+            <span class="guide-desc"><strong>Arm a Gate:</strong> Click any unitary gate on the left palette. The register slots light up to indicate valid placements.</span>
           </div>
           <div class="guide-arrow">→</div>
           <div class="guide-item">
             <span class="guide-num">2</span>
-            <span class="guide-desc"><strong>Place on Wire:</strong> Click any slot on wires <code>q0</code>, <code>q1</code>, or <code>q2</code>.</span>
+            <span class="guide-desc"><strong>Place on Register:</strong> Click a wire slot on <code>q[0]</code>, <code>q[1]</code>, or <code>q[2]</code>. Multi-qubit gates auto-link.</span>
           </div>
           <div class="guide-arrow">→</div>
           <div class="guide-item">
             <span class="guide-num">3</span>
-            <span class="guide-desc"><strong>Inspect State:</strong> Dirac notation <code>|ψ⟩</code>, 3D Bloch sphere & probabilities update in real time!</span>
+            <span class="guide-desc"><strong>Analyse Output:</strong> Statevector <code>|ψ⟩</code>, Bloch sphere, amplitude spectrum, and density matrix update in real time.</span>
           </div>
         </div>
 
-        <!-- Two Column Editor: Operations Palette + Clean White Circuit Canvas -->
+        <!-- Two Column Editor: Gate Palette + Circuit Canvas -->
         <div class="studio-two-col">
-          
-          <!-- Left: Gate Operations Palette (IBM Style Color Codes) -->
+
+          <!-- Left: Gate Operations Palette -->
           <div class="operations-dock">
             <div class="dock-title">
-              <h3>Gate Operations</h3>
+              <h3>Unitary Gate Library</h3>
+              <span class="dock-subtitle">Single and two-qubit operators</span>
             </div>
 
-            <!-- Square Gate Buttons with Clear Pedagogical Labels -->
             <div class="operations-grid">
-              <button class="gate-btn btn-coral" draggable="true" data-gate="H" title="Hadamard (H): Rotates |0⟩ into equal 50/50 superposition">
+              <button class="gate-btn btn-coral" draggable="true" data-gate="H" title="Hadamard (H): H = (1/√2)[[1,1],[1,-1]]. Maps |0⟩→|+⟩ and |1⟩→|−⟩. Creates equal superposition.">
                 <span class="gate-key">H</span>
-                <span class="gate-label">Superpos</span>
+                <span class="gate-label">Hadamard</span>
               </button>
-              <button class="gate-btn btn-blue" draggable="true" data-gate="CX" title="CNOT: Two-qubit entangling gate">
+              <button class="gate-btn btn-blue" draggable="true" data-gate="CX" title="CNOT (CX): Controlled-X gate. Flips target qubit if control is |1⟩. Creates entanglement when control is in superposition.">
                 <span class="gate-key">⊕</span>
-                <span class="gate-label">CNOT Entangle</span>
+                <span class="gate-label">CNOT</span>
               </button>
-              <button class="gate-btn btn-crimson" draggable="true" data-gate="X" title="Pauli-X: Quantum NOT gate (flips 0 and 1)">
+              <button class="gate-btn btn-crimson" draggable="true" data-gate="X" title="Pauli-X: Quantum bit-flip. X = [[0,1],[1,0]]. Maps |0⟩→|1⟩ and |1⟩→|0⟩.">
                 <span class="gate-key">X</span>
-                <span class="gate-label">NOT Flip</span>
+                <span class="gate-label">Pauli-X</span>
               </button>
-              <button class="gate-btn btn-magenta" draggable="true" data-gate="Y" title="Pauli-Y: Bit + Phase rotation">
+              <button class="gate-btn btn-magenta" draggable="true" data-gate="Y" title="Pauli-Y: Combined bit and phase flip. Y = [[0,-i],[i,0]]. Rotates around Y-axis on Bloch sphere.">
                 <span class="gate-key">Y</span>
                 <span class="gate-label">Pauli-Y</span>
               </button>
-              
-              <button class="gate-btn btn-purple" draggable="true" data-gate="Z" title="Pauli-Z: Phase flip (inverts phase of |1⟩ to negative)">
+              <button class="gate-btn btn-purple" draggable="true" data-gate="Z" title="Pauli-Z: Phase kickback gate. Z = diag(1,-1). Maps |+⟩→|−⟩. Leaves |0⟩ unchanged, flips phase of |1⟩.">
                 <span class="gate-key">Z</span>
-                <span class="gate-label">Phase Flip</span>
+                <span class="gate-label">Pauli-Z</span>
               </button>
-              <button class="gate-btn btn-cyan" draggable="true" data-gate="S" title="Phase S: Quarter phase shift (90 degrees / pi/2)">
+              <button class="gate-btn btn-cyan" draggable="true" data-gate="S" title="Phase S gate: S = diag(1, i). Applies π/2 phase shift to |1⟩. Used in QFT and stabilizer circuits.">
                 <span class="gate-key">S</span>
-                <span class="gate-label">90° Phase</span>
+                <span class="gate-label">Phase S (π/2)</span>
               </button>
-              <button class="gate-btn btn-sky" draggable="true" data-gate="T" title="Phase T: Eighth phase shift (45 degrees / pi/4)">
+              <button class="gate-btn btn-sky" draggable="true" data-gate="T" title="T gate: T = diag(1, e^(iπ/4)). Applies π/4 phase shift to |1⟩. Non-Clifford universal gate for fault-tolerant computing.">
                 <span class="gate-key">T</span>
-                <span class="gate-label">45° Phase</span>
+                <span class="gate-label">T Gate (π/4)</span>
               </button>
-              <button class="gate-btn btn-slate" draggable="true" data-gate="M" title="Measurement: Collapses superposition into classical bit">
+              <button class="gate-btn btn-slate" draggable="true" data-gate="M" title="Projective Measurement: Collapses quantum superposition into a classical bit. Irreversible Born rule projection.">
                 <span class="gate-key">∿</span>
                 <span class="gate-label">Measure</span>
               </button>
             </div>
 
-            <!-- User Guidance Hint Bar -->
+            <!-- Gate Info Hint Bar -->
             <div class="palette-hint-bar" id="palette-hint-bar">
-              <span id="palette-hint-text">💡 <strong>How to build:</strong> Click a gate above, then click a slot on wires q0, q1, or q2.</span>
+              <span id="palette-hint-text">💡 <strong>Arm a gate</strong> by clicking above, then click a qubit wire slot to place it on the register.</span>
+            </div>
+
+            <!-- Pauli Expectation Value Gauges (NEW) -->
+            <div class="pauli-gauges-panel" id="pauli-gauges-panel">
+              <div class="pauli-gauges-header">
+                <span class="pauli-gauges-title">Pauli Expectation Values</span>
+                <span class="pauli-gauges-sub">Per-qubit ⟨Z⟩, ⟨X⟩, ⟨Y⟩ observables</span>
+              </div>
+              <div class="pauli-gauges-grid" id="pauli-gauges-grid">
+                <!-- Rendered by JS -->
+              </div>
+              <div class="pauli-legend">
+                <span class="pauli-legend-item"><span class="pl-dot pl-z"></span>⟨Z⟩ = P(0) - P(1)</span>
+                <span class="pauli-legend-item"><span class="pl-dot pl-x"></span>⟨X⟩ coherence (Re)</span>
+                <span class="pauli-legend-item"><span class="pl-dot pl-y"></span>⟨Y⟩ coherence (Im)</span>
+              </div>
             </div>
 
             <!-- Live State Interpretation Card -->
@@ -406,7 +459,7 @@
             </div>
           </div>
 
-          <!-- Right: Clean White Circuit Canvas -->
+          <!-- Right: Circuit Canvas -->
           <div class="circuit-canvas-white">
             <!-- Guided Algorithm Tour Banner -->
             <div id="guided-algo-tour-bar" class="guided-algo-tour-bar" style="display: none;">
@@ -424,33 +477,32 @@
                 </div>
               </div>
               <p id="tour-explanation-text" class="tour-explanation-text">
-                Follow the highlighted column to observe state evolution step by step.
+                Follow the highlighted column to observe statevector evolution step by step.
               </p>
             </div>
 
-            <!-- Stepper Playback Toolbar ("Quantum Time Machine") -->
+            <!-- Stepper Playback (Quantum Time Machine) -->
             <div class="circuit-stepper-bar">
               <div class="stepper-controls-group">
-                <button id="btn-step-start" class="step-btn" title="Reset to Initial State (|000⟩)">⏮</button>
-                <button id="btn-step-prev" class="step-btn" title="Step Backward">◀</button>
-                <button id="btn-step-play" class="step-btn step-btn-play" title="Play / Pause Playback">▶ Play</button>
-                <button id="btn-step-next" class="step-btn" title="Step Forward">▶</button>
-                <button id="btn-step-end" class="step-btn" title="Seek to Full Circuit">⏭</button>
+                <button id="btn-step-start" class="step-btn" title="Reset to Initial Ground State |000⟩">⏮</button>
+                <button id="btn-step-prev" class="step-btn" title="Propagate Backward One Gate">◀</button>
+                <button id="btn-step-play" class="step-btn step-btn-play" title="Auto-Play Unitary Evolution">▶ Play</button>
+                <button id="btn-step-next" class="step-btn" title="Propagate Forward One Gate">▶</button>
+                <button id="btn-step-end" class="step-btn" title="Jump to Full Circuit Output">⏭</button>
               </div>
-
               <div class="stepper-info-group">
-                <span id="step-counter-display" class="step-counter-label"><strong>Full Circuit State</strong> (Step 6 of 6)</span>
+                <span id="step-counter-display" class="step-counter-label"><strong>Full Circuit Output</strong> (Step 6 of 6)</span>
                 <span id="entanglement-status-indicator" class="entanglement-badge" style="display: none;">⚡ Entangled Bell State Detected</span>
               </div>
             </div>
 
             <div class="step-ruler">
-              <span>Step 1</span>
-              <span>Step 2</span>
-              <span>Step 3</span>
-              <span>Step 4</span>
-              <span>Step 5</span>
-              <span>Step 6</span>
+              <span>t=1</span>
+              <span>t=2</span>
+              <span>t=3</span>
+              <span>t=4</span>
+              <span>t=5</span>
+              <span>t=6</span>
             </div>
 
             <div class="circuit-grid" id="circuit-grid">
@@ -460,49 +512,49 @@
 
         </div>
 
-        <!-- Live Dirac Bra-Ket Math HUD -->
+        <!-- Live Dirac Bra-Ket HUD -->
         <div class="dirac-math-strip">
           <div class="dirac-hud-left">
             <span class="dirac-hud-tag">Live Statevector |ψ⟩</span>
             <code id="dirac-math-hud" class="dirac-math-code">|ψ⟩ = 1.00 |000⟩</code>
           </div>
           <div class="dirac-hud-right">
-            <button id="btn-toggle-quantum-audio" class="btn-audio-harmony" title="Synthesize quantum state into harmonic soundscape">
-              <span id="audio-btn-icon">🔊</span> Listen to State
+            <button id="btn-toggle-quantum-audio" class="btn-audio-harmony" title="Synthesize quantum state into a harmonic soundscape via quantum audio mapping">
+              <span id="audio-btn-icon">🔊</span> Sonify State
             </button>
-            <span class="dirac-hud-hint">Normalized superposition across 8 computational basis states</span>
+            <span class="dirac-hud-hint">Normalized amplitude superposition across 2³ = 8 computational basis states</span>
           </div>
         </div>
 
-        <!-- Lower Visualizer Grid: State Probabilities, 3D Bloch Sphere, Physical Shots & Export -->
+        <!-- Lower Visualizer Grid -->
         <div class="visualizer-strip">
-          
-          <!-- Measurement Amplitudes Chart & Phase Clocks -->
+
+          <!-- Amplitude Spectrum & Phase Portrait -->
           <div class="vis-dock-card">
             <div class="vis-dock-header">
-              <h4>State Probabilities & Phase Clocks</h4>
-              <span class="vis-dock-sub">Magnitude |cᵢ|² and phase angle φ</span>
+              <h4>Amplitude Spectrum & Phase Portrait</h4>
+              <span class="vis-dock-sub">Born probability |cᵢ|² and complex phase angle φᵢ</span>
             </div>
             <div class="probability-bars-container" id="probability-bars"></div>
           </div>
 
-          <!-- Physical Measurement Laboratory (1024 Shots) -->
+          <!-- Monte Carlo Measurement Engine -->
           <div class="vis-dock-card">
             <div class="vis-dock-header">
-              <h4>Physical Detector (1024 Shots)</h4>
-              <button id="btn-run-shots" class="btn-run-shots">Run 1024 Shots 🎲</button>
+              <h4>Monte Carlo Measurement Engine</h4>
+              <button id="btn-run-shots" class="btn-run-shots">Sample 1024 Shots 🎲</button>
             </div>
             <div id="shots-results-container" class="shots-results-box">
               <div class="shots-empty-prompt">
-                Click <strong>Run 1024 Shots 🎲</strong> to measure quantum particles and observe stochastic wavefunction collapse.
+                Click <strong>Sample 1024 Shots</strong> to perform repeated Born rule projective measurement and observe the stochastic collapse distribution.
               </div>
             </div>
           </div>
 
-          <!-- 3D Bloch Sphere -->
+          <!-- 3D Bloch Sphere Visualizer -->
           <div class="vis-dock-card">
             <div class="vis-dock-header">
-              <h4>3D Statevector Sphere</h4>
+              <h4>Bloch Sphere Visualizer</h4>
               <div class="bloch-control-actions">
                 <div class="bloch-quick-pills">
                   <button class="bloch-pill-btn active" data-qubit="0">q[0]</button>
@@ -520,56 +572,61 @@
             <div class="bloch-coords-badge" id="bloch-coords"></div>
           </div>
 
-          <!-- Quantum Density Matrix (rho = |psi><psi|) Heatmap -->
+          <!-- Density Matrix Heatmap -->
           <div class="vis-dock-card density-matrix-card">
             <div class="vis-dock-header">
-              <h4>Density Matrix (ρ = |ψ⟩⟨ψ|)</h4>
-              <span id="density-entropy-badge" class="vis-dock-sub">Entropy S = 0.00</span>
+              <h4>Density Matrix ρ = |ψ⟩⟨ψ|</h4>
+              <span id="density-entropy-badge" class="vis-dock-sub">Von Neumann Entropy S = 0.00</span>
             </div>
             <div id="density-matrix-container" class="density-matrix-grid-box"></div>
             <div class="density-matrix-legend">
               <span class="legend-item"><span class="legend-dot dot-pop"></span> Diagonal: Population |cᵢ|²</span>
-              <span class="legend-item"><span class="legend-dot dot-coh"></span> Off-Diagonal: Coherence</span>
+              <span class="legend-item"><span class="legend-dot dot-coh"></span> Off-Diagonal: Quantum Coherence</span>
             </div>
           </div>
 
-          <!-- Cloud Export Block -->
-          <div class="vis-dock-card">
+          <!-- Code Export: Qiskit / OpenQASM / PennyLane -->
+          <div class="vis-dock-card export-card-wide">
             <div class="vis-dock-header">
-              <h4>Qiskit / OpenQASM Export</h4>
-              <div class="copy-actions">
-                <button class="btn-copy-chip" id="btn-copy-qiskit">Copy Python</button>
-                <button class="btn-copy-chip" id="btn-copy-qasm">Copy QASM</button>
+              <h4>Framework Code Export</h4>
+              <div class="export-tab-row" id="export-tab-row">
+                <button class="export-tab-btn active" data-export="qiskit" id="etab-qiskit">Qiskit (Python)</button>
+                <button class="export-tab-btn" data-export="qasm" id="etab-qasm">OpenQASM 2.0</button>
+                <button class="export-tab-btn" data-export="pennylane" id="etab-pennylane">PennyLane QNode</button>
               </div>
             </div>
+            <div class="export-copy-row">
+              <button class="btn-copy-chip" id="btn-copy-qiskit">Copy Code</button>
+              <span class="export-framework-badge" id="export-framework-label">Qiskit 1.x compatible</span>
+            </div>
             <div class="export-preview">
-              <pre><code id="qiskit-code"># Initializing Qiskit code...</code></pre>
+              <pre><code id="qiskit-code"># Initializing circuit code...</code></pre>
             </div>
           </div>
 
         </div>
 
-        <!-- ================= Q-CTRL INSPIRED HARDWARE & CONTROL LAB ================= -->
+        <!-- ================= HARDWARE & CONTROL LAB ================= -->
         <div class="hardware-control-panel">
           <div class="hw-panel-header">
             <div class="hw-title-box">
-              <span class="hw-badge">🔬 Quantum Hardware & Control Lab</span>
-              <h3>Realistic Noise & Microwave Pulse Dynamics</h3>
+              <span class="hw-badge">🔬 QPU Hardware & Noise Engineering Lab</span>
+              <h3>Physical Error Models & Microwave Pulse Dynamics</h3>
             </div>
-            <span class="hw-subtitle">Explore physical QPU error models (Fire Opal) and shaped RF microwave drive envelopes (Boulder Opal).</span>
+            <span class="hw-subtitle">Model NISQ-era decoherence (T1, T2), depolarizing noise channels, and shaped RF microwave control pulse envelopes. Mirrors methodologies used in IBM Quantum and IQM hardware labs.</span>
           </div>
 
           <div class="hw-lab-grid">
-            <!-- 1. Noise & Decoherence Simulator (Fire Opal) -->
+            <!-- 1. Noise & Decoherence Lab -->
             <div class="hw-card">
               <div class="hw-card-header">
-                <div class="hw-tag">Hardware Physics (NISQ)</div>
-                <h4>Decoherence & Error Mitigation</h4>
+                <div class="hw-tag">NISQ Error Physics</div>
+                <h4>Decoherence & Noise Channel Modelling</h4>
               </div>
 
               <div class="noise-controls-list">
                 <div class="noise-toggle-row">
-                  <span>Realistic IBM Falcon Noise Model</span>
+                  <span>Enable IBM Eagle r3 Noise Model</span>
                   <label class="switch-control">
                     <input type="checkbox" id="toggle-noise-mode" />
                     <span class="slider-round"></span>
@@ -578,7 +635,7 @@
 
                 <div class="noise-slider-item">
                   <div class="noise-slider-labels">
-                    <span>T₁ Relaxation (Energy Decay):</span>
+                    <span>T₁ Longitudinal Relaxation (Energy Decay to |0⟩):</span>
                     <strong id="val-t1">50 µs</strong>
                   </div>
                   <input type="range" id="slider-t1" min="10" max="150" value="50" class="hw-range" />
@@ -586,7 +643,7 @@
 
                 <div class="noise-slider-item">
                   <div class="noise-slider-labels">
-                    <span>T₂ Dephasing (Phase Jitter):</span>
+                    <span>T₂ Transverse Dephasing (Phase Coherence Loss):</span>
                     <strong id="val-t2">30 µs</strong>
                   </div>
                   <input type="range" id="slider-t2" min="5" max="100" value="30" class="hw-range" />
@@ -594,7 +651,7 @@
 
                 <div class="noise-slider-item">
                   <div class="noise-slider-labels">
-                    <span>Gate Depolarizing Error:</span>
+                    <span>Gate Depolarizing Error Rate ε:</span>
                     <strong id="val-gate-error">0.8%</strong>
                   </div>
                   <input type="range" id="slider-gate-error" min="0.1" max="4.0" step="0.1" value="0.8" class="hw-range" />
@@ -604,7 +661,7 @@
               <!-- Fidelity Gauge & Purity -->
               <div class="hw-metrics-row">
                 <div class="hw-gauge-box">
-                  <span class="gauge-name">Circuit State Fidelity (F):</span>
+                  <span class="gauge-name">Circuit State Fidelity F = |⟨ψ_ideal|ψ_noisy⟩|²:</span>
                   <strong id="hardware-fidelity-val">100.0%</strong>
                   <div class="gauge-track">
                     <div id="hardware-fidelity-bar" class="gauge-bar" style="width: 100%;"></div>
@@ -616,11 +673,11 @@
               </div>
 
               <div id="hardware-noise-note" class="hw-note-text">
-                <span style="color:#00f0ff;">Ideal Noiseless Mode:</span> 100% mathematical fidelity.
+                <span style="color:#00f0ff;">Ideal Noiseless Mode:</span> F = 1.000 (perfect unitary evolution, no decoherence channels active).
               </div>
 
               <button id="btn-apply-decoupling" class="btn-decoupling-action">
-                Apply Dynamic Decoupling (Suppress Noise) 🛡️
+                Apply Dynamical Decoupling (DD Pulse Sequence) 🛡️
               </button>
             </div>
 
@@ -673,7 +730,7 @@
       <div class="standard-page-container">
         <div class="page-lead-header">
           <h2>Quantum Algorithm Benchmark Labs</h2>
-          <p>Canonical circuit configurations demonstrating quantum advantage, interference, and entanglement.</p>
+          <p>Canonical gate-model circuit configurations demonstrating quantum advantage through superposition interference, phase kickback, and entanglement. Each algorithm is accompanied by step-by-step circuit analysis and complexity comparison with classical counterparts.</p>
         </div>
 
         <div class="algorithms-main-wrapper" id="algorithm-cards-container">
@@ -688,8 +745,8 @@
         <div class="mentor-console">
           <div class="mentor-header">
             <div>
-              <h3>AI Quantum Mentor</h3>
-              <p>Statevector diagnostics, unitary matrix explanations, and real-time circuit guidance.</p>
+              <h3>Ananta AI Research Mentor</h3>
+              <p>Statevector diagnostics, unitary decomposition, parameter-shift gradient explanations, and real-time circuit guidance powered by Gemini. Calibrated for undergraduate through postgraduate quantum computing depth.</p>
             </div>
             <div class="mentor-header-controls">
               <button id="btn-toggle-llm-settings" class="btn-llm-settings-toggle" title="Configure Cloud LLM (Gemini / OpenAI)">
@@ -741,18 +798,20 @@
           </div>
 
           <div class="prompt-chips-bar">
-            <span>Explore concepts:</span>
-            <button class="prompt-chip" data-query="Explain Superposition in simple terms">Superposition</button>
-            <button class="prompt-chip" data-query="Why do we combine Hadamard and CNOT to create an entangled Bell state?">Entanglement</button>
-            <button class="prompt-chip" data-query="How does Grover's diffusion operator amplify marked states?">Grover's Search</button>
-            <button class="prompt-chip" data-query="What is the Bloch Sphere and how does it represent a qubit?">Bloch Sphere</button>
+            <span>Ask about:</span>
+            <button class="prompt-chip" data-query="Explain quantum superposition with the Bloch sphere representation and its physical meaning">Superposition</button>
+            <button class="prompt-chip" data-query="Derive the Bell state from Hadamard and CNOT, and explain why it is maximally entangled">Entanglement</button>
+            <button class="prompt-chip" data-query="Walk me through Grover's diffusion operator and how it inverts amplitudes through the mean">Grover's</button>
+            <button class="prompt-chip" data-query="What is the Quantum Fourier Transform and how does it relate to Shor's algorithm?">QFT & Shor's</button>
+            <button class="prompt-chip" data-query="Explain the parameter-shift rule for computing quantum gradients in variational algorithms">VQE Gradients</button>
+            <button class="prompt-chip" data-query="What is decoherence and how do T1 and T2 times affect NISQ device performance?">Decoherence</button>
           </div>
 
           <div class="mentor-chat-stream" id="ai-chat-history">
             <div class="chat-bubble chat-ai">
-              <div class="chat-sender-label">AI Mentor</div>
+              <div class="chat-sender-label">Ananta AI Mentor</div>
               <div class="chat-text">
-                Welcome to Ananta. I can break down the mathematics behind your active circuit, explain how phase shifts alter amplitudes, or guide you through creating entangled pairs. Ask anything below!
+                Welcome to Ananta. I can explain the mathematics behind your active circuit, derive gate unitaries and their physical interpretations, walk through algorithm complexity and quantum advantage arguments, or help you understand NISQ hardware constraints. What would you like to explore?
               </div>
             </div>
           </div>
@@ -771,8 +830,8 @@
         <div class="challenges-panel">
           <div class="challenges-header-row">
             <div>
-              <h2>Interactive Circuit Challenges</h2>
-              <p>Synthesize target quantum states by arranging gates on the register.</p>
+              <h2>Quantum Puzzle Arena</h2>
+              <p>Synthesize target quantum states and reproduce canonical algorithm outputs by constructing minimal gate sequences. Each puzzle builds physical intuition for a core quantum phenomenon.</p>
             </div>
             <div class="challenges-score-badge">
               <span id="missions-progress-label">0 / 4 Solved</span>
@@ -811,19 +870,45 @@
     <section class="viewport-section" id="view-docs">
       <div class="standard-page-container">
         <div class="docs-container-card">
-          <h2>Ananta Architecture & State Mechanics</h2>
-          <p class="docs-intro">Comprehensive technical guide on statevector evolution, density matrix reduction, and gate unitaries.</p>
-          
+          <h2>Ananta Engine Architecture & Quantum State Mechanics</h2>
+          <p class="docs-intro">Technical reference covering statevector evolution, density matrix formalism, gate unitary decompositions, and the Ananta simulation pipeline.</p>
+
           <div class="doc-block">
-            <h3>1. Statevector Formulation</h3>
-            <p>For an $n$-qubit register, the state $|\psi\rangle$ is represented as a unit complex vector in $\mathbb{C}^{2^n}$:</p>
-            <pre class="math-snippet">|ψ⟩ = ∑ cᵢ |i⟩, where ∑ |cᵢ|² = 1.0</pre>
+            <h3>1. Hilbert Space & Statevector Representation</h3>
+            <p>For an n-qubit register, the state |psi> lives in a Hilbert space H of dimension 2^n, represented as a unit complex vector:</p>
+            <pre class="math-snippet">|ψ⟩ = Σᵢ cᵢ |i⟩  ∈  ℂ^(2^n),   where Σᵢ |cᵢ|² = 1   (Born normalization)</pre>
+            <p>For 3 qubits: 2³ = 8 basis states, spanning |000⟩ through |111⟩. Each amplitude cᵢ ∈ ℂ carries both probability weight |cᵢ|² and phase φᵢ = arg(cᵢ).</p>
           </div>
 
           <div class="doc-block">
-            <h3>2. Unitary Operations</h3>
-            <p>Single-qubit operations and multi-qubit entangling gates execute via tensor products and matrix multiplication:</p>
-            <pre class="math-snippet">H = (1/√2) [[1, 1], [1, -1]],  X = [[0, 1], [1, 0]],  CX = [[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]]</pre>
+            <h3>2. Gate Unitaries & Propagation</h3>
+            <p>Single-qubit gates act as SU(2) rotations on the Bloch sphere. Multi-qubit gates are constructed via tensor products:</p>
+            <pre class="math-snippet">H = (1/√2)·[[1, 1],[1,-1]]     X = [[0,1],[1,0]]     Z = [[1,0],[0,-1]]
+S = diag(1, i)                 T = diag(1, e^(iπ/4))
+CX = [[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]]   (CNOT in computational basis)</pre>
+            <p>The full evolution of an n-qubit state under a circuit U = Uₖ···U₂U₁ is: |ψ_out⟩ = U|0⟩^⊗n</p>
+          </div>
+
+          <div class="doc-block">
+            <h3>3. Density Matrix Formalism</h3>
+            <p>For pure states, the density operator rho = |psi><psi| encodes all observable statistics. Tr(rho) = 1 and Tr(rho²) = 1 (purity = 1 for pure states). Von Neumann entropy S = -Tr(rho·log2(rho)) = 0 for pure states and positive for mixed states.</p>
+            <pre class="math-snippet">ρ = |ψ⟩⟨ψ|,   S(ρ) = -Tr(ρ log₂ρ),   Tr(ρ²) = 1 (pure), &lt;1 (mixed)</pre>
+          </div>
+
+          <div class="doc-block">
+            <h3>4. Pauli Observable Expectation Values</h3>
+            <p>For a single qubit in reduced state rho_i = Tr_others(rho), the Pauli expectation values are:</p>
+            <pre class="math-snippet">⟨Z⟩ = Tr(Z·ρᵢ) = P(|0⟩) - P(|1⟩)  ∈ [-1, +1]
+⟨X⟩ = Tr(X·ρᵢ) = 2·Re(ρ₀₁)         (off-diagonal coherence)
+⟨Y⟩ = Tr(Y·ρᵢ) = 2·Im(ρ₀₁)         (imaginary coherence)</pre>
+          </div>
+
+          <div class="doc-block">
+            <h3>5. Decoherence & NISQ Noise Channels</h3>
+            <p>Physical qubits are subject to two primary decay channels: amplitude damping (T1) and dephasing (T2). Gate fidelity under depolarizing noise:</p>
+            <pre class="math-snippet">T₁: Energy relaxation |1⟩→|0⟩ at rate Γ₁ = 1/T₁
+T₂: Phase dephasing at rate Γ₂ = 1/T₂ = Γ₁/2 + Γ_φ
+Depolarizing: ρ → (1-ε)·U·ρ·U† + ε·I/2  (gate infidelity ε)</pre>
           </div>
         </div>
       </div>

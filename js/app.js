@@ -283,6 +283,8 @@ document.addEventListener('DOMContentLoaded', () => {
         [null, 'CX_TGT', null, null, null, null],
         [null, null, null, null, null, null]
       ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'bell_state.qc';
       if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'bell_phi_plus');
     } else if (presetKey === 'grover' || presetKey === 'grover_2qubit') {
       targetGrid = [
@@ -290,6 +292,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ['H', 'CX_TGT', 'H', 'X', 'H', null],
         [null, null, null, null, null, null]
       ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'grover_search.qc';
       if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'grover_2qubit');
     } else if (presetKey === 'superposition') {
       targetGrid = [
@@ -297,7 +301,18 @@ document.addEventListener('DOMContentLoaded', () => {
         ['H', null, null, null, null, null],
         ['H', null, null, null, null, null]
       ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'uniform_superposition.qc';
       if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'superposition_3' || a.id === 'superposition');
+    } else if (presetKey === 'qft') {
+      // 3-qubit QFT: H + controlled-SWAP sequence
+      targetGrid = [
+        ['H', 'S', 'T', null, null, null],
+        [null, null, 'H', 'S', null, null],
+        [null, null, null, null, 'H', null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'quantum_fourier_transform.qc';
     } else if (window.ALGORITHM_CATALOG) {
       targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === presetKey);
       if (targetAlgo) targetGrid = targetAlgo.grid;
@@ -313,8 +328,205 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnClearCirc = document.getElementById('btn-clear-circ');
   if (btnClearCirc) {
-    btnClearCirc.addEventListener('click', () => circuitUI.clearCircuit());
+    btnClearCirc.addEventListener('click', () => {
+      circuitUI.clearCircuit();
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'untitled_circuit.qc';
+    });
   }
+
+  // Scroll to composer helper (used by KE load buttons)
+  window.scrollToComposer = function() {
+    switchView('simulator');
+    const composerEl = document.getElementById('view-simulator');
+    if (composerEl) composerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // ==========================================
+  // 6. Quantum Knowledge Engine
+  // ==========================================
+  const keEngine = window.QuantumKnowledgeEngine ? new window.QuantumKnowledgeEngine() : null;
+  if (keEngine) {
+    const keInput = document.getElementById('ke-search-input');
+    const keBtn = document.getElementById('btn-ke-search');
+    const keResultPanel = document.getElementById('ke-result-panel');
+    const keResultInner = document.getElementById('ke-result-inner');
+    const keCollapseBtn = document.getElementById('btn-ke-collapse');
+    const keBar = document.getElementById('knowledge-engine-bar');
+
+    function runKESearch(query) {
+      if (!query || query.trim().length < 2) return;
+      const topic = keEngine.search(query);
+      if (!keResultPanel || !keResultInner) return;
+      if (topic) {
+        keResultInner.innerHTML = keEngine.renderCard(topic);
+        keResultPanel.style.display = 'block';
+        keResultPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        keResultInner.innerHTML = `
+          <div class="ke-no-result">
+            <div class="ke-no-result-icon">🔭</div>
+            <h4>No topic found for "<em>${query}</em>"</h4>
+            <p>Try: superposition, entanglement, VQE, QFT, Grover's algorithm, decoherence, surface codes, Shor's algorithm, phase kickback, Bloch sphere, quantum teleportation, QAOA, T gate, no-cloning theorem, density matrix...</p>
+          </div>`;
+        keResultPanel.style.display = 'block';
+      }
+    }
+
+    if (keBtn) keBtn.addEventListener('click', () => runKESearch(keInput ? keInput.value : ''));
+    if (keInput) {
+      keInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runKESearch(keInput.value); });
+    }
+
+    // Quick chip buttons
+    document.querySelectorAll('.ke-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const topic = chip.getAttribute('data-topic');
+        if (keInput) keInput.value = topic;
+        runKESearch(topic);
+      });
+    });
+
+    // Collapse toggle
+    if (keCollapseBtn && keBar) {
+      keCollapseBtn.addEventListener('click', () => {
+        const isCollapsed = keBar.classList.toggle('ke-collapsed');
+        keCollapseBtn.textContent = isCollapsed ? 'v Expand' : '^ Collapse';
+      });
+    }
+  }
+
+  // ==========================================
+  // 7. Pauli Expectation Gauges
+  // ==========================================
+  function renderPauliGauges() {
+    const gaugesGrid = document.getElementById('pauli-gauges-grid');
+    if (!gaugesGrid || !engine) return;
+
+    const expectations = engine.computePauliExpectations();
+    gaugesGrid.innerHTML = '';
+
+    expectations.forEach(({ qubit, Z, X, Y }) => {
+      const card = document.createElement('div');
+      card.className = 'pauli-qubit-card';
+
+      const fmt = v => (v >= 0 ? '+' : '') + v.toFixed(3);
+      const bar = (v, cls) => {
+        const pct = Math.round(((v + 1) / 2) * 100);
+        const fill = Math.round(Math.abs(v) * 50);
+        const side = v >= 0 ? 'right' : 'left';
+        return `<div class="pauli-bar-track">
+          <div class="pauli-bar-fill ${cls}" style="width:${fill}px; ${side === 'right' ? 'left:50%' : 'right:50%'}"></div>
+          <div class="pauli-bar-center"></div>
+        </div>`;
+      };
+
+      card.innerHTML = `
+        <div class="pauli-qubit-label">q[${qubit}]</div>
+        <div class="pauli-row">
+          <span class="pauli-obs pauli-obs-z">Z</span>
+          <span class="pauli-val">${fmt(Z)}</span>
+          ${bar(Z, 'pbar-z')}
+        </div>
+        <div class="pauli-row">
+          <span class="pauli-obs pauli-obs-x">X</span>
+          <span class="pauli-val">${fmt(X)}</span>
+          ${bar(X, 'pbar-x')}
+        </div>
+        <div class="pauli-row">
+          <span class="pauli-obs pauli-obs-y">Y</span>
+          <span class="pauli-val">${fmt(Y)}</span>
+          ${bar(Y, 'pbar-y')}
+        </div>
+      `;
+      gaugesGrid.appendChild(card);
+    });
+  }
+
+  // Hook into existing circuit update events
+  const origUpdateVis = window._quantaUpdateVisualizers;
+  window._renderPauliGauges = renderPauliGauges;
+  // Initial render
+  setTimeout(renderPauliGauges, 600);
+
+  // ==========================================
+  // 8. Framework Code Export Tabs (Qiskit / QASM / PennyLane)
+  // ==========================================
+  const exportTabBtns = document.querySelectorAll('.export-tab-btn');
+  const exportCodeEl = document.getElementById('qiskit-code');
+  const exportCopyBtn = document.getElementById('btn-copy-qiskit');
+  const exportFrameworkLabel = document.getElementById('export-framework-label');
+  let activeExportTab = 'qiskit';
+
+  function updateExportCode() {
+    if (!circuitUI || !exportCodeEl) return;
+    const grid = circuitUI.getGrid ? circuitUI.getGrid() : circuitUI.grid;
+    if (!grid) return;
+
+    let code = '';
+    if (activeExportTab === 'qiskit') {
+      code = engine.toQiskit(grid);
+      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'Qiskit 1.x compatible';
+    } else if (activeExportTab === 'qasm') {
+      code = engine.toQASM(grid);
+      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'OpenQASM 2.0 - IBM Cloud ready';
+    } else if (activeExportTab === 'pennylane') {
+      code = engine.toPennyLane(grid);
+      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'PennyLane >= 0.38 (Xanadu)';
+    }
+    exportCodeEl.textContent = code;
+  }
+
+  exportTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      exportTabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeExportTab = btn.getAttribute('data-export');
+      updateExportCode();
+    });
+  });
+
+  if (exportCopyBtn) {
+    exportCopyBtn.addEventListener('click', () => {
+      const code = exportCodeEl ? exportCodeEl.textContent : '';
+      navigator.clipboard.writeText(code).then(() => {
+        exportCopyBtn.textContent = 'Copied!';
+        setTimeout(() => { exportCopyBtn.textContent = 'Copy Code'; }, 2000);
+      }).catch(() => {
+        exportCopyBtn.textContent = 'Copy Code';
+      });
+    });
+  }
+
+  // Patch existing copy buttons if they exist
+  const oldQasmBtn = document.getElementById('btn-copy-qasm');
+  if (oldQasmBtn) {
+    oldQasmBtn.addEventListener('click', () => {
+      if (!circuitUI) return;
+      const grid = circuitUI.getGrid ? circuitUI.getGrid() : circuitUI.grid;
+      if (!grid) return;
+      navigator.clipboard.writeText(engine.toQASM(grid)).then(() => {
+        oldQasmBtn.textContent = 'Copied!';
+        setTimeout(() => { oldQasmBtn.textContent = 'Copy QASM'; }, 2000);
+      });
+    });
+  }
+
+  // Initial export code population
+  setTimeout(updateExportCode, 500);
+
+  // Re-render exports and gauges after circuit changes
+  // Patch into existing circuitUI state update
+  if (circuitUI && circuitUI.onStateUpdate) {
+    const origUpdate = circuitUI.onStateUpdate.bind(circuitUI);
+    circuitUI.onStateUpdate = function(...args) {
+      origUpdate(...args);
+      updateExportCode();
+      renderPauliGauges();
+    };
+  }
+
+
 
   // ==========================================
   // 8. Research Library Engine
