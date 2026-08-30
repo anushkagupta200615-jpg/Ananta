@@ -584,9 +584,9 @@
     const savedTheme = localStorage.getItem('ananta_theme') || 'light';
     applyTheme(savedTheme);
 
-    // If user is already logged in, redirect directly to simulator!
-    if (localStorage.getItem('ananta_user')) {
-      window.location.href = 'index.html#simulator';
+    // If user clicks enter simulator
+    function checkLoggedInStatus() {
+      // Keep user on login page so they can view and interact with it
     }
 
     function openGoogleDialog() {

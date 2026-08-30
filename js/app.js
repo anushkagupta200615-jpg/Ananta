@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const isLoggedIn = updateNavUser();
   const hash = window.location.hash.replace('#', '');
 
-  if (hash && ['overview', 'simulator', 'algorithms', 'ai-assistant', 'challenges', 'docs'].includes(hash)) {
+  if (hash && ['overview', 'simulator', 'algorithms', 'ai-assistant', 'challenges', 'docs', 'login'].includes(hash)) {
     switchView(hash);
   } else if (isLoggedIn) {
     // If logged in and no specific hash, jump straight into Simulator
@@ -311,4 +311,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // If not logged in, present Login view
     switchView('login');
   }
+
+  // Listen for hash changes dynamically
+  window.addEventListener('hashchange', () => {
+    const h = window.location.hash.replace('#', '');
+    if (h && ['overview', 'simulator', 'algorithms', 'ai-assistant', 'challenges', 'docs', 'login'].includes(h)) {
+      switchView(h);
+    }
+  });
 });
