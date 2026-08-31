@@ -946,6 +946,18 @@ class QuantumKnowledgeEngine {
   _buildTopicDatabase() {
     return [
       {
+        keys: ['alpha', 'beta', 'probability amplitude', 'state amplitude', 'state coefficients', 'alpha and beta'],
+        title: 'Alpha & Beta: Quantum State Probability Amplitudes',
+        category: 'Foundations',
+        arxiv: null,
+        definition: 'In a single-qubit quantum state |ψ⟩ = α|0⟩ + β|1⟩, α (alpha) and β (beta) are complex probability amplitudes. By the Born rule, the probability of measuring |0⟩ is |α|² and measuring |1⟩ is |β|², satisfying the normalization constraint |α|² + |β|² = 1.',
+        math: '|ψ⟩ = α|0⟩ + β|1⟩,   where α, β ∈ ℂ\nNormalization: |α|² + |β|² = 1\nP(|0⟩) = |α|² = α* · α\nP(|1⟩) = |β|² = β* · β\n\nBloch Sphere parametrization:\nα = cos(θ/2)\nβ = e^(iφ) · sin(θ/2)\nPhase factor e^(iφ) gives quantum relative phase.',
+        intuition: 'Unlike classical probabilities which are strictly positive real numbers that sum to 1, quantum amplitudes α and β are complex numbers with both magnitude and direction (phase angle). This allows α and β from multiple computational pathways to interfere destructively (cancel each other out) or constructively (boost each other), which is the mathematical foundation of all quantum algorithmic speedups.',
+        applications: ['Statevector representation in quantum simulators', 'Quantum gate matrix-vector multiplication (|ψ′⟩ = U|ψ⟩)', 'Born Rule projective readout in real quantum processors', 'Phase estimation & amplitude amplification (Grover search)'],
+        preset: 'superposition',
+        furtherReading: 'Nielsen & Chuang Ch. 1.2, Dirac "Principles of Quantum Mechanics" Ch. 1'
+      },
+      {
         keys: ['superposition', 'superpose', 'hadamard superposition'],
         title: 'Quantum Superposition',
         category: 'Foundations',
@@ -1236,38 +1248,69 @@ class QuantumKnowledgeEngine {
     ];
   }
 
-  // Search for a topic by user query - fuzzy keyword match
+  // Search for a topic by user query - intelligent semantic and keyword match
   search(query) {
     if (!query || query.trim().length < 2) return null;
-    const q = query.toLowerCase().trim();
 
-    // Direct keyword match
+    const stopWords = new Set(['explain', 'about', 'what', 'is', 'are', 'the', 'how', 'does', 'tell', 'me', 'in', 'of', 'a', 'an', 'to', 'can', 'you', 'please', 'give', 'detail', 'details', 'for', 'with']);
+    const rawTokens = query.toLowerCase().replace(/[^a-z0-9αβψφθλ\s]/gi, ' ').split(/\s+/).filter(Boolean);
+    const tokens = rawTokens.filter(t => !stopWords.has(t));
+    const effectiveTokens = tokens.length > 0 ? tokens : rawTokens;
+    const cleanQuery = effectiveTokens.join(' ');
+    const fullQuery = query.toLowerCase().trim();
+
     let best = null;
     let bestScore = 0;
 
     for (const topic of this.topics) {
       let score = 0;
+
+      // 1. Exact key match (Highest priority)
       for (const key of topic.keys) {
-        if (q === key) { score = 100; break; }
-        if (q.includes(key) || key.includes(q)) score = Math.max(score, 80);
-        // Partial word match
-        const qWords = q.split(/\s+/);
-        const kWords = key.split(/\s+/);
-        for (const qw of qWords) {
-          for (const kw of kWords) {
-            if (qw.length >= 3 && (qw.includes(kw) || kw.includes(qw))) score = Math.max(score, 50);
+        const k = key.toLowerCase();
+        if (cleanQuery === k || fullQuery === k) {
+          score = Math.max(score, 120);
+        } else if (new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(fullQuery)) {
+          score = Math.max(score, 100);
+        } else if (effectiveTokens.some(tok => tok.length >= 3 && k.split(/\s+/).includes(tok))) {
+          score = Math.max(score, 85);
+        }
+      }
+
+      // 2. Title match (Whole word or exact match only)
+      const titleLower = topic.title.toLowerCase();
+      if (titleLower.includes(cleanQuery) && cleanQuery.length >= 3) {
+        score = Math.max(score, 90);
+      }
+      for (const tok of effectiveTokens) {
+        if (tok.length >= 2) {
+          const wordRegex = new RegExp('\\b' + tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+          if (wordRegex.test(titleLower)) {
+            score = Math.max(score, 80);
           }
         }
       }
-      // Also match title words
-      const titleWords = topic.title.toLowerCase().split(/\s+/);
-      for (const tw of titleWords) {
-        if (q.includes(tw) || tw.includes(q)) score = Math.max(score, 60);
+
+      // 3. Content matches (Definition, Intuition, Math)
+      const content = (topic.definition + ' ' + topic.intuition + ' ' + (topic.math || '')).toLowerCase();
+      let tokenHits = 0;
+      for (const tok of effectiveTokens) {
+        if (tok.length >= 3) {
+          const wordRegex = new RegExp('\\b' + tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+          if (wordRegex.test(content)) tokenHits++;
+        }
       }
-      if (score > bestScore) { bestScore = score; best = topic; }
+      if (tokenHits > 0 && tokenHits === effectiveTokens.length) {
+        score = Math.max(score, 60 + tokenHits * 10);
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = topic;
+      }
     }
 
-    return bestScore >= 40 ? best : null;
+    return bestScore >= 50 ? best : null;
   }
 
   // Render a rich topic card as HTML

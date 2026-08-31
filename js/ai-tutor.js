@@ -462,6 +462,17 @@ Guidelines:
   generateLocalAIResponse(query) {
     const q = query.toLowerCase();
 
+    if (q.includes('alpha') || q.includes('beta') || q.includes('amplitude')) {
+      return `<strong>Quantum State Amplitudes (α and β):</strong><br><br>
+In a qubit state <code>|ψ⟩ = α|0⟩ + β|1⟩</code>:
+<ul>
+  <li><strong>α (Alpha)</strong> is the complex probability amplitude of measuring the qubit in state <code>|0⟩</code>. The measurement probability is <code>P(0) = |α|²</code>.</li>
+  <li><strong>β (Beta)</strong> is the complex probability amplitude of measuring state <code>|1⟩</code>. The measurement probability is <code>P(1) = |β|²</code>.</li>
+  <li><strong>Normalization Rule:</strong> <code>|α|² + |β|² = 1</code> (total probability is always 100%).</li>
+  <li><strong>Complex Interference:</strong> Unlike classical probabilities, α and β are complex numbers (having both magnitude and phase angle <code>e^(iφ)</code>), allowing them to interfere constructively or destructively to give quantum computers their exponential advantage!</li>
+</ul>`;
+    }
+
     if (q.includes('superposition')) {
       return `<strong>Superposition</strong> is the ability of a quantum system to exist in a linear combination of basis states simultaneously until measurement.<br><br>
 In classical computing, a bit is strictly 0 or 1. In quantum computing, a qubit is defined as: <code>|ψ⟩ = α|0⟩ + β|1⟩</code>, where |α|² and |β|² represent measurement probabilities. Applying a <strong>Hadamard (H)</strong> gate rotates a state into equal superposition!`;
