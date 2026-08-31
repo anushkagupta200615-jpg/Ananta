@@ -2166,69 +2166,400 @@ class AlgorithmLibrary {
 // ============================================================
 // MISSION MANAGER
 // ============================================================
+// ============================================================
+// MISSION MANAGER (Persistent, Gamified, Real-Time Evaluated)
+// ============================================================
 class MissionManager {
   constructor() {
+    // Load solved mission IDs from localStorage
+    const savedCompleted = JSON.parse(localStorage.getItem('ananta_completed_missions') || '[]');
+
     this.missions = [
-      { id: 1, title: 'Mission 1: The Quantum Coin Flip', desc: 'Put Qubit 0 into equal superposition using a Hadamard (H) gate.', hint: "Drag the 'H' gate from the palette onto Qubit 0, column 1.", check: (grid, probs) => grid[0].some(g => g === 'H') && probs.filter(p => p.probability > 0.4).length >= 2, completed: false },
-      { id: 2, title: 'Mission 2: Spooky Entanglement', desc: 'Create a Bell pair (|Phi+>) using H on Qubit 0 and CNOT across Qubits 0 and 1.', hint: "H on q[0], then CX with q[0] as control and q[1] as target.", check: (grid, probs) => { const hasH = grid[0].some(g => g === 'H'); const hasCX = grid[0].some((g, c) => g === 'CX_CTRL' && grid[1][c] === 'CX_TGT'); const p00 = probs.find(p => p.state === '|000⟩')?.probability || 0; return hasH && hasCX && p00 > 0.4; }, completed: false },
-      { id: 3, title: 'Mission 3: The Quantum NOT Gate', desc: 'Flip Qubit 0 from state |0> to state |1> using a Pauli-X gate.', hint: "Drag the 'X' gate onto Qubit 0.", check: (grid, probs) => { const hasX = grid[0].some(g => g === 'X'); const p1 = probs.find(p => p.state.startsWith('|1'))?.probability || 0; return hasX && p1 > 0.9; }, completed: false },
-      { id: 4, title: 'Mission 4: Interference Cancellation', desc: 'Demonstrate that H is its own inverse by applying H twice on Qubit 0 to return to |0>.', hint: "Place 'H' in column 1 and another 'H' in column 2 on Qubit 0.", check: (grid, probs) => { const hCount = grid[0].filter(g => g === 'H').length; const p0 = probs.find(p => p.state === '|000⟩')?.probability || 0; return hCount >= 2 && p0 > 0.9; }, completed: false },
-      { id: 5, title: 'Mission 5: GHZ Tri-Entanglement', desc: 'Entangle all 3 qubits into a GHZ state using H and two CNOT gates.', hint: "H on q[0], CX from q[0] to q[1], then CX from q[1] to q[2].", check: (grid, probs) => { const p000 = probs.find(p => p.state === '|000⟩')?.probability || 0; const p111 = probs.find(p => p.state === '|111⟩')?.probability || 0; return p000 > 0.4 && p111 > 0.4; }, completed: false },
-      { id: 6, title: 'Mission 6: Phase Alchemist', desc: 'Use T or S gates to add a complex phase without changing state probabilities.', hint: "Place H then S or T on any qubit and watch the phase clocks rotate.", check: (grid) => grid.some(row => row.some(g => g === 'T' || g === 'S')), completed: false }
+      {
+        id: 1,
+        tier: 'beginner',
+        level: 'Easy',
+        xp: 50,
+        title: 'The Quantum Coin Flip',
+        targetState: '|ψ⟩ = (|000⟩ + |100⟩) / √2',
+        desc: 'Put Qubit 0 into a 50/50 equal superposition using a single Hadamard (H) gate.',
+        hint: "Drag the 'H' gate from the palette onto Qubit 0, column 1.",
+        preset: null,
+        check: (grid, probs) => {
+          const hasH = grid[0] && grid[0].some(g => g === 'H');
+          const p000 = probs.find(p => p.index === 0)?.probability || 0;
+          const p100 = probs.find(p => p.index === 4)?.probability || 0;
+          return hasH && Math.abs(p000 - 0.5) < 0.08 && Math.abs(p100 - 0.5) < 0.08;
+        },
+        completed: savedCompleted.includes(1)
+      },
+      {
+        id: 2,
+        tier: 'beginner',
+        level: 'Easy',
+        xp: 75,
+        title: 'Spooky Bell Entanglement',
+        targetState: '|Φ⁺⟩ = (|000⟩ + |110⟩) / √2',
+        desc: 'Synthesize a maximally entangled Einstein-Podolsky-Rosen (EPR) Bell state across Qubits 0 and 1.',
+        hint: "Place 'H' on Qubit 0, then a CNOT gate with Qubit 0 as control (CX_CTRL) and Qubit 1 as target (CX_TGT).",
+        preset: null,
+        check: (grid, probs) => {
+          const hasH = grid[0] && grid[0].some(g => g === 'H');
+          const hasCX = grid[0] && grid[0].some((g, c) => g === 'CX_CTRL' && grid[1] && grid[1][c] === 'CX_TGT');
+          const p000 = probs.find(p => p.index === 0)?.probability || 0;
+          const p110 = probs.find(p => p.index === 6)?.probability || 0;
+          return hasH && hasCX && p000 > 0.38 && p110 > 0.38 && (p000 + p110) > 0.9;
+        },
+        completed: savedCompleted.includes(2)
+      },
+      {
+        id: 3,
+        tier: 'beginner',
+        level: 'Easy',
+        xp: 50,
+        title: 'The Quantum NOT Gate',
+        targetState: '|ψ⟩ = |100⟩',
+        desc: 'Flip Qubit 0 from ground state |0⟩ to excited state |1⟩ using a Pauli-X bit-flip gate.',
+        hint: "Drag the 'X' gate onto Qubit 0.",
+        preset: null,
+        check: (grid, probs) => {
+          const hasX = grid[0] && grid[0].some(g => g === 'X');
+          const p100 = probs.find(p => p.index === 4)?.probability || 0;
+          return hasX && p100 > 0.95;
+        },
+        completed: savedCompleted.includes(3)
+      },
+      {
+        id: 4,
+        tier: 'intermediate',
+        level: 'Medium',
+        xp: 100,
+        title: 'Interference Cancellation (Self-Inverse)',
+        targetState: '|ψ⟩ = |000⟩ with 100% certainty',
+        desc: 'Prove that the Hadamard gate is unitary and Hermitian (H² = I) by applying H twice on Qubit 0.',
+        hint: "Place 'H' in column 1 and another 'H' in column 2 on Qubit 0. Notice amplitudes cancel out on |100⟩!",
+        preset: null,
+        check: (grid, probs) => {
+          const hCount = (grid[0] || []).filter(g => g === 'H').length;
+          const p000 = probs.find(p => p.index === 0)?.probability || 0;
+          return hCount >= 2 && p000 > 0.95;
+        },
+        completed: savedCompleted.includes(4)
+      },
+      {
+        id: 5,
+        tier: 'intermediate',
+        level: 'Medium',
+        xp: 125,
+        title: 'GHZ Tripartite Entanglement',
+        targetState: '|GHZ⟩ = (|000⟩ + |111⟩) / √2',
+        desc: 'Entangle all 3 qubits into a Greenberger-Horne-Zeilinger (GHZ) macroscopic superposition.',
+        hint: "H on q0, CNOT from q0 to q1, then CNOT from q1 to q2.",
+        preset: null,
+        check: (grid, probs) => {
+          const p000 = probs.find(p => p.index === 0)?.probability || 0;
+          const p111 = probs.find(p => p.index === 7)?.probability || 0;
+          return p000 > 0.38 && p111 > 0.38 && (p000 + p111) > 0.9;
+        },
+        completed: savedCompleted.includes(5)
+      },
+      {
+        id: 6,
+        tier: 'intermediate',
+        level: 'Medium',
+        xp: 100,
+        title: 'Phase Alchemist',
+        targetState: '|ψ⟩ = (|000⟩ + e^(iπ/4) |100⟩) / √2',
+        desc: 'Apply a T gate (π/8 phase rotation) to Qubit 0 in superposition without disturbing measurement probabilities.',
+        hint: "Place 'H' on Qubit 0, followed by 'T' on Qubit 0. The probability remains 50/50 while the complex phase rotates 45°!",
+        preset: null,
+        check: (grid, probs) => {
+          const hasH = grid[0] && grid[0].some(g => g === 'H');
+          const hasT = grid[0] && grid[0].some(g => g === 'T');
+          const p000 = probs.find(p => p.index === 0)?.probability || 0;
+          return hasH && hasT && Math.abs(p000 - 0.5) < 0.08;
+        },
+        completed: savedCompleted.includes(6)
+      },
+      {
+        id: 7,
+        tier: 'advanced',
+        level: 'Hard',
+        xp: 150,
+        title: 'W-State Tri-Superposition',
+        targetState: '|W⟩ = (|100⟩ + |010⟩ + |001⟩) / √3',
+        desc: 'Construct a state where exactly one photon/excitation is shared equally among 3 qubits.',
+        hint: "Rotate q0, conditionally transfer excitation to q1, then to q2 using controlled gates.",
+        preset: null,
+        check: (grid, probs) => {
+          const p100 = probs.find(p => p.index === 4)?.probability || 0;
+          const p010 = probs.find(p => p.index === 2)?.probability || 0;
+          const p001 = probs.find(p => p.index === 1)?.probability || 0;
+          return p100 > 0.25 && p010 > 0.25 && p001 > 0.25 && (p100 + p010 + p001) > 0.85;
+        },
+        completed: savedCompleted.includes(7)
+      },
+      {
+        id: 8,
+        tier: 'advanced',
+        level: 'Hard',
+        xp: 200,
+        title: 'Grover Diffusion Inversion',
+        targetState: 'Full constructive interference on target state',
+        desc: 'Apply the Grover Diffusion Operator (H ⊗ X ⊗ CZ ⊗ X ⊗ H) to reflect state amplitudes around their mean.',
+        hint: "Invert amplitudes by sandwiching multi-qubit phase gates between Hadamard layers.",
+        preset: null,
+        check: (grid, probs) => {
+          const active = probs.filter(p => p.probability > 0.7);
+          return grid.some(r => r.filter(g => g === 'H').length >= 2) && active.length === 1;
+        },
+        completed: savedCompleted.includes(8)
+      }
     ];
-    this.activeMission = 0;
+
+    this.activeMission = parseInt(localStorage.getItem('ananta_active_mission') || '0', 10);
+    if (this.activeMission >= this.missions.length) this.activeMission = 0;
+    this.currentFilter = 'all';
+
     this.renderMissions();
+    this.updateInSimChallengeBanner();
   }
 
   renderMissions() {
     const listEl = document.getElementById('missions-list');
     if (!listEl) return;
     listEl.innerHTML = '';
-    this.missions.forEach((m, idx) => {
+
+    const filtered = this.missions.filter(m => {
+      if (this.currentFilter === 'all') return true;
+      return m.tier === this.currentFilter;
+    });
+
+    filtered.forEach((m) => {
+      const globalIdx = this.missions.findIndex(item => item.id === m.id);
+      const isCurrentActive = globalIdx === this.activeMission;
       const card = document.createElement('div');
-      card.className = 'mission-card' + (m.completed ? ' mission-completed' : '') + (idx === this.activeMission ? ' mission-active' : '');
-      card.innerHTML = '<div class="mission-header"><span class="mission-status-icon">' + (m.completed ? '✓' : idx + 1) + '</span><h4 class="mission-title">' + m.title + '</h4></div><p class="mission-desc">' + m.desc + '</p><div class="mission-hint"><strong>Hint:</strong> ' + m.hint + '</div><button class="btn-load-mission">' + (m.completed ? 'Solved (Retry)' : 'Attempt Mission →') + '</button>';
-      card.querySelector('.btn-load-mission').addEventListener('click', () => {
-        this.activeMission = idx;
-        if (window.circuitUI) {
-          window.circuitUI.clearCircuit();
-          const t = document.querySelector('[data-tab="simulator"]');
-          if (t) t.click();
-        }
+      card.className = `puzzle-card ${m.completed ? 'puzzle-solved' : ''} ${isCurrentActive ? 'puzzle-active-focus' : ''}`;
+
+      card.innerHTML = `
+        <div class="puzzle-card-top">
+          <div class="puzzle-tier-group">
+            <span class="puzzle-tier-badge tier-${m.tier}">${m.level}</span>
+            <span class="puzzle-xp-chip">+${m.xp} XP</span>
+          </div>
+          <span class="puzzle-status-pill ${m.completed ? 'status-done' : 'status-pending'}">
+            ${m.completed ? '✓ Solved' : 'Unsolved'}
+          </span>
+        </div>
+
+        <h3 class="puzzle-title">${m.title}</h3>
+        <p class="puzzle-desc">${m.desc}</p>
+
+        <div class="puzzle-target-box">
+          <span class="target-box-label">Target Statevector:</span>
+          <code class="target-math-code">${m.targetState}</code>
+        </div>
+
+        <details class="puzzle-hint-details">
+          <summary>💡 Need a Hint?</summary>
+          <p>${m.hint}</p>
+        </details>
+
+        <div class="puzzle-card-actions">
+          <button class="btn-attempt-puzzle ${isCurrentActive ? 'btn-attempt-active' : ''}">
+            ${m.completed ? 'Re-test in Composer ↺' : (isCurrentActive ? 'Currently Active in Composer ⚡' : 'Attempt in Composer →')}
+          </button>
+          <button class="btn-check-puzzle" title="Test if current circuit in Composer solves this puzzle">
+            Verify Circuit 🔍
+          </button>
+        </div>
+      `;
+
+      // Handle Attempt Button
+      card.querySelector('.btn-attempt-puzzle').addEventListener('click', () => {
+        this.activeMission = globalIdx;
+        localStorage.setItem('ananta_active_mission', this.activeMission.toString());
         this.renderMissions();
+        this.updateInSimChallengeBanner();
+
+        // Switch to simulator view
+        const t = document.querySelector('[data-tab="simulator"]');
+        if (t) t.click();
+        else if (window.switchView) window.switchView('simulator');
       });
+
+      // Handle Immediate Verification Button
+      card.querySelector('.btn-check-puzzle').addEventListener('click', () => {
+        if (!window.circuitUI || !window.circuitUI.engine) {
+          alert('Composer not initialized yet. Open the Composer tab first.');
+          return;
+        }
+        const probs = window.circuitUI.engine.getProbabilities();
+        const grid = window.circuitUI.grid;
+        if (m.check(grid, probs)) {
+          this.markMissionSolved(m);
+        } else {
+          this.showFailNotification(m.title);
+        }
+      });
+
       listEl.appendChild(card);
     });
+
     this.updateProgressBar();
   }
 
-  evaluate(grid, probs) {
-    const cur = this.missions[this.activeMission];
-    if (cur && !cur.completed && cur.check(grid, probs)) {
-      cur.completed = true;
-      this.showSuccessNotification(cur.title);
-      this.renderMissions();
-    }
+  setFilter(tier) {
+    this.currentFilter = tier;
+    document.querySelectorAll('.puzzle-filter-btn').forEach(btn => {
+      if (btn.dataset.tier === tier) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+    this.renderMissions();
   }
 
-  showSuccessNotification(title) {
+  evaluate(grid, probs) {
+    if (!grid || !probs) return;
+
+    // Check active mission first
+    const cur = this.missions[this.activeMission];
+    if (cur && !cur.completed && cur.check(grid, probs)) {
+      this.markMissionSolved(cur);
+      return;
+    }
+
+    // Also check any other uncompleted missions in background
+    for (let i = 0; i < this.missions.length; i++) {
+      const m = this.missions[i];
+      if (!m.completed && m.check(grid, probs)) {
+        this.markMissionSolved(m);
+        break;
+      }
+    }
+
+    this.updateInSimChallengeBanner();
+  }
+
+  markMissionSolved(m) {
+    m.completed = true;
+
+    // Persist solved IDs
+    const saved = JSON.parse(localStorage.getItem('ananta_completed_missions') || '[]');
+    if (!saved.includes(m.id)) {
+      saved.push(m.id);
+      localStorage.setItem('ananta_completed_missions', JSON.stringify(saved));
+    }
+
+    // Award XP
+    let currentXp = parseInt(localStorage.getItem('ananta_xp') || '150', 10);
+    currentXp += m.xp;
+    localStorage.setItem('ananta_xp', currentXp.toString());
+
+    // Update global counters if available
+    const xpCounter = document.getElementById('player-xp-counter');
+    if (xpCounter) xpCounter.textContent = `${currentXp} XP`;
+
+    this.showSuccessNotification(m.title, m.xp);
+    this.renderMissions();
+    this.updateInSimChallengeBanner();
+  }
+
+  showSuccessNotification(title, xpAwarded = 50) {
     const t = document.createElement('div');
-    t.className = 'mission-toast';
-    t.innerHTML = '<div class="toast-icon">🏆</div><div><strong>Mission Completed!</strong><div>' + title + '</div></div>';
+    t.className = 'mission-toast mission-toast-success';
+    t.innerHTML = `
+      <div class="toast-icon">🏆</div>
+      <div class="toast-text-box">
+        <strong>Puzzle Solved: ${title}!</strong>
+        <span>+${xpAwarded} XP added to your Quantum Mastery score</span>
+      </div>
+    `;
     document.body.appendChild(t);
-    setTimeout(() => { t.classList.add('toast-fade'); setTimeout(() => t.remove(), 600); }, 3000);
+    setTimeout(() => t.classList.add('toast-show'), 20);
+    setTimeout(() => {
+      t.classList.remove('toast-show');
+      setTimeout(() => t.remove(), 400);
+    }, 4500);
+  }
+
+  showFailNotification(title) {
+    const t = document.createElement('div');
+    t.className = 'mission-toast mission-toast-fail';
+    t.innerHTML = `
+      <div class="toast-icon">⚠️</div>
+      <div class="toast-text-box">
+        <strong>Not Quite Solved Yet</strong>
+        <span>Current circuit does not match the target state for "${title}". Read the hint and try again!</span>
+      </div>
+    `;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add('toast-show'), 20);
+    setTimeout(() => {
+      t.classList.remove('toast-show');
+      setTimeout(() => t.remove(), 400);
+    }, 4000);
   }
 
   updateProgressBar() {
-    const s = this.missions.filter(m => m.completed).length;
-    const n = this.missions.length;
-    const p = (s / n) * 100;
-    const f = document.getElementById('missions-progress-fill');
-    const l = document.getElementById('missions-progress-label');
-    if (f) f.style.width = p + '%';
-    if (l) l.textContent = s + ' / ' + n + ' Completed (' + p.toFixed(0) + '%)';
+    const solvedCount = this.missions.filter(m => m.completed).length;
+    const totalCount = this.missions.length;
+    const pct = (solvedCount / totalCount) * 100;
+
+    const fillBar = document.getElementById('missions-progress-fill');
+    const label = document.getElementById('missions-progress-label');
+    const badgeLabel = document.getElementById('challenges-rank-label');
+
+    if (fillBar) fillBar.style.width = `${pct}%`;
+    if (label) label.textContent = `${solvedCount} / ${totalCount} Solved (${pct.toFixed(0)}%)`;
+
+    // Dynamic Rank Determination
+    if (badgeLabel) {
+      if (solvedCount === totalCount) badgeLabel.textContent = 'Grand Quantum Grandmaster 👑';
+      else if (solvedCount >= 6) badgeLabel.textContent = 'Quantum Algorithm Engineer ⚡';
+      else if (solvedCount >= 4) badgeLabel.textContent = 'Entanglement Apprentice 🔗';
+      else if (solvedCount >= 2) badgeLabel.textContent = 'Superposition Pioneer ✨';
+      else badgeLabel.textContent = 'Novice Quantum Observer 🔬';
+    }
+  }
+
+  resetProgress() {
+    if (!confirm('Are you sure you want to reset all puzzle progress?')) return;
+    localStorage.removeItem('ananta_completed_missions');
+    this.missions.forEach(m => m.completed = false);
+    this.renderMissions();
+    this.updateInSimChallengeBanner();
+  }
+
+  // Active Challenge HUD in Composer
+  updateInSimChallengeBanner() {
+    const banner = document.getElementById('composer-challenge-hud');
+    if (!banner) return;
+
+    const m = this.missions[this.activeMission];
+    if (!m) {
+      banner.style.display = 'none';
+      return;
+    }
+
+    banner.style.display = 'flex';
+    const titleEl = document.getElementById('hud-challenge-title');
+    const targetEl = document.getElementById('hud-challenge-target');
+    const statusBadge = document.getElementById('hud-challenge-status');
+
+    if (titleEl) titleEl.textContent = `Active Challenge: ${m.title}`;
+    if (targetEl) targetEl.textContent = m.targetState;
+    if (statusBadge) {
+      if (m.completed) {
+        statusBadge.textContent = '✓ Solved';
+        statusBadge.className = 'hud-badge hud-badge-solved';
+      } else {
+        statusBadge.textContent = 'In Progress';
+        statusBadge.className = 'hud-badge hud-badge-pending';
+      }
+    }
   }
 }
+
 
 // loadCircuit patch
 document.addEventListener('DOMContentLoaded', () => {

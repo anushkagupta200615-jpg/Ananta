@@ -694,6 +694,29 @@
           </div>
         </div>
 
+        <!-- In-Simulator Active Challenge HUD Banner -->
+        <div class="composer-challenge-hud" id="composer-challenge-hud" style="display: none;">
+          <div class="hud-left-meta">
+            <span class="hud-trophy-icon">🎯</span>
+            <div class="hud-info">
+              <strong id="hud-challenge-title">Active Challenge: The Quantum Coin Flip</strong>
+              <div class="hud-target-wrap">
+                <span class="hud-target-label">Target:</span>
+                <code id="hud-challenge-target" class="hud-target-code">|ψ⟩ = (|000⟩ + |100⟩) / √2</code>
+              </div>
+            </div>
+          </div>
+          <div class="hud-actions-right">
+            <span class="hud-badge hud-badge-pending" id="hud-challenge-status">In Progress</span>
+            <button class="btn-hud-check" onclick="if(window.missionManager && window.circuitUI) { const probs = window.circuitUI.engine.getProbabilities(); window.missionManager.evaluate(window.circuitUI.grid, probs); }">
+              Verify Circuit 🔍
+            </button>
+            <button class="btn-hud-return" onclick="if(window.switchView) window.switchView('challenges');">
+              Puzzle Arena →
+            </button>
+          </div>
+        </div>
+
         <!-- Collapsible Knowledge Engine Drawer (Opens on Demand) -->
         <div class="collapsible-drawer-wrap" id="ke-collapsible-drawer">
           <div class="knowledge-engine-bar" id="knowledge-engine-bar">
@@ -1240,45 +1263,79 @@
       </div>
     </section>
 
-    <!-- ================= VIEW 6: GUIDED CHALLENGES ================= -->
+    <!-- ================= VIEW 6: GUIDED CHALLENGES & PUZZLE ARENA ================= -->
     <section class="viewport-section" id="view-challenges">
-      <div class="standard-page-container">
-        <div class="challenges-panel">
-          <div class="challenges-header-row">
+      <div class="standard-page-container challenges-page-container">
+
+        <!-- Arena Hero Banner -->
+        <div class="challenges-hero-banner">
+          <div class="challenges-pill-tag">
+            <span>🎮</span> Gamified Quantum Mastery
+          </div>
+          <div class="arena-hero-title-row">
             <div>
-              <h2>Quantum Puzzle Arena</h2>
-              <p>Synthesize target quantum states and reproduce canonical algorithm outputs by constructing minimal gate sequences. Each puzzle builds physical intuition for a core quantum phenomenon.</p>
+              <h1 class="challenges-hero-title">Quantum Puzzle Arena & Mastery Roadmap</h1>
+              <p class="challenges-hero-desc">
+                Synthesize target quantum states, entangle registers, and master unitary transformations by constructing minimal gate sequences. Each puzzle verifies physical Born rule probabilities in real-time.
+              </p>
             </div>
-            <div class="challenges-score-badge">
-              <span id="missions-progress-label">0 / 4 Solved</span>
-              <div class="score-bar-bg">
-                <div class="score-bar-fg" id="missions-progress-fill" style="width: 0%"></div>
+            <button class="btn-reset-puzzles" onclick="if(window.missionManager) window.missionManager.resetProgress();" title="Reset puzzle solved progress">
+              Reset Progress ↺
+            </button>
+          </div>
+
+          <!-- Player Progress & Mastery Scoreboard -->
+          <div class="arena-stats-dashboard">
+            <div class="arena-stat-card">
+              <span class="arena-stat-label">Puzzles Completed</span>
+              <div class="arena-stat-val" id="missions-progress-label">0 / 8 Solved (0%)</div>
+              <div class="arena-progress-track">
+                <div class="arena-progress-fill" id="missions-progress-fill" style="width: 0%"></div>
               </div>
+            </div>
+
+            <div class="arena-stat-card">
+              <span class="arena-stat-label">Total Mastery Score</span>
+              <div class="arena-stat-val arena-xp-val" id="player-xp-counter">150 XP</div>
+              <span class="arena-stat-sub">Earn +50 to +200 XP per solved puzzle</span>
+            </div>
+
+            <div class="arena-stat-card">
+              <span class="arena-stat-label">Current Player Rank</span>
+              <div class="arena-stat-val arena-rank-val" id="challenges-rank-label">Novice Quantum Observer 🔬</div>
+              <span class="arena-stat-sub">Solve 6+ puzzles for Quantum Algorithm Engineer</span>
             </div>
           </div>
 
-          <div class="challenges-grid" id="missions-list">
-            <!-- Populated by algorithms.js -->
-          </div>
-
-          <!-- Gamified Skill Tree (Black Opal Style) -->
-          <div class="skill-tree-section">
-            <div class="skill-tree-header">
-              <div class="skill-tree-title-box">
-                <span class="hw-badge">🏆 Quantum Mastery Roadmap</span>
-                <h3>Unlock Skills & Earn XP</h3>
-              </div>
-              <div class="xp-meter-badge">
-                <span class="xp-star">⭐</span>
-                <span id="player-xp-counter" class="xp-amount">150 XP</span>
-              </div>
-            </div>
-
-            <div id="skill-tree-nodes" class="skill-tree-grid">
-              <!-- Rendered by hardware-control.js -->
-            </div>
+          <!-- Difficulty Filter Tabs -->
+          <div class="puzzle-filter-tabs">
+            <button class="puzzle-filter-btn active" data-tier="all" onclick="if(window.missionManager) window.missionManager.setFilter('all')">All Puzzles (8)</button>
+            <button class="puzzle-filter-btn" data-tier="beginner" onclick="if(window.missionManager) window.missionManager.setFilter('beginner')">Beginner (3)</button>
+            <button class="puzzle-filter-btn" data-tier="intermediate" onclick="if(window.missionManager) window.missionManager.setFilter('intermediate')">Intermediate (3)</button>
+            <button class="puzzle-filter-btn" data-tier="advanced" onclick="if(window.missionManager) window.missionManager.setFilter('advanced')">Advanced (2)</button>
           </div>
         </div>
+
+        <!-- Puzzles Grid (Populated by algorithms.js) -->
+        <div class="challenges-puzzles-grid" id="missions-list">
+          <!-- Rendered dynamically by MissionManager -->
+        </div>
+
+        <!-- Gamified Skill Tree (Black Opal Style) -->
+        <div class="skill-tree-section">
+          <div class="skill-tree-header">
+            <div class="skill-tree-title-box">
+              <span class="hw-badge">🏆 Quantum Skill Tree & Achievements</span>
+              <h3>Hardware & Theoretical Mastery Unlocks</h3>
+              <p class="skill-tree-sub">Complete real-time operations in the Composer to unlock persistent achievements across superposition, entanglement, and noise mitigation.</p>
+            </div>
+          </div>
+
+          <div id="skill-tree-nodes" class="skill-tree-grid">
+            <!-- Rendered by hardware-control.js -->
+          </div>
+        </div>
+
       </div>
     </section>
 
