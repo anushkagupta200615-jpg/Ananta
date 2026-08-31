@@ -3844,16 +3844,17 @@ input:checked + .toggle-slider:before {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 999999;
   align-items: center;
   justify-content: center;
   padding: 20px;
 }
 
 .google-modal-backdrop.active {
-  display: flex;
+  display: flex !important;
 }
 
 .google-oauth-dialog {

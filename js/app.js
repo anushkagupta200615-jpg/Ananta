@@ -290,6 +290,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // Google OAuth Dialog
+  window.openGoogleDialog = () => {
+    const modal = document.getElementById('google-modal');
+    if (modal) modal.classList.add('active');
+  };
+
+  window.closeGoogleDialog = () => {
+    const modal = document.getElementById('google-modal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.selectGoogleAccount = (name, email) => {
+    const user = {
+      name: name,
+      email: email,
+      provider: 'google',
+      avatar: name.charAt(0).toUpperCase(),
+      loggedInAt: new Date().toISOString()
+    };
+    localStorage.setItem('ananta_user', JSON.stringify(user));
+    window.closeGoogleDialog();
+    updateNavUser();
+    switchView('overview');
+  };
+
+  window.promptCustomGoogleAccount = () => {
+    const email = window.prompt('Enter your Google / Gmail address:');
+    if (!email || !email.includes('@')) {
+      if (email !== null) alert('Please enter a valid email address.');
+      return;
+    }
+    const defaultName = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const name = window.prompt('Enter your display name:', defaultName) || defaultName;
+    window.selectGoogleAccount(name, email);
+  };
+
   let pendingAuthUser = null;
   let currentOtp = null;
   let resendTimer = null;
