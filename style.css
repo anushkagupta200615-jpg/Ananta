@@ -1597,6 +1597,267 @@ body {
   font-size: 20px !important;
 }
 
+.auth-success-banner {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+/* Password Input Toggle */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 38px;
+}
+
+.btn-toggle-pw {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+}
+
+/* Live Password Strength Meter */
+.password-strength-container {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 6px;
+}
+
+.strength-meter-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.strength-fill {
+  height: 100%;
+  width: 15%;
+  background: #ef4444;
+  border-radius: 3px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.strength-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+
+.strength-label {
+  color: var(--text-dim);
+}
+
+.strength-text-weak { color: #ef4444; }
+.strength-text-medium { color: #f59e0b; }
+.strength-text-strong { color: #10b981; }
+
+.pw-criteria-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  font-size: 10.5px;
+}
+
+.pw-rule {
+  color: #ef4444;
+  transition: color 0.2s ease;
+}
+
+.pw-rule.valid {
+  color: #10b981;
+}
+
+/* STEP 2: OTP VERIFICATION PANEL */
+.otp-verification-panel {
+  text-align: center;
+}
+
+.otp-icon-bubble {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.otp-panel-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin-bottom: 6px;
+}
+
+.otp-subtitle {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+
+.otp-highlight-email {
+  color: #00f0ff;
+  word-break: break-all;
+}
+
+/* Realistic Gmail Incoming Mail Toast Alert */
+.gmail-live-toast {
+  background: rgba(15, 98, 254, 0.1);
+  border: 1px solid rgba(15, 98, 254, 0.35);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  text-align: left;
+  animation: pulseToast 3s infinite;
+}
+
+@keyframes pulseToast {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(15, 98, 254, 0); }
+  50% { box-shadow: 0 0 15px rgba(15, 98, 254, 0.2); }
+}
+
+.gmail-toast-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #8ab4f8;
+  margin-bottom: 6px;
+}
+
+.gmail-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.gmail-toast-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.toast-subject {
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.toast-otp-display {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #fbbf24;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.btn-quick-fill-otp {
+  width: 100%;
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #fbbf24;
+  padding: 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-quick-fill-otp:hover {
+  background: rgba(251, 191, 36, 0.25);
+}
+
+/* 6-Digit OTP Input Grid */
+.otp-inputs-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.otp-digit {
+  width: 100%;
+  height: 48px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: #00f0ff;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.otp-digit:focus {
+  border-color: #00f0ff;
+  box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.2);
+}
+
+.btn-verify-otp {
+  background: #0f62fe !important;
+  padding: 13px !important;
+  font-size: 15px !important;
+}
+
+.btn-verify-otp:hover {
+  background: #0043ce !important;
+}
+
+.otp-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  font-size: 12px;
+}
+
+.btn-back-auth {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.btn-back-auth:hover {
+  color: var(--text-white);
+}
+
+.btn-resend-otp {
+  background: transparent;
+  border: none;
+  color: #8ab4f8;
+  cursor: pointer;
+  font-weight: 600;
+}
+
 /* Official Google Sign-In Button */
 .btn-google-signin {
   width: 100%;

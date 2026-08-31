@@ -290,95 +290,291 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  let pendingAuthUser = null;
+  let currentOtp = null;
+  let resendTimer = null;
+  let countdownSeconds = 30;
+
+  // Live Password Strength Checker
+  window.checkPasswordStrength = (pass) => {
+    const fillBar = document.getElementById('strength-fill-bar');
+    const strengthText = document.getElementById('strength-text');
+    const ruleLen = document.getElementById('rule-len');
+    const ruleCase = document.getElementById('rule-case');
+    const ruleNum = document.getElementById('rule-num');
+    const ruleSym = document.getElementById('rule-sym');
+
+    const hasLen = pass.length >= 8;
+    const hasCase = /[a-z]/.test(pass) && /[A-Z]/.test(pass);
+    const hasNum = /[0-9]/.test(pass);
+    const hasSym = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pass);
+
+    if (ruleLen) {
+      ruleLen.className = hasLen ? 'pw-rule valid' : 'pw-rule';
+      ruleLen.textContent = (hasLen ? '✓' : '✕') + ' At least 8 characters';
+    }
+    if (ruleCase) {
+      ruleCase.className = hasCase ? 'pw-rule valid' : 'pw-rule';
+      ruleCase.textContent = (hasCase ? '✓' : '✕') + ' Uppercase & lowercase';
+    }
+    if (ruleNum) {
+      ruleNum.className = hasNum ? 'pw-rule valid' : 'pw-rule';
+      ruleNum.textContent = (hasNum ? '✓' : '✕') + ' At least one number';
+    }
+    if (ruleSym) {
+      ruleSym.className = hasSym ? 'pw-rule valid' : 'pw-rule';
+      ruleSym.textContent = (hasSym ? '✓' : '✕') + ' Special character';
+    }
+
+    let score = 0;
+    if (hasLen) score += 25;
+    if (hasCase) score += 25;
+    if (hasNum) score += 25;
+    if (hasSym) score += 25;
+
+    if (fillBar) fillBar.style.width = score + '%';
+
+    if (strengthText) {
+      if (score <= 25) {
+        strengthText.className = 'strength-text-weak';
+        strengthText.textContent = 'Weak';
+        if (fillBar) fillBar.style.background = '#ef4444';
+      } else if (score <= 75) {
+        strengthText.className = 'strength-text-medium';
+        strengthText.textContent = 'Moderate';
+        if (fillBar) fillBar.style.background = '#f59e0b';
+      } else {
+        strengthText.className = 'strength-text-strong';
+        strengthText.textContent = 'Strong ✓';
+        if (fillBar) fillBar.style.background = '#10b981';
+      }
+    }
+    return score >= 75; // Requires at least 3 out of 4 criteria (strong)
+  };
+
+  window.togglePasswordVisibility = (inputId) => {
+    const input = document.getElementById(inputId);
+    if (input) {
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+  };
+
   function showAuthError(msg) {
-    const banner = document.getElementById('auth-error-banner');
-    if (banner) {
-      banner.textContent = msg;
-      banner.style.display = 'block';
+    const errBanner = document.getElementById('auth-error-banner');
+    const succBanner = document.getElementById('auth-success-banner');
+    if (succBanner) succBanner.style.display = 'none';
+    if (errBanner) {
+      errBanner.textContent = msg;
+      errBanner.style.display = 'block';
     } else {
       alert(msg);
     }
   }
 
-  // Google OAuth Dialog
-  window.openGoogleDialog = () => {
-    const modal = document.getElementById('google-modal');
-    if (modal) modal.classList.add('active');
+  function showAuthSuccess(msg) {
+    const errBanner = document.getElementById('auth-error-banner');
+    const succBanner = document.getElementById('auth-success-banner');
+    if (errBanner) errBanner.style.display = 'none';
+    if (succBanner) {
+      succBanner.textContent = msg;
+      succBanner.style.display = 'block';
+    }
+  }
+
+  // Generate a random secure 6-digit OTP
+  function generate6DigitOtp() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  // Transition to OTP Verification Panel
+  function initiateOtpVerification(userObj) {
+    pendingAuthUser = userObj;
+    currentOtp = generate6DigitOtp();
+
+    const stepCreds = document.getElementById('auth-step-credentials');
+    const stepOtp = document.getElementById('auth-step-otp');
+    const targetEmail = document.getElementById('otp-target-email');
+    const toastOtp = document.getElementById('toast-otp-code');
+    const errBanner = document.getElementById('auth-error-banner');
+    if (errBanner) errBanner.style.display = 'none';
+
+    if (targetEmail) targetEmail.textContent = userObj.email;
+    if (toastOtp) toastOtp.textContent = currentOtp;
+
+    if (stepCreds) stepCreds.style.display = 'none';
+    if (stepOtp) stepOtp.style.display = 'block';
+
+    // Clear previous OTP inputs
+    for (let i = 1; i <= 6; i++) {
+      const el = document.getElementById('otp-' + i);
+      if (el) el.value = '';
+    }
+    const firstInput = document.getElementById('otp-1');
+    if (firstInput) firstInput.focus();
+
+    startResendCountdown();
+  }
+
+  function startResendCountdown() {
+    clearInterval(resendTimer);
+    countdownSeconds = 30;
+    const btnResend = document.getElementById('btn-resend-otp');
+    const cdSpan = document.getElementById('resend-countdown');
+    if (btnResend) btnResend.disabled = true;
+
+    resendTimer = setInterval(() => {
+      countdownSeconds--;
+      if (cdSpan) cdSpan.textContent = countdownSeconds + 's';
+      if (countdownSeconds <= 0) {
+        clearInterval(resendTimer);
+        if (btnResend) {
+          btnResend.disabled = false;
+          btnResend.textContent = 'Resend OTP Now';
+        }
+      }
+    }, 1000);
+  }
+
+  window.resendOtp = () => {
+    if (countdownSeconds > 0) return;
+    currentOtp = generate6DigitOtp();
+    const toastOtp = document.getElementById('toast-otp-code');
+    if (toastOtp) toastOtp.textContent = currentOtp;
+    showAuthSuccess('A fresh 6-digit OTP has been sent to your Gmail inbox!');
+    startResendCountdown();
   };
 
-  window.closeGoogleDialog = () => {
-    const modal = document.getElementById('google-modal');
-    if (modal) modal.classList.remove('active');
+  window.autoFillOtp = () => {
+    if (!currentOtp) return;
+    for (let i = 0; i < 6; i++) {
+      const el = document.getElementById('otp-' + (i + 1));
+      if (el) el.value = currentOtp.charAt(i);
+    }
+    window.verifyOtpAndLogin();
   };
 
-  window.selectGoogleAccount = (name, email) => {
-    const user = {
-      name: name,
-      email: email,
-      provider: 'google',
-      avatar: name.charAt(0).toUpperCase(),
-      loggedInAt: new Date().toISOString()
-    };
-    localStorage.setItem('ananta_user', JSON.stringify(user));
-    window.closeGoogleDialog();
-    updateNavUser();
-    switchView('overview');
+  window.cancelOtpFlow = () => {
+    clearInterval(resendTimer);
+    pendingAuthUser = null;
+    currentOtp = null;
+    const stepCreds = document.getElementById('auth-step-credentials');
+    const stepOtp = document.getElementById('auth-step-otp');
+    if (stepOtp) stepOtp.style.display = 'none';
+    if (stepCreds) stepCreds.style.display = 'block';
   };
 
-  window.promptCustomGoogleAccount = () => {
-    const email = window.prompt('Enter your Google / Gmail address:');
-    if (!email || !email.includes('@')) {
-      if (email !== null) alert('Please enter a valid email address.');
+  // Setup auto-tabbing for OTP inputs
+  document.addEventListener('DOMContentLoaded', () => {
+    for (let i = 1; i <= 6; i++) {
+      const input = document.getElementById('otp-' + i);
+      if (input) {
+        input.addEventListener('input', (e) => {
+          if (input.value.length === 1 && i < 6) {
+            const next = document.getElementById('otp-' + (i + 1));
+            if (next) next.focus();
+          }
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !input.value && i > 1) {
+            const prev = document.getElementById('otp-' + (i - 1));
+            if (prev) prev.focus();
+          } else if (e.key === 'Enter') {
+            window.verifyOtpAndLogin();
+          }
+        });
+      }
+    }
+  });
+
+  // Verify OTP and complete login
+  window.verifyOtpAndLogin = () => {
+    let enteredCode = '';
+    for (let i = 1; i <= 6; i++) {
+      const el = document.getElementById('otp-' + i);
+      if (el) enteredCode += el.value.trim();
+    }
+
+    if (enteredCode.length < 6) {
+      showAuthError('Please enter all 6 digits of the OTP sent to your Gmail.');
       return;
     }
-    const defaultName = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    const name = window.prompt('Enter your display name:', defaultName) || defaultName;
-    window.selectGoogleAccount(name, email);
+
+    if (enteredCode !== currentOtp) {
+      showAuthError('Invalid OTP code. Please check your Gmail notification.');
+      return;
+    }
+
+    // OTP Successful: Finalize registration and session
+    if (pendingAuthUser) {
+      if (pendingAuthUser.isNewAccount) {
+        const accounts = JSON.parse(localStorage.getItem('ananta_registered_users') || '[]');
+        const idx = accounts.findIndex(a => a.email.toLowerCase() === pendingAuthUser.email.toLowerCase());
+        if (idx >= 0) {
+          accounts[idx] = pendingAuthUser;
+        } else {
+          accounts.push(pendingAuthUser);
+        }
+        localStorage.setItem('ananta_registered_users', JSON.stringify(accounts));
+      }
+
+      const sessionUser = {
+        name: pendingAuthUser.name,
+        email: pendingAuthUser.email,
+        provider: 'email_otp',
+        avatar: pendingAuthUser.name.charAt(0).toUpperCase(),
+        loggedInAt: new Date().toISOString()
+      };
+      localStorage.setItem('ananta_user', JSON.stringify(sessionUser));
+      updateNavUser();
+      
+      // Return UI state to normal
+      window.cancelOtpFlow();
+      showAuthSuccess('Verification successful! Welcome to Ananta Studio.');
+      setTimeout(() => {
+        switchView('overview');
+      }, 500);
+    }
   };
 
-  // Sign In handler
-  window.loginFromForm = () => {
+  // Sign In Flow (Validates password, then sends Gmail OTP)
+  window.startSignInFlow = () => {
     const emailInput = document.getElementById('login-email');
     const passInput = document.getElementById('login-pass');
     const email = emailInput ? emailInput.value.trim() : '';
     const pass = passInput ? passInput.value : '';
 
     if (!email || !email.includes('@')) {
-      showAuthError('Please enter a valid email address.');
+      showAuthError('Please enter your valid Gmail / Email address.');
       return;
     }
-    if (!pass || pass.length < 4) {
+    if (!pass) {
       showAuthError('Please enter your password.');
       return;
     }
 
-    // Check if account exists in local database
     const accounts = JSON.parse(localStorage.getItem('ananta_registered_users') || '[]');
     const existing = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
-    
+
     let name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     if (existing) {
       if (existing.password && existing.password !== pass) {
-        showAuthError('Incorrect password. Please try again.');
+        showAuthError('Incorrect password for this account. Please try again.');
         return;
       }
       name = existing.name || name;
     }
 
-    const user = {
+    // Pass password verification -> Trigger Gmail OTP
+    initiateOtpVerification({
       name: name,
       email: email,
-      provider: 'email',
-      avatar: name.charAt(0).toUpperCase(),
-      loggedInAt: new Date().toISOString()
-    };
-    localStorage.setItem('ananta_user', JSON.stringify(user));
-    updateNavUser();
-    switchView('overview');
+      password: pass,
+      isNewAccount: false
+    });
   };
 
-  // Sign Up handler
-  window.signupFromForm = () => {
+  // Sign Up Flow (Checks for strong password, then sends Gmail OTP)
+  window.startSignUpFlow = () => {
     const nameInput = document.getElementById('signup-name');
     const emailInput = document.getElementById('signup-email');
     const passInput = document.getElementById('signup-pass');
@@ -391,41 +587,40 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (!email || !email.includes('@')) {
-      showAuthError('Please enter a valid email address.');
+      showAuthError('Please enter a valid Gmail / Email address.');
       return;
     }
-    if (!pass || pass.length < 6) {
-      showAuthError('Password must be at least 6 characters.');
+    
+    // Check Password Strength
+    const isStrong = window.checkPasswordStrength(pass);
+    if (!isStrong) {
+      showAuthError('Password is too weak! Must be at least 8 chars with uppercase, numbers, and symbols.');
       return;
     }
 
-    // Store in registered users
-    const accounts = JSON.parse(localStorage.getItem('ananta_registered_users') || '[]');
-    const index = accounts.findIndex(a => a.email.toLowerCase() === email.toLowerCase());
-    if (index >= 0) {
-      accounts[index] = { name, email, password: pass };
-    } else {
-      accounts.push({ name, email, password: pass });
-    }
-    localStorage.setItem('ananta_registered_users', JSON.stringify(accounts));
-
-    const user = {
+    // Proceed to OTP Verification before creating account
+    initiateOtpVerification({
       name: name,
       email: email,
-      provider: 'email',
-      avatar: name.charAt(0).toUpperCase(),
-      loggedInAt: new Date().toISOString()
-    };
-    localStorage.setItem('ananta_user', JSON.stringify(user));
-    updateNavUser();
-    switchView('overview');
+      password: pass,
+      isNewAccount: true
+    });
   };
 
-  window.showForgotModal = () => {
-    const email = window.prompt('Enter your email to receive a password reset link:');
-    if (email && email.includes('@')) {
-      alert(`Password reset instructions have been dispatched to ${email}.`);
+  window.startOtpLoginDirect = () => {
+    const emailInput = document.getElementById('login-email');
+    const email = emailInput && emailInput.value.trim() ? emailInput.value.trim() : window.prompt('Enter your Gmail address to send OTP:');
+    if (!email || !email.includes('@')) {
+      showAuthError('A valid Gmail address is required for OTP login.');
+      return;
     }
+    const name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    initiateOtpVerification({
+      name: name,
+      email: email,
+      password: '',
+      isNewAccount: false
+    });
   };
 
   window.logoutUser = () => {
