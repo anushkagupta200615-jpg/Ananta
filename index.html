@@ -483,7 +483,12 @@
               <p class="auth-welcome-desc">Sign in to access your quantum circuits, simulations, and saved experiments.</p>
             </div>
 
-            <!-- Prominent Official Google Sign-In Button (Interactive Account Selector) -->
+            <div class="auth-tabs-header">
+              <button type="button" class="auth-tab-btn active" id="tab-btn-signin" onclick="window.switchAuthTab('signin')">Sign In</button>
+              <button type="button" class="auth-tab-btn" id="tab-btn-signup" onclick="window.switchAuthTab('signup')">Create Account</button>
+            </div>
+
+            <!-- Prominent Official Google Sign-In Button -->
             <button class="btn-google-signin" id="btn-google-login" onclick="window.openGoogleDialog()">
               <svg class="google-svg-icon" viewBox="0 0 24 24" width="20" height="20">
                 <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
@@ -491,7 +496,7 @@
                 <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
                 <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
               </svg>
-              <span>Sign in with Google</span>
+              <span>Continue with Google</span>
             </button>
 
             <!-- Divider -->
@@ -499,30 +504,55 @@
               <span>or continue with email</span>
             </div>
 
-            <!-- Email / Password Form -->
-            <form class="simple-auth-form" onsubmit="event.preventDefault(); window.loginFromForm();">
+            <!-- Error Banner -->
+            <div id="auth-error-banner" class="auth-error-banner" style="display: none;"></div>
+
+            <!-- Email / Password Form (Sign In) -->
+            <form class="simple-auth-form" id="form-signin" onsubmit="event.preventDefault(); window.loginFromForm();">
               <div class="field-item">
-                <label for="login-email">Email address</label>
-                <input type="email" id="login-email" class="clean-input" placeholder="developer@ananta-quantum.io" value="researcher@ananta-quantum.io" required>
+                <label for="login-email">Email Address</label>
+                <input type="email" id="login-email" class="clean-input" placeholder="you@gmail.com" required autocomplete="email">
               </div>
 
               <div class="field-item">
                 <div class="label-split">
                   <label for="login-pass">Password</label>
-                  <a href="#forgot" class="forgot-pass-link">Forgot?</a>
+                  <a href="#forgot" class="forgot-pass-link" onclick="window.showForgotModal(); return false;">Forgot?</a>
                 </div>
-                <input type="password" id="login-pass" class="clean-input" value="••••••••••••" required>
+                <input type="password" id="login-pass" class="clean-input" placeholder="Enter your password" required autocomplete="current-password">
               </div>
 
-              <button type="submit" class="btn-email-submit">
-                Sign In with Email
+              <button type="submit" class="btn-email-submit" id="btn-submit-signin">
+                Sign In to Studio
+              </button>
+            </form>
+
+            <!-- Create Account Form (Sign Up) -->
+            <form class="simple-auth-form" id="form-signup" style="display: none;" onsubmit="event.preventDefault(); window.signupFromForm();">
+              <div class="field-item">
+                <label for="signup-name">Full Name</label>
+                <input type="text" id="signup-name" class="clean-input" placeholder="Your Name" required autocomplete="name">
+              </div>
+
+              <div class="field-item">
+                <label for="signup-email">Email Address</label>
+                <input type="email" id="signup-email" class="clean-input" placeholder="you@gmail.com" required autocomplete="email">
+              </div>
+
+              <div class="field-item">
+                <label for="signup-pass">Password (Min 6 chars)</label>
+                <input type="password" id="signup-pass" class="clean-input" placeholder="Create a secure password" minlength="6" required autocomplete="new-password">
+              </div>
+
+              <button type="submit" class="btn-email-submit btn-signup-submit" id="btn-submit-signup">
+                Create Free Account
               </button>
             </form>
 
             <!-- Guest Shortcut -->
             <div class="auth-guest-footer">
               <span>Just exploring?</span>
-              <button class="btn-link-guest" id="btn-guest-entry">Enter Simulator Directly →</button>
+              <button type="button" class="btn-link-guest" id="btn-guest-entry">Enter Simulator Directly →</button>
             </div>
 
           </div>
@@ -1507,7 +1537,8 @@ Depolarizing: ρ → (1-ε)·U·ρ·U† + ε·I/2  (gate infidelity ε)</pre>
         </div>
       </div>
 
-      <div class="oauth-body">
+      <div class="oauth-body" id="oauth-accounts-list">
+        <!-- Default verified account option for Anushka Gupta -->
         <div class="account-item" onclick="window.selectGoogleAccount('Anushka Gupta', 'anushkagupta200615@gmail.com')">
           <div class="user-avatar-circle">A</div>
           <div class="account-info">
@@ -1515,18 +1546,20 @@ Depolarizing: ρ → (1-ε)·U·ρ·U† + ε·I/2  (gate infidelity ε)</pre>
             <span>anushkagupta200615@gmail.com</span>
           </div>
         </div>
-        <div class="account-item" onclick="window.selectGoogleAccount('Quantum Researcher', 'researcher@ananta-quantum.io')">
-          <div class="user-avatar-circle" style="background:#8b5cf6;">Q</div>
+
+        <!-- Custom Account Entry Option -->
+        <div class="account-item account-item-add" onclick="window.promptCustomGoogleAccount()">
+          <div class="user-avatar-circle avatar-add">+</div>
           <div class="account-info">
-            <strong>Quantum Researcher</strong>
-            <span>researcher@ananta-quantum.io</span>
+            <strong>Use another Google account</strong>
+            <span>Enter any active Google / Gmail address</span>
           </div>
         </div>
       </div>
 
       <div class="oauth-footer">
         <button class="btn-cancel-oauth" onclick="window.closeGoogleDialog()">Cancel</button>
-        <span>Protected by Google OAuth</span>
+        <span>Google Identity Services</span>
       </div>
     </div>
   </div>

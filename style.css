@@ -1533,6 +1533,70 @@ body {
   line-height: 1.4;
 }
 
+/* Auth Tabs: Sign In / Create Account */
+.auth-tabs-header {
+  display: flex;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.auth-tab-btn.active {
+  background: var(--bg-card);
+  color: var(--text-white);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.auth-error-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.btn-signup-submit {
+  background: #10b981 !important;
+}
+
+.btn-signup-submit:hover {
+  background: #059669 !important;
+}
+
+.account-item-add {
+  border: 1px dashed var(--border-color) !important;
+  opacity: 0.9;
+}
+
+.account-item-add:hover {
+  border-color: #0f62fe !important;
+  opacity: 1;
+}
+
+.avatar-add {
+  background: #3b82f6 !important;
+  font-size: 20px !important;
+}
+
 /* Official Google Sign-In Button */
 .btn-google-signin {
   width: 100%;

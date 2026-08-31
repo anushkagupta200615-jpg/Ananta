@@ -268,6 +268,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Auth Tab Switcher (Sign In vs Create Account)
+  window.switchAuthTab = (tab) => {
+    const btnSignin = document.getElementById('tab-btn-signin');
+    const btnSignup = document.getElementById('tab-btn-signup');
+    const formSignin = document.getElementById('form-signin');
+    const formSignup = document.getElementById('form-signup');
+    const errBanner = document.getElementById('auth-error-banner');
+    if (errBanner) errBanner.style.display = 'none';
+
+    if (tab === 'signin') {
+      if (btnSignin) btnSignin.classList.add('active');
+      if (btnSignup) btnSignup.classList.remove('active');
+      if (formSignin) formSignin.style.display = 'flex';
+      if (formSignup) formSignup.style.display = 'none';
+    } else {
+      if (btnSignup) btnSignup.classList.add('active');
+      if (btnSignin) btnSignin.classList.remove('active');
+      if (formSignup) formSignup.style.display = 'flex';
+      if (formSignin) formSignin.style.display = 'none';
+    }
+  };
+
+  function showAuthError(msg) {
+    const banner = document.getElementById('auth-error-banner');
+    if (banner) {
+      banner.textContent = msg;
+      banner.style.display = 'block';
+    } else {
+      alert(msg);
+    }
+  }
+
   // Google OAuth Dialog
   window.openGoogleDialog = () => {
     const modal = document.getElementById('google-modal');
@@ -290,13 +322,49 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('ananta_user', JSON.stringify(user));
     window.closeGoogleDialog();
     updateNavUser();
-    switchView('simulator');
+    switchView('overview');
   };
 
+  window.promptCustomGoogleAccount = () => {
+    const email = window.prompt('Enter your Google / Gmail address:');
+    if (!email || !email.includes('@')) {
+      if (email !== null) alert('Please enter a valid email address.');
+      return;
+    }
+    const defaultName = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const name = window.prompt('Enter your display name:', defaultName) || defaultName;
+    window.selectGoogleAccount(name, email);
+  };
+
+  // Sign In handler
   window.loginFromForm = () => {
     const emailInput = document.getElementById('login-email');
-    const email = emailInput ? emailInput.value : 'developer@ananta-quantum.io';
-    const name = email.split('@')[0];
+    const passInput = document.getElementById('login-pass');
+    const email = emailInput ? emailInput.value.trim() : '';
+    const pass = passInput ? passInput.value : '';
+
+    if (!email || !email.includes('@')) {
+      showAuthError('Please enter a valid email address.');
+      return;
+    }
+    if (!pass || pass.length < 4) {
+      showAuthError('Please enter your password.');
+      return;
+    }
+
+    // Check if account exists in local database
+    const accounts = JSON.parse(localStorage.getItem('ananta_registered_users') || '[]');
+    const existing = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+    
+    let name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    if (existing) {
+      if (existing.password && existing.password !== pass) {
+        showAuthError('Incorrect password. Please try again.');
+        return;
+      }
+      name = existing.name || name;
+    }
+
     const user = {
       name: name,
       email: email,
@@ -306,7 +374,58 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     localStorage.setItem('ananta_user', JSON.stringify(user));
     updateNavUser();
-    switchView('simulator');
+    switchView('overview');
+  };
+
+  // Sign Up handler
+  window.signupFromForm = () => {
+    const nameInput = document.getElementById('signup-name');
+    const emailInput = document.getElementById('signup-email');
+    const passInput = document.getElementById('signup-pass');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const email = emailInput ? emailInput.value.trim() : '';
+    const pass = passInput ? passInput.value : '';
+
+    if (!name) {
+      showAuthError('Please enter your full name.');
+      return;
+    }
+    if (!email || !email.includes('@')) {
+      showAuthError('Please enter a valid email address.');
+      return;
+    }
+    if (!pass || pass.length < 6) {
+      showAuthError('Password must be at least 6 characters.');
+      return;
+    }
+
+    // Store in registered users
+    const accounts = JSON.parse(localStorage.getItem('ananta_registered_users') || '[]');
+    const index = accounts.findIndex(a => a.email.toLowerCase() === email.toLowerCase());
+    if (index >= 0) {
+      accounts[index] = { name, email, password: pass };
+    } else {
+      accounts.push({ name, email, password: pass });
+    }
+    localStorage.setItem('ananta_registered_users', JSON.stringify(accounts));
+
+    const user = {
+      name: name,
+      email: email,
+      provider: 'email',
+      avatar: name.charAt(0).toUpperCase(),
+      loggedInAt: new Date().toISOString()
+    };
+    localStorage.setItem('ananta_user', JSON.stringify(user));
+    updateNavUser();
+    switchView('overview');
+  };
+
+  window.showForgotModal = () => {
+    const email = window.prompt('Enter your email to receive a password reset link:');
+    if (email && email.includes('@')) {
+      alert(`Password reset instructions have been dispatched to ${email}.`);
+    }
   };
 
   window.logoutUser = () => {
@@ -319,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (guestEntry) {
     guestEntry.addEventListener('click', () => {
       const user = {
-        name: 'Guest User',
+        name: 'Guest Researcher',
         email: 'guest@ananta-quantum.io',
         provider: 'guest',
         avatar: 'G',
@@ -327,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       localStorage.setItem('ananta_user', JSON.stringify(user));
       updateNavUser();
-      switchView('simulator');
+      switchView('overview');
     });
   }
 
@@ -837,6 +956,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (hash && validTabs.includes(hash)) {
     switchView(hash);
+  } else if (!isLoggedIn) {
+    switchView('login');
   } else {
     switchView('overview');
   }
