@@ -1230,9 +1230,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  let activeZooSpeedup = 'all';
+
+  window.setZooSpeedupFilter = function(speedKey) {
+    activeZooSpeedup = speedKey;
+    document.querySelectorAll('.g-speedup-btn').forEach(btn => {
+      if (btn.getAttribute('data-speed') === speedKey) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+    renderZooLibrary();
+  };
+
   window.setZooCategory = function(cat) {
     activeZooCategory = cat;
-    document.querySelectorAll('.zoo-cat-pill').forEach(pill => {
+    document.querySelectorAll('.g-cat-chip').forEach(pill => {
       if (pill.getAttribute('data-zoocat') === cat) pill.classList.add('active');
       else pill.classList.remove('active');
     });
@@ -1266,9 +1277,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const refs = zoo.references || {};
 
     const filtered = algos.filter(a => {
+      // 1. Category check
       const matchesCat = activeZooCategory === 'all' || a.category === activeZooCategory;
       if (!matchesCat) return false;
 
+      // 2. Speedup tier check
+      const spLower = (a.speedup || '').toLowerCase();
+      if (activeZooSpeedup === 'superpoly') {
+        if (!spLower.includes('superpolynomial')) return false;
+      } else if (activeZooSpeedup === 'poly') {
+        if (!spLower.includes('polynomial') || spLower.includes('superpolynomial')) return false;
+      } else if (activeZooSpeedup === 'expo') {
+        if (!spLower.includes('exponential')) return false;
+      }
+
+      // 3. Search query check
       if (!zooSearchQuery) return true;
       const q = zooSearchQuery.toLowerCase();
       const nameMatch = a.name && a.name.toLowerCase().includes(q);
@@ -1279,14 +1302,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (resultsCounter) {
-      resultsCounter.textContent = `Showing ${filtered.length} of ${algos.length} algorithms`;
+      resultsCounter.textContent = `Showing ${filtered.length} of ${algos.length} quantum algorithms`;
     }
 
     if (filtered.length === 0) {
       zooGrid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
-          <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-white);">No matching algorithms found in Zoo</h3>
-          <p style="font-size: 13px; color: var(--text-dim);">Try searching by problem type (e.g. 'search', 'matrix', 'factoring', 'graph', 'Hamiltonian').</p>
+        <div style="grid-column: 1 / -1; text-align: center; padding: 56px 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;">
+          <div style="font-size: 32px; margin-bottom: 12px;">🔍</div>
+          <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-white); font-weight: 700;">No matching algorithms found</h3>
+          <p style="font-size: 13.5px; color: var(--text-dim); max-width: 500px; margin: 0 auto 16px;">Try adjusting your query or resetting speedup filters (e.g. search 'search', 'factoring', 'HHL', 'simulation', 'machine learning').</p>
+          <button class="g-speedup-btn" onclick="window.clearZooSearch(); window.setZooSpeedupFilter('all'); window.setZooCategory('all');" style="margin: 0 auto; display: inline-block;">Reset All Filters ↺</button>
         </div>
       `;
       return;
@@ -1295,48 +1320,62 @@ document.addEventListener('DOMContentLoaded', () => {
     zooGrid.innerHTML = '';
     filtered.forEach(a => {
       const card = document.createElement('div');
-      card.className = 'zoo-card';
+      card.className = 'g-algo-card';
 
-      // Speedup color class
-      let speedupClass = 'speedup-poly';
+      // Speedup classification badge
+      let speedupClass = 'g-speed-poly';
       const spLower = (a.speedup || '').toLowerCase();
-      if (spLower.includes('superpolynomial') || spLower.includes('exponential')) {
-        speedupClass = 'speedup-superpoly';
+      if (spLower.includes('superpolynomial')) {
+        speedupClass = 'g-speed-superpoly';
+      } else if (spLower.includes('exponential')) {
+        speedupClass = 'g-speed-expo';
       } else if (spLower.includes('constant')) {
-        speedupClass = 'speedup-constant';
+        speedupClass = 'g-speed-constant';
       }
 
-      // Implementation buttons
+      // Framework Implementation Badges (Google Cirq, PennyLane, Classiq, Qrisp)
       let implHtml = '';
       if (a.implementations && a.implementations.length > 0) {
         implHtml = `
-          <div class="zoo-impl-row">
-            <span class="zoo-impl-label">Implementations:</span>
-            <div class="zoo-impl-links">
-              ${a.implementations.map(impl => `
-                <a href="${impl.url}" target="_blank" rel="noopener noreferrer" class="zoo-impl-chip">
-                  ${impl.name} ↗
-                </a>
-              `).join('')}
+          <div class="g-impl-strip">
+            <span class="g-impl-header">Executable Implementations:</span>
+            <div class="g-impl-chips">
+              ${a.implementations.map(impl => {
+                let badgeTheme = 'impl-generic';
+                const iName = impl.name.toLowerCase();
+                if (iName.includes('cirq')) badgeTheme = 'impl-cirq';
+                else if (iName.includes('pennylane')) badgeTheme = 'impl-pennylane';
+                else if (iName.includes('classiq')) badgeTheme = 'impl-classiq';
+                else if (iName.includes('qrisp')) badgeTheme = 'impl-qrisp';
+
+                return `
+                  <a href="${impl.url}" target="_blank" rel="noopener noreferrer" class="g-framework-chip ${badgeTheme}">
+                    <span class="chip-icon">⚡</span> ${impl.name}
+                  </a>
+                `;
+              }).join('')}
             </div>
           </div>
         `;
       }
 
-      // Citations HTML
+      // Citations HTML with direct arXiv links
       let citationsHtml = '';
       if (a.citations && a.citations.length > 0) {
         const citedRefs = a.citations.map(cId => refs[cId]).filter(Boolean);
         if (citedRefs.length > 0) {
           citationsHtml = `
-            <details class="zoo-citations-details">
-              <summary>📚 ${citedRefs.length} Cited Research Publication${citedRefs.length > 1 ? 's' : ''}</summary>
-              <ul class="zoo-citations-list">
+            <details class="g-citations-accordion">
+              <summary>
+                <span class="summary-left">📚 Peer-Reviewed Literature (${citedRefs.length})</span>
+                <span class="summary-toggle-icon">▾</span>
+              </summary>
+              <ul class="g-citations-list">
                 ${citedRefs.map(r => `
                   <li>
-                    <span class="cite-num">[${r.number}]</span>
-                    <span class="cite-text">${r.citation}</span>
-                    ${r.url ? `<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="cite-link">arXiv / Source ↗</a>` : ''}
+                    <span class="cite-ref-idx">[${r.number}]</span>
+                    <span class="cite-body-text">${r.citation}</span>
+                    ${r.url ? `<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="g-arxiv-link">arXiv / Source ↗</a>` : ''}
                   </li>
                 `).join('')}
               </ul>
@@ -1345,13 +1384,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      // Clean category title
+      const cleanCat = a.category.replace('Algorithms', '').trim();
+
       card.innerHTML = `
-        <div class="zoo-card-header">
-          <div class="zoo-cat-badge">${a.category.replace('Algorithms', '').trim()}</div>
-          <span class="zoo-speedup-badge ${speedupClass}">${a.speedup}</span>
+        <div class="g-card-top-row">
+          <span class="g-domain-badge">${cleanCat}</span>
+          <span class="g-speedup-pill ${speedupClass}">${a.speedup}</span>
         </div>
-        <h3 class="zoo-card-title">${a.name}</h3>
-        <p class="zoo-card-desc">${a.description}</p>
+
+        <h3 class="g-algo-name">${a.name}</h3>
+        <p class="g-algo-desc">${a.description}</p>
+        
         ${implHtml}
         ${citationsHtml}
       `;

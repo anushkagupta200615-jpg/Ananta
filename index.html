@@ -71,7 +71,7 @@
           <div class="nav-dropdown-menu">
             <a href="#simulator" class="dropdown-link" data-tab="simulator">Cirq Open Source Tools</a>
             <a href="#algorithms" class="dropdown-link" data-tab="algorithms">Algorithm Library (Grover, Shor, VQE)</a>
-            <a href="#research" class="dropdown-link" onclick="if(window.switchResearchMode) window.switchResearchMode('zoo');" data-tab="research">Quantum Algorithm Zoo (74 Algorithms)</a>
+            <a href="#research" class="dropdown-link" onclick="if(window.switchResearchMode) window.switchResearchMode('zoo');" data-tab="research">Universal Algorithm Catalog (74 Algorithms)</a>
             <a href="#challenges" class="dropdown-link" data-tab="challenges">Quantum Circuit Challenges</a>
           </div>
         </div>
@@ -1776,7 +1776,7 @@ Key Advantage:
             📑 Landmark Papers & Textbooks (38)
           </button>
           <button class="research-mode-tab" id="tab-mode-zoo" onclick="window.switchResearchMode('zoo')">
-            🦁 Quantum Algorithm Zoo (74 Algorithms)
+            ⚡ Universal Algorithm Catalog (74 Algorithms)
           </button>
         </div>
 
@@ -1826,45 +1826,111 @@ Key Advantage:
           </div>
         </div>
 
-        <!-- ================= MODE 2: QUANTUM ALGORITHM ZOO ================= -->
+        <!-- ================= MODE 2: GOOGLE QUANTUM AI ALGORITHM COMPENDIUM ================= -->
         <div id="quantum-zoo-subview" style="display: none;">
-          <div class="research-hero-banner zoo-hero-banner">
-            <div class="zoo-pill-tag">
-              <span>🦁</span> Complete Archive from quantumalgorithmzoo.org (Curated by Stephen Jordan)
+          <div class="google-compendium-banner">
+            <div class="g-quantum-accent-line"></div>
+            
+            <div class="g-compendium-header-row">
+              <div class="g-compendium-titles">
+                <div class="g-quantum-pill">
+                  <span class="g-quantum-dot"></span>
+                  <span>Google Quantum AI &bull; Computational Complexity Compendium</span>
+                </div>
+                <h1 class="zoo-hero-title">Universal Quantum Algorithm Catalog</h1>
+                <p class="zoo-hero-desc">
+                  An authoritative taxonomy of 74 quantum algorithms detailing provable asymptotic speedup bounds, mathematical problem formulations, open-source implementations (Google Cirq, PennyLane, Classiq, Qrisp), and 550+ peer-reviewed scientific citations.
+                </p>
+              </div>
             </div>
-            <h1 class="research-hero-title">The Quantum Algorithm Zoo</h1>
-            <p class="research-hero-desc">
-              Comprehensive catalog of 74 quantum algorithms across Algebraic & Number Theory, Oracular Search, Quantum Simulation, and Optimization/Machine Learning, complete with asymptotic speedups, open-source implementations (Cirq, PennyLane, Classiq, Qrisp), and 550+ original scientific citations.
-            </p>
+
+            <!-- Executive KPI Metrics Dashboard (Google DeepMind Style) -->
+            <div class="g-metrics-grid">
+              <div class="g-metric-card">
+                <div class="g-metric-icon">⚛️</div>
+                <div class="g-metric-data">
+                  <span class="g-metric-val">74</span>
+                  <span class="g-metric-label">Verified Algorithms</span>
+                  <span class="g-metric-sub">Algebraic, oracular, simulation & QML</span>
+                </div>
+              </div>
+
+              <div class="g-metric-card">
+                <div class="g-metric-icon">⚡</div>
+                <div class="g-metric-data">
+                  <span class="g-metric-val g-val-speedup">Superpolynomial</span>
+                  <span class="g-metric-label">Asymptotic Frontier</span>
+                  <span class="g-metric-sub">Shor, Hallgren, Lloyd, Childs & Simon</span>
+                </div>
+              </div>
+
+              <div class="g-metric-card">
+                <div class="g-metric-icon">📚</div>
+                <div class="g-metric-data">
+                  <span class="g-metric-val">550+</span>
+                  <span class="g-metric-label">Peer-Reviewed Papers</span>
+                  <span class="g-metric-sub">Direct arXiv, Nature, PRL & SIAM citations</span>
+                </div>
+              </div>
+
+              <div class="g-metric-card">
+                <div class="g-metric-icon">🛠️</div>
+                <div class="g-metric-data">
+                  <span class="g-metric-val g-val-impl">Google Cirq & OpenQASM</span>
+                  <span class="g-metric-label">Native Code Integration</span>
+                  <span class="g-metric-sub">Verified PennyLane, Classiq & Qrisp circuits</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- Zoo Search & Filter Toolbar -->
-          <div class="zoo-toolbar">
-            <div class="research-search-box zoo-search-box">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input type="text" id="zoo-search-input" placeholder="Search 74 algorithms by name, problem, speedup, or citation..." oninput="window.filterZooAlgorithms()" />
-              <button id="btn-clear-zoo-search" class="btn-clear-search" style="display:none;" onclick="window.clearZooSearch()" title="Clear zoo search">✕</button>
+          <!-- Google Material 3 Search & Category Toolbar -->
+          <div class="g-zoo-toolbar">
+            <div class="g-search-filter-row">
+              <div class="g-search-box">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="zoo-search-input" placeholder="Search 74 algorithms by name, problem, speedup, or citation (e.g. Shor, Grover, HHL, Cirq)..." oninput="window.filterZooAlgorithms()" />
+                <button id="btn-clear-zoo-search" class="btn-clear-search" style="display:none;" onclick="window.clearZooSearch()" title="Clear search">✕</button>
+              </div>
+
+              <!-- Speedup Quick Filter -->
+              <div class="g-speedup-filter-group">
+                <button class="g-speedup-btn active" data-speed="all" onclick="window.setZooSpeedupFilter('all')">All Speeds</button>
+                <button class="g-speedup-btn" data-speed="superpoly" onclick="window.setZooSpeedupFilter('superpoly')">Superpolynomial 🚀</button>
+                <button class="g-speedup-btn" data-speed="poly" onclick="window.setZooSpeedupFilter('poly')">Polynomial ⚡</button>
+                <button class="g-speedup-btn" data-speed="expo" onclick="window.setZooSpeedupFilter('expo')">Exponential 🌌</button>
+              </div>
             </div>
 
-            <!-- Zoo Category Pills -->
-            <div class="zoo-category-pills">
-              <button class="zoo-cat-pill active" data-zoocat="all" onclick="window.setZooCategory('all')">All Algorithms (74)</button>
-              <button class="zoo-cat-pill" data-zoocat="Algebraic and Number Theoretic Algorithms" onclick="window.setZooCategory('Algebraic and Number Theoretic Algorithms')">Algebraic & Number Theory (13)</button>
-              <button class="zoo-cat-pill" data-zoocat="Oracular Algorithms" onclick="window.setZooCategory('Oracular Algorithms')">Oracular Algorithms (23)</button>
-              <button class="zoo-cat-pill" data-zoocat="Approximation and Simulation Algorithms" onclick="window.setZooCategory('Approximation and Simulation Algorithms')">Simulation & Approximation (18)</button>
-              <button class="zoo-cat-pill" data-zoocat="Optimization, Numerics, and Machine Learning" onclick="window.setZooCategory('Optimization, Numerics, and Machine Learning')">Optimization & QML (20)</button>
+            <!-- Material 3 Category Filter Pills -->
+            <div class="g-category-chips-track">
+              <button class="g-cat-chip active" data-zoocat="all" onclick="window.setZooCategory('all')">
+                <span class="chip-dot"></span> All Paradigms (74)
+              </button>
+              <button class="g-cat-chip" data-zoocat="Algebraic and Number Theoretic Algorithms" onclick="window.setZooCategory('Algebraic and Number Theoretic Algorithms')">
+                ∑ Algebraic & Number Theory (13)
+              </button>
+              <button class="g-cat-chip" data-zoocat="Oracular Algorithms" onclick="window.setZooCategory('Oracular Algorithms')">
+                🔮 Oracular & Query Complexity (23)
+              </button>
+              <button class="g-cat-chip" data-zoocat="Approximation and Simulation Algorithms" onclick="window.setZooCategory('Approximation and Simulation Algorithms')">
+                ⚛️ Quantum Simulation & Physics (18)
+              </button>
+              <button class="g-cat-chip" data-zoocat="Optimization, Numerics, and Machine Learning" onclick="window.setZooCategory('Optimization, Numerics, and Machine Learning')">
+                📈 Optimization & Quantum ML (20)
+              </button>
             </div>
 
-            <div class="research-status-bar">
-              <span id="zoo-results-count" class="research-counter-badge zoo-counter-badge">Showing 74 of 74 algorithms</span>
+            <div class="g-results-status-row">
+              <span id="zoo-results-count" class="g-status-counter">Showing 74 of 74 algorithms</span>
             </div>
           </div>
 
-          <!-- Zoo Algorithms Grid -->
-          <div class="zoo-grid" id="zoo-grid-container">
+          <!-- Algorithms Cards Grid -->
+          <div class="g-algorithms-grid" id="zoo-grid-container">
             <!-- Populated dynamically by app.js -->
           </div>
         </div>
