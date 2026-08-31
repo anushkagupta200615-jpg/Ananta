@@ -462,6 +462,30 @@ Guidelines:
   generateLocalAIResponse(query) {
     const q = query.toLowerCase();
 
+    // 1. First check if our comprehensive Quantum Knowledge Engine has a rich research-grade entry
+    if (window.QuantumKnowledgeEngine) {
+      try {
+        const engine = new window.QuantumKnowledgeEngine();
+        const matchedTopic = engine.search(query);
+        if (matchedTopic) {
+          const apps = matchedTopic.applications && matchedTopic.applications.length > 0
+            ? `<strong>Key Research & Industry Applications:</strong><ul>${matchedTopic.applications.map(a => `<li>${a}</li>`).join('')}</ul>`
+            : '';
+          const mathBlock = matchedTopic.math ? `<br><strong>Mathematical Formulation:</strong><pre style="background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;font-family:monospace;font-size:12px;overflow-x:auto;">${matchedTopic.math}</pre>` : '';
+          const intuitionBlock = matchedTopic.intuition ? `<br><strong>Physical Intuition:</strong><p style="margin:4px 0 8px 0;font-style:italic;color:var(--text-dim);">${matchedTopic.intuition}</p>` : '';
+
+          return `<strong>${matchedTopic.title}</strong> [<em>${matchedTopic.category}</em>]<br><br>
+${matchedTopic.definition}
+${mathBlock}
+${intuitionBlock}
+${apps}
+<small style="color:var(--google-blue);">Reference: ${matchedTopic.furtherReading || 'Nielsen & Chuang / Physical Review'}</small>`;
+        }
+      } catch (err) {
+        console.warn('KE match error in tutor:', err);
+      }
+    }
+
     if (q.includes('alpha') || q.includes('beta') || q.includes('amplitude')) {
       return `<strong>Quantum State Amplitudes (α and β):</strong><br><br>
 In a qubit state <code>|ψ⟩ = α|0⟩ + β|1⟩</code>:

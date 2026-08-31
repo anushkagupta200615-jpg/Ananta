@@ -940,7 +940,15 @@ window.QuantumCircuitEngine = QuantumCircuitEngine;
 
 class QuantumKnowledgeEngine {
   constructor() {
-    this.topics = this._buildTopicDatabase();
+    const defaultTopics = this._buildTopicDatabase();
+    if (typeof window !== 'undefined' && Array.isArray(window.QUANTUM_TOPIC_DATABASE)) {
+      // Merge window database with default topics, deduplicating by title
+      const titleSet = new Set(window.QUANTUM_TOPIC_DATABASE.map(t => t.title.toLowerCase()));
+      const filteredDefaults = defaultTopics.filter(t => !titleSet.has(t.title.toLowerCase()));
+      this.topics = [...window.QUANTUM_TOPIC_DATABASE, ...filteredDefaults];
+    } else {
+      this.topics = defaultTopics;
+    }
   }
 
   _buildTopicDatabase() {
