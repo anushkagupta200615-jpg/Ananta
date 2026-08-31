@@ -663,7 +663,7 @@
       <form onsubmit="event.preventDefault(); submitEmailLogin();">
         <div class="input-group">
           <label for="email">Email</label>
-          <input type="email" id="email" class="text-input" placeholder="developer@ananta-quantum.io" value="anushkagupta200615@gmail.com" required>
+          <input type="email" id="email" class="text-input" placeholder="developer@ananta-quantum.io" value="" required>
         </div>
 
         <div class="input-group">
@@ -702,18 +702,18 @@
       </div>
 
       <div class="oauth-body">
-        <div class="account-item" onclick="selectGoogleAccount('Anushka Gupta', 'anushkagupta200615@gmail.com')">
-          <div class="user-avatar-circle">A</div>
-          <div class="account-info">
-            <strong>Anushka Gupta</strong>
-            <span>anushkagupta200615@gmail.com</span>
-          </div>
-        </div>
         <div class="account-item" onclick="selectGoogleAccount('Quantum Researcher', 'researcher@ananta-quantum.io')">
-          <div class="user-avatar-circle" style="background:#8b5cf6;">Q</div>
+          <div class="user-avatar-circle" style="background: linear-gradient(135deg, #00f0ff 0%, #0284c7 100%); color: #000;">Q</div>
           <div class="account-info">
             <strong>Quantum Researcher</strong>
             <span>researcher@ananta-quantum.io</span>
+          </div>
+        </div>
+        <div class="account-item" onclick="selectGoogleAccount('Quantum Developer', 'developer@ananta-quantum.io')">
+          <div class="user-avatar-circle" style="background:#8b5cf6;">D</div>
+          <div class="account-info">
+            <strong>Quantum Developer</strong>
+            <span>developer@ananta-quantum.io</span>
           </div>
         </div>
       </div>
@@ -772,7 +772,7 @@
     }
 
     function submitEmailLogin() {
-      const email = document.getElementById('email').value || 'anushkagupta200615@gmail.com';
+      const email = document.getElementById('email').value || 'developer@ananta-quantum.io';
       const user = {
         name: email.split('@')[0],
         email: email,

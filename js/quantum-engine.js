@@ -941,15 +941,40 @@ window.QuantumCircuitEngine = QuantumCircuitEngine;
 class QuantumKnowledgeEngine {
   constructor() {
     const defaultTopics = this._buildTopicDatabase();
+    let combined = defaultTopics;
+
     if (typeof window !== 'undefined' && Array.isArray(window.QUANTUM_TOPIC_DATABASE)) {
-      // Merge window database with default topics, deduplicating by title
       const titleSet = new Set(window.QUANTUM_TOPIC_DATABASE.map(t => t.title.toLowerCase()));
       const filteredDefaults = defaultTopics.filter(t => !titleSet.has(t.title.toLowerCase()));
-      this.topics = [...window.QUANTUM_TOPIC_DATABASE, ...filteredDefaults];
-    } else {
-      this.topics = defaultTopics;
+      combined = [...window.QUANTUM_TOPIC_DATABASE, ...filteredDefaults];
     }
+
+    // Seamlessly merge all 74 Quantum Algorithm Zoo algorithms
+    if (typeof window !== 'undefined' && window.QUANTUM_ALGORITHM_ZOO && Array.isArray(window.QUANTUM_ALGORITHM_ZOO.algorithms)) {
+      const zooTopics = window.QUANTUM_ALGORITHM_ZOO.algorithms.map(a => {
+        const words = a.name.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2);
+        return {
+          keys: [a.name.toLowerCase(), ...words],
+          title: `${a.name} (Quantum Algorithm Zoo)`,
+          category: `Zoo: ${a.category.replace('Algorithms', '').trim()}`,
+          speedup: a.speedup,
+          arxiv: null,
+          definition: a.description,
+          math: `Computational Complexity & Speedup: ${a.speedup}\nCanonical Problem Classification: ${a.category}`,
+          intuition: `Classified in Stephen Jordan's Quantum Algorithm Zoo. Achieves ${a.speedup} quantum acceleration over best-known classical algorithms.`,
+          applications: (a.implementations && a.implementations.length > 0)
+            ? a.implementations.map(i => `${i.name} implementation`)
+            : ['Theoretical complexity bounds & oracle query model'],
+          preset: null,
+          furtherReading: `quantumalgorithmzoo.org, Citations: ${a.citations ? a.citations.join(', ') : 'Reference Archive'}`
+        };
+      });
+      combined = [...combined, ...zooTopics];
+    }
+
+    this.topics = combined;
   }
+
 
   _buildTopicDatabase() {
     return [

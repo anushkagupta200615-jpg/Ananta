@@ -286,6 +286,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 4. Authentication & Google Login Flow
   // ==========================================
+  // Privacy safeguard: automatically purge legacy hardcoded account from client localStorage
+  try {
+    const legacyUser = localStorage.getItem('ananta_user');
+    if (legacyUser && legacyUser.toLowerCase().includes('anushkagupta')) {
+      localStorage.removeItem('ananta_user');
+    }
+  } catch (e) {}
+
   function updateNavUser() {
     const userJson = localStorage.getItem('ananta_user');
     const userContainer = document.getElementById('nav-user-container');
@@ -1192,6 +1200,163 @@ document.addEventListener('DOMContentLoaded', () => {
       searchQuery = '';
       clearSearchBtn.style.display = 'none';
       renderResearchLibrary();
+    });
+  }
+
+  // ==========================================
+  // 8B. QUANTUM ALGORITHM ZOO EXPLORER ENGINE
+  // ==========================================
+  let activeZooCategory = 'all';
+  let zooSearchQuery = '';
+
+  window.switchResearchMode = function(mode) {
+    const papersSub = document.getElementById('research-papers-subview');
+    const zooSub = document.getElementById('quantum-zoo-subview');
+    const tabPapers = document.getElementById('tab-mode-papers');
+    const tabZoo = document.getElementById('tab-mode-zoo');
+
+    if (mode === 'zoo') {
+      if (papersSub) papersSub.style.display = 'none';
+      if (zooSub) zooSub.style.display = 'block';
+      if (tabPapers) tabPapers.classList.remove('active');
+      if (tabZoo) tabZoo.classList.add('active');
+      renderZooLibrary();
+    } else {
+      if (papersSub) papersSub.style.display = 'block';
+      if (zooSub) zooSub.style.display = 'none';
+      if (tabPapers) tabPapers.classList.add('active');
+      if (tabZoo) tabZoo.classList.remove('active');
+      renderResearchLibrary();
+    }
+  };
+
+  window.setZooCategory = function(cat) {
+    activeZooCategory = cat;
+    document.querySelectorAll('.zoo-cat-pill').forEach(pill => {
+      if (pill.getAttribute('data-zoocat') === cat) pill.classList.add('active');
+      else pill.classList.remove('active');
+    });
+    renderZooLibrary();
+  };
+
+  window.filterZooAlgorithms = function() {
+    const input = document.getElementById('zoo-search-input');
+    const clearBtn = document.getElementById('btn-clear-zoo-search');
+    zooSearchQuery = input ? input.value.trim() : '';
+    if (clearBtn) clearBtn.style.display = zooSearchQuery ? 'inline-block' : 'none';
+    renderZooLibrary();
+  };
+
+  window.clearZooSearch = function() {
+    const input = document.getElementById('zoo-search-input');
+    const clearBtn = document.getElementById('btn-clear-zoo-search');
+    if (input) input.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+    zooSearchQuery = '';
+    renderZooLibrary();
+  };
+
+  function renderZooLibrary() {
+    const zooGrid = document.getElementById('zoo-grid-container');
+    const resultsCounter = document.getElementById('zoo-results-count');
+    if (!zooGrid || !window.QUANTUM_ALGORITHM_ZOO) return;
+
+    const zoo = window.QUANTUM_ALGORITHM_ZOO;
+    const algos = zoo.algorithms || [];
+    const refs = zoo.references || {};
+
+    const filtered = algos.filter(a => {
+      const matchesCat = activeZooCategory === 'all' || a.category === activeZooCategory;
+      if (!matchesCat) return false;
+
+      if (!zooSearchQuery) return true;
+      const q = zooSearchQuery.toLowerCase();
+      const nameMatch = a.name && a.name.toLowerCase().includes(q);
+      const descMatch = a.description && a.description.toLowerCase().includes(q);
+      const speedupMatch = a.speedup && a.speedup.toLowerCase().includes(q);
+      const catMatch = a.category && a.category.toLowerCase().includes(q);
+      return nameMatch || descMatch || speedupMatch || catMatch;
+    });
+
+    if (resultsCounter) {
+      resultsCounter.textContent = `Showing ${filtered.length} of ${algos.length} algorithms`;
+    }
+
+    if (filtered.length === 0) {
+      zooGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+          <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-white);">No matching algorithms found in Zoo</h3>
+          <p style="font-size: 13px; color: var(--text-dim);">Try searching by problem type (e.g. 'search', 'matrix', 'factoring', 'graph', 'Hamiltonian').</p>
+        </div>
+      `;
+      return;
+    }
+
+    zooGrid.innerHTML = '';
+    filtered.forEach(a => {
+      const card = document.createElement('div');
+      card.className = 'zoo-card';
+
+      // Speedup color class
+      let speedupClass = 'speedup-poly';
+      const spLower = (a.speedup || '').toLowerCase();
+      if (spLower.includes('superpolynomial') || spLower.includes('exponential')) {
+        speedupClass = 'speedup-superpoly';
+      } else if (spLower.includes('constant')) {
+        speedupClass = 'speedup-constant';
+      }
+
+      // Implementation buttons
+      let implHtml = '';
+      if (a.implementations && a.implementations.length > 0) {
+        implHtml = `
+          <div class="zoo-impl-row">
+            <span class="zoo-impl-label">Implementations:</span>
+            <div class="zoo-impl-links">
+              ${a.implementations.map(impl => `
+                <a href="${impl.url}" target="_blank" rel="noopener noreferrer" class="zoo-impl-chip">
+                  ${impl.name} ↗
+                </a>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // Citations HTML
+      let citationsHtml = '';
+      if (a.citations && a.citations.length > 0) {
+        const citedRefs = a.citations.map(cId => refs[cId]).filter(Boolean);
+        if (citedRefs.length > 0) {
+          citationsHtml = `
+            <details class="zoo-citations-details">
+              <summary>📚 ${citedRefs.length} Cited Research Publication${citedRefs.length > 1 ? 's' : ''}</summary>
+              <ul class="zoo-citations-list">
+                ${citedRefs.map(r => `
+                  <li>
+                    <span class="cite-num">[${r.number}]</span>
+                    <span class="cite-text">${r.citation}</span>
+                    ${r.url ? `<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="cite-link">arXiv / Source ↗</a>` : ''}
+                  </li>
+                `).join('')}
+              </ul>
+            </details>
+          `;
+        }
+      }
+
+      card.innerHTML = `
+        <div class="zoo-card-header">
+          <div class="zoo-cat-badge">${a.category.replace('Algorithms', '').trim()}</div>
+          <span class="zoo-speedup-badge ${speedupClass}">${a.speedup}</span>
+        </div>
+        <h3 class="zoo-card-title">${a.name}</h3>
+        <p class="zoo-card-desc">${a.description}</p>
+        ${implHtml}
+        ${citationsHtml}
+      `;
+
+      zooGrid.appendChild(card);
     });
   }
 

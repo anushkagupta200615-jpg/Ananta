@@ -71,6 +71,7 @@
           <div class="nav-dropdown-menu">
             <a href="#simulator" class="dropdown-link" data-tab="simulator">Cirq Open Source Tools</a>
             <a href="#algorithms" class="dropdown-link" data-tab="algorithms">Algorithm Library (Grover, Shor, VQE)</a>
+            <a href="#research" class="dropdown-link" onclick="if(window.switchResearchMode) window.switchResearchMode('zoo');" data-tab="research">Quantum Algorithm Zoo (74 Algorithms)</a>
             <a href="#challenges" class="dropdown-link" data-tab="challenges">Quantum Circuit Challenges</a>
           </div>
         </div>
@@ -569,7 +570,7 @@
               <form class="simple-auth-form" id="form-signup" style="display: none;" onsubmit="event.preventDefault(); window.startSignUpFlow();" autocomplete="off">
                 <div class="field-item">
                   <label for="signup-name">Full Name</label>
-                  <input type="text" id="signup-name" class="clean-input" placeholder="Anushka Gupta" required autocomplete="off" value="">
+                  <input type="text" id="signup-name" class="clean-input" placeholder="Quantum Researcher" required autocomplete="off" value="">
                 </div>
 
                 <div class="field-item">
@@ -618,7 +619,7 @@
               <div class="otp-panel-header">
                 <div class="otp-icon-bubble">📩</div>
                 <h3>Check your Gmail</h3>
-                <p class="otp-subtitle">We sent a 6-digit one-time verification code to:<br><strong id="otp-target-email" class="otp-highlight-email">user@gmail.com</strong></p>
+                <p class="otp-subtitle">We sent a 6-digit one-time verification code to:<br><strong id="otp-target-email" class="otp-highlight-email">your.email@example.com</strong></p>
               </div>
 
               <!-- Realistic Gmail Incoming Mail Toast Alert -->
@@ -1765,51 +1766,107 @@ Key Advantage:
       </div>
     </section>
 
-    <!-- ================= VIEW 8: RESEARCH PAPERS & TEXTBOOK ARCHIVE ================= -->
+    <!-- ================= VIEW 8: RESEARCH PAPERS & QUANTUM ALGORITHM ZOO ================= -->
     <section class="viewport-section" id="view-research">
       <div class="standard-page-container research-container">
         
-        <div class="research-hero-banner">
-          <div class="research-pill-tag">
-            <span>📚</span> Academic & Open-Access Knowledge Repository
-          </div>
-          <h1 class="research-hero-title">Quantum Research Archive & Textbook Library</h1>
-          <p class="research-hero-desc">
-            A comprehensive, searchable repository of foundational quantum physics papers, canonical algorithm discoveries, premier university textbooks, and ancient Indian atomic treatises.
-          </p>
+        <!-- Primary Research View Mode Switcher -->
+        <div class="research-mode-switcher">
+          <button class="research-mode-tab active" id="tab-mode-papers" onclick="window.switchResearchMode('papers')">
+            📑 Landmark Papers & Textbooks (38)
+          </button>
+          <button class="research-mode-tab" id="tab-mode-zoo" onclick="window.switchResearchMode('zoo')">
+            🦁 Quantum Algorithm Zoo (74 Algorithms)
+          </button>
         </div>
 
-        <!-- Search & Category Filters -->
-        <div class="research-toolbar">
-          <div class="research-search-box">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input type="text" id="research-search-input" placeholder="Search publications by title, author, year, keyword, or arXiv ID..." />
-            <button id="btn-clear-search" class="btn-clear-search" style="display:none;" title="Clear search">✕</button>
+        <!-- ================= MODE 1: RESEARCH PAPERS & TEXTBOOKS ================= -->
+        <div id="research-papers-subview">
+          <div class="research-hero-banner">
+            <div class="research-pill-tag">
+              <span>📚</span> Academic & Open-Access Knowledge Repository
+            </div>
+            <h1 class="research-hero-title">Quantum Research Archive & Textbook Library</h1>
+            <p class="research-hero-desc">
+              A comprehensive, searchable repository of foundational quantum physics papers, canonical algorithm discoveries, premier university textbooks, and ancient Indian atomic treatises.
+            </p>
           </div>
 
-          <div class="research-category-pills" id="research-category-pills">
-            <button class="cat-pill active" data-cat="all">All (<span id="count-all">0</span>)</button>
-            <button class="cat-pill" data-cat="foundations">Foundations (<span id="count-foundations">0</span>)</button>
-            <button class="cat-pill" data-cat="algorithms">Algorithms (<span id="count-algorithms">0</span>)</button>
-            <button class="cat-pill" data-cat="error-correction">Error Correction (<span id="count-error-correction">0</span>)</button>
-            <button class="cat-pill" data-cat="hardware">Hardware & NISQ (<span id="count-hardware">0</span>)</button>
-            <button class="cat-pill" data-cat="qml">Quantum ML (<span id="count-qml">0</span>)</button>
-            <button class="cat-pill" data-cat="cryptography">Cryptography (<span id="count-cryptography">0</span>)</button>
-            <button class="cat-pill" data-cat="textbooks">Textbooks (<span id="count-textbooks">0</span>)</button>
-            <button class="cat-pill" data-cat="ancient-heritage">Ancient Heritage (<span id="count-ancient-heritage">0</span>)</button>
+          <!-- Search & Category Filters -->
+          <div class="research-toolbar">
+            <div class="research-search-box">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" id="research-search-input" placeholder="Search publications by title, author, year, keyword, or arXiv ID..." />
+              <button id="btn-clear-search" class="btn-clear-search" style="display:none;" title="Clear search">✕</button>
+            </div>
+
+            <div class="research-category-pills" id="research-category-pills">
+              <button class="cat-pill active" data-cat="all">All (<span id="count-all">0</span>)</button>
+              <button class="cat-pill" data-cat="foundations">Foundations (<span id="count-foundations">0</span>)</button>
+              <button class="cat-pill" data-cat="algorithms">Algorithms (<span id="count-algorithms">0</span>)</button>
+              <button class="cat-pill" data-cat="error-correction">Error Correction (<span id="count-error-correction">0</span>)</button>
+              <button class="cat-pill" data-cat="hardware">Hardware & NISQ (<span id="count-hardware">0</span>)</button>
+              <button class="cat-pill" data-cat="qml">Quantum ML (<span id="count-qml">0</span>)</button>
+              <button class="cat-pill" data-cat="cryptography">Cryptography (<span id="count-cryptography">0</span>)</button>
+              <button class="cat-pill" data-cat="textbooks">Textbooks (<span id="count-textbooks">0</span>)</button>
+              <button class="cat-pill" data-cat="ancient-heritage">Ancient Heritage (<span id="count-ancient-heritage">0</span>)</button>
+            </div>
+
+            <div class="research-status-bar">
+              <span id="research-results-count" class="research-counter-badge">Showing 0 publications</span>
+            </div>
           </div>
 
-          <div class="research-status-bar">
-            <span id="research-results-count" class="research-counter-badge">Showing 0 publications</span>
+          <!-- Research Papers Grid -->
+          <div class="research-grid" id="research-grid-container">
+            <!-- Populated dynamically by app.js -->
           </div>
         </div>
 
-        <!-- Research Papers Grid -->
-        <div class="research-grid" id="research-grid-container">
-          <!-- Populated dynamically by app.js -->
+        <!-- ================= MODE 2: QUANTUM ALGORITHM ZOO ================= -->
+        <div id="quantum-zoo-subview" style="display: none;">
+          <div class="research-hero-banner zoo-hero-banner">
+            <div class="zoo-pill-tag">
+              <span>🦁</span> Complete Archive from quantumalgorithmzoo.org (Curated by Stephen Jordan)
+            </div>
+            <h1 class="research-hero-title">The Quantum Algorithm Zoo</h1>
+            <p class="research-hero-desc">
+              Comprehensive catalog of 74 quantum algorithms across Algebraic & Number Theory, Oracular Search, Quantum Simulation, and Optimization/Machine Learning, complete with asymptotic speedups, open-source implementations (Cirq, PennyLane, Classiq, Qrisp), and 550+ original scientific citations.
+            </p>
+          </div>
+
+          <!-- Zoo Search & Filter Toolbar -->
+          <div class="zoo-toolbar">
+            <div class="research-search-box zoo-search-box">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" id="zoo-search-input" placeholder="Search 74 algorithms by name, problem, speedup, or citation..." oninput="window.filterZooAlgorithms()" />
+              <button id="btn-clear-zoo-search" class="btn-clear-search" style="display:none;" onclick="window.clearZooSearch()" title="Clear zoo search">✕</button>
+            </div>
+
+            <!-- Zoo Category Pills -->
+            <div class="zoo-category-pills">
+              <button class="zoo-cat-pill active" data-zoocat="all" onclick="window.setZooCategory('all')">All Algorithms (74)</button>
+              <button class="zoo-cat-pill" data-zoocat="Algebraic and Number Theoretic Algorithms" onclick="window.setZooCategory('Algebraic and Number Theoretic Algorithms')">Algebraic & Number Theory (13)</button>
+              <button class="zoo-cat-pill" data-zoocat="Oracular Algorithms" onclick="window.setZooCategory('Oracular Algorithms')">Oracular Algorithms (23)</button>
+              <button class="zoo-cat-pill" data-zoocat="Approximation and Simulation Algorithms" onclick="window.setZooCategory('Approximation and Simulation Algorithms')">Simulation & Approximation (18)</button>
+              <button class="zoo-cat-pill" data-zoocat="Optimization, Numerics, and Machine Learning" onclick="window.setZooCategory('Optimization, Numerics, and Machine Learning')">Optimization & QML (20)</button>
+            </div>
+
+            <div class="research-status-bar">
+              <span id="zoo-results-count" class="research-counter-badge zoo-counter-badge">Showing 74 of 74 algorithms</span>
+            </div>
+          </div>
+
+          <!-- Zoo Algorithms Grid -->
+          <div class="zoo-grid" id="zoo-grid-container">
+            <!-- Populated dynamically by app.js -->
+          </div>
         </div>
 
       </div>
@@ -2076,12 +2133,12 @@ Key Advantage:
       </div>
 
       <div class="oauth-body" id="oauth-accounts-list">
-        <!-- Default verified account option for Anushka Gupta -->
-        <div class="account-item" onclick="window.selectGoogleAccount('Anushka Gupta', 'anushkagupta200615@gmail.com')">
-          <div class="user-avatar-circle">A</div>
+        <!-- Quick demo quantum account -->
+        <div class="account-item" onclick="window.selectGoogleAccount('Quantum Researcher', 'researcher@ananta-quantum.io')">
+          <div class="user-avatar-circle" style="background: linear-gradient(135deg, #00f0ff 0%, #0284c7 100%); color: #000;">Q</div>
           <div class="account-info">
-            <strong>Anushka Gupta</strong>
-            <span>anushkagupta200615@gmail.com</span>
+            <strong>Quantum Researcher</strong>
+            <span>researcher@ananta-quantum.io</span>
           </div>
         </div>
 
@@ -2127,6 +2184,7 @@ Key Advantage:
   <script src="js/ai-tutor.js"></script>
   <script src="js/algorithms.js"></script>
   <script src="js/research-papers.js"></script>
+  <script src="js/quantum-algorithm-zoo-data.js"></script>
   <script src="js/intuition-lab.js"></script>
   <script src="js/concept-doctor.js"></script>
   <script src="js/hardware-control.js"></script>
