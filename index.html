@@ -83,8 +83,8 @@
       </nav>
     </div>
 
-    <!-- DevSite Search Bar -->
-    <div class="nav-center-search">
+    <!-- DevSite Search Bar (hidden on mobile) -->
+    <div class="nav-center-search nav-search-desktop">
       <div class="devsite-nav-search" id="devsite-header-search-bar" onclick="window.focusKnowledgeEngineSearch()" title="Search quantum topics, Cirq, and hardware (Press /)">
         <svg class="devsite-search-svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
           <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 14z"/>
@@ -95,22 +95,56 @@
     </div>
 
     <div class="nav-right">
+      <!-- Theme Toggle (icon only on mobile) -->
       <button class="theme-switch-btn" id="btn-theme-toggle" title="Toggle Light / Dark Mode" onclick="window.toggleTheme()">
         <span id="theme-toggle-icon">☀️</span>
-        <span id="theme-toggle-text">Light</span>
+        <span id="theme-toggle-text" class="theme-text-label">Light</span>
       </button>
 
       <!-- Authenticated User Profile Badge -->
       <div id="nav-user-container" style="display: none;" class="user-profile-nav">
         <div class="user-avatar-badge" id="nav-user-avatar">A</div>
-        <span class="user-name-label" id="nav-user-name">User</span>
-        <button class="btn-signout" id="btn-signout" onclick="window.logoutUser()">Sign Out</button>
+        <span class="user-name-label nav-desktop-only" id="nav-user-name">User</span>
+        <button class="btn-signout nav-desktop-only" id="btn-signout" onclick="window.logoutUser()">Sign Out</button>
       </div>
 
       <!-- Sign In Button (shown when logged out) -->
-      <a href="#login" class="btn-nav-login" id="nav-login-btn">Sign In</a>
+      <a href="#login" class="btn-nav-login nav-desktop-only" id="nav-login-btn">Sign In</a>
+
+      <!-- Hamburger Button (mobile only) -->
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Open navigation menu" onclick="window.toggleMobileNav()">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </header>
+
+  <!-- Mobile Navigation Overlay -->
+  <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="window.closeMobileNav()"></div>
+  <!-- Mobile Navigation Drawer -->
+  <nav class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation">
+    <div class="mobile-nav-header">
+      <span class="mobile-nav-title">Menu</span>
+      <button class="mobile-nav-close" onclick="window.closeMobileNav()">✕</button>
+    </div>
+    <a href="#overview" class="mobile-nav-item" data-tab="overview" onclick="window.closeMobileNav()">🏠 Overview</a>
+    <a href="#simulator" class="mobile-nav-item" data-tab="simulator" onclick="window.closeMobileNav()">⚛️ Composer</a>
+    <a href="#algorithms" class="mobile-nav-item" data-tab="algorithms" onclick="window.closeMobileNav()">📐 Algorithms</a>
+    <a href="#research" class="mobile-nav-item" data-tab="research" onclick="window.closeMobileNav()">📚 Research</a>
+    <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">📄 Docs</a>
+    <a href="#intuition" class="mobile-nav-item" data-tab="intuition" onclick="window.closeMobileNav()">🔬 Intuition Lab</a>
+    <a href="#ai-assistant" class="mobile-nav-item" data-tab="ai-assistant" onclick="window.closeMobileNav()">🤖 AI Mentor</a>
+    <a href="#challenges" class="mobile-nav-item" data-tab="challenges" onclick="window.closeMobileNav()">🏆 Challenges</a>
+    <div class="mobile-nav-divider"></div>
+    <!-- Mobile search bar -->
+    <div class="mobile-nav-search" onclick="window.closeMobileNav(); window.focusKnowledgeEngineSearch();">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="color:var(--text-dim);flex-shrink:0">
+        <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 14z"/>
+      </svg>
+      <span style="font-size:13px;color:var(--text-dim)">Search quantum topics...</span>
+    </div>
+    <div class="mobile-nav-divider"></div>
+    <a href="#login" class="mobile-nav-item mobile-nav-signin" data-tab="login" onclick="window.closeMobileNav()">🔑 Sign In / Portal</a>
+  </nav>
 
   <!-- Application Content Container -->
   <main class="app-main-viewport">

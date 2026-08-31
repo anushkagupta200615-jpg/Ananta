@@ -4,6 +4,36 @@
  * and quantum simulation engine bindings.
  */
 
+/* ---- Mobile Navigation ---- */
+window.toggleMobileNav = function() {
+  const drawer = document.getElementById('mobile-nav-drawer');
+  const overlay = document.getElementById('mobile-nav-overlay');
+  const btn = document.getElementById('hamburger-btn');
+  if (!drawer) return;
+  const isOpen = drawer.classList.contains('open');
+  if (isOpen) {
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+    btn && btn.classList.remove('is-open');
+    document.body.style.overflow = '';
+  } else {
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+    btn && btn.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+};
+window.closeMobileNav = function() {
+  const drawer = document.getElementById('mobile-nav-drawer');
+  const overlay = document.getElementById('mobile-nav-overlay');
+  const btn = document.getElementById('hamburger-btn');
+  if (!drawer) return;
+  drawer.classList.remove('open');
+  overlay.classList.remove('open');
+  btn && btn.classList.remove('is-open');
+  document.body.style.overflow = '';
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 1. Dual Theme System (Light & Dark)
@@ -197,6 +227,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const tab = item.getAttribute('data-tab');
       if (tab) {
         e.preventDefault();
+        switchView(tab);
+      }
+    });
+  });
+
+  // Bind click on mobile nav drawer items
+  document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(item => {
+    item.addEventListener('click', (e) => {
+      const tab = item.getAttribute('data-tab');
+      if (tab) {
+        e.preventDefault();
+        window.closeMobileNav();
         switchView(tab);
       }
     });
