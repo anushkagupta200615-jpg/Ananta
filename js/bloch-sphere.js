@@ -10,6 +10,8 @@ class BlochSphereVisualizer {
 
     this.currentVector = new THREE.Vector3(0, 1, 0);
     this.targetVector = new THREE.Vector3(0, 1, 0);
+    this.isAnimating = true;
+    this.animFrameId = null;
 
     this.initScene();
     this.buildBlochElements();
@@ -202,8 +204,30 @@ class BlochSphereVisualizer {
     });
   }
 
+  start() {
+    if (!this.isAnimating) {
+      this.isAnimating = true;
+      this.animate();
+    }
+  }
+
+  stop() {
+    this.isAnimating = false;
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+  }
+
   animate() {
-    requestAnimationFrame(() => this.animate());
+    if (!this.isAnimating) return;
+    this.animFrameId = requestAnimationFrame(() => this.animate());
+
+    // Skip WebGL render calculation if container is not displayed in DOM
+    if (!this.container || this.container.offsetParent === null) {
+      return;
+    }
+
     this.currentVector.lerp(this.targetVector, 0.12);
 
     const up = new THREE.Vector3(0, 1, 0);

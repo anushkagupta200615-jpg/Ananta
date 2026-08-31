@@ -523,6 +523,7 @@ body {
   filter: brightness(0.9) contrast(1.1);
   transform: scale(1.04);
   animation: coralBreathing 18s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
 @keyframes coralBreathing {
@@ -621,6 +622,7 @@ body {
   transform-style: preserve-3d;
   transform: rotateX(24deg) rotateY(-18deg) rotateZ(12deg);
   animation: floatQuantumChip 7s ease-in-out infinite alternate;
+  will-change: transform;
   border-radius: 12px;
   box-shadow: -16px 24px 45px rgba(0, 0, 0, 0.8), 0 0 35px rgba(245, 158, 11, 0.25);
   transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);

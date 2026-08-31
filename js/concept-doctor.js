@@ -87,7 +87,6 @@ class ConceptDoctor {
 
   init() {
     this.bindSearchAndPills();
-    this.loadConcept('tunneling');
   }
 
   bindSearchAndPills() {
@@ -273,6 +272,13 @@ class ConceptDoctor {
     };
 
     this.animFrameId = requestAnimationFrame(render);
+  }
+
+  stopAnimation() {
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
   }
 
   // 1. Quantum Tunneling Animation

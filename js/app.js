@@ -130,9 +130,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Scroll viewport to top on tab switch
     window.scrollTo({ top: 0, behavior: 'instant' });
 
+    // Stop background canvas render loops when tab is not active
+    if (tabKey !== 'login' && window.rishiCanvasMain && window.rishiCanvasMain.stop) {
+      window.rishiCanvasMain.stop();
+    }
+    if (tabKey !== 'simulator') {
+      if (blochVisualizer && blochVisualizer.stop) blochVisualizer.stop();
+      if (window.hwStudio && window.hwStudio.stopPulseAnimation) {
+        window.hwStudio.stopPulseAnimation();
+      }
+    }
+    if (tabKey !== 'intuition') {
+      if (window.intuitionLab && window.intuitionLab.stopWaveAnimation) {
+        window.intuitionLab.stopWaveAnimation();
+      }
+      if (window.conceptDoctor && window.conceptDoctor.stopAnimation) {
+        window.conceptDoctor.stopAnimation();
+      }
+    }
+
     // Resize Bloch sphere & refresh microwave pulse canvas when entering simulator
     if (tabKey === 'simulator') {
       if (blochVisualizer) {
+        if (blochVisualizer.start) blochVisualizer.start();
         setTimeout(() => {
           window.dispatchEvent(new Event('resize'));
           if (circuitUI) circuitUI.updateSimulation();
@@ -143,9 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Refresh Rishi Canvas on login tab switch
+    // Refresh & start Rishi Canvas on login tab switch
     if (tabKey === 'login' && window.rishiCanvasMain) {
-      setTimeout(() => window.rishiCanvasMain.initSize(), 50);
+      setTimeout(() => {
+        window.rishiCanvasMain.initSize();
+        window.rishiCanvasMain.start();
+      }, 50);
     }
 
     // Refresh Wave Canvas and Doctor Canvas when entering Intuition Lab
@@ -814,10 +837,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (hash && validTabs.includes(hash)) {
     switchView(hash);
-  } else if (isLoggedIn) {
-    switchView('simulator');
   } else {
-    switchView('login');
+    switchView('overview');
   }
 
   // DevSite Header Search Integration

@@ -90,7 +90,6 @@ class HardwareControlStudio {
 
   init() {
     this.bindNoiseControls();
-    this.initPulseCanvas();
     this.renderSkillTree();
   }
 
@@ -356,6 +355,13 @@ class HardwareControlStudio {
 
     if (this.pulseAnimFrame) cancelAnimationFrame(this.pulseAnimFrame);
     this.pulseAnimFrame = requestAnimationFrame(render);
+  }
+
+  stopPulseAnimation() {
+    if (this.pulseAnimFrame) {
+      cancelAnimationFrame(this.pulseAnimFrame);
+      this.pulseAnimFrame = null;
+    }
   }
 
   // =========================================================================

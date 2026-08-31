@@ -30,7 +30,6 @@ class IntuitionLab {
 
   init() {
     this.bindCoinControls();
-    this.initWaveCanvas();
     this.bindDiceControls();
   }
 
@@ -298,6 +297,13 @@ class IntuitionLab {
 
     if (this.waveAnimFrame) cancelAnimationFrame(this.waveAnimFrame);
     this.waveAnimFrame = requestAnimationFrame(render);
+  }
+
+  stopWaveAnimation() {
+    if (this.waveAnimFrame) {
+      cancelAnimationFrame(this.waveAnimFrame);
+      this.waveAnimFrame = null;
+    }
   }
 
   // =========================================================================

@@ -24,6 +24,15 @@ class Complex {
     );
   }
 
+  div(c) {
+    const denom = c.re * c.re + c.im * c.im;
+    if (denom === 0) return new Complex(0, 0);
+    return new Complex(
+      (this.re * c.re + this.im * c.im) / denom,
+      (this.im * c.re - this.re * c.im) / denom
+    );
+  }
+
   scale(s) {
     return new Complex(this.re * s, this.im * s);
   }

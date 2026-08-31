@@ -33,7 +33,7 @@ class RishiQuantumCanvas {
     this.initSize();
     this.initParticles();
     this.bindEvents();
-    this.start();
+    // Do not start loop automatically; started only when login tab is shown
   }
 
   initSize() {
@@ -115,12 +115,23 @@ class RishiQuantumCanvas {
   }
 
   start() {
+    if (this.animId) cancelAnimationFrame(this.animId);
+    this.running = true;
     const loop = (ts) => {
+      if (!this.running) return;
       this.time = ts * 0.001;
       this.render();
       this.animId = requestAnimationFrame(loop);
     };
     this.animId = requestAnimationFrame(loop);
+  }
+
+  stop() {
+    this.running = false;
+    if (this.animId) {
+      cancelAnimationFrame(this.animId);
+      this.animId = null;
+    }
   }
 
   render() {
