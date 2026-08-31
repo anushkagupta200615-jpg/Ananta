@@ -79,7 +79,6 @@
         <a href="#algorithms" class="nav-item" data-tab="algorithms">Algorithms</a>
         <a href="#research" class="nav-item" data-tab="research">Research</a>
         <a href="#docs" class="nav-item" data-tab="docs">Docs</a>
-        <a href="#login" class="nav-item" data-tab="login">Portal</a>
       </nav>
     </div>
 
@@ -143,7 +142,11 @@
       <span style="font-size:13px;color:var(--text-dim)">Search quantum topics...</span>
     </div>
     <div class="mobile-nav-divider"></div>
-    <a href="#login" class="mobile-nav-item mobile-nav-signin" data-tab="login" onclick="window.closeMobileNav()">🔑 Sign In / Portal</a>
+    <a href="#login" class="mobile-nav-item mobile-nav-signin" id="mobile-nav-signin-link" data-tab="login" onclick="window.closeMobileNav()">🔑 Sign In</a>
+    <div id="mobile-nav-user-box" style="display: none;" class="mobile-nav-user-box">
+      <span class="mobile-user-greeting" id="mobile-user-greeting">Signed in as User</span>
+      <button class="mobile-nav-signout-btn" onclick="window.closeMobileNav(); window.logoutUser();">Sign Out</button>
+    </div>
   </nav>
 
   <!-- Application Content Container -->
@@ -718,7 +721,11 @@
                 <button class="ke-chip" data-topic="quantum fourier transform">QFT</button>
                 <button class="ke-chip" data-topic="VQE">VQE</button>
                 <button class="ke-chip" data-topic="density matrix">Density Matrix</button>
-                <button class="ke-chip" data-topic="decoherence">Decoherence</button>
+                <button class="ke-chip" data-topic="von neumann entropy">Entropy</button>
+                <button class="ke-chip" data-topic="zero noise extrapolation">Error Mitigation</button>
+                <button class="ke-chip" data-topic="tensor network">Tensor Networks</button>
+                <button class="ke-chip" data-topic="quantum chemistry simulation">Chemistry</button>
+                <button class="ke-chip" data-topic="quantum internet">Quantum Internet</button>
               </div>
             </div>
             <div class="ke-result-panel" id="ke-result-panel" style="display:none;">
@@ -1355,6 +1362,7 @@ Depolarizing: ρ → (1-ε)·U·ρ·U† + ε·I/2  (gate infidelity ε)</pre>
             <button class="cat-pill" data-cat="error-correction">Error Correction (<span id="count-error-correction">0</span>)</button>
             <button class="cat-pill" data-cat="hardware">Hardware & NISQ (<span id="count-hardware">0</span>)</button>
             <button class="cat-pill" data-cat="qml">Quantum ML (<span id="count-qml">0</span>)</button>
+            <button class="cat-pill" data-cat="cryptography">Cryptography (<span id="count-cryptography">0</span>)</button>
             <button class="cat-pill" data-cat="textbooks">Textbooks (<span id="count-textbooks">0</span>)</button>
             <button class="cat-pill" data-cat="ancient-heritage">Ancient Heritage (<span id="count-ancient-heritage">0</span>)</button>
           </div>

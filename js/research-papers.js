@@ -620,7 +620,237 @@ const QUANTUM_RESEARCH_PAPERS = [
   year={c. 700 BCE},
   publisher={Sacred Books of the East}
 }`
+  },
+
+  // ==========================================
+  // 7. ADVANCED QUANTUM RESEARCH & FRONTIERS
+  // ==========================================
+  {
+    id: 'aharonov-benor-1997',
+    title: 'Fault-Tolerant Quantum Computation with Constant Error',
+    authors: 'Dorit Aharonov, Michael Ben-Or',
+    year: 1997,
+    venue: '29th Annual ACM Symposium on Theory of Computing (STOC)',
+    category: 'error-correction',
+    abstract: 'Proves the landmark Quantum Threshold Theorem: if the physical error rate per gate is below a constant threshold (η_c > 0), arbitrarily long quantum computations can be executed with arbitrary polynomial accuracy using concatenated quantum codes and polylogarithmic qubit overhead.',
+    doi: '10.1145/258533.258579',
+    arxiv: 'quant-ph/9611028',
+    pdfUrl: 'https://arxiv.org/pdf/quant-ph/9611028.pdf',
+    circuitPreset: null,
+    bibtex: `@inproceedings{aharonov1997fault,
+  title={Fault-tolerant quantum computation with constant error},
+  author={Aharonov, Dorit and Ben-Or, Michael},
+  booktitle={Proceedings of the twenty-ninth annual ACM symposium on Theory of computing},
+  pages={176--188},
+  year={1997}
+}`
+  },
+  {
+    id: 'google-surface-code-2023',
+    title: 'Suppressing Quantum Errors by Scaling a Quantum Error-Correcting Code',
+    authors: 'Google Quantum AI (Rajeev Acharya et al.)',
+    year: 2023,
+    venue: 'Nature, 614(7949), 676-681',
+    category: 'error-correction',
+    abstract: 'Milestone experimental demonstration showing for the first time that scaling a surface code from distance-3 (17 qubits) to distance-5 (49 qubits) suppresses the logical error rate per cycle from 3.028% to 2.914%, confirming that physical superconducting transmons operate below the fault-tolerance threshold.',
+    doi: '10.1038/s41586-022-05434-1',
+    arxiv: '2207.06431',
+    pdfUrl: 'https://arxiv.org/pdf/2207.06431.pdf',
+    circuitPreset: null,
+    bibtex: `@article{google2023suppressing,
+  title={Suppressing quantum errors by scaling a quantum error-correcting code},
+  author={{Google Quantum AI}},
+  journal={Nature},
+  volume={614},
+  number={7949},
+  pages={676--681},
+  year={2023},
+  publisher={Nature Publishing Group}
+}`
+  },
+  {
+    id: 'bluvstein-harvard-2023',
+    title: 'A Quantum Processor Based on Coherent Transport of Neutral Atoms',
+    authors: 'Dolev Bluvstein, Simon J. Evered, Alexandra A. Geim, Sophie H. Li, Hengyun Zhou et al. (Harvard / MIT / QuEra)',
+    year: 2023,
+    venue: 'Nature, 626(7997), 58-65',
+    category: 'hardware',
+    abstract: 'Breakthrough demonstration of dynamic neutral atom arrays with 48 dual-rail logical qubits, arbitrary connectivity via optical tweezer shuttling, fault-tolerant logical entangling gates, and transversal non-Clifford operations, establishing neutral atoms as a premier fault-tolerant computing architecture.',
+    doi: '10.1038/s41586-023-06927-3',
+    arxiv: '2312.03818',
+    pdfUrl: 'https://arxiv.org/pdf/2312.03818.pdf',
+    circuitPreset: null,
+    bibtex: `@article{bluvstein2023quantum,
+  title={A quantum processor based on coherent transport of neutral atoms},
+  author={Bluvstein, Dolev and Evered, Simon J and Geim, Alexandra A and Li, Sophie H and Zhou, Hengyun and others},
+  journal={Nature},
+  volume={626},
+  number={7997},
+  pages={58--65},
+  year={2023},
+  publisher={Nature Publishing Group}
+}`
+  },
+  {
+    id: 'gidney-ekera-2021',
+    title: 'How to Factor 2048 Bit RSA Integers in 8 Hours Using 20 Million Noisy Qubits',
+    authors: 'Craig Gidney, Martin Ekerå',
+    year: 2021,
+    venue: 'Quantum, 5, 433',
+    category: 'algorithms',
+    abstract: 'The definitive modern resource estimation for Shor\'s algorithm on fault-tolerant surface codes. Reduces the physical qubit requirement to factor RSA-2048 by two orders of magnitude (from ~1 billion to 20 million physical qubits) by introducing carry-save adders and windowed modular exponentiation.',
+    doi: '10.22331/q-2021-04-15-433',
+    arxiv: '1905.09749',
+    pdfUrl: 'https://arxiv.org/pdf/1905.09749.pdf',
+    circuitPreset: null,
+    bibtex: `@article{gidney2021factor,
+  title={How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits},
+  author={Gidney, Craig and Eker{\aa}, Martin},
+  journal={Quantum},
+  volume={5},
+  pages={433},
+  year={2021},
+  publisher={Verein zur F{\"o}rderung des Open Access Publizierens in den Quantenwissenschaften}
+}`
+  },
+  {
+    id: 'lloyd-1996',
+    title: 'Universal Quantum Simulators',
+    authors: 'Seth Lloyd',
+    year: 1996,
+    venue: 'Science, 273(5278), 1073-1078',
+    category: 'algorithms',
+    abstract: 'Proves Richard Feynman\'s 1982 conjecture that a universal quantum computer can efficiently simulate any local quantum system. Uses Suzuki-Trotter product formulas to construct explicit polynomial-time quantum circuits for time evolution under arbitrary local Hamiltonians.',
+    doi: '10.1126/science.273.5278.1073',
+    arxiv: null,
+    pdfUrl: 'https://www.science.org/doi/10.1126/science.273.5278.1073',
+    circuitPreset: null,
+    bibtex: `@article{lloyd1996universal,
+  title={Universal quantum simulators},
+  author={Lloyd, Seth},
+  journal={Science},
+  volume={273},
+  number={5278},
+  pages={1073--1078},
+  year={1996},
+  publisher={American Association for the Advancement of Science}
+}`
+  },
+  {
+    id: 'cerezo-vqa-2021',
+    title: 'Variational Quantum Algorithms',
+    authors: 'M. Cerezo, Andrew Arrasmith, Ryan Babbush, Simon C. Benjamin, Suguru Endo, Keisuke Fujii, Jarrod R. McClean, Kosuke Mitarai, Xiao Yuan, Lukasz Cincio, Patrick J. Coles',
+    year: 2021,
+    venue: 'Nature Reviews Physics, 3(9), 625-644',
+    category: 'qml',
+    abstract: 'The definitive review on Variational Quantum Algorithms (VQAs) across chemistry, optimization, linear algebra, and machine learning. Systematically addresses trainability barriers including barren plateaus, cost function locality, gradient estimation via the parameter-shift rule, and quantum error mitigation.',
+    doi: '10.1038/s42254-021-00348-9',
+    arxiv: '2012.09265',
+    pdfUrl: 'https://arxiv.org/pdf/2012.09265.pdf',
+    circuitPreset: 'vqe',
+    bibtex: `@article{cerezo2021variational,
+  title={Variational quantum algorithms},
+  author={Cerezo, Marco and Arrasmith, Andrew and Babbush, Ryan and Benjamin, Simon C and Endo, Suguru and Fujii, Keisuke and McClean, Jarrod R and Mitarai, Kosuke and Yuan, Xiao and Cincio, Lukasz and others},
+  journal={Nature Reviews Physics},
+  volume={3},
+  number={9},
+  pages={625--644},
+  year={2021},
+  publisher={Nature Publishing Group}
+}`
+  },
+  {
+    id: 'gisin-qkd-2002',
+    title: 'Quantum Cryptography',
+    authors: 'Nicolas Gisin, Grégoire Ribordy, Wolfgang Tittel, Hugo Zbinden',
+    year: 2002,
+    venue: 'Reviews of Modern Physics, 74(1), 145-195',
+    category: 'cryptography',
+    abstract: 'Canonical 50-page review of theoretical and experimental quantum cryptography. Covers single-photon and entangled-state QKD protocols (BB84, E91, B92), photon statistics, eavesdropping strategies, quantum repeaters, and practical security proofs in optical fiber telecommunications.',
+    doi: '10.1103/RevModPhys.74.145',
+    arxiv: 'quant-ph/0101098',
+    pdfUrl: 'https://arxiv.org/pdf/quant-ph/0101098.pdf',
+    circuitPreset: null,
+    bibtex: `@article{gisin2002quantum,
+  title={Quantum cryptography},
+  author={Gisin, Nicolas and Ribordy, Gr{\'e}goire and Tittel, Wolfgang and Zbinden, Hugo},
+  journal={Reviews of Modern Physics},
+  volume={74},
+  number={1},
+  pages={145},
+  year={2002},
+  publisher={APS}
+}`
+  },
+  {
+    id: 'childs-walk-2010',
+    title: 'Universal Computation by Quantum Walk',
+    authors: 'Andrew M. Childs',
+    year: 2009,
+    venue: 'Physical Review Letters, 102(18), 180501',
+    category: 'algorithms',
+    abstract: 'Proves that single-particle continuous-time quantum walks on unweighted graphs are computationally universal for quantum computation. Demonstrates that any circuit-model computation can be translated directly into the spatial propagation of a single quantum walker across graph vertices.',
+    doi: '10.1103/PhysRevLett.102.180501',
+    arxiv: '0806.1972',
+    pdfUrl: 'https://arxiv.org/pdf/0806.1972.pdf',
+    circuitPreset: null,
+    bibtex: `@article{childs2009universal,
+  title={Universal computation by quantum walk},
+  author={Childs, Andrew M},
+  journal={Physical Review Letters},
+  volume={102},
+  number={18},
+  pages={180501},
+  year={2009},
+  publisher={APS}
+}`
+  },
+  {
+    id: 'kitaev-textbook-2002',
+    title: 'Classical and Quantum Computation',
+    authors: 'A. Yu. Kitaev, A. H. Shen, M. N. Vyalyi',
+    year: 2002,
+    venue: 'Graduate Studies in Mathematics, Vol. 47, American Mathematical Society',
+    category: 'textbooks',
+    abstract: 'Masterful graduate-level mathematical foundation connecting classical complexity theory (P, NP, Cook-Levin) with quantum complexity (BQP, QMA, Kitaev\'s Local Hamiltonian theorem), Phase Estimation, and Anyonic topological quantum memory.',
+    doi: '10.1090/gsm/047',
+    arxiv: null,
+    pdfUrl: 'https://bookstore.ams.org/gsm-47',
+    circuitPreset: null,
+    bibtex: `@book{kitaev2002classical,
+  title={Classical and quantum computation},
+  author={Kitaev, Alexei Yu and Shen, Alexander and Vyalyi, Mikhail N},
+  volume={47},
+  year={2002},
+  publisher={American Mathematical Society}
+}`
+  },
+  {
+    id: 'preskill-advantage-2023',
+    title: 'Quantum Advantage and Noise',
+    authors: 'John Preskill',
+    year: 2023,
+    venue: 'arXiv:2308.06450 / Caltech Quantum Science Institute',
+    category: 'hardware',
+    abstract: 'Authoritative analysis on the physical and algorithmic boundary of quantum computational advantage in the presence of noise. Explores how tensor network classical simulations challenge random circuit sampling, and outlines the verifiable pathways to practical, noise-resilient quantum advantage.',
+    doi: '10.48550/arXiv.2308.06450',
+    arxiv: '2308.06450',
+    pdfUrl: 'https://arxiv.org/pdf/2308.06450.pdf',
+    circuitPreset: null,
+    bibtex: `@article{preskill2023quantum,
+  title={Quantum advantage and noise},
+  author={Preskill, John},
+  journal={arXiv preprint arXiv:2308.06450},
+  year={2023}
+}`
   }
 ];
 
-window.QUANTUM_RESEARCH_PAPERS = QUANTUM_RESEARCH_PAPERS;
+if (typeof window !== 'undefined') {
+  window.QUANTUM_RESEARCH_PAPERS = QUANTUM_RESEARCH_PAPERS;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { QUANTUM_RESEARCH_PAPERS };
+}
+

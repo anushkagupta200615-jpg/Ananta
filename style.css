@@ -7907,6 +7907,201 @@ input:checked + .slider-round:before {
   }
   .algo-load-banner.banner-show {
     transform: translateX(-50%) translateY(0);
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* ALGORITHMS */
+  .algo-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .algo-filter-bar {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  .algo-stats-bar {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .algo-card-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .btn-run-in-sim {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* RESEARCH */
+  .research-grid {
+    grid-template-columns: 1fr;
+  }
+  .standard-page-container {
+    padding: 0 12px;
+    margin: 16px auto 40px;
+  }
+
+  /* INTUITION LAB */
+  .intuition-grid {
+    grid-template-columns: 1fr;
+  }
+  .intuition-card-wide {
+    grid-column: auto;
+  }
+  .coin-stage-container {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+  }
+  .dice-stage {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+  }
+  .dice-bridge-center {
+    width: 100%;
+    flex-direction: row;
+    padding: 8px 0;
+  }
+
+  /* HARDWARE */
+  .hw-lab-grid {
+    grid-template-columns: 1fr;
+  }
+  .hardware-control-panel {
+    padding: 16px;
+  }
+
+  /* AI MENTOR */
+  .mentor-console {
+    padding: 16px;
+    min-height: auto;
+  }
+  .mentor-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .mentor-input-row {
+    flex-direction: column;
+  }
+  .btn-mentor-send {
+    width: 100%;
+    text-align: center;
+  }
+  .doctor-stage-card {
+    grid-template-columns: 1fr;
+  }
+  .doctor-input-bar {
+    flex-direction: column;
+  }
+  .btn-doctor-ask {
+    width: 100%;
+  }
+
+  /* KNOWLEDGE ENGINE */
+  .knowledge-engine-bar {
+    padding: 14px 14px;
+    border-radius: 10px;
+  }
+  .ke-header {
+    margin-bottom: 12px;
+  }
+  .ke-title {
+    font-size: 14px;
+  }
+  .ke-subtitle {
+    display: none;
+  }
+  .ke-card {
+    padding: 14px;
+  }
+  .ke-card-title {
+    font-size: 16px;
+  }
+
+  /* SKILL TREE */
+  .skill-tree-grid {
+    grid-template-columns: 1fr;
+  }
+  .challenges-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* RACE CARD */
+  .race-tracks-grid {
+    grid-template-columns: 1fr;
+  }
+  .track-items-row {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* DOCS */
+  .docs-container-card {
+    padding: 18px;
+  }
+
+  /* GENERAL */
+  .standard-page-container {
+    padding: 0 12px;
+  }
+  .page-lead-header h2 {
+    font-size: 20px;
+  }
+
+  /* QUICK GUIDE STRIP */
+  .sim-quick-guide-strip {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .guide-arrow {
+    display: none;
+  }
+
+  /* LLM SETTINGS */
+  .llm-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* EXPORT CARD */
+  .export-card-wide {
+    grid-column: auto;
+  }
+
+  /* BLOCH & ANALYTICS */
+  .bloch-control-actions {
+    flex-wrap: wrap;
+  }
+  .entangle-gauges-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* BIBTEX MODAL */
+  .bibtex-modal-dialog {
+    max-width: 100%;
+    margin: 0 8px;
+  }
+
+  /* TOAST */
+  .mission-toast, .skill-unlock-toast, .algo-load-banner {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: calc(100vw - 24px);
+  }
+  .algo-load-banner {
+    width: calc(100vw - 24px);
+    max-width: 420px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-30px);
+  }
+  .algo-load-banner.banner-show {
+    transform: translateX(-50%) translateY(0);
   }
 
   /* PULSE SPECS */
@@ -7930,4 +8125,39 @@ input:checked + .slider-round:before {
     width: 130px;
     height: 130px;
   }
+}
+
+/* Mobile Nav User Box */
+.mobile-nav-user-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--bg-hover, rgba(0, 0, 0, 0.04));
+  border-radius: 8px;
+  margin: 8px 16px;
+}
+
+.mobile-user-greeting {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim, #5f6368);
+}
+
+.mobile-nav-signout-btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: rgba(218, 30, 40, 0.1);
+  color: #da1e28;
+  border: 1px solid rgba(218, 30, 40, 0.3);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-signout-btn:hover {
+  background: #da1e28;
+  color: #ffffff;
 }

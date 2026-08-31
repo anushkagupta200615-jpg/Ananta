@@ -121,6 +121,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabKey === 'hardware') tabKey = 'overview';
     if (tabKey === 'software') tabKey = 'simulator';
 
+    // If already logged in and navigating to login, redirect to overview
+    if (tabKey === 'login') {
+      const userJson = localStorage.getItem('ananta_user');
+      if (userJson) {
+        tabKey = 'overview';
+      }
+    }
+
     // Update active class on nav items
     navItems.forEach(item => {
       if (item.getAttribute('data-tab') === tabKey) {
@@ -284,6 +292,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('nav-login-btn');
     const userAvatar = document.getElementById('nav-user-avatar');
     const userName = document.getElementById('nav-user-name');
+    const mobileSignin = document.getElementById('mobile-nav-signin-link');
+    const mobileUserBox = document.getElementById('mobile-nav-user-box');
+    const mobileGreeting = document.getElementById('mobile-user-greeting');
 
     if (userJson) {
       try {
@@ -292,6 +303,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loginBtn) loginBtn.style.display = 'none';
         if (userAvatar) userAvatar.textContent = user.avatar || (user.name ? user.name.charAt(0).toUpperCase() : 'A');
         if (userName) userName.textContent = user.name || 'User';
+
+        // Mobile drawer user state
+        if (mobileSignin) mobileSignin.style.display = 'none';
+        if (mobileUserBox) mobileUserBox.style.display = 'flex';
+        if (mobileGreeting) mobileGreeting.textContent = `Signed in as ${user.name || 'User'}`;
         return true;
       } catch (e) {
         console.error('Error parsing user session', e);
@@ -299,6 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (userContainer) userContainer.style.display = 'none';
     if (loginBtn) loginBtn.style.display = 'inline-block';
+    if (mobileSignin) mobileSignin.style.display = 'block';
+    if (mobileUserBox) mobileUserBox.style.display = 'none';
     return false;
   }
 

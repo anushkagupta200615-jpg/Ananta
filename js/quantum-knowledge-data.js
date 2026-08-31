@@ -608,6 +608,202 @@ const QUANTUM_TOPIC_DATABASE = [
     applications: ['Historical philosophical influences on early quantum pioneers (Schrödinger, Heisenberg, Bohr)', 'Philosophical analysis of the quantum measurement problem', 'Comparative cognitive models in quantum information science', 'Interdisciplinary curricula in Indian institutes of technology'],
     preset: 'bell',
     furtherReading: 'Kapila, Samkhya Pravachana Sutra; Schrödinger "My View of the World" (1964); Heisenberg "Physics and Philosophy" (1958)'
+  },
+
+  // ==========================================
+  // 8. QUANTUM INFORMATION THEORY & CHANNELS
+  // ==========================================
+  {
+    keys: ['von neumann entropy', 'entanglement entropy', 'quantum mutual information', 'subadditivity', 'purity entropy'],
+    title: 'Von Neumann Entropy & Quantum Information Metrics',
+    category: 'Quantum Information',
+    arxiv: null,
+    definition: 'The quantum generalization of classical Shannon entropy. For a density operator ρ with spectral decomposition ρ = ∑ λ_i |i⟩⟨i|, the Von Neumann entropy is S(ρ) = -Tr(ρ log₂ ρ) = -∑ λ_i log₂ λ_i. It measures the fundamental quantum uncertainty, mixedness, and entanglement of a quantum state.',
+    math: 'Von Neumann Entropy: S(ρ) = -Tr(ρ log₂ ρ) = -∑_i λ_i log₂ λ_i\nProperties:\n1. Non-negativity: S(ρ) ≥ 0, with S(ρ) = 0 ⟺ ρ is pure (|ψ⟩⟨ψ|)\n2. Invariance under unitaries: S(U ρ U†) = S(ρ)\n3. Maximum entropy: S(ρ) ≤ log₂(d) for Hilbert space dimension d\n4. Subadditivity: S(ρ_AB) ≤ S(ρ_A) + S(ρ_B)\n5. Strong Subadditivity (Lieb-Ruskai): S(ρ_ABC) + S(ρ_B) ≤ S(ρ_AB) + S(ρ_BC)\n\nQuantum Mutual Information: I(A : B) = S(ρ_A) + S(ρ_B) - S(ρ_AB) ≥ 0',
+    intuition: 'In classical thermodynamics, entropy quantifies microscopic disorder or lack of knowledge. In quantum mechanics, a joint state |Ψ_AB⟩ can be 100% pure with zero entropy (S(AB) = 0), yet individual subsystems A and B can have maximal entropy (S(A) = 1) because all the information is stored entirely in non-local entanglement between them.',
+    applications: ['Quantifying bipartite entanglement via entanglement entropy S(ρ_A)', 'Detecting quantum phase transitions in condensed matter spin chains', 'Black hole information paradox and holographic entanglement (Ryu-Takayanagi formula)', 'Bound on quantum communication and classical capacity of quantum channels'],
+    preset: 'bell',
+    furtherReading: 'Von Neumann (1932) "Mathematical Foundations of Quantum Mechanics"; Lieb & Ruskai (1973) J. Math. Phys. 14; Nielsen & Chuang Ch. 11'
+  },
+  {
+    keys: ['quantum channel', 'kraus operators', 'cptp map', 'amplitude damping channel', 'depolarizing channel', 'stinespring'],
+    title: 'Quantum Channels, CPTP Maps & Kraus Representation',
+    category: 'Quantum Information',
+    arxiv: null,
+    definition: 'The most general physical transformation of an open quantum system interacting with an environment. Mathematically formalized as a Completely Positive Trace-Preserving (CPTP) map E(ρ). By the Choi-Kraus theorem, any CPTP map can be decomposed into an ensemble of Kraus operators {K_k} satisfying the completeness condition ∑ K_k† K_k = I.',
+    math: 'Operator-Sum (Kraus) Representation:\nE(ρ) = ∑_k K_k ρ K_k†,    where ∑_k K_k† K_k = I\n\nCanonical Noise Channels:\n1. Amplitude Damping (T₁ decay |1⟩ → |0⟩ with probability γ):\n   K₀ = [[1, 0], [0, √(1-γ)]],    K₁ = [[0, √γ], [0, 0]]\n2. Phase Damping (T₂ dephasing with rate λ):\n   K₀ = [[1, 0], [0, √(1-λ)]],    K₁ = [[0, 0], [0, √λ]]\n3. Depolarizing Channel (random Pauli error with rate p):\n   E(ρ) = (1 - p)ρ + (p/3)(XρX + YρY + ZρZ) = (1 - 4p/3)ρ + (4p/3)(I/2)\n\nStinespring Dilation: E(ρ) = Tr_E [ U (ρ ⊗ |0⟩⟨0|_E) U† ]',
+    intuition: 'A closed quantum system evolves reversibly via unitary matrices (U U† = I). When a quantum computer connects to the warm outside world, energy leaks out and phase gets randomized. Kraus operators mathematically describe this leakage by treating the environment as an unseen ancilla that gets traced away.',
+    applications: ['Modeling physical qubit noise on IBM Quantum, Google Sycamore, and AWS Braket', 'Open quantum system master equations (Lindbladian generators)', 'Quantum error mitigation: calibrating randomized benchmarking and tomography', 'Designing fault-tolerant thresholds for quantum repeaters and satellites'],
+    preset: null,
+    furtherReading: 'Kraus (1983) "States, Effects, and Operations"; Nielsen & Chuang Ch. 8; Preskill Notes Ch. 3'
+  },
+  {
+    keys: ['holevo bound', 'quantum capacity', 'channel capacity', 'accessible information', 'holevo chi'],
+    title: 'Holevo Bound, Accessible Information & Quantum Capacity',
+    category: 'Quantum Information',
+    arxiv: null,
+    definition: 'Formulated by Alexander Holevo in 1973: sets the fundamental upper limit on the amount of classical information that can be extracted from an ensemble of quantum states {p_x, ρ_x}. Despite a qubit living in an infinite-dimensional continuum of superpositions, Holevo proved that a single qubit can transmit at most ONE bit of classical information without prior entanglement.',
+    math: 'Holevo Quantity (χ):\nχ = S( ∑_x p_x ρ_x ) - ∑_x p_x S(ρ_x)\n\nHolevo Theorem: For any POVM measurement {E_y}, the accessible classical information I(X : Y) satisfies:\nI(X : Y) ≤ χ( {p_x, ρ_x} ) ≤ S(ρ) ≤ n (for n qubits)\n\nQuantum Channel Capacity (LSD Theorem - Lloyd-Shor-Devetak):\nQ(N) = lim_{k→∞} (1/k) max_ρ I_c(ρ, N^⊗k)\nWhere I_c(ρ, N) = S(N(ρ)) - S((I ⊗ N)(|ψ⟩⟨ψ|)) is the coherent information.',
+    intuition: 'Even though writing down the continuous probability amplitudes α and β of a qubit requires infinite classical decimals, the act of quantum measurement fundamentally collapses the wavefunction down to one binary choice (0 or 1). The Holevo bound guarantees you cannot hide a secret Encyclopedia Britannica inside one single photon.',
+    applications: ['Fundamental security proofs in Quantum Key Distribution (QKD)', 'Channel capacity benchmarks for trans-oceanic quantum fiber networks', 'Communication complexity bounds in distributed quantum computing', 'Quantum data compression and Schumacher noiseless coding limits'],
+    preset: null,
+    furtherReading: 'Holevo (1973) Probl. Inf. Transm. 9; Schumacher & Westmoreland (1997) Phys. Rev. A 56; Devetak (2005) IEEE Trans. Inf. Theory 51'
+  },
+  {
+    keys: ['zero noise extrapolation', 'zne', 'probabilistic error cancellation', 'pec', 'error mitigation', 'cdr'],
+    title: 'Quantum Error Mitigation: ZNE, PEC & Clifford Data Regression',
+    category: 'Quantum Information',
+    arxiv: 'arXiv:2011.01382',
+    definition: 'A class of algorithmic techniques that reduce computational errors on Noisy Intermediate-Scale Quantum (NISQ) processors WITHOUT the massive physical qubit overhead of full fault-tolerant quantum error correction. By intentionally scaling hardware noise or sampling inverted noise channels, expectation values are extrapolated back to the zero-noise limit.',
+    math: '1. Zero-Noise Extrapolation (ZNE):\nScale noise factor λ ≥ 1 by pulse stretching or digital unitary folding (U ↦ U U† U).\nMeasure expectation value ⟨O(λ)⟩ at multiple noise levels {λ₁, λ₂, λ₃...}.\nExtrapolate to λ → 0 via Richardson polynomial or exponential fit:\n⟨O⟩_mitigated = ∑_i γ_i ⟨O(λ_i)⟩,    where ∑_i γ_i = 1,  ∑_i γ_i λ_i^k = 0\n\n2. Probabilistic Error Cancellation (PEC):\nExpress ideal noiseless gate U as quasi-probability distribution over noisy implementable operations:\nU = ∑_α q_α O_α,   where q_α ∈ ℝ (can be negative!),  γ = ∑ |q_α| ≥ 1\nSample operations with probability |q_α|/γ and weight measurement shots by sign(q_α)·γ.',
+    intuition: "Fault-tolerant QEC requires 1,000 physical qubits for every 1 logical qubit. Error mitigation asks: \"What if we don't fix individual qubits during runtime, but instead run the experiment slightly dirtier, observe how the error curve behaves, and mathematically rewind the noise back to zero on our classical laptop?\"",
+    applications: ['IBM 127-qubit Eagle utility experiment (Nature 2023) showing quantum advantage over brute-force classical simulation', 'Accurate molecular energy surfaces in VQE without logical qubits', 'Mitiq open-source quantum error mitigation library (Unitary Fund)', 'Extending usable circuit depth across commercial superconducting and ion QPUs'],
+    preset: null,
+    furtherReading: 'Temme, Bravyi, Gambetta (2017) Phys. Rev. Lett. 119; Endo et al. (2018) Phys. Rev. X 8; Kim et al. (2023) Nature 618'
+  },
+
+  // ==========================================
+  // 9. ADVANCED ALGORITHMS & SIMULATION
+  // ==========================================
+  {
+    keys: ['adiabatic quantum computing', 'aqc', 'adiabatic theorem', 'quantum annealing', 'ising model', 'd-wave'],
+    title: 'Adiabatic Quantum Computation & Quantum Annealing',
+    category: 'Algorithms',
+    arxiv: 'arXiv:quant-ph/0001106',
+    definition: 'A continuous-time model of quantum computation proved by Aharonov et al. to be polynomially equivalent to standard circuit-model quantum computing. Based on the Adiabatic Theorem of quantum mechanics: a quantum system initialized in the simple ground state of an initial Hamiltonian H_0 remains in the instantaneous ground state of a slowly varying time-dependent Hamiltonian H(t) that terminates in a problem Hamiltonian H_P encoding the solution.',
+    math: 'Time-Dependent Hamiltonian Interpolation:\nH(s) = (1 - s) H_0 + s H_P,    where s(t) = t / T ∈ [0, 1]\nInitial driver: H_0 = - ∑_i X_i  (Ground state is equal superposition |+⟩⊗ⁿ)\nProblem Hamiltonian: H_P = ∑_i h_i Z_i + ∑_{i<j} J_ij Z_i Z_j  (Ising spin glass)\n\nAdiabatic Condition (Landau-Zener):\nEvolution runtime T must scale inversely with minimum energy gap Δ_min squared:\nT ≫ ℏ · max |⟨1(s)| dH/ds |0(s)⟩| / Δ_min²\nIf Δ_min shrinks exponentially, computation requires exponential time (first-order quantum phase transition).',
+    intuition: 'Instead of applying discrete logic gates, imagine gently tilting a rugged mountain landscape. You start with a simple bowl with one deep bottom (where all quantum states sit happily). Slowly reshape the bowl into a treacherous mountain range encoding an NP-hard problem. If you move slowly enough, quantum tunneling carries the system across energy barriers into the lowest global valley without getting stuck.',
+    applications: ['D-Wave Advantage quantum annealers (5,000+ superconducting flux qubits)', 'Solving NP-hard quadratic unconstrained binary optimization (QUBO) problems', 'Portfolio optimization, flight routing, and vehicular traffic control in smart cities', 'Simulating frustrated magnetic materials and quantum spin glasses'],
+    preset: null,
+    furtherReading: 'Farhi et al. (2000) arXiv:quant-ph/0001106; Aharonov et al. (2007) SIAM J. Comput. 37; Albash & Lidar (2018) Rev. Mod. Phys. 90'
+  },
+  {
+    keys: ['quantum chemistry simulation', 'hamiltonian simulation', 'jordan wigner', 'bravyi kitaev', 'second quantization', 'molecular orbitals'],
+    title: 'Quantum Chemistry Simulation & Fermionic Mappings',
+    category: 'Algorithms',
+    arxiv: 'arXiv:1808.10402',
+    definition: 'The simulation of interacting electrons in atoms, molecules, and solid-state materials on a quantum computer. Because electrons are fermions obeying the Pauli exclusion principle, their creation (a_i†) and annihilation (a_i) operators anti-commute: {a_i, a_j†} = δ_ij. Simulating them on qubit hardware requires mapping fermionic operators into qubit Pauli spin operators via the Jordan-Wigner or Bravyi-Kitaev transformations.',
+    math: 'Electronic Hamiltonian in Second Quantization:\nH = ∑_{pq} h_pq a_p† a_q + ½ ∑_{pqrs} h_pqrs a_p† a_q† a_s a_r\n\n1. Jordan-Wigner Transformation (string of Z gates enforces anti-symmetry):\na_j† = ( ∏_{k < j} Z_k ) ⊗ ½ (X_j - i Y_j)\na_j  = ( ∏_{k < j} Z_k ) ⊗ ½ (X_j + i Y_j)\nNon-local: Fermionic operator on mode j produces Pauli string of weight O(N).\n\n2. Bravyi-Kitaev Transformation:\nEncodes occupancy and parity using a binary tree structure. Reduces Pauli operator weight from O(N) to O(log N), drastically reducing two-qubit gate counts in Trotter circuits.',
+    intuition: 'Classical computers fail catastrophically when calculating large molecules because the electron wavefunction is anti-symmetric: swapping two identical electrons flips the mathematical sign. Storing the entangled states of just 50 electrons requires more classical RAM than all hard drives on planet Earth. Mapping fermionic orbitals directly to qubits lets quantum hardware simulate nature natively.',
+    applications: ['Unraveling the reaction mechanism of nitrogenase FeMo-cofactor for carbon-neutral fertilizer', 'Designing high-energy density lithium-sulfur and solid-state battery electrolytes', 'Targeted small-molecule oncology drugs (modeling cytochrome P450 binding)', 'Simulating high-temperature cuprate and iron-based superconductors'],
+    preset: null,
+    furtherReading: 'Jordan & Wigner (1928) Z. Phys. 47; Bravyi & Kitaev (2002) Ann. Phys. 298; McArdle et al. (2020) Rev. Mod. Phys. 92'
+  },
+  {
+    keys: ['trotter', 'trotterization', 'product formula', 'lie trotter suzuki', 'hamiltonian simulation', 'time evolution'],
+    title: 'Hamiltonian Simulation & Trotter-Suzuki Decompositions',
+    category: 'Algorithms',
+    arxiv: 'arXiv:1912.08854',
+    definition: 'Simulating the continuous real-time dynamics of a quantum system governed by Schrödinger\'s equation iℏ d|ψ⟩/dt = H|ψ⟩, with time evolution operator U(t) = exp(-iHt). When H = ∑ H_k is a sum of non-commuting terms ([H_j, H_k] ≠ 0), the matrix exponential cannot be factored directly. Product formulas (Lie-Trotter-Suzuki) decompose the evolution into discrete, interleaved gate layers with rigorously bounded approximation error.',
+    math: '1. First-Order Lie-Trotter Formula:\nexp( -i (A + B) t ) = [ exp(-i A t/r) exp(-i B t/r) ]^r + E_trot\nError bound: ||E_trot|| ≤ (t² / 2r) ||[A, B]||\n\n2. Second-Order Symmetric Suzuki-Trotter Formula:\nS₂(t) = exp(-i A t/2) exp(-i B t) exp(-i A t/2)\nError bound: ||exp(-i(A+B)t) - [S₂(t/r)]^r|| ≤ (t³ / 12r²) ( ||[B, [B, A]]|| + ½ ||[A, [A, B]]|| )\n\nGate Complexity for simulation error ε:\nFirst-order: O(t² / ε) gates.   2k-th order Suzuki: O(t · (t/ε)^(1/2k)) gates.\nModern alternatives: Quantum Signal Processing (QSP) and Qubitization achieve optimal O(t + log(1/ε)) scaling.',
+    intuition: 'If you want to bake a cake while frosting it simultaneously, you can\'t do both at the exact same second. Instead, you alternate tiny steps: bake for 5 seconds, frost for 5 seconds, and repeat 1,000 times. Trotterization alternates non-commuting quantum forces in ultra-short time slices so fast that the universe perceives them as evolving simultaneously.',
+    applications: ['Real-time quantum dynamics of lattice gauge theories in high-energy physics', 'Simulating quench dynamics and thermalization in many-body spin systems', 'Compiling quantum phase estimation circuits for molecular energy estimation', 'Benchmarking digital quantum simulation fidelity on trapped ions and transmons'],
+    preset: null,
+    furtherReading: 'Lloyd (1996) Science 273; Suzuki (1991) J. Math. Phys. 32; Childs et al. (2021) PRX Quantum 2'
+  },
+  {
+    keys: ['quantum admm', 'portfolio optimization', 'quantum finance', 'vqa', 'constrained optimization', 'penalty method'],
+    title: 'Quantum Optimization & Variational Quantum Algorithms (VQA)',
+    category: 'Algorithms',
+    arxiv: 'arXiv:2012.09265',
+    definition: 'The application of hybrid quantum-classical algorithms to solve non-convex, high-dimensional constrained optimization problems in finance, logistics, and machine learning. Frameworks include the Quantum Alternating Operator Ansatz (QAOA extension), Quantum ADMM (Alternating Direction Method of Multipliers) for splitting large industrial problems across quantum QPUs and classical HPC nodes, and QUBO mapping.',
+    math: 'Markowitz Portfolio Optimization on QPU:\nObjective: min_w [ w^T Σ w - q · μ^T w ]   subject to ∑ w_i = K,  w_i ∈ {0, 1}\nWhere Σ is the asset covariance matrix, μ is expected returns, and q is risk tolerance.\n\nMapping to Qubit Ising Hamiltonian:\nH_portfolio = q ∑_i μ_i Z_i + ∑_{i<j} Σ_ij Z_i Z_j + λ ( ∑_i Z_i - (2K - N) I )²\nWhere λ is a quadratic penalty parameter enforcing the budget constraint.\n\nQuantum ADMM Pipeline:\nDecomposes large combinatorial graph into sub-problems solved locally via QAOA on QPUs, coordinating dual Lagrangian multipliers classically.',
+    intuition: 'Wall Street banks spend millions of CPU hours calculating risk portfolios and arbitrage pricing under extreme regulatory constraints. Quantum optimization algorithms use quantum superposition and tunneling to explore trillions of combinatorial asset allocations simultaneously, bypassing classical combinatorial bottlenecks.',
+    applications: ['JPMorgan Chase & Goldman Sachs quantum portfolio optimization and risk sensitivity analysis', 'Air traffic management and gate allocation at major international airports', 'Dynamic routing of autonomous delivery fleets and container ships', 'Smart electric grid power load balancing and frequency stabilization'],
+    preset: null,
+    furtherReading: 'Cerezo et al. (2021) Nat. Rev. Phys. 3; Egger et al. (2020) IEEE Trans. Quantum Eng. 1; Gambella et al. (2020) arXiv:2009.07314'
+  },
+
+  // ==========================================
+  // 10. QUANTUM MANY-BODY PHYSICS & TENSORS
+  // ==========================================
+  {
+    keys: ['tensor network', 'mps', 'matrix product state', 'dmrg', 'mera', 'peps', 'classical simulation quantum'],
+    title: 'Tensor Networks: Matrix Product States (MPS) & DMRG',
+    category: 'Many-Body Physics',
+    arxiv: 'arXiv:1008.3477',
+    definition: 'A powerful mathematical and computational framework that efficiently represents quantum many-body wavefunctions by decomposing high-rank 2ⁿ tensors into interconnected networks of low-rank tensors. Because physical ground states of local gapped Hamiltonians satisfy the 1D Entanglement Area Law (S_A ≤ const), they can be compressed exactly into Matrix Product States (MPS) and optimized via White\'s Density Matrix Renormalization Group (DMRG).',
+    math: 'Matrix Product State (MPS) Representation of |ψ⟩:\n|ψ⟩ = ∑_{s₁, s₂, ... sₙ} Tr( A^{s₁} A^{s₂} ··· A^{sₙ} ) |s₁ s₂ ··· sₙ⟩\nWhere each A^{s_i} is a χ × χ matrix for physical index s_i ∈ {0, 1}.\nBond dimension χ bounds the maximum entanglement entropy: S_max = log₂(χ).\n\nArea Law of Entanglement (Hastings 2007):\nFor ground states of 1D local gapped Hamiltonians: S(ρ_A) ≤ c · ∂A = O(1)\nAllows classical simulation in polynomial time O(n · χ³), avoiding 2ⁿ exponential explosion!',
+    intuition: 'The full quantum Hilbert space of 50 qubits is a monster containing 2⁵⁰ dimensions. But nature does not wander into random entangled corners of Hilbert space; physical ground states live in a tiny, quiet "physical corner" where entanglement only occurs between nearby neighbors. Tensor networks act like an intelligent MP3/JPEG compressor for quantum wavefunctions.',
+    applications: ['Classical benchmarking and verification of quantum processors (e.g. simulating Sycamore with tensor networks)', 'Solving strongly correlated electronic systems (1D/2D Hubbard models at IISc/TIFR)', 'DMRG algorithm in quantum chemistry for active-space electronic structures', 'Simulating non-equilibrium quantum dynamics and many-body localization'],
+    preset: null,
+    furtherReading: 'White (1992) Phys. Rev. Lett. 69; Schollwöck (2011) Ann. Phys. 326; Orús (2014) Ann. Phys. 349'
+  },
+  {
+    keys: ['topological phase', 'topological insulator', 'quantum spin liquid', 'tqft', 'chern number', 'berry phase'],
+    title: 'Topological Phases of Matter & Quantum Spin Liquids',
+    category: 'Many-Body Physics',
+    arxiv: 'arXiv:1610.03911',
+    definition: 'States of quantum matter that cannot be characterized by Landau\'s conventional symmetry-breaking paradigm, but instead possess non-local topological order, long-range quantum entanglement, and fractionalized excitations. Notable examples include Integer and Fractional Quantum Hall states, topological insulators, and Quantum Spin Liquids (QSL) where magnetic moments remain entangled and fluctuating down to absolute zero.',
+    math: 'Berry Phase & Chern Number (Topological Invariant):\nBerry Connection: A(k) = i ⟨u(k)| ∇_k |u(k)⟩\nBerry Curvature: Ω(k) = ∇_k × A(k)\nFirst Chern Number C (quantized integer invariant):\nC = (1 / 2π) ∬_{BZ} Ω(k) d²k ∈ ℤ\n\nQuantized Hall Conductance (TKNN Invariant - Thouless et al. 1982):\nσ_xy = C · (e² / h)\n\nToric Code Ground State Degeneracy on Torus (Genus g):\nDegeneracy = 4^g (topologically protected: no local operator can distinguish the 4 ground states).',
+    intuition: 'In conventional phases (like ice melting into water), atoms rearrange and break spatial symmetry. In a topological phase, you cannot tell the phase by looking through a local microscope. The information is woven into the global geometric topology of the entangled wavefunction, like the difference between a coffee mug (one hole) and a baseball (zero holes).',
+    applications: ['Hardware platform for topological fault-tolerant qubits (Majorana nanowires, Kitaev honeycomb)', 'Exact metrological standards for electrical resistance (Von Klitzing constant R_K = h/e²)', 'Discovering room-temperature quantum anomalous Hall materials', 'Quantum simulation of frustrated lattices on neutral atom platforms (Harvard/QuEra)'],
+    preset: null,
+    furtherReading: 'Thouless et al. (1982) Phys. Rev. Lett. 49; Wen (1990) Int. J. Mod. Phys. B 4; Hasan & Kane (2010) Rev. Mod. Phys. 82'
+  },
+  {
+    keys: ['quantum chaos', 'otoc', 'out-of-time-order correlator', 'information scrambling', 'black hole information', 'hayden preskill', 'syk model'],
+    title: 'Quantum Chaos, OTOCs & Information Scrambling',
+    category: 'Many-Body Physics',
+    arxiv: 'arXiv:1503.01409',
+    definition: 'The study of how local quantum information becomes rapidly and non-locally scrambled across all degrees of freedom of a strongly interacting many-body system. Quantified by Out-of-Time-Order Correlators (OTOCs), which measure the growth of operator commutators over time, exhibiting an exponential butterfly effect characterized by a quantum Lyapunov exponent λ_L bounded by the MSS bound: λ_L ≤ 2π k_B T / ℏ.',
+    math: 'Out-of-Time-Order Correlator (OTOC):\nF(t) = ⟨ W†(t) V†(0) W(t) V(0) ⟩_β\nSquared Commutator:\nC(t) = ⟨ |[W(t), V(0)]|² ⟩_β = 2 ( 1 - Re[F(t)] )\n\nEarly-time exponential growth in chaotic systems:\nC(t) ∝ e^(λ_L t) / N\nMaldacena-Shenker-Stanford (MSS) Bound on Chaos (2016):\nλ_L ≤ (2π k_B T) / ℏ   (Saturated by black holes and the SYK model!)\n\nHayden-Preskill Protocol (2007):\nA black hole acts as an optimal quantum information scrambler; an eavesdropper with an entangled quantum computer can reconstruct a diary thrown into the black hole almost instantly from Hawking radiation.',
+    intuition: 'Drop a drop of black ink into a glass of water: it diffuses until every single water molecule shares a microscopic fraction of ink. Scrambling is the quantum equivalent: if you inject one qubit of information into a chaotic quantum processor, entanglement quickly sweeps it across all qubits so completely that inspecting any 5 or 10 qubits reveals zero trace of what was written.',
+    applications: ['Google Quantum AI & Harvard experiments measuring OTOCs on superconducting and Rydberg QPUs', 'Simulating holographic wormholes (AdS/CFT duality) and quantum gravity on quantum chips', 'Understanding thermalization and thermal relaxation in quantum microprocessors', 'Benchmarking the scrambling speed and multi-qubit entangling capacity of quantum hardware'],
+    preset: null,
+    furtherReading: 'Hayden & Preskill (2007) JHEP 09; Maldacena, Shenker, Stanford (2016) JHEP 08; Mi et al. (Google 2021) Science 374'
+  },
+
+  // ==========================================
+  // 11. FRONTIER RESEARCH & QUANTUM HORIZONS
+  // ==========================================
+  {
+    keys: ['bqp', 'qma', 'quantum complexity', 'quantum advantage', 'quantum supremacy', 'pp-complete', 'polynomial hierarchy'],
+    title: 'Quantum Complexity Classes: BQP, QMA & Computational Limits',
+    category: 'Frontier Research',
+    arxiv: null,
+    definition: 'The rigorous computational classification of what quantum computers can and cannot solve efficiently. BQP (Bounded-error Quantum Polynomial-time) is the class of decision problems solvable by a polynomial-time quantum computer with error probability ≤ 1/3. QMA (Quantum Merlin-Arthur) is the quantum analogue of NP, where an untrusted prover (Merlin) provides a quantum state witness |ψ⟩ that a quantum verifier (Arthur) verifies in polynomial time.',
+    math: 'Complexity Inclusions:\nP ⊆ BPP ⊆ BQP ⊆ QMA ⊆ PP ⊆ PSPACE ⊆ EXP\n\nKey Theorems:\n1. Shor\'s Factoring ∈ BQP, but Factoring is NOT believed to be NP-complete.\n2. Kitaev\'s Local Hamiltonian Problem (finding ground energy of k-local Hamiltonian) is QMA-complete (Quantum analogue of Cook-Levin theorem for 3-SAT).\n3. BQP vs NP: It is widely conjectured that BQP does NOT contain NP (quantum computers cannot solve NP-complete problems in polynomial time without structure).\n4. Aaronson-Arkhipov Boson Sampling: Exact classical simulation of linear optics is #P-hard, implying BQP is strictly stronger than classical P under plausible complexity conjectures.',
+    intuition: 'Popular media claims quantum computers will solve all hard math problems instantly. Complexity theory proves this is false: quantum computers excel specifically at problems with hidden mathematical symmetries (like periodicity in abelian groups for Shor). For generic unstructured NP-complete problems (like Traveling Salesman), Grover proves the speedup is only quadratic, not exponential.',
+    applications: ['Guiding realistic quantum algorithm design (avoiding trying to solve NP-complete problems in polynomial time)', 'Proving quantum computational supremacy via Random Circuit Sampling (RCS)', 'Post-quantum cryptographic parameter selection (NIST PQC standards)', 'Foundational theoretical computer science at IIT Kanpur, TIFR, and IISc'],
+    preset: null,
+    furtherReading: 'Bernstein & Vazirani (1997) SIAM J. Comput. 26; Kitaev, Shen, Vyalyi (2002) "Classical and Quantum Computation"; Aaronson (2013) "Quantum Computing Since Democritus"'
+  },
+  {
+    keys: ['quantum internet', 'quantum repeater', 'quantum memory', 'entanglement swapping', 'quantum network', 'purification'],
+    title: 'Quantum Internet, Quantum Repeaters & Entanglement Swapping',
+    category: 'Frontier Research',
+    arxiv: 'arXiv:1903.04290',
+    definition: 'A global network infrastructure designed to transmit quantum qubits, distribute high-fidelity entangled pairs, and link distributed quantum processors worldwide. Because quantum signals cannot be amplified classically due to the no-cloning theorem, long-distance optical fiber links (attenuation ~0.2 dB/km) require Quantum Repeaters using atomic quantum memories, entanglement swapping, and entanglement distillation.',
+    math: '1. Entanglement Swapping Protocol:\nAlice & Repeater 1 share Bell pair |Φ⁺⟩_AR₁.\nRepeater 2 & Bob share Bell pair |Φ⁺⟩_R₂B.\nRepeater station performs joint Bell-State Measurement (BSM) on qubits R₁ and R₂.\nInstantaneously, Alice and Bob\'s previously unentangled and distant qubits become entangled:\n|ψ⟩_AB = |Φ⁺⟩_AB (conditioned on classical BSM outcome)!\n\n2. Fiber Attenuation Scaling:\nDirect transmission probability across distance L: P_direct ∝ 10^(-α L / 10)\nFor L = 1000 km in fiber, P_direct ~ 10⁻²⁰ (1 photon every 300 years!).\nWith N repeater segments of length L_0 = L/N: Rate scales polynomially: R ∝ (c / L_0) · η^N.',
+    intuition: 'Classical internet uses repeaters that read incoming electrical pulses, amplify them, and spit them out. In quantum mechanics, the no-cloning theorem makes classical amplification impossible. Instead, quantum repeaters create entanglement across short hops, then "stitch" the entanglement together across thousands of kilometers using teleportation and swapping.',
+    applications: ['Distributed cloud quantum computing (linking multiple 1,000-qubit QPUs into a planetary supercomputer)', 'Unconditionally secure global banking and military communications (QKD)', 'Telescope baseline interferometry: combining optical telescopes across continents for ultra-high resolution imaging', 'India National Quantum Mission (NQM) 1,000 km quantum backbone roadmap'],
+    preset: 'teleport',
+    furtherReading: 'Briegel et al. (1998) Phys. Rev. Lett. 81; Kimble (2008) Nature 453; Wehner et al. (2018) Science 362'
+  },
+  {
+    keys: ['quantum metrology', 'heisenberg limit', 'quantum sensing', 'quantum fisher information', 'standard quantum limit', 'shot noise'],
+    title: 'Quantum Metrology, Sensing & The Heisenberg Limit',
+    category: 'Frontier Research',
+    arxiv: 'arXiv:1103.4871',
+    definition: 'The science of using quantum phenomena (superposition, squeezed states, and multiparticle entanglement) to perform physical measurements of magnetic fields, gravitational waves, time, and acceleration with precision surpassing the Standard Quantum Limit (SQL). While classical sensors with N probes are bounded by shot noise (Δθ ∝ 1/√N), entangled states achieve the ultimate Heisenberg Limit (Δθ ∝ 1/N).',
+    math: '1. Standard Quantum Limit (SQL - Unentangled Probes):\nFor N independent particles, Central Limit Theorem gives shot noise:\nΔθ_SQL = 1 / √N\n\n2. Heisenberg Limit (Entangled States, e.g. NOON states (|N,0⟩ + |0,N⟩)/√2):\nPhase evolution: |ψ(θ)⟩ = ( |N,0⟩ + e^(i N θ) |0,N⟩ ) / √2\nPhase sensitivity achieves fundamental quantum limit:\nΔθ_HL = 1 / N   (Quadratic precision enhancement over classical!)\n\nQuantum Fisher Information (QFI) & Quantum Cramér-Rao Bound:\n(Δθ)² ≥ 1 / ( M · F_Q[ρ, H] )\nWhere F_Q is the Quantum Fisher Information and M is number of experimental trials.',
+    intuition: 'Imagine 100 soldiers tossing a coin to measure a subtle wind: the error decreases slowly like 1/√100 = 10%. But if all 100 soldiers hold hands in an entangled GHZ state, their individual phase rotations add up collectively, shrinking measurement error by a factor of 100×.',
+    applications: ['LIGO gravitational wave detectors using squeezed light injected into vacuum interferometers', 'Nitrogen-Vacancy (NV) diamond centers for nanoscale magnetic resonance imaging of single living cells', 'Ultra-precise optical atomic clocks (Strontium optical lattice clocks losing 1 second in 30 billion years)', 'GPS-denied quantum inertial navigation and gravimeters for defense and subterranean mineral mapping'],
+    preset: null,
+    furtherReading: 'Giovannetti, Lloyd, Maccone (2004) Science 306; Caves (1981) Phys. Rev. D 23; Degen et al. (2017) Rev. Mod. Phys. 89'
+  },
+  {
+    keys: ['quantum thermodynamics', 'landauer principle', 'maxwell demon', 'quantum heat engine', 'work extraction', 'flucutation theorem'],
+    title: 'Quantum Thermodynamics, Landauer’s Limit & Heat Engines',
+    category: 'Frontier Research',
+    arxiv: 'arXiv:1507.00999',
+    definition: 'The extension of classical thermodynamics to the quantum regime where fluctuations are quantum coherent and system sizes approach single atoms. Investigates the energetic cost of quantum information processing, Landauer\'s principle in quantum registers, quantum heat engines operating via coherent superpositions, and the relationship between entropy production and entanglement.',
+    math: '1. Quantum Landauer Principle:\nErasing 1 bit of information in an environment at temperature T requires minimum heat dissipation:\nΔQ ≥ k_B T ln(2)\nAt room temperature (300 K): E_min ≈ 2.87 × 10⁻²¹ Joules / bit.\nIn quantum systems with entanglement, information erasure can extract net heat from the bath (negative dissipation) if quantum mutual information is consumed.\n\n2. Quantum Otto Cycle Efficiency:\nEfficiency of a quantum Otto engine with frequency compression ratio r = ω_cold / ω_hot:\nη = 1 - (ω_cold / ω_hot) ≤ η_Carnot = 1 - (T_cold / T_hot)\nQuantum coherence in the working substance can transiently boost power output beyond classical stochastic limits.',
+    intuition: 'Information is not an abstract mathematical ghost—information is physical (Rolf Landauer). Erasing a bit of memory on your computer physically dumps heat into the universe. In a quantum processor, understanding heat dissipation at the single-microwave-photon level is what determines whether cryogenic dilution refrigerators can cool down thousands of superconducting qubits without boiling.',
+    applications: ['Thermal budgeting and heat dissipation in ultra-dense cryo-CMOS quantum control chips', 'Single-ion and NV-center experimental quantum heat engines and micro-refrigerators', 'Thermodynamic efficiency bounds on quantum error correction and syndrome measurements', 'Fundamental physics testing the arrow of time and microscopic irreversibility'],
+    preset: null,
+    furtherReading: 'Landauer (1961) IBM J. Res. Dev. 5; Goold et al. (2016) J. Phys. A 49; Vinjanampathy & Anders (2016) Contemp. Phys. 57'
   }
 ];
 
@@ -618,3 +814,4 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { QUANTUM_TOPIC_DATABASE };
 }
+
