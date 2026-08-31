@@ -1282,51 +1282,429 @@
       </div>
     </section>
 
-    <!-- ================= VIEW 7: DOCUMENTATION ================= -->
+    <!-- ================= VIEW 7: COMPREHENSIVE ENGINEERING DOCUMENTATION ================= -->
     <section class="viewport-section" id="view-docs">
-      <div class="standard-page-container">
-        <div class="docs-container-card">
-          <h2>Ananta Engine Architecture & Quantum State Mechanics</h2>
-          <p class="docs-intro">Technical reference covering statevector evolution, density matrix formalism, gate unitary decompositions, and the Ananta simulation pipeline.</p>
+      <div class="standard-page-container docs-page-container">
 
-          <div class="doc-block">
-            <h3>1. Hilbert Space & Statevector Representation</h3>
-            <p>For an n-qubit register, the state |psi> lives in a Hilbert space H of dimension 2^n, represented as a unit complex vector:</p>
-            <pre class="math-snippet">|ψ⟩ = Σᵢ cᵢ |i⟩  ∈  ℂ^(2^n),   where Σᵢ |cᵢ|² = 1   (Born normalization)</pre>
-            <p>For 3 qubits: 2³ = 8 basis states, spanning |000⟩ through |111⟩. Each amplitude cᵢ ∈ ℂ carries both probability weight |cᵢ|² and phase φᵢ = arg(cᵢ).</p>
+        <!-- Docs Hero Banner -->
+        <div class="docs-hero-banner">
+          <div class="docs-pill-tag">
+            <span>📖</span> Architecture & Engineering Reference
+          </div>
+          <h1 class="docs-hero-title">Ananta Quantum Simulation Engine & Mathematical Specifications</h1>
+          <p class="docs-hero-desc">
+            Production-grade reference manual covering continuous complex statevector evolution in $\mathbb{C}^{2^n}$, density matrix formalism, gate unitary decompositions, Lindblad master equations, Pauli expectation values, and algorithmic state transformations.
+          </p>
+
+          <!-- Docs Quick Filter / Search Bar -->
+          <div class="docs-search-bar-wrap">
+            <div class="docs-search-input-box">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" id="docs-filter-input" placeholder="Search documentation: statevector, CNOT, density matrix, Lindblad, VQE..." oninput="window.filterDocsSections(this.value)" />
+              <button id="docs-filter-clear" onclick="window.clearDocsFilter()" style="display:none;" title="Clear search">✕</button>
+            </div>
           </div>
 
-          <div class="doc-block">
-            <h3>2. Gate Unitaries & Propagation</h3>
-            <p>Single-qubit gates act as SU(2) rotations on the Bloch sphere. Multi-qubit gates are constructed via tensor products:</p>
-            <pre class="math-snippet">H = (1/√2)·[[1, 1],[1,-1]]     X = [[0,1],[1,0]]     Z = [[1,0],[0,-1]]
-S = diag(1, i)                 T = diag(1, e^(iπ/4))
-CX = [[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]]   (CNOT in computational basis)</pre>
-            <p>The full evolution of an n-qubit state under a circuit U = Uₖ···U₂U₁ is: |ψ_out⟩ = U|0⟩^⊗n</p>
-          </div>
-
-          <div class="doc-block">
-            <h3>3. Density Matrix Formalism</h3>
-            <p>For pure states, the density operator rho = |psi><psi| encodes all observable statistics. Tr(rho) = 1 and Tr(rho²) = 1 (purity = 1 for pure states). Von Neumann entropy S = -Tr(rho·log2(rho)) = 0 for pure states and positive for mixed states.</p>
-            <pre class="math-snippet">ρ = |ψ⟩⟨ψ|,   S(ρ) = -Tr(ρ log₂ρ),   Tr(ρ²) = 1 (pure), &lt;1 (mixed)</pre>
-          </div>
-
-          <div class="doc-block">
-            <h3>4. Pauli Observable Expectation Values</h3>
-            <p>For a single qubit in reduced state rho_i = Tr_others(rho), the Pauli expectation values are:</p>
-            <pre class="math-snippet">⟨Z⟩ = Tr(Z·ρᵢ) = P(|0⟩) - P(|1⟩)  ∈ [-1, +1]
-⟨X⟩ = Tr(X·ρᵢ) = 2·Re(ρ₀₁)         (off-diagonal coherence)
-⟨Y⟩ = Tr(Y·ρᵢ) = 2·Im(ρ₀₁)         (imaginary coherence)</pre>
-          </div>
-
-          <div class="doc-block">
-            <h3>5. Decoherence & NISQ Noise Channels</h3>
-            <p>Physical qubits are subject to two primary decay channels: amplitude damping (T1) and dephasing (T2). Gate fidelity under depolarizing noise:</p>
-            <pre class="math-snippet">T₁: Energy relaxation |1⟩→|0⟩ at rate Γ₁ = 1/T₁
-T₂: Phase dephasing at rate Γ₂ = 1/T₂ = Γ₁/2 + Γ_φ
-Depolarizing: ρ → (1-ε)·U·ρ·U† + ε·I/2  (gate infidelity ε)</pre>
+          <!-- Mobile-Friendly Quick Jump Pill Carousel -->
+          <div class="docs-quick-nav-pills" id="docs-quick-pills">
+            <a href="#doc-sec-hilbert" class="doc-nav-pill active" onclick="window.scrollDocIntoView(event, 'doc-sec-hilbert')">1. Statevector</a>
+            <a href="#doc-sec-unitaries" class="doc-nav-pill" onclick="window.scrollDocIntoView(event, 'doc-sec-unitaries')">2. Unitaries</a>
+            <a href="#doc-sec-density" class="doc-nav-pill" onclick="window.scrollDocIntoView(event, 'doc-sec-density')">3. Density Matrix</a>
+            <a href="#doc-sec-pauli" class="doc-nav-pill" onclick="window.scrollDocIntoView(event, 'doc-sec-pauli')">4. Pauli Observables</a>
+            <a href="#doc-sec-decoherence" class="doc-nav-pill" onclick="window.scrollDocIntoView(event, 'doc-sec-decoherence')">5. Decoherence & Noise</a>
+            <a href="#doc-sec-circuit-qasm" class="doc-nav-pill" onclick="window.scrollDocIntoView(event, 'doc-sec-circuit-qasm')">6. OpenQASM & Cirq</a>
+            <a href="#doc-sec-entanglement" class="doc-nav-pill" onclick="window.scrollDocIntoView(event, 'doc-sec-entanglement')">7. Entanglement Metrics</a>
+            <a href="#doc-sec-teleportation" class="doc-nav-pill" onclick="window.scrollDocIntoView(event, 'doc-sec-teleportation')">8. Teleportation</a>
+            <a href="#doc-sec-grover" class="doc-nav-pill" onclick="window.scrollDocIntoView(event, 'doc-sec-grover')">9. Grover Search</a>
+            <a href="#doc-sec-vqe" class="doc-nav-pill" onclick="window.scrollDocIntoView(event, 'doc-sec-vqe')">10. VQE & Gradients</a>
           </div>
         </div>
+
+        <!-- Documentation Content Grid -->
+        <div class="docs-main-grid">
+
+          <!-- 1. Hilbert Space & Statevector -->
+          <article class="doc-card" id="doc-sec-hilbert">
+            <div class="doc-card-header">
+              <span class="doc-card-badge">Module 01</span>
+              <h2 class="doc-card-title">Hilbert Space & Statevector Representation</h2>
+              <span class="doc-math-tag">$\mathbb{C}^{2^n}$ Complex Vector Space</span>
+            </div>
+            <p class="doc-body-text">
+              For an $n$-qubit register, the quantum state $|\psi\rangle$ lives in a $2^n$-dimensional Hilbert space $\mathcal{H} = (\mathbb{C}^2)^{\otimes n}$. The state is represented as a normalized column vector of complex probability amplitudes $c_i = a_i + i b_i \in \mathbb{C}$:
+            </p>
+
+            <div class="doc-code-shell">
+              <div class="code-shell-header">
+                <span class="code-lang-label">MATHEMATICAL FORMULATION</span>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formula 📋</button>
+              </div>
+              <pre class="doc-pre-block"><code>|ψ⟩ = ∑_{i=0}^{2^n - 1} c_i |i⟩  ∈  ℂ^(2^n)
+
+Born Normalization Constraint:
+  ⟨ψ|ψ⟩ = ∑_{i=0}^{2^n - 1} |c_i|² = ∑_{i=0}^{2^n - 1} (Re[c_i]² + Im[c_i]²) = 1.0
+
+Measurement Probability of basis bitstring |k⟩:
+  P(k) = |⟨k|ψ⟩|² = |c_k|² = c_k* · c_k</code></pre>
+            </div>
+
+            <div class="doc-mobile-callout">
+              <strong>💡 Physical Meaning:</strong> In a 3-qubit register, the simulator continuously maintains $2^3 = 8$ complex values spanning $|000\rangle \dots |111\rangle$. When any single gate is applied, the matrix transformation acts on all 8 amplitudes simultaneously, enabling quantum parallelism.
+            </div>
+          </article>
+
+          <!-- 2. Gate Unitaries & Kronecker Tensor Evolution -->
+          <article class="doc-card" id="doc-sec-unitaries">
+            <div class="doc-card-header">
+              <span class="doc-card-badge">Module 02</span>
+              <h2 class="doc-card-title">Gate Unitaries & Matrix Evolution</h2>
+              <span class="doc-math-tag">$U U^\dagger = I$ & Kronecker $\otimes$ Expansion</span>
+            </div>
+            <p class="doc-body-text">
+              Quantum logic gates are represented by unitary matrices $U \in U(2^n)$ satisfying $U U^\dagger = U^\dagger U = I$, preserving total probability $\langle\psi'|\psi'\rangle = \langle\psi|U^\dagger U|\psi\rangle = 1$. Single-qubit gates expand across multi-qubit registers via Kronecker tensor products ($A \otimes B$).
+            </p>
+
+            <!-- Responsive Interactive Gate Matrix Cards Grid -->
+            <div class="doc-gate-matrix-grid">
+              <div class="gate-matrix-card">
+                <div class="matrix-card-top">
+                  <span class="gate-tag tag-h">H</span>
+                  <strong>Hadamard</strong>
+                </div>
+                <pre class="mini-matrix">1/√2 · [  1   1 ]
+      [  1  -1 ]</pre>
+                <span class="matrix-desc">Creates 50/50 superposition</span>
+              </div>
+
+              <div class="gate-matrix-card">
+                <div class="matrix-card-top">
+                  <span class="gate-tag tag-x">X</span>
+                  <strong>Pauli-X (NOT)</strong>
+                </div>
+                <pre class="mini-matrix">[ 0  1 ]
+[ 1  0 ]</pre>
+                <span class="matrix-desc">Bit-flip: $|0\rangle \leftrightarrow |1\rangle$</span>
+              </div>
+
+              <div class="gate-matrix-card">
+                <div class="matrix-card-top">
+                  <span class="gate-tag tag-y">Y</span>
+                  <strong>Pauli-Y</strong>
+                </div>
+                <pre class="mini-matrix">[ 0 -i ]
+[ i  0 ]</pre>
+                <span class="matrix-desc">Bit + phase flip</span>
+              </div>
+
+              <div class="gate-matrix-card">
+                <div class="matrix-card-top">
+                  <span class="gate-tag tag-z">Z</span>
+                  <strong>Pauli-Z</strong>
+                </div>
+                <pre class="mini-matrix">[ 1  0 ]
+[ 0 -1 ]</pre>
+                <span class="matrix-desc">Phase-flip: $|1\rangle \mapsto -|1\rangle$</span>
+              </div>
+
+              <div class="gate-matrix-card">
+                <div class="matrix-card-top">
+                  <span class="gate-tag tag-s">S</span>
+                  <strong>Phase ($Z^{1/2}$)</strong>
+                </div>
+                <pre class="mini-matrix">[ 1  0 ]
+[ 0  i ]</pre>
+                <span class="matrix-desc">+90° rotation around Z</span>
+              </div>
+
+              <div class="gate-matrix-card">
+                <div class="matrix-card-top">
+                  <span class="gate-tag tag-t">T</span>
+                  <strong>$\pi/8$ ($Z^{1/4}$)</strong>
+                </div>
+                <pre class="mini-matrix">[ 1    0    ]
+[ 0  e^(iπ/4) ]</pre>
+                <span class="matrix-desc">Non-Clifford universal gate</span>
+              </div>
+            </div>
+
+            <div class="doc-code-shell">
+              <div class="code-shell-header">
+                <span class="code-lang-label">2-QUBIT CNOT & TENSOR PRODUCT PROPAGATION</span>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formulation 📋</button>
+              </div>
+              <pre class="doc-pre-block"><code>CNOT (Control: q0, Target: q1):
+  |00⟩ ↦ |00⟩,   |01⟩ ↦ |01⟩,   |10⟩ ↦ |11⟩,   |11⟩ ↦ |10⟩
+
+Matrix Representation in computational basis:
+  CX = [ 1  0  0  0 ]
+       [ 0  1  0  0 ]
+       [ 0  0  0  1 ]
+       [ 0  0  1  0 ]
+
+Kronecker Tensor Product for Gate G on Qubit 1 of 3:
+  U_total = I_2 ⊗ G ⊗ I_2  ∈  ℂ^(8×8)</code></pre>
+            </div>
+          </article>
+
+          <!-- 3. Density Matrix & Partial Trace -->
+          <article class="doc-card" id="doc-sec-density">
+            <div class="doc-card-header">
+              <span class="doc-card-badge">Module 03</span>
+              <h2 class="doc-card-title">Density Matrix Formalism & Partial Trace</h2>
+              <span class="doc-math-tag">$\rho = |\psi\rangle\langle\psi| \text{ and } \rho_A = \text{Tr}_B(\rho_{AB})$</span>
+            </div>
+            <p class="doc-body-text">
+              For a pure state $|\psi\rangle$, the full density operator $\rho = |\psi\rangle\langle\psi|$ contains all observable quantum information. The diagonal elements $\rho_{ii} = |c_i|^2$ represent population probabilities, while off-diagonal elements $\rho_{ij} = c_i c_j^*$ represent quantum coherence.
+            </p>
+
+            <div class="doc-code-shell">
+              <div class="code-shell-header">
+                <span class="code-lang-label">DENSITY MATRIX & PARTIAL TRACE COMPUTATION</span>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Math 📋</button>
+              </div>
+              <pre class="doc-pre-block"><code>Properties of Density Operator ρ:
+  1. Hermiticity:          ρ = ρ†
+  2. Unit Trace:           Tr(ρ) = ∑_i ρ_ii = 1.0
+  3. Positive Semi-Definite: ⟨φ|ρ|φ⟩ ≥ 0 for all |φ⟩
+  4. Purity Measure:       γ = Tr(ρ²)   (γ = 1 for pure states, γ &lt; 1 for mixed states)
+
+Von Neumann Entropy (Quantum Information Entropy):
+  S(ρ) = -Tr(ρ log₂ ρ) = -∑_i λ_i log₂ λ_i    (λ_i = eigenvalues of ρ)
+
+Partial Trace for Subsystem A (Tracing out Subsystem B):
+  ρ_A = Tr_B(ρ_AB) = ∑_k (I_A ⊗ ⟨k|_B) ρ_AB (I_A ⊗ |k⟩_B)</code></pre>
+            </div>
+
+            <div class="doc-mobile-callout">
+              <strong>🔬 Observation:</strong> If Qubit 0 is maximally entangled with Qubit 1 (e.g. in a Bell state), its reduced density matrix is $\rho_0 = \text{diag}(0.5, 0.5)$, yielding $S(\rho_0) = 1.0$ bit and purity $\gamma = 0.5$. This confirms that local subsystems of an entangled pure state appear completely mixed.
+            </div>
+          </article>
+
+          <!-- 4. Pauli Observables -->
+          <article class="doc-card" id="doc-sec-pauli">
+            <div class="doc-card-header">
+              <span class="doc-card-badge">Module 04</span>
+              <h2 class="doc-card-title">Pauli Observable Expectation Values</h2>
+              <span class="doc-math-tag">$\langle X \rangle, \langle Y \rangle, \langle Z \rangle \in [-1, +1]$</span>
+            </div>
+            <p class="doc-body-text">
+              For any single-qubit subsystem described by reduced density matrix $\rho_i = \begin{pmatrix} \rho_{00} & \rho_{01} \\ \rho_{10} & \rho_{11} \end{pmatrix}$, its 3D Bloch sphere vector $(r_x, r_y, r_z)$ is given directly by the expectation values of the Pauli observables:
+            </p>
+
+            <div class="doc-code-shell">
+              <div class="code-shell-header">
+                <span class="code-lang-label">OBSERVABLE EXPECTATIONS</span>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Math 📋</button>
+              </div>
+              <pre class="doc-pre-block"><code>Z Expectation (Population Difference):
+  ⟨Z⟩ = Tr(Z · ρ_i) = ρ₀₀ - ρ₁₁ = P(|0⟩) - P(|1⟩)
+
+X Expectation (Real Coherence / Transverse Polarization):
+  ⟨X⟩ = Tr(X · ρ_i) = ρ₀₁ + ρ₁₀ = 2 · Re[ρ₀₁]
+
+Y Expectation (Imaginary Coherence):
+  ⟨Y⟩ = Tr(Y · ρ_i) = i(ρ₀₁ - ρ₁₀) = -2 · Im[ρ₀₁]
+
+Bloch Radius (State Purity Indicator):
+  |r| = √(⟨X⟩² + ⟨Y⟩² + ⟨Z⟩²) ≤ 1.0
+  • |r| = 1.0  ⟹ Pure state on the surface of the Bloch sphere
+  • |r| &lt; 1.0  ⟹ Mixed state inside the Bloch sphere (decohered or entangled)</code></pre>
+            </div>
+          </article>
+
+          <!-- 5. Decoherence & Noise Channels -->
+          <article class="doc-card" id="doc-sec-decoherence">
+            <div class="doc-card-header">
+              <span class="doc-card-badge">Module 05</span>
+              <h2 class="doc-card-title">Decoherence & Lindblad Master Equations</h2>
+              <span class="doc-math-tag">$T_1$ Energy Relaxation & $T_2$ Phase Dephasing</span>
+            </div>
+            <p class="doc-body-text">
+              Physical qubits in quantum processors (such as superconducting transmons or trapped ions) interact with thermal and electromagnetic environmental baths. Ananta models open-system dynamics using the Lindblad master equation:
+            </p>
+
+            <div class="doc-code-shell">
+              <div class="code-shell-header">
+                <span class="code-lang-label">OPEN QUANTUM SYSTEM DYNAMICS</span>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Equations 📋</button>
+              </div>
+              <pre class="doc-pre-block"><code>Lindblad Master Equation:
+  dρ/dt = -i/ℏ [H, ρ] + ∑_k ( L_k ρ L_k† - ½ {L_k† L_k, ρ} )
+
+1. Longitudinal Energy Relaxation (T₁):
+   Jump operator: L₁ = √(1/T₁) · |0⟩⟨1| = √(1/T₁) · σ⁻
+   Excited state population decay: ρ₁₁(t) = ρ₁₁(0) · e^(-t / T₁)
+
+2. Transverse Dephasing (T₂):
+   Jump operator: L_φ = √(1 / 2 T_φ) · Z
+   Total dephasing rate: 1/T₂ = 1/(2 T₁) + 1/T_φ   ⟹  T₂ ≤ 2 T₁
+
+3. Depolarizing Channel (Gate Infidelity ε):
+   E(ρ) = (1 - ε) ρ + (ε / 3)(X ρ X + Y ρ Y + Z ρ Z)</code></pre>
+            </div>
+          </article>
+
+          <!-- 6. OpenQASM & Google Cirq Integration -->
+          <article class="doc-card" id="doc-sec-circuit-qasm">
+            <div class="doc-card-header">
+              <span class="doc-card-badge">Module 06</span>
+              <h2 class="doc-card-title">OpenQASM 2.0 & Google Cirq Compilation</h2>
+              <span class="doc-math-tag">Hardware-Agnostic Compilation Pipeline</span>
+            </div>
+            <p class="doc-body-text">
+              Every circuit assembled in Ananta's interactive composer compiles in real-time into production-ready OpenQASM 2.0 and Google Cirq / Qiskit scripts, ready for execution on real quantum cloud processors:
+            </p>
+
+            <div class="doc-code-shell">
+              <div class="code-shell-header">
+                <span class="code-lang-label">SAMPLE CIRQ (PYTHON 3) CODE OUTPUT</span>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Code 📋</button>
+              </div>
+              <pre class="doc-pre-block"><code>import cirq
+
+# Initialize 3 qubits matching Ananta register
+q0, q1, q2 = cirq.LineQubit.range(3)
+circuit = cirq.Circuit()
+
+# Apply Hadamard & CNOT to construct Bell Pair on q0, q1
+circuit.append(cirq.H(q0))
+circuit.append(cirq.CNOT(q0, q1))
+circuit.append(cirq.measure(q0, q1, key='result'))
+
+# Execute on Cirq Simulator
+simulator = cirq.Simulator()
+result = simulator.run(circuit, repetitions=1024)
+print(result.histogram(key='result'))</code></pre>
+            </div>
+          </article>
+
+          <!-- 7. Entanglement Metrics -->
+          <article class="doc-card" id="doc-sec-entanglement">
+            <div class="doc-card-header">
+              <span class="doc-card-badge">Module 07</span>
+              <h2 class="doc-card-title">Entanglement Metrics & Wootters Concurrence</h2>
+              <span class="doc-math-tag">Quantifying Two-Qubit Inseparability</span>
+            </div>
+            <p class="doc-body-text">
+              For a 2-qubit bipartite state $\rho$, Ananta calculates **Wootters Concurrence** $C(\rho) \in [0, 1]$, where $C = 0$ corresponds to an unentangled product state and $C = 1$ indicates a maximally entangled Bell pair:
+            </p>
+
+            <div class="doc-code-shell">
+              <div class="code-shell-header">
+                <span class="code-lang-label">WOOTTERS CONCURRENCE DERIVATION</span>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formula 📋</button>
+              </div>
+              <pre class="doc-pre-block"><code>Spin-Flipped Density Matrix:
+  ρ̃ = (σ_y ⊗ σ_y) · ρ* · (σ_y ⊗ σ_y)
+
+Eigenvalues of R = √(√ρ · ρ̃ · √ρ):
+  Sorted in descending order: λ₁ ≥ λ₂ ≥ λ₃ ≥ λ₄ ≥ 0
+
+Concurrence:
+  C(ρ) = max(0, λ₁ - λ₂ - λ₃ - λ₄)
+
+Entanglement of Formation:
+  E_F(ρ) = h( ½ (1 + √(1 - C²)) ),   where h(x) = -x log₂ x - (1-x) log₂ (1-x)</code></pre>
+            </div>
+          </article>
+
+          <!-- 8. Quantum Teleportation -->
+          <article class="doc-card" id="doc-sec-teleportation">
+            <div class="doc-card-header">
+              <span class="doc-card-badge">Module 08</span>
+              <h2 class="doc-card-title">Quantum Teleportation Protocol Pipeline</h2>
+              <span class="doc-math-tag">1 Bell Pair + 2 Classical Bits $\implies$ State Transfer</span>
+            </div>
+            <p class="doc-body-text">
+              Transfers an unknown state $|\psi\rangle_A = \alpha|0\rangle + \beta|1\rangle$ from Alice to Bob using a pre-shared Bell state $(|00\rangle + |11\rangle)/\sqrt{2}$ without transmitting physical matter:
+            </p>
+
+            <div class="doc-code-shell">
+              <div class="code-shell-header">
+                <span class="code-lang-label">STEP-BY-STEP MATHEMATICAL TELEPORTATION PROOF</span>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Protocol 📋</button>
+              </div>
+              <pre class="doc-pre-block"><code>Initial 3-Qubit State:
+  |Ψ₀⟩ = (α|0⟩ + β|1⟩)_A ⊗ (1/√2)(|00⟩ + |11⟩)_BC
+
+1. Alice applies CNOT(A → B):
+  |Ψ₁⟩ = (1/√2) [ α|0⟩(|00⟩ + |11⟩) + β|1⟩(|10⟩ + |01⟩) ]
+
+2. Alice applies Hadamard on Qubit A:
+  |Ψ₂⟩ = ½ [ |00⟩(α|0⟩ + β|1⟩) + |01⟩(α|1⟩ + β|0⟩) + |10⟩(α|0⟩ - β|1⟩) + |11⟩(α|1⟩ - β|0⟩) ]
+
+3. Alice measures qubits A and B, obtaining classical outcomes (m_A, m_B):
+  • 00 ⟹ Bob applies I         (State: α|0⟩ + β|1⟩)
+  • 01 ⟹ Bob applies X         (State: α|0⟩ + β|1⟩)
+  • 10 ⟹ Bob applies Z         (State: α|0⟩ + β|1⟩)
+  • 11 ⟹ Bob applies Z · X = Y (State: α|0⟩ + β|1⟩)</code></pre>
+            </div>
+          </article>
+
+          <!-- 9. Grover's Algorithm -->
+          <article class="doc-card" id="doc-sec-grover">
+            <div class="doc-card-header">
+              <span class="doc-card-badge">Module 09</span>
+              <h2 class="doc-card-title">Grover's Search & Amplitude Amplification</h2>
+              <span class="doc-math-tag">$\mathcal{O}(\sqrt{N})$ Provable Quadratic Speedup</span>
+            </div>
+            <p class="doc-body-text">
+              Searches an unstructured space of $N = 2^n$ items for a target marked item $|w\rangle$ in $\mathcal{O}(\sqrt{N})$ queries using geometric rotations in a 2D subspace:
+            </p>
+
+            <div class="doc-code-shell">
+              <div class="code-shell-header">
+                <span class="code-lang-label">GROVER OPERATOR DEFINITION</span>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formulation 📋</button>
+              </div>
+              <pre class="doc-pre-block"><code>Grover Iteration Operator:
+  G = -D · O = (2|s⟩⟨s| - I) · (I - 2|w⟩⟨w|)
+
+Where:
+  |s⟩ = (1/√N) ∑ |x⟩        (Uniform equal superposition)
+  O = I - 2|w⟩⟨w|           (Phase oracle: marks target |w⟩ by -1)
+  D = 2|s⟩⟨s| - I           (Diffusion operator: reflection about the mean)
+
+Optimal Number of Rotations:
+  R = ⌊ (π / 4) · √(N / M) ⌋
+  • For N=4 (2 qubits), M=1 ⟹ R = 1 iteration achieves 100% success probability!</code></pre>
+            </div>
+          </article>
+
+          <!-- 10. VQE & Parameter Shift Gradients -->
+          <article class="doc-card" id="doc-sec-vqe">
+            <div class="doc-card-header">
+              <span class="doc-card-badge">Module 10</span>
+              <h2 class="doc-card-title">VQE & Parameter-Shift Rule Gradients</h2>
+              <span class="doc-math-tag">Analytical Hardware Gradients Without Finite Differences</span>
+            </div>
+            <p class="doc-body-text">
+              The Variational Quantum Eigensolver (VQE) minimizes molecular Hamiltonian expectation values $E(\theta) = \langle\psi(\theta)|H|\psi(\theta)\rangle \ge E_0$. To perform gradient descent on physical noisy quantum processors, the **Parameter-Shift Rule** computes exact analytical partial derivatives:
+            </p>
+
+            <div class="doc-code-shell">
+              <div class="code-shell-header">
+                <span class="code-lang-label">PARAMETER SHIFT RULE FORMULA</span>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Rule 📋</button>
+              </div>
+              <pre class="doc-pre-block"><code>Rayleigh-Ritz Variational Principle:
+  E(θ) = ⟨ψ(θ)| H |ψ(θ)⟩ ≥ E_ground
+
+Parameter-Shift Rule (Exact Analytical Derivative on QPU):
+  For any parameterized rotation gate G(θ) = exp(-i θ P / 2) with Pauli P:
+  ∂E / ∂θ_i = ½ [ E(θ + (π/2) e_i) - E(θ - (π/2) e_i) ]
+
+Key Advantage:
+  Unlike classical finite differences (E(θ+h) - E(θ))/h which drown in quantum shot noise,
+  parameter shifts evaluate at macroscopic ±π/2 angles, robust against hardware stochasticity.</code></pre>
+            </div>
+          </article>
+
+        </div>
+
       </div>
     </section>
 

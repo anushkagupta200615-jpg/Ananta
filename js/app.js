@@ -1335,4 +1335,71 @@ document.addEventListener('DOMContentLoaded', () => {
       chipCard.style.animation = 'floatQuantumChip 7s ease-in-out infinite alternate';
     });
   }
+
+  // =========================================================================
+  // DOCUMENTATION SEARCH, SMOOTH SCROLL & SNIPPET COPY HELPERS
+  // =========================================================================
+  window.scrollDocIntoView = function(e, secId) {
+    if (e && e.preventDefault) e.preventDefault();
+    const el = document.getElementById(secId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Update active pill
+    document.querySelectorAll('.doc-nav-pill').forEach(pill => {
+      if (pill.getAttribute('href') === `#${secId}`) {
+        pill.classList.add('active');
+      } else {
+        pill.classList.remove('active');
+      }
+    });
+  };
+
+  window.filterDocsSections = function(query) {
+    const q = (query || '').toLowerCase().trim();
+    const clearBtn = document.getElementById('docs-filter-clear');
+    if (clearBtn) clearBtn.style.display = q ? 'inline-block' : 'none';
+
+    const cards = document.querySelectorAll('.doc-card');
+    cards.forEach(card => {
+      const text = card.textContent.toLowerCase();
+      if (!q || text.includes(q)) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  };
+
+  window.clearDocsFilter = function() {
+    const input = document.getElementById('docs-filter-input');
+    if (input) {
+      input.value = '';
+      window.filterDocsSections('');
+    }
+  };
+
+  window.copySnippetText = function(btn) {
+    if (!btn) return;
+    const shell = btn.closest('.doc-code-shell');
+    if (!shell) return;
+    const code = shell.querySelector('code');
+    if (!code) return;
+
+    const textToCopy = code.innerText || code.textContent;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      const originalText = btn.textContent;
+      btn.textContent = 'Copied! ✓';
+      btn.style.background = '#10b981';
+      btn.style.color = '#ffffff';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = '';
+        btn.style.color = '';
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy', err);
+    });
+  };
 });
+
