@@ -24,14 +24,25 @@ class QuantaAITutor {
     this.inTabModeToggle  = document.getElementById('in-tab-mode-toggle');
     this.inTabProviderPill = document.getElementById('in-tab-llm-pill');
 
-    // LLM Provider Configuration (Priority: config.js -> localStorage)
+    // LLM Provider Configuration
+    // config.js key always wins — never let stale localStorage override a live key
     const envConfig = window.ANANTA_CONFIG || {};
-    this.geminiApiKey = (envConfig.GEMINI_API_KEY && !envConfig.GEMINI_API_KEY.includes('PASTE_YOUR'))
+    this.geminiApiKey = (envConfig.GEMINI_API_KEY && envConfig.GEMINI_API_KEY.length > 8 && !envConfig.GEMINI_API_KEY.includes('PASTE_YOUR'))
       ? envConfig.GEMINI_API_KEY
       : (localStorage.getItem('quanta_gemini_api_key') || '');
-    this.openaiApiKey = envConfig.OPENAI_API_KEY || localStorage.getItem('quanta_openai_api_key') || '';
-    this.llmProvider  = localStorage.getItem('quanta_llm_provider')
-      || (this.geminiApiKey ? 'gemini' : (envConfig.DEFAULT_PROVIDER || 'local'));
+    this.openaiApiKey = (envConfig.OPENAI_API_KEY && envConfig.OPENAI_API_KEY.length > 8)
+      ? envConfig.OPENAI_API_KEY
+      : (localStorage.getItem('quanta_openai_api_key') || '');
+
+    // If config.js has a key, always prefer that provider (ignore stale localStorage 'local')
+    const storedProvider = localStorage.getItem('quanta_llm_provider') || '';
+    if (this.geminiApiKey) {
+      this.llmProvider = (storedProvider === 'openai' && this.openaiApiKey) ? 'openai' : 'gemini';
+    } else if (this.openaiApiKey) {
+      this.llmProvider = 'openai';
+    } else {
+      this.llmProvider = storedProvider || envConfig.DEFAULT_PROVIDER || 'local';
+    }
 
     // Verified working model (cached after first successful call)
     this.geminiModel = 'gemini-3.5-flash-lite';
@@ -912,48 +923,74 @@ ${telemetry}${ragGrounding}`;
   formatMarkdown(raw) {
     if (!raw) return '';
 
-    // Escape HTML first
-    let out = raw
+    let out = raw;
+
+    // 1. Extract fenced code blocks BEFORE any escaping to preserve content
+    const codeBlocks = [];
+    out = out.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+      const safeCode = code.trim()
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const placeholder = `%%CODE_BLOCK_${codeBlocks.length}%%`;
+      codeBlocks.push(`<pre class="chat-code-pre"><code>${safeCode}</code></pre>`);
+      return placeholder;
+    });
+
+    // 2. Now HTML-escape the rest
+    out = out
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // Fenced code blocks (``` ... ```)
-    out = out.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-      return `<pre class="chat-code-pre"><code class="lang-${lang || 'text'}">${code.trim()}</code></pre>`;
+    // 3. Restore code blocks
+    codeBlocks.forEach((block, i) => {
+      out = out.replace(`%%CODE_BLOCK_${i}%%`, block);
     });
 
-    // Inline code
+    // 4. Inline code
     out = out.replace(/`([^`\n]+)`/g, '<code class="chat-inline-code">$1</code>');
 
-    // Headings
+    // 5. Headings (line by line)
     out = out.replace(/^### (.+)$/gm, '<h5 class="chat-h3">$1</h5>');
     out = out.replace(/^## (.+)$/gm,  '<h4 class="chat-h2">$1</h4>');
     out = out.replace(/^# (.+)$/gm,   '<h3 class="chat-h1">$1</h3>');
 
-    // Bold and italic
+    // 6. Bold and italic
     out = out.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
     out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     out = out.replace(/\*(.+?)\*/g,     '<em>$1</em>');
     out = out.replace(/__(.+?)__/g,     '<strong>$1</strong>');
-    out = out.replace(/_(.+?)_/g,       '<em>$1</em>');
 
-    // Unordered lists
-    out = out.replace(/(?:^|\n)((?:\s*[-*+] .+(?:\n|$))+)/g, (_, block) => {
-      const items = block.trim().split('\n').map(l => `<li>${l.replace(/^\s*[-*+]\s+/, '')}</li>`).join('');
-      return `<ul class="chat-list">${items}</ul>`;
-    });
+    // 7. Lists — process line by line, group consecutive list items
+    const lines = out.split('\n');
+    const result = [];
+    let inUL = false, inOL = false;
 
-    // Ordered lists
-    out = out.replace(/(?:^|\n)((?:\s*\d+\. .+(?:\n|$))+)/g, (_, block) => {
-      const items = block.trim().split('\n').map(l => `<li>${l.replace(/^\s*\d+\.\s+/, '')}</li>`).join('');
-      return `<ol class="chat-list">${items}</ol>`;
-    });
+    for (const line of lines) {
+      const ulMatch = line.match(/^(\s*[-*+])\s+(.+)$/);
+      const olMatch = line.match(/^(\s*\d+\.)\s+(.+)$/);
 
-    // Horizontal rules
+      if (ulMatch) {
+        if (inOL) { result.push('</ol>'); inOL = false; }
+        if (!inUL) { result.push('<ul class="chat-list">'); inUL = true; }
+        result.push(`<li>${ulMatch[2]}</li>`);
+      } else if (olMatch) {
+        if (inUL) { result.push('</ul>'); inUL = false; }
+        if (!inOL) { result.push('<ol class="chat-list">'); inOL = true; }
+        result.push(`<li>${olMatch[2]}</li>`);
+      } else {
+        if (inUL) { result.push('</ul>'); inUL = false; }
+        if (inOL) { result.push('</ol>'); inOL = false; }
+        result.push(line);
+      }
+    }
+    if (inUL) result.push('</ul>');
+    if (inOL) result.push('</ol>');
+    out = result.join('\n');
+
+    // 8. Horizontal rules
     out = out.replace(/^---+$/gm, '<hr class="chat-hr">');
 
-    // Line breaks
+    // 9. Paragraphs / line breaks
     out = out.replace(/\n\n/g, '<br><br>');
     out = out.replace(/\n/g,   '<br>');
 
