@@ -224,6 +224,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabKey === 'algorithms' && window.algorithmLibrary) {
       setTimeout(() => window.algorithmLibrary.render(), 40);
     }
+
+    // Trigger LaTeX / Math typesetter on view change
+    if (window.renderAllMath) {
+      setTimeout(() => window.renderAllMath(), 60);
+    }
   }
 
   window.switchView = switchView;
