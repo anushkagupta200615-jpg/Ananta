@@ -1,33 +1,50 @@
 /**
- * QuantaAI - Intelligent Quantum Tutor & Real-Time Circuit Explainer
- * Integrates frontier Cloud LLMs (Google Gemini 1.5/2.0 Flash & OpenAI GPT-4o)
- * with real-time quantum circuit telemetry and in-browser deterministic expert fallback.
+ * QuantaAI - Intelligent Quantum Tutor & Universal AI Assistant
+ * v3.0 — Full rewrite
+ * Integrates Cloud LLMs (Google Gemini 2.0/1.5 & OpenAI GPT-4o)
+ * with real-time quantum circuit telemetry and a rich in-browser
+ * expert fallback that handles BOTH quantum topics and general questions.
  */
 
 class QuantaAITutor {
   constructor() {
     this.mode = 'beginner'; // 'beginner' (Intuitive ELI5) or 'academic' (Dirac / Math)
-    
+
     // Standalone console DOM elements
     this.explanationBox = document.getElementById('ai-explanation-text');
-    this.chatHistory = document.getElementById('ai-chat-history');
-    this.chatInput = document.getElementById('ai-chat-input');
-    this.sendBtn = document.getElementById('btn-send-ai');
-    this.modeToggle = document.getElementById('ai-mode-toggle');
+    this.chatHistory   = document.getElementById('ai-chat-history');
+    this.chatInput     = document.getElementById('ai-chat-input');
+    this.sendBtn       = document.getElementById('btn-send-ai');
+    this.modeToggle    = document.getElementById('ai-mode-toggle');
 
     // In-tab drawer DOM elements
     this.inTabChatHistory = document.getElementById('in-tab-chat-history');
-    this.inTabChatInput = document.getElementById('in-tab-chat-input');
-    this.inTabSendBtn = document.getElementById('btn-send-in-tab-ai');
-    this.inTabModeToggle = document.getElementById('in-tab-mode-toggle');
+    this.inTabChatInput   = document.getElementById('in-tab-chat-input');
+    this.inTabSendBtn     = document.getElementById('btn-send-in-tab-ai');
+    this.inTabModeToggle  = document.getElementById('in-tab-mode-toggle');
     this.inTabProviderPill = document.getElementById('in-tab-llm-pill');
 
     // LLM Provider Configuration (Priority: config.js -> localStorage)
     const envConfig = window.ANANTA_CONFIG || {};
-    this.geminiApiKey = (envConfig.GEMINI_API_KEY && !envConfig.GEMINI_API_KEY.includes('PASTE_YOUR')) ? envConfig.GEMINI_API_KEY : (localStorage.getItem('quanta_gemini_api_key') || '');
+    this.geminiApiKey = (envConfig.GEMINI_API_KEY && !envConfig.GEMINI_API_KEY.includes('PASTE_YOUR'))
+      ? envConfig.GEMINI_API_KEY
+      : (localStorage.getItem('quanta_gemini_api_key') || '');
     this.openaiApiKey = envConfig.OPENAI_API_KEY || localStorage.getItem('quanta_openai_api_key') || '';
-    this.llmProvider = localStorage.getItem('quanta_llm_provider') || (this.geminiApiKey ? 'gemini' : (envConfig.DEFAULT_PROVIDER || 'local'));
-    this.geminiModel = 'gemini-1.5-flash';
+    this.llmProvider  = localStorage.getItem('quanta_llm_provider')
+      || (this.geminiApiKey ? 'gemini' : (envConfig.DEFAULT_PROVIDER || 'local'));
+
+    // Verified working model (cached after first successful call)
+    this.geminiModel = 'gemini-2.0-flash-lite';
+
+    // Ordered fallback list — free-tier first, then paid-tier
+    this.candidateModels = [
+      'gemini-2.0-flash-lite',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-8b',
+      'gemini-1.0-pro'
+    ];
 
     this.initLLMSettingsDOM();
     this.initInTabLLMSettingsDOM();
@@ -35,16 +52,20 @@ class QuantaAITutor {
     this.updateProviderBadge();
   }
 
+  // ─────────────────────────────────────────────────────────────
+  //  DOM INIT
+  // ─────────────────────────────────────────────────────────────
+
   initLLMSettingsDOM() {
-    this.toggleSettingsBtn = document.getElementById('btn-toggle-llm-settings');
-    this.providerPill = document.getElementById('llm-active-pill');
-    this.settingsDrawer = document.getElementById('llm-settings-drawer');
-    this.providerSelect = document.getElementById('llm-provider-select');
-    this.apiKeyGroup = document.getElementById('api-key-group');
-    this.apiKeyInput = document.getElementById('llm-api-key-input');
+    this.toggleSettingsBtn  = document.getElementById('btn-toggle-llm-settings');
+    this.providerPill       = document.getElementById('llm-active-pill');
+    this.settingsDrawer     = document.getElementById('llm-settings-drawer');
+    this.providerSelect     = document.getElementById('llm-provider-select');
+    this.apiKeyGroup        = document.getElementById('api-key-group');
+    this.apiKeyInput        = document.getElementById('llm-api-key-input');
     this.toggleVisibilityBtn = document.getElementById('btn-toggle-api-key-visibility');
-    this.getKeyLink = document.getElementById('llm-get-key-link');
-    this.saveSettingsBtn = document.getElementById('btn-save-llm-settings');
+    this.getKeyLink         = document.getElementById('llm-get-key-link');
+    this.saveSettingsBtn    = document.getElementById('btn-save-llm-settings');
 
     if (this.providerSelect) {
       this.providerSelect.value = this.llmProvider;
@@ -53,11 +74,11 @@ class QuantaAITutor {
   }
 
   initInTabLLMSettingsDOM() {
-    this.inTabProviderSelect = document.getElementById('in-tab-provider-select');
-    this.inTabApiKeyInput = document.getElementById('in-tab-api-key-input');
-    this.inTabSaveSettingsBtn = document.getElementById('btn-save-in-tab-llm');
+    this.inTabProviderSelect     = document.getElementById('in-tab-provider-select');
+    this.inTabApiKeyInput        = document.getElementById('in-tab-api-key-input');
+    this.inTabSaveSettingsBtn    = document.getElementById('btn-save-in-tab-llm');
     this.inTabToggleVisibilityBtn = document.getElementById('btn-toggle-in-tab-key');
-    this.inTabApiKeyGroup = document.getElementById('in-tab-api-key-group');
+    this.inTabApiKeyGroup        = document.getElementById('in-tab-api-key-group');
 
     if (this.inTabProviderSelect) {
       this.inTabProviderSelect.value = this.llmProvider;
@@ -82,7 +103,6 @@ class QuantaAITutor {
 
   updateApiKeyInputForProvider(provider) {
     if (!this.apiKeyInput || !this.apiKeyGroup) return;
-
     if (provider === 'local') {
       this.apiKeyGroup.style.display = 'none';
       if (this.getKeyLink) this.getKeyLink.style.display = 'none';
@@ -107,25 +127,25 @@ class QuantaAITutor {
     }
   }
 
+  // ─────────────────────────────────────────────────────────────
+  //  EVENT BINDING
+  // ─────────────────────────────────────────────────────────────
+
   bindEvents() {
-    // Mode Switcher: Intuitive (ELI5) vs Academic (Dirac)
+    // Mode Switcher
     if (this.modeToggle) {
       this.modeToggle.addEventListener('change', (e) => {
         this.mode = e.target.checked ? 'academic' : 'beginner';
         const label = document.getElementById('ai-mode-label');
-        if (label) {
-          label.textContent = this.mode === 'academic' ? 'Academic (Math / Dirac)' : 'Intuitive (Beginner ELI5)';
-        }
-        if (window.circuitUI) {
-          window.circuitUI.updateSimulation();
-        }
+        if (label) label.textContent = this.mode === 'academic' ? 'Academic (Math / Dirac)' : 'Intuitive (Beginner ELI5)';
+        if (window.circuitUI) window.circuitUI.updateSimulation();
       });
     }
 
     // Toggle LLM Settings Drawer
     if (this.toggleSettingsBtn && this.settingsDrawer) {
       this.toggleSettingsBtn.addEventListener('click', () => {
-        const isHidden = this.settingsDrawer.style.display === 'none';
+        const isHidden = this.settingsDrawer.style.display === 'none' || !this.settingsDrawer.style.display;
         this.settingsDrawer.style.display = isHidden ? 'block' : 'none';
       });
     }
@@ -137,7 +157,7 @@ class QuantaAITutor {
       });
     }
 
-    // Toggle API Key Password Visibility
+    // Toggle API Key Visibility
     if (this.toggleVisibilityBtn && this.apiKeyInput) {
       this.toggleVisibilityBtn.addEventListener('click', () => {
         const isPassword = this.apiKeyInput.type === 'password';
@@ -152,7 +172,6 @@ class QuantaAITutor {
         const chosenProvider = this.providerSelect.value;
         this.llmProvider = chosenProvider;
         localStorage.setItem('quanta_llm_provider', chosenProvider);
-
         if (chosenProvider === 'gemini') {
           this.geminiApiKey = this.apiKeyInput.value.trim();
           localStorage.setItem('quanta_gemini_api_key', this.geminiApiKey);
@@ -160,16 +179,12 @@ class QuantaAITutor {
           this.openaiApiKey = this.apiKeyInput.value.trim();
           localStorage.setItem('quanta_openai_api_key', this.openaiApiKey);
         }
-
         this.updateProviderBadge();
         this.settingsDrawer.style.display = 'none';
-
-        // Notify user in chat
         let providerName = 'Offline Expert System';
-        if (chosenProvider === 'gemini') providerName = 'Google Gemini 1.5/2.0 Flash';
+        if (chosenProvider === 'gemini') providerName = 'Google Gemini Flash';
         if (chosenProvider === 'openai') providerName = 'OpenAI GPT-4o';
-
-        this.addChatMessage(`AI Mentor configured: Connected to <strong>${providerName}</strong> with live quantum circuit telemetry injection. Ask me anything!`, 'ai');
+        this.addChatMessage(`✅ AI configured: Connected to <strong>${providerName}</strong> with live quantum circuit telemetry. Ask me anything!`, 'ai');
       });
     }
 
@@ -177,7 +192,7 @@ class QuantaAITutor {
     if (this.sendBtn && this.chatInput) {
       this.sendBtn.addEventListener('click', () => this.handleUserMessage(this.chatInput, this.chatHistory));
       this.chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') this.handleUserMessage(this.chatInput, this.chatHistory);
+        if (e.key === 'Enter' && !e.shiftKey) this.handleUserMessage(this.chatInput, this.chatHistory);
       });
     }
 
@@ -198,7 +213,7 @@ class QuantaAITutor {
     if (this.inTabSendBtn && this.inTabChatInput) {
       this.inTabSendBtn.addEventListener('click', () => this.handleUserMessage(this.inTabChatInput, this.inTabChatHistory));
       this.inTabChatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') this.handleUserMessage(this.inTabChatInput, this.inTabChatHistory);
+        if (e.key === 'Enter' && !e.shiftKey) this.handleUserMessage(this.inTabChatInput, this.inTabChatHistory);
       });
     }
 
@@ -224,7 +239,6 @@ class QuantaAITutor {
         const chosenProvider = this.inTabProviderSelect.value;
         this.llmProvider = chosenProvider;
         localStorage.setItem('quanta_llm_provider', chosenProvider);
-
         if (chosenProvider === 'gemini') {
           this.geminiApiKey = this.inTabApiKeyInput.value.trim();
           localStorage.setItem('quanta_gemini_api_key', this.geminiApiKey);
@@ -232,20 +246,15 @@ class QuantaAITutor {
           this.openaiApiKey = this.inTabApiKeyInput.value.trim();
           localStorage.setItem('quanta_openai_api_key', this.openaiApiKey);
         }
-
-        // Sync with standalone inputs
         if (this.providerSelect) this.providerSelect.value = chosenProvider;
         this.updateApiKeyInputForProvider(chosenProvider);
-
         this.updateProviderBadge();
         const settingsBox = document.getElementById('in-tab-llm-settings-box');
         if (settingsBox) settingsBox.style.display = 'none';
-
         let providerName = 'Offline Expert System';
-        if (chosenProvider === 'gemini') providerName = 'Google Gemini 1.5/2.0 Flash';
+        if (chosenProvider === 'gemini') providerName = 'Google Gemini Flash';
         if (chosenProvider === 'openai') providerName = 'OpenAI GPT-4o';
-
-        this.addChatMessage(`Co-Pilot configured: Connected to <strong>${providerName}</strong> with live quantum circuit telemetry injection.`, 'ai', this.inTabChatHistory);
+        this.addChatMessage(`✅ Co-Pilot configured: Connected to <strong>${providerName}</strong> with live quantum circuit telemetry.`, 'ai', this.inTabChatHistory);
       });
     }
 
@@ -253,23 +262,22 @@ class QuantaAITutor {
     document.querySelectorAll('.in-tab-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const query = chip.getAttribute('data-ai-query');
-        if (query) {
-          this.respondToPrompt(query, this.inTabChatHistory);
-        }
+        if (query) this.respondToPrompt(query, this.inTabChatHistory);
       });
     });
 
     // Pre-set prompt chips
-    const promptChips = document.querySelectorAll('.prompt-chip');
-    promptChips.forEach(chip => {
+    document.querySelectorAll('.prompt-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const query = chip.getAttribute('data-query');
-        if (query) {
-          this.respondToPrompt(query);
-        }
+        if (query) this.respondToPrompt(query);
       });
     });
   }
+
+  // ─────────────────────────────────────────────────────────────
+  //  PROVIDER BADGE
+  // ─────────────────────────────────────────────────────────────
 
   updateProviderBadge() {
     const pills = [this.providerPill, this.inTabProviderPill].filter(Boolean);
@@ -277,7 +285,7 @@ class QuantaAITutor {
       if (this.llmProvider === 'gemini') {
         if (this.geminiApiKey) {
           pill.className = 'llm-pill gemini';
-          pill.textContent = 'Gemini Flash 🟢';
+          pill.textContent = `Gemini Flash 🟢`;
         } else {
           pill.className = 'llm-pill warning';
           pill.textContent = 'Gemini (Key Missing)';
@@ -292,17 +300,20 @@ class QuantaAITutor {
         }
       } else {
         pill.className = 'llm-pill local';
-        pill.textContent = 'Offline Expert (797 chunks)';
+        pill.textContent = 'Offline Expert 🔵';
       }
     });
   }
+
+  // ─────────────────────────────────────────────────────────────
+  //  CIRCUIT ANALYSIS (Live Explanation Card)
+  // ─────────────────────────────────────────────────────────────
 
   onCircuitChanged(grid, probs, blochCoords, selectedQubit) {
     const explanation = this.analyzeCircuit(grid, probs, blochCoords, selectedQubit);
     this.renderExplanation(explanation);
   }
 
-  // Deterministic local real-time circuit state analyzer for the live explanation card
   analyzeCircuit(grid, probs, bloch, selectedQubit) {
     const allGates = grid.flat().filter(Boolean);
     if (allGates.length === 0) {
@@ -330,13 +341,13 @@ class QuantaAITutor {
         return {
           title: "Quantum Entanglement Created (Bell State)",
           summary: "You have created 'spooky action at a distance'! Qubit 0 and Qubit 1 are inextricably linked.",
-          details: "Notice that there are only two possible outcomes: both are 0 (|000⟩) or both are 1. Measuring Qubit 0 here instantly determines Qubit 1's state, even if separated by light-years."
+          details: "Notice only two outcomes exist: both 0 (|000⟩) or both 1. Measuring Qubit 0 instantly determines Qubit 1's state, even if separated by light-years."
         };
       } else {
         return {
           title: "Maximally Entangled Bell Pair |Φ⁺⟩",
           summary: "Statevector: |ψ⟩ = 1/√2 (|00⟩ + |11⟩) ⊗ |0⟩₂.",
-          details: "The reduced density matrix for Qubit 0 has Tr(ρ₀²) = 0.5 < 1, confirming it is in a mixed state locally despite the global system being pure. Von Neumann entropy S = 1 bit (maximum entanglement)."
+          details: "The reduced density matrix for Qubit 0 has Tr(ρ₀²) = 0.5 < 1, confirming a mixed state locally despite the global system being pure. Von Neumann entropy S = 1 bit (maximum entanglement)."
         };
       }
     }
@@ -345,8 +356,8 @@ class QuantaAITutor {
       if (this.mode === 'beginner') {
         return {
           title: "Equal Superposition (Quantum Coin Flip)",
-          summary: "Qubit 0 is now in a 50/50 superposition.",
-          details: "Unlike a classical bit that is either 0 or 1, Qubit 0 behaves like a spinning coin in mid-air. It exists in both states simultaneously until observed! On the Bloch Sphere, the vector has rotated to the equator (+X axis)."
+          summary: "Qubit 0 is in a 50/50 superposition.",
+          details: "Unlike a classical bit (0 or 1), Qubit 0 exists in both states simultaneously until observed! On the Bloch Sphere, the vector has rotated to the equator (+X axis)."
         };
       } else {
         return {
@@ -363,7 +374,7 @@ class QuantaAITutor {
         return {
           title: "Quantum Bit Flip (Pauli-X)",
           summary: "Pauli-X flipped the qubit from |0⟩ to |1⟩.",
-          details: "This is the quantum equivalent of a classical NOT gate. On the Bloch Sphere, the state vector has flipped 180 degrees from the North Pole (|0⟩) straight down to the South Pole (|1⟩)."
+          details: "The quantum NOT gate. On the Bloch Sphere, the state vector has flipped 180° from the North Pole (|0⟩) to the South Pole (|1⟩)."
         };
       } else {
         return {
@@ -402,9 +413,12 @@ class QuantaAITutor {
     `;
   }
 
-  // Extract live circuit telemetry to inject into LLM prompts
+  // ─────────────────────────────────────────────────────────────
+  //  CIRCUIT TELEMETRY (Injected into LLM prompts)
+  // ─────────────────────────────────────────────────────────────
+
   buildCircuitTelemetry() {
-    let telemetry = "Live Circuit Telemetry from Student's Browser:\n";
+    let telemetry = "Live Quantum Circuit Telemetry (Student's Browser):\n";
 
     if (window.circuitUI && window.circuitUI.grid) {
       const grid = window.circuitUI.grid;
@@ -414,7 +428,7 @@ class QuantaAITutor {
         for (let col = 0; col < 6; col++) {
           if (grid[q][col]) gates.push(`Col ${col + 1}: ${grid[q][col]}`);
         }
-        telemetry += `  Wire q${q}: ${gates.length > 0 ? gates.join(', ') : 'Empty wire (|0⟩)'}\n`;
+        telemetry += `  Wire q${q}: ${gates.length > 0 ? gates.join(', ') : 'Empty (|0⟩)'}\n`;
       }
     }
 
@@ -428,16 +442,16 @@ class QuantaAITutor {
       }
     }
 
-    telemetry += `- Student's Selected Learning Mode: ${this.mode === 'academic' ? 'Academic (Math / Dirac Formalism)' : 'Intuitive (ELI5 / Real-World Analogies)'}\n`;
+    telemetry += `- Learning Mode: ${this.mode === 'academic' ? 'Academic (Dirac / Math)' : 'Intuitive (ELI5 / Analogies)'}\n`;
     return telemetry;
   }
 
-  // Semantic / keyword chunk retriever for RAG grounding from D:\Ananta-Quantum-Library corpus
-  retrieveRelevantLiterature(query, maxResults = 2) {
-    if (typeof window === 'undefined' || !Array.isArray(window.QUANTUM_LITERATURE_CORPUS)) {
-      return [];
-    }
+  // ─────────────────────────────────────────────────────────────
+  //  RAG RETRIEVAL — Quantum Literature Corpus
+  // ─────────────────────────────────────────────────────────────
 
+  retrieveRelevantLiterature(query, maxResults = 2) {
+    if (typeof window === 'undefined' || !Array.isArray(window.QUANTUM_LITERATURE_CORPUS)) return [];
     const qTokens = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2);
     if (qTokens.length === 0) return [];
 
@@ -445,18 +459,20 @@ class QuantaAITutor {
       let score = 0;
       const docLower = item.doc.toLowerCase();
       const textLower = (item.full || item.snippet).toLowerCase();
-
       qTokens.forEach(t => {
         if (docLower.includes(t)) score += 3;
         const matches = (textLower.match(new RegExp('\\b' + t, 'g')) || []).length;
         score += matches;
       });
-
       return { ...item, score };
     });
 
     return scored.filter(s => s.score > 1).sort((a, b) => b.score - a.score).slice(0, maxResults);
   }
+
+  // ─────────────────────────────────────────────────────────────
+  //  MESSAGE HANDLING
+  // ─────────────────────────────────────────────────────────────
 
   async handleUserMessage(inputEl = this.chatInput, historyEl = this.chatHistory) {
     const text = inputEl ? inputEl.value.trim() : '';
@@ -465,7 +481,6 @@ class QuantaAITutor {
     this.addChatMessage(text, 'user', historyEl);
     if (inputEl) inputEl.value = '';
 
-    // Show typing indicator
     const typingId = this.showTypingIndicator(historyEl);
 
     try {
@@ -475,19 +490,23 @@ class QuantaAITutor {
       } else if (this.llmProvider === 'openai' && this.openaiApiKey) {
         reply = await this.callOpenAIAPI(text);
       } else {
-        // Fallback to local expert system
-        await new Promise(r => setTimeout(r, 380));
+        await new Promise(r => setTimeout(r, 320));
         reply = this.generateLocalAIResponse(text);
       }
-
       this.removeTypingIndicator(typingId);
       this.addChatMessage(reply, 'ai', historyEl);
     } catch (err) {
       console.error('LLM API Error:', err);
       this.removeTypingIndicator(typingId);
       const fallbackReply = this.generateLocalAIResponse(text);
-      const errorNote = `<div class="llm-error-tag">⚠️ Cloud LLM Request Failed (${err.message}). Using Offline Quantum Knowledge System:</div>`;
-      this.addChatMessage(errorNote + fallbackReply, 'ai', historyEl);
+      const isCasual = /^(h+i+|h+e+y+|h+e+l+o+|hola|namaste|greetings|good\s*(morning|afternoon|evening|day)|s+u+p+|y+o+|howdy)\b/i
+        .test((text || '').trim().toLowerCase().replace(/[^a-z0-9\s]/g, ''));
+      if (isCasual) {
+        this.addChatMessage(fallbackReply, 'ai', historyEl);
+      } else {
+        const errorNote = `<div class="llm-error-tag">⚠️ Cloud AI unavailable (${err.message}). Showing offline response:</div>`;
+        this.addChatMessage(errorNote + fallbackReply, 'ai', historyEl);
+      }
     }
   }
 
@@ -514,85 +533,113 @@ class QuantaAITutor {
     }
   }
 
-  // Call Google Gemini API (Gemini 1.5 / 2.0 Flash) with RAG grounding & versatile intelligence
+  // ─────────────────────────────────────────────────────────────
+  //  GEMINI API — Multi-model auto-fallback
+  // ─────────────────────────────────────────────────────────────
+
   async callGeminiAPI(userQuery) {
-    const telemetry = this.buildCircuitTelemetry();
+    const telemetry    = this.buildCircuitTelemetry();
     const retrievedDocs = this.retrieveRelevantLiterature(userQuery, 2);
-    let ragGrounding = "";
+    let ragGrounding   = '';
     if (retrievedDocs.length > 0 && userQuery.trim().length > 3) {
-      ragGrounding = "\n\nRelevant Quantum Library Excerpts:\n" +
+      ragGrounding = '\n\nRelevant Quantum Literature Excerpts:\n' +
         retrievedDocs.map(d => `Source: ${d.doc}\nExcerpt: ${d.snippet}`).join('\n\n');
     }
 
-    const systemPrompt = `You are Ananta AI, a helpful, brilliant, and versatile AI assistant with deep mastery in Quantum Computing, Physics, Computer Science, Software Engineering, and general problem solving.
+    const systemPrompt = `You are Ananta AI, a helpful, brilliant, and versatile AI assistant with deep mastery in Quantum Computing, Physics, Computer Science, Software Engineering, Mathematics, and general problem solving.
 
 Core Behavior:
-1. Answer ANY question or conversational message naturally, accurately, and helpfully, whether it is about quantum computing, general science, programming, math, everyday topics, or casual greetings.
-2. Greetings & Casual Chat: If the user greets you (e.g., "hi", "hello", "hey", "how are you", "what's up"), reply warmly, naturally, and conversationally in 1-2 friendly sentences. NEVER say "that's a great question" to a simple greeting.
-3. Quantum & Physics Inquiries: Provide deep, intuitive, and accurate explanations. If the student's learning mode is "Intuitive (ELI5)", use vivid physical analogies. If "Academic (Dirac)", provide rigorous bra-ket Dirac notation, matrix algebra, and formal derivations.
-4. Circuit Telemetry: Reference the live circuit state below when relevant to the user's inquiry. If the user asks about general or non-quantum topics, answer directly without forcing circuit references.
-5. Formatting: Use clean markdown with bold highlights and code blocks. Never use em dashes anywhere (use hyphens, colons, or parentheses instead).
+1. Answer ANY question or conversational message naturally, accurately, and helpfully — whether it is about quantum computing, general science, programming, math, everyday topics, or casual greetings.
+2. Greetings & Casual Chat: If the user greets you (e.g., "hi", "hello", "how are you"), reply warmly and conversationally in 1-2 friendly sentences.
+3. Quantum & Physics: Provide deep, intuitive, and accurate explanations. If mode is "Intuitive (ELI5)", use vivid physical analogies. If "Academic (Dirac)", provide rigorous bra-ket notation and formal derivations.
+4. Circuit Telemetry: Reference the live circuit state below when the user's question is about quantum computing or their circuit. If they ask about general topics, answer directly.
+5. Formatting: Use clean markdown. Bold key terms. Use code blocks for math and code. Never use em dashes (use hyphens or colons instead).
+6. Research Papers: When citing papers from the quantum literature excerpts, include the source title.
 
 ${telemetry}${ragGrounding}`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent?key=${encodeURIComponent(this.geminiApiKey)}`;
+    let lastError = null;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: systemPrompt }]
-        },
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: userQuery }
-            ]
+    for (const modelName of this.candidateModels) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(this.geminiApiKey)}`;
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: systemPrompt }]
+            },
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: userQuery }]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.72,
+              maxOutputTokens: 1024
+            }
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) {
+            this.geminiModel = modelName; // Cache verified working model
+            let formatted = this.formatMarkdown(rawText);
+            if (retrievedDocs.length > 0 && userQuery.trim().length > 3) {
+              formatted += `<div class="rag-citation-box"><span class="rag-citation-title">📚 Grounded in Quantum Literature:</span> ${retrievedDocs.map(d => d.doc).join(' • ')}</div>`;
+            }
+            return formatted;
           }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 800
         }
-      })
-    });
 
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error?.message || `HTTP ${response.status}`);
+        const errJson = await response.json().catch(() => ({}));
+        const msg = errJson.error?.message || `HTTP ${response.status}`;
+        lastError = new Error(msg);
+
+        // Try next model if this one is unavailable/not found
+        if (response.status === 404 || msg.includes('not found') || msg.includes('not supported') || msg.includes('deprecated')) {
+          continue;
+        } else {
+          throw lastError;
+        }
+      } catch (err) {
+        lastError = err;
+        if (err.message && (err.message.includes('not found') || err.message.includes('not supported') || err.message.includes('404') || err.message.includes('deprecated'))) {
+          continue;
+        }
+        throw err;
+      }
     }
 
-    const data = await response.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) throw new Error('Empty response received from Gemini');
-
-    let formatted = this.formatMarkdown(rawText);
-    if (retrievedDocs.length > 0 && userQuery.trim().length > 3) {
-      formatted += `<div class="rag-citation-box"><span class="rag-citation-title">📚 Grounded in Quantum Literature:</span>${retrievedDocs.map(d => d.doc).join(' • ')}</div>`;
-    }
-    return formatted;
+    throw lastError || new Error('No compatible Gemini model responded');
   }
 
-  // Call OpenAI API (GPT-4o / GPT-4o-mini) with versatile intelligence & RAG grounding
+  // ─────────────────────────────────────────────────────────────
+  //  OPENAI API — GPT-4o with RAG grounding
+  // ─────────────────────────────────────────────────────────────
+
   async callOpenAIAPI(userQuery) {
-    const telemetry = this.buildCircuitTelemetry();
+    const telemetry     = this.buildCircuitTelemetry();
     const retrievedDocs = this.retrieveRelevantLiterature(userQuery, 2);
-    let ragGrounding = "";
+    let ragGrounding    = '';
     if (retrievedDocs.length > 0 && userQuery.trim().length > 3) {
-      ragGrounding = "\n\nRelevant Quantum Library Excerpts:\n" +
+      ragGrounding = '\n\nRelevant Quantum Library Excerpts:\n' +
         retrievedDocs.map(d => `Source: ${d.doc}\nExcerpt: ${d.snippet}`).join('\n\n');
     }
 
-    const systemPrompt = `You are Ananta AI, a helpful, brilliant, and versatile AI assistant with deep mastery in Quantum Computing, Physics, Computer Science, and general problem solving.
+    const systemPrompt = `You are Ananta AI, a helpful and brilliant AI assistant with deep mastery in Quantum Computing, Physics, Computer Science, and general problem solving.
 
 Core Behavior:
-1. Answer ANY question or conversational message naturally, accurately, and helpfully, whether it is about quantum computing, general science, programming, math, everyday topics, or casual greetings.
-2. Greetings & Casual Chat: If the user greets you (e.g., "hi", "hello", "hey", "how are you"), reply warmly and conversationally in 1-2 friendly sentences. NEVER say "that's a great question" to a simple greeting.
-3. Quantum & Physics Queries: Provide insightful explanations. If learning mode is "Intuitive (ELI5)", use vivid analogies. If "Academic (Dirac)", use rigorous bra-ket mathematics and derivations.
-4. Active Circuit Context: Reference the live circuit state when relevant. If the user asks about general or non-quantum topics, answer directly without forcing circuit references.
-5. Formatting: Use clean markdown styling. Never use em dashes anywhere (use hyphens, colons, or parentheses instead).
+1. Answer ANY question naturally and helpfully — quantum computing, science, programming, math, everyday topics, or casual greetings.
+2. Greetings: Reply warmly in 1-2 friendly sentences.
+3. Quantum: Provide insightful explanations tailored to the student's learning mode.
+4. Circuit Context: Reference live circuit state when relevant.
+5. Formatting: Clean markdown, bold key terms, code blocks for math/code. No em dashes.
 
 ${telemetry}${ragGrounding}`;
 
@@ -608,8 +655,8 @@ ${telemetry}${ragGrounding}`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userQuery }
         ],
-        temperature: 0.7,
-        max_tokens: 800
+        temperature: 0.72,
+        max_tokens: 1024
       })
     });
 
@@ -624,114 +671,202 @@ ${telemetry}${ragGrounding}`;
 
     let formatted = this.formatMarkdown(rawText);
     if (retrievedDocs.length > 0 && userQuery.trim().length > 3) {
-      formatted += `<div class="rag-citation-box"><span class="rag-citation-title">📚 Grounded in Quantum Literature:</span>${retrievedDocs.map(d => d.doc).join(' • ')}</div>`;
+      formatted += `<div class="rag-citation-box"><span class="rag-citation-title">📚 Grounded in Quantum Literature:</span> ${retrievedDocs.map(d => d.doc).join(' • ')}</div>`;
     }
     return formatted;
   }
 
-  // Dynamic offline response — handles greetings, identity, quantum research DB, and fallbacks
+  // ─────────────────────────────────────────────────────────────
+  //  OFFLINE RESPONSE ENGINE — Quantum + General Knowledge
+  // ─────────────────────────────────────────────────────────────
+
   generateLocalAIResponse(query) {
-    const qTrim = (query || '').trim();
-    const qLow = qTrim.toLowerCase();
+    const qTrim      = (query || '').trim();
+    const cleanAlpha = qTrim.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+    const words      = cleanAlpha.split(/\s+/).filter(Boolean);
+    const firstWord  = words[0] || '';
 
-    // ── Check 0: Natural greetings and small talk ──
-    const greetingMatch = /^(hi|hello|hey|greetings|good\s*(morning|afternoon|evening|day)|sup|yo|howdy)\b/i.test(qLow);
-    if (greetingMatch) {
-      return `<strong>Hello!</strong> 👋 I am your Ananta AI Assistant. I can help answer any questions across quantum mechanics, algorithms, coding, mathematics, or physics. What would you like to explore or work on today?`;
+    // ── 0. Greetings ─────────────────────────────────────────
+    const greetingRx = /^(h+i+|h+e+y+|h+e+l+l+o+|hola|namaste|greetings|good\s*(morning|afternoon|evening|night|day)|s+u+p+|y+o+|howdy|wsg|wassup)\b/i;
+    if (greetingRx.test(cleanAlpha)) {
+      return `<strong>Hello! 👋</strong> I'm your Ananta AI — your personal quantum computing tutor and research assistant.<br><br>I can help you with:<br>• <strong>Quantum concepts</strong> — superposition, entanglement, decoherence, algorithms<br>• <strong>Research papers</strong> — from Feynman 1982 to Google Supremacy 2019<br>• <strong>Circuit analysis</strong> — I can see your live circuit telemetry<br>• <strong>General questions</strong> — science, math, coding, physics<br><br>What would you like to explore? ✨`;
     }
 
-    const identityMatch = /^(who\s+are\s+you|what\s+can\s+you\s+do|what\s+is\s+this|help)\b/i.test(qLow);
-    if (identityMatch) {
-      return `<strong>I am Ananta AI</strong> — your intelligent research and circuit assistant.<br><br>` +
-        `• <strong>Quantum Circuit Synthesis:</strong> Ask about quantum gates (H, X, CNOT, Phase), Bell states, Grover's search, Shor's algorithm, or live circuit telemetry.<br>` +
-        `• <strong>Physics & Intuition:</strong> Ask about superposition, entanglement, decoherence, or tunneling.<br>` +
-        `• <strong>Any Question:</strong> For full unconstrained web/AI responses across all general topics, connect your Gemini or OpenAI API key in the ⚙️ settings drawer!`;
+    // ── 1. Identity / Help ────────────────────────────────────
+    const identityRx = /^(who\s+are\s+you|what\s+(are|can)\s+you|tell\s+me\s+about\s+yourself|help|what\s+is\s+(this|ananta))\b/i;
+    if (identityRx.test(cleanAlpha)) {
+      return `<strong>I am Ananta AI</strong> — your intelligent quantum research assistant.<br><br>` +
+        `• <strong>Quantum Circuit Synthesis:</strong> Ask about gates (H, X, CNOT, Phase, T), Bell states, Grover's search, Shor's algorithm, or your live circuit state.<br>` +
+        `• <strong>Physics & Intuition:</strong> Superposition, entanglement, decoherence, tunneling, Bloch sphere.<br>` +
+        `• <strong>Research Archive:</strong> I have 30+ landmark papers loaded — Feynman, Shor, Grover, Google Supremacy, VQE, QAOA, and more.<br>` +
+        `• <strong>Any Question:</strong> Connect a Gemini or OpenAI API key (⚙️ settings) for unlimited general AI access.`;
     }
 
-    // ── Step 1: Search the research-grade QuantumKnowledgeEngine ──────────────
+    // ── 2. General Math ───────────────────────────────────────
+    if (/\b(calculate|compute|what is|solve|how much|how many)\b.*([\d+\-*/^()]+)/.test(cleanAlpha) ||
+        /\d+\s*[+\-*/^]\s*\d+/.test(qTrim)) {
+      try {
+        // Simple safe expression evaluator
+        const expr = qTrim.replace(/[^0-9+\-*/^().\s]/g, '').trim();
+        if (expr) {
+          const result = Function('"use strict"; return (' + expr.replace(/\^/g, '**') + ')')();
+          return `<strong>Result:</strong> <code>${expr} = ${result}</code><br><br><em>For complex math, symbolic algebra, or calculus — connect a Gemini or OpenAI API key for full computation.</em>`;
+        }
+      } catch (_) { /* fall through */ }
+    }
+
+    // ── 3. Search Quantum Knowledge Engine ───────────────────
     if (window.QuantumKnowledgeEngine) {
       try {
-        const ke = new window.QuantumKnowledgeEngine();
+        const ke    = new window.QuantumKnowledgeEngine();
         const topic = ke.search(query);
         if (topic) {
-          const apps = (topic.applications && topic.applications.length > 0)
-            ? `<strong>Applications:</strong><ul>${topic.applications.map(a => `<li>${a}</li>`).join('')}</ul>`
-            : '';
           const mathBlock = topic.math
-            ? `<br><strong>Formula:</strong><pre class="ai-code-pre">${topic.math}</pre>`
+            ? `<br><div class="chat-math-block"><strong>📐 Formula / Math:</strong><pre class="chat-code-pre">${topic.math}</pre></div>`
             : '';
           const intuition = topic.intuition
-            ? `<br><em style="color:var(--text-dim)">${topic.intuition}</em>`
+            ? `<br><div class="chat-intuition-block">💡 <em>${topic.intuition}</em></div>`
+            : '';
+          const apps = (topic.applications && topic.applications.length > 0)
+            ? `<br><strong>Applications:</strong><ul class="chat-list">${topic.applications.map(a => `<li>${a}</li>`).join('')}</ul>`
+            : '';
+          const ref = topic.furtherReading
+            ? `<div class="rag-citation-box"><span class="rag-citation-title">📚 Reference:</span> ${topic.furtherReading}</div>`
+            : '';
+          const arxiv = topic.arxiv
+            ? ` &nbsp;<a href="https://arxiv.org/abs/${topic.arxiv.replace('arXiv:','')}" target="_blank" class="chat-arxiv-link">arXiv ↗</a>`
             : '';
 
-          return `<strong>${topic.title}</strong> <em>[${topic.category}]</em><br><br>${topic.definition}${mathBlock}${intuition}<br>${apps}<small style="color:var(--google-blue)">Reference: ${topic.furtherReading || 'Nielsen & Chuang, Cambridge University Press'}</small>`;
+          return `<div class="chat-topic-header"><strong>${topic.title}</strong> <span class="chat-topic-badge">${topic.category}</span>${arxiv}</div><br>` +
+            `${topic.definition}${mathBlock}${intuition}${apps}${ref}`;
         }
       } catch (e) { console.warn('KE error:', e); }
     }
 
-    // ── Step 2: RAG retrieval from D:\Ananta-Quantum-Library corpus ───────────
+    // ── 4. Search Quantum Topic Database ─────────────────────
+    if (Array.isArray(window.QUANTUM_TOPIC_DATABASE)) {
+      const qTokens = cleanAlpha.split(/\s+/).filter(w => w.length > 2);
+      let bestTopic = null;
+      let bestScore = 0;
+
+      for (const topic of window.QUANTUM_TOPIC_DATABASE) {
+        let score = 0;
+        for (const key of (topic.keys || [])) {
+          if (cleanAlpha.includes(key)) score += 5;
+        }
+        for (const token of qTokens) {
+          if ((topic.title || '').toLowerCase().includes(token)) score += 2;
+          if ((topic.definition || '').toLowerCase().includes(token)) score += 1;
+        }
+        if (score > bestScore) { bestScore = score; bestTopic = topic; }
+      }
+
+      if (bestTopic && bestScore >= 4) {
+        const mathBlock = bestTopic.math
+          ? `<br><div class="chat-math-block"><strong>📐 Formula / Math:</strong><pre class="chat-code-pre">${bestTopic.math}</pre></div>`
+          : '';
+        const intuition = bestTopic.intuition
+          ? `<br><div class="chat-intuition-block">💡 <em>${bestTopic.intuition}</em></div>`
+          : '';
+        const apps = (bestTopic.applications && bestTopic.applications.length > 0)
+          ? `<br><strong>Applications:</strong><ul class="chat-list">${bestTopic.applications.map(a => `<li>${a}</li>`).join('')}</ul>`
+          : '';
+        const ref = bestTopic.furtherReading
+          ? `<div class="rag-citation-box"><span class="rag-citation-title">📚 Reference:</span> ${bestTopic.furtherReading}</div>`
+          : '';
+
+        return `<div class="chat-topic-header"><strong>${bestTopic.title}</strong> <span class="chat-topic-badge">${bestTopic.category}</span></div><br>` +
+          `${bestTopic.definition}${mathBlock}${intuition}${apps}${ref}`;
+      }
+    }
+
+    // ── 5. RAG from Literature Corpus ─────────────────────────
     if (qTrim.length > 3) {
       const docs = this.retrieveRelevantLiterature(query, 2);
       if (docs.length > 0) {
-        const primary = docs[0];
+        const primary   = docs[0];
         const secondary = docs[1];
-        let out = `<strong>From your Quantum Library (${primary.doc}):</strong><br><br>${primary.full.slice(0, 900)}`;
+        let out = `<div class="chat-topic-header"><strong>From Research Archive:</strong> <span class="chat-topic-badge">${primary.doc}</span></div><br>${primary.full.slice(0, 700)}`;
         if (secondary) {
-          out += `<br><br><strong>Also from ${secondary.doc}:</strong><br>${secondary.snippet.slice(0, 400)}`;
+          out += `<br><br><strong>Also from ${secondary.doc}:</strong><br>${secondary.snippet.slice(0, 350)}`;
         }
-        out += `<br><br><div class="rag-citation-box"><span class="rag-citation-title">📚 Grounded in your literature corpus (D:\\Ananta-Quantum-Library)</span>${docs.map(d => d.doc).join(' • ')}</div>`;
+        out += `<div class="rag-citation-box"><span class="rag-citation-title">📚 Sources:</span> ${docs.map(d => d.doc).join(' • ')}</div>`;
         return out;
       }
     }
 
-    // ── Step 3: Live circuit-aware dynamic response ───────────────────────────
+    // ── 6. Live Circuit Context Fallback ─────────────────────
     let circuitContext = '';
     if (window.circuitUI && window.circuitUI.grid) {
-      const grid = window.circuitUI.grid;
+      const grid     = window.circuitUI.grid;
       const allGates = grid.flat().filter(Boolean);
       const gateNames = [...new Set(allGates)];
       if (allGates.length > 0) {
-        circuitContext = ` Your current circuit has <strong>${allGates.length} gate${allGates.length > 1 ? 's' : ''}</strong> placed: <code>${gateNames.join(', ')}</code>.`;
+        circuitContext = `<br><br>📊 <strong>Your current circuit</strong> has <strong>${allGates.length} gate${allGates.length > 1 ? 's' : ''}</strong> placed: <code>${gateNames.join(', ')}</code>.`;
       }
     }
-
     let stateContext = '';
     if (window.circuitUI && window.circuitUI.engine) {
       const engine = window.circuitUI.engine;
-      const dirac = engine.getDiracNotation ? engine.getDiracNotation() : '';
+      const dirac  = engine.getDiracNotation ? engine.getDiracNotation() : '';
       if (dirac && dirac !== '|000⟩') {
         stateContext = ` Live statevector: <code>${dirac}</code>.`;
       }
     }
 
-    // Offer algorithm zoo if query matches an algorithm-like keyword
+    // ── 7. Algorithm Zoo Hint ─────────────────────────────────
     let algoHint = '';
     if (window.QuantumKnowledgeEngine) {
       try {
         const ke = new window.QuantumKnowledgeEngine();
         if (ke.algorithmZoo) {
           const algoMatch = Object.values(ke.algorithmZoo).find(a =>
-            a.name && a.name.toLowerCase().includes(qLow.split(' ')[0])
+            a.name && a.name.toLowerCase().includes(firstWord)
           );
           if (algoMatch) {
-            algoHint = `<br><br><strong>Closest Algorithm Match: ${algoMatch.name}</strong><br>` +
-              `Speedup: ${algoMatch.speedup || 'N/A'} | Class: ${algoMatch.class || 'N/A'}<br>${algoMatch.description || ''}`;
+            algoHint = `<br><br><strong>🔬 Closest Algorithm Match: ${algoMatch.name}</strong><br>Speedup: ${algoMatch.speedup || 'N/A'} | Class: ${algoMatch.class || 'N/A'}<br>${algoMatch.description || ''}`;
           }
         }
-      } catch (e) {}
+      } catch (e) { /* ignore */ }
     }
 
-    return `<strong>Ananta AI Assistant</strong> — answering query: <em>"${query}"</em>.<br><br>` +
-      `No specific quantum match was found in the offline library for this search.${circuitContext}${stateContext}${algoHint}<br><br>` +
-      `<strong>Tips:</strong><ul>` +
-      `<li>Connect a <strong>Gemini</strong> or <strong>OpenAI</strong> API key in the ⚙️ settings drawer to ask <em>any</em> general or advanced question.</li>` +
-      `<li>Or ask about specific quantum topics: <em>superposition, entanglement, VQE, Shor's algorithm, Grover's search, Bloch sphere</em>.</li></ul>`;
+    // ── 8. General Intelligent Fallback ──────────────────────
+    const generalTopics = {
+      physics: /\b(physics|newton|einstein|relativity|gravity|force|mass|energy|wave|particle|light|photon|atom|nucleus|electron|proton|neutron|molecule)\b/i,
+      coding:  /\b(code|coding|program|javascript|python|java|c\+\+|algorithm|function|array|loop|class|object|debug|compile|software|api|html|css)\b/i,
+      math:    /\b(math|algebra|calculus|derivative|integral|matrix|vector|probability|statistics|equation|theorem|proof|geometry|trigonometry)\b/i,
+      ai:      /\b(ai|artificial intelligence|machine learning|deep learning|neural network|llm|gpt|transformer|training|model|dataset)\b/i,
+      science: /\b(biology|chemistry|evolution|dna|gene|cell|reaction|element|periodic|universe|galaxy|star|planet|cosmos|climate)\b/i,
+    };
+
+    for (const [domain, rx] of Object.entries(generalTopics)) {
+      if (rx.test(query)) {
+        const domainLabels = { physics:'Physics', coding:'Programming', math:'Mathematics', ai:'Artificial Intelligence', science:'Science' };
+        return `<strong>Ananta AI</strong> — <em>${domainLabels[domain]} Query</em><br><br>` +
+          `I have offline knowledge on quantum physics and computing topics, but for a full, detailed answer about general <strong>${domainLabels[domain]}</strong>, I recommend connecting a <strong>Gemini</strong> or <strong>OpenAI</strong> API key (⚙️ settings) — it's free at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="chat-arxiv-link">Google AI Studio ↗</a>.<br><br>` +
+          `<strong>Quantum-relevant tip:</strong> ${domain === 'physics' ? 'Quantum mechanics is the deepest layer of physics! Ask me about wave-particle duality, superposition, or the measurement problem.' : domain === 'math' ? 'Quantum computing is deeply mathematical! Ask me about Hilbert spaces, unitary matrices, or eigenvalue decomposition.' : domain === 'coding' ? 'Quantum programming uses frameworks like Qiskit, Cirq, or PennyLane. Ask me how quantum circuits are written in code!' : domain === 'ai' ? 'Quantum Machine Learning (QML) is a hot research frontier! Ask me about the HHL algorithm or quantum kernel methods.' : 'Quantum biology is emerging! Ask me about quantum effects in photosynthesis or avian magnetic navigation.'}`
+          + `${circuitContext}${stateContext}${algoHint}`;
+      }
+    }
+
+    // ── 9. Ultimate Fallback ──────────────────────────────────
+    return `<strong>Ananta AI</strong> — answering: <em>"${qTrim.slice(0, 60)}${qTrim.length > 60 ? '...' : ''}"</em><br><br>` +
+      `I couldn't find a specific offline match for this query.${circuitContext}${stateContext}${algoHint}<br><br>` +
+      `<strong>Try asking about:</strong><ul class="chat-list">` +
+      `<li>Quantum topics: <em>superposition, entanglement, Grover's search, VQE, QAOA, error correction</em></li>` +
+      `<li>Research papers: <em>Feynman 1982, Google Supremacy, Shor's algorithm, NISQ</em></li>` +
+      `<li>Or connect a <strong>Gemini</strong>/<strong>OpenAI</strong> API key (⚙️) to ask absolutely anything!</li>` +
+      `</ul>`;
   }
+
+  // ─────────────────────────────────────────────────────────────
+  //  UI HELPERS
+  // ─────────────────────────────────────────────────────────────
 
   showTypingIndicator(targetHistory = this.chatHistory) {
     if (!targetHistory) targetHistory = this.inTabChatHistory || this.chatHistory;
     if (!targetHistory) return null;
-    const id = 'typing-' + Date.now();
+    const id          = 'typing-' + Date.now();
     const typingBubble = document.createElement('div');
     typingBubble.className = 'chat-bubble chat-ai chat-typing';
     typingBubble.id = id;
@@ -739,7 +874,7 @@ ${telemetry}${ragGrounding}`;
       <div class="chat-sender-label">Ananta Quantum Co-Pilot</div>
       <div class="typing-dots">
         <span></span><span></span><span></span>
-        <em class="typing-hint">Analyzing circuit telemetry & retrieving quantum literature...</em>
+        <em class="typing-hint">Analyzing circuit &amp; retrieving quantum knowledge...</em>
       </div>
     `;
     targetHistory.appendChild(typingBubble);
@@ -758,26 +893,68 @@ ${telemetry}${ragGrounding}`;
     if (!targetHistory) return;
     const msg = document.createElement('div');
     msg.className = `chat-bubble chat-${sender}`;
+    const label = sender === 'ai' ? 'Ananta Quantum Co-Pilot' : 'You';
     msg.innerHTML = `
-      <div class="chat-sender-label">${sender === 'ai' ? 'Ananta Quantum Co-Pilot' : 'You'}</div>
+      <div class="chat-sender-label">${label}</div>
       <div class="chat-text">${content}</div>
     `;
     targetHistory.appendChild(msg);
-    targetHistory.scrollTop = targetHistory.scrollHeight;
+    // Smooth scroll
+    targetHistory.scrollTo({ top: targetHistory.scrollHeight, behavior: 'smooth' });
   }
+
+  // ─────────────────────────────────────────────────────────────
+  //  MARKDOWN RENDERER — Full support
+  // ─────────────────────────────────────────────────────────────
 
   formatMarkdown(raw) {
     if (!raw) return '';
+
+    // Escape HTML first
     let out = raw
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\n\n/g, '<br><br>')
-      .replace(/\n- /g, '<br>• ')
-      .replace(/\n/g, '<br>');
+      .replace(/>/g, '&gt;');
+
+    // Fenced code blocks (``` ... ```)
+    out = out.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+      return `<pre class="chat-code-pre"><code class="lang-${lang || 'text'}">${code.trim()}</code></pre>`;
+    });
+
+    // Inline code
+    out = out.replace(/`([^`\n]+)`/g, '<code class="chat-inline-code">$1</code>');
+
+    // Headings
+    out = out.replace(/^### (.+)$/gm, '<h5 class="chat-h3">$1</h5>');
+    out = out.replace(/^## (.+)$/gm,  '<h4 class="chat-h2">$1</h4>');
+    out = out.replace(/^# (.+)$/gm,   '<h3 class="chat-h1">$1</h3>');
+
+    // Bold and italic
+    out = out.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+    out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    out = out.replace(/\*(.+?)\*/g,     '<em>$1</em>');
+    out = out.replace(/__(.+?)__/g,     '<strong>$1</strong>');
+    out = out.replace(/_(.+?)_/g,       '<em>$1</em>');
+
+    // Unordered lists
+    out = out.replace(/(?:^|\n)((?:\s*[-*+] .+(?:\n|$))+)/g, (_, block) => {
+      const items = block.trim().split('\n').map(l => `<li>${l.replace(/^\s*[-*+]\s+/, '')}</li>`).join('');
+      return `<ul class="chat-list">${items}</ul>`;
+    });
+
+    // Ordered lists
+    out = out.replace(/(?:^|\n)((?:\s*\d+\. .+(?:\n|$))+)/g, (_, block) => {
+      const items = block.trim().split('\n').map(l => `<li>${l.replace(/^\s*\d+\.\s+/, '')}</li>`).join('');
+      return `<ol class="chat-list">${items}</ol>`;
+    });
+
+    // Horizontal rules
+    out = out.replace(/^---+$/gm, '<hr class="chat-hr">');
+
+    // Line breaks
+    out = out.replace(/\n\n/g, '<br><br>');
+    out = out.replace(/\n/g,   '<br>');
+
     return out;
   }
 }

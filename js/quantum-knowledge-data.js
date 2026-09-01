@@ -804,6 +804,266 @@ const QUANTUM_TOPIC_DATABASE = [
     applications: ['Thermal budgeting and heat dissipation in ultra-dense cryo-CMOS quantum control chips', 'Single-ion and NV-center experimental quantum heat engines and micro-refrigerators', 'Thermodynamic efficiency bounds on quantum error correction and syndrome measurements', 'Fundamental physics testing the arrow of time and microscopic irreversibility'],
     preset: null,
     furtherReading: 'Landauer (1961) IBM J. Res. Dev. 5; Goold et al. (2016) J. Phys. A 49; Vinjanampathy & Anders (2016) Contemp. Phys. 57'
+  },
+
+  // ==========================================
+  // ALGORITHMS — EXTENDED
+  // ==========================================
+  {
+    keys: ['hhl', 'quantum linear systems', 'harrow hassidim lloyd', 'linear equations quantum'],
+    title: 'HHL Algorithm — Quantum Linear Systems',
+    category: 'Algorithms',
+    arxiv: 'arXiv:0811.3171',
+    definition: 'The Harrow-Hassidim-Lloyd (HHL) algorithm solves the linear system Ax = b for a sparse N×N Hermitian matrix A in O(log N · poly(κ, 1/ε)) time, achieving an exponential speedup over the best classical O(N·κ) methods, where κ is the condition number and ε is precision. The output is a quantum state |x⟩ proportional to the solution vector.',
+    math: 'Problem: Given A|x⟩ = |b⟩, find |x⟩ = A⁻¹|b⟩\n\nSteps:\n1. Encode |b⟩ into a quantum state\n2. Quantum Phase Estimation on A to get eigenvalues λⱼ\n3. Controlled rotation: |λⱼ⟩|b⟩ → |λⱼ⟩(√(1 - C²/λⱼ²)|0⟩ + (C/λⱼ)|1⟩)|b⟩\n4. Uncompute Phase Estimation\n5. Post-select on ancilla = |1⟩\n\nComplexity: O(log(N) · κ² / ε) vs classical O(N · κ)\nCondition: A must be s-sparse and efficiently row-computable',
+    intuition: 'HHL is like a quantum trick that inverts a huge matrix in log(N) steps instead of N steps. The catch: the output is a quantum state |x⟩, not classical numbers — so you can only efficiently extract certain properties of the solution, not all entries.',
+    applications: ['Quantum machine learning (least-squares fitting, SVM, recommendation systems)', 'Portfolio optimization in quantitative finance', 'Solving differential equations on quantum hardware', 'Computational fluid dynamics and FEM simulations'],
+    preset: null,
+    furtherReading: 'Harrow, Hassidim, Lloyd (2009) arXiv:0811.3171; Childs et al. (2017) SIAM J. Comput.'
+  },
+  {
+    keys: ['qaoa', 'quantum approximate optimization', 'farhi goldstone gutmann', 'variational optimization', 'max-cut'],
+    title: 'QAOA — Quantum Approximate Optimization Algorithm',
+    category: 'Variational Algorithms',
+    arxiv: 'arXiv:1411.4028',
+    definition: 'QAOA is a hybrid quantum-classical variational algorithm for combinatorial optimization, introduced by Farhi, Goldstone & Gutmann (2014). It prepares a parameterized quantum state |γ,β⟩ using p layers of alternating problem Hamiltonian U(C,γ) and mixing Hamiltonian U(B,β) operators, then classically optimizes parameters to maximize the expected cost ⟨C⟩.',
+    math: '|γ,β⟩ = U(B,βₚ) U(C,γₚ) ··· U(B,β₁) U(C,γ₁) |+⟩ⁿ\n\nWhere:\n  U(C,γ) = e^{-iγC} = ∏ e^{-iγCⱼ}   (Problem phase unitary)\n  U(B,β) = e^{-iβB} = ∏ e^{-iβXⱼ}   (Mixing unitary = Hadamard-like)\n  |+⟩ⁿ = H⊗ⁿ|0⟩ⁿ                     (Uniform superposition start)\n\nObjective: maximize F(γ,β) = ⟨γ,β|C|γ,β⟩\nFor p=1: provably achieves ≥ 0.6924 × OPT for MAX-CUT on 3-regular graphs',
+    intuition: 'Think of QAOA as teaching a quantum computer to solve puzzles by trial and error. The quantum state explores many solutions simultaneously, and a classical optimizer adjusts the "angles" (γ, β) to steer the quantum interference toward better answers.',
+    applications: ['MAX-CUT and graph partitioning problems', 'Portfolio optimization and scheduling', 'Satisfiability (3-SAT, MAX-3SAT) problems', 'Traffic flow optimization and logistics routing'],
+    preset: null,
+    furtherReading: 'Farhi, Goldstone, Gutmann (2014) arXiv:1411.4028; Hadfield et al. (2019) Algorithms 12(2)'
+  },
+  {
+    keys: ['bernstein vazirani', 'bernstein-vazirani', 'hidden linear function', 'bv algorithm'],
+    title: 'Bernstein-Vazirani Algorithm',
+    category: 'Algorithms',
+    arxiv: null,
+    definition: 'The Bernstein-Vazirani algorithm finds a hidden n-bit string s in a single query to an oracle f(x) = s·x (mod 2), compared to n classical queries. It demonstrates exponential quantum advantage in query complexity for this specific problem and is a conceptual stepping stone to Simon\'s algorithm and Shor\'s factoring.',
+    math: 'Problem: Find s ∈ {0,1}ⁿ given oracle O_f: |x⟩|y⟩ → |x⟩|y ⊕ f(x)⟩\n          where f(x) = s · x (mod 2) = s₀x₀ ⊕ s₁x₁ ⊕ ··· ⊕ sₙ₋₁xₙ₋₁\n\nCircuit:\n1. Prepare: H⊗ⁿ|0⟩ⁿ ⊗ H|1⟩  → |+⟩ⁿ ⊗ |−⟩\n2. Apply oracle O_f\n3. Apply H⊗ⁿ to first n qubits\n4. Measure → result is s exactly!\n\nClassical: n queries required\nQuantum: 1 query sufficient',
+    intuition: 'Imagine a lock with n tumblers where each tumbler responds to one bit of the secret key. Classically you must poke each tumbler one by one (n steps). Quantum parallelism lets you try ALL combinations simultaneously and read the whole secret from a single interference pattern.',
+    applications: ['Demonstrating quantum oracle advantage', 'Building block for Simon\'s and Shor\'s algorithms', 'Quantum cryptanalysis of linear Boolean functions', 'Testing quantum processor gate fidelity (simple benchmark circuit)'],
+    preset: 'superposition',
+    furtherReading: 'Bernstein & Vazirani (1997) SIAM J. Comput. 26(5); Nielsen & Chuang Ch. 1.4'
+  },
+  {
+    keys: ['simon algorithm', "simon's problem", 'hidden period', 'quantum period finding'],
+    title: "Simon's Algorithm — Hidden Subgroup & Period Finding",
+    category: 'Algorithms',
+    arxiv: null,
+    definition: "Simon's algorithm solves the hidden subgroup problem for the group Z₂ⁿ with exponential quantum speedup. Given f: {0,1}ⁿ → {0,1}ⁿ with f(x) = f(y) iff y = x⊕s for some hidden string s, Simon's algorithm finds s using O(n) quantum queries vs exponentially many classical queries. It directly inspired Shor's algorithm.",
+    math: "Steps:\n1. Start: |0⟩ⁿ|0⟩ⁿ\n2. Apply H⊗ⁿ to first register: (1/√2ⁿ)∑_x |x⟩|0⟩\n3. Apply U_f: (1/√2ⁿ)∑_x |x⟩|f(x)⟩\n4. Measure second register — collapse first to |x₀⟩ + |x₀⊕s⟩\n5. Apply H⊗ⁿ: state is uniform on {y : y·s = 0 mod 2}\n6. Measure → get y with y·s = 0\nRepeat n times, solve linear system → find s\n\nComplexity: O(n) quantum queries\nClassical lower bound: Ω(2^{n/2}) queries",
+    intuition: "Simon's problem is like finding a hidden symmetry in a function. The quantum computer creates a superposition that automatically 'resonates' with that symmetry, and repeated measurements reveal constraints on the secret string s from which we solve a classical linear algebra problem.",
+    applications: ['Direct conceptual precursor to Shor\'s factoring algorithm', 'Hidden subgroup problem framework for quantum speedups', 'Quantum cryptanalysis of certain symmetric ciphers', 'Theoretical complexity theory (BQP vs BPP separation'],
+    preset: null,
+    furtherReading: "Simon (1997) SIAM J. Comput. 26(5); Lomonaco & Kauffman (2000) SPIE 4047"
+  },
+  {
+    keys: ['amplitude amplification', 'amplitude estimation', 'quantum amplitude', 'qaa'],
+    title: 'Amplitude Amplification & Amplitude Estimation',
+    category: 'Algorithms',
+    arxiv: 'arXiv:quant-ph/0005055',
+    definition: 'Amplitude Amplification (AA) is a generalization of Grover\'s algorithm that amplifies the probability amplitude of a marked subset of quantum states using the Grover diffusion operator. Amplitude Estimation (AE) uses Quantum Phase Estimation on the Grover iterate G = -A S₀ A† S_χ to estimate the amplitude α = sin(θ) to precision O(1/M) using M oracle queries.',
+    math: 'Let A|0⟩ = √(1-a)|Ψ_bad⟩ + √a|Ψ_good⟩ for unknown amplitude √a\n\nGrover iterate: G = -A S₀ A† S_χ\n  S₀: reflection about |0⟩  (S₀ = I - 2|0⟩⟨0|)\n  S_χ: reflection about good states (S_χ = I - 2|Ψ_good⟩⟨Ψ_good|)\n\nAfter k iterations: amplitude of good state = sin((2k+1)θ)\n  where θ = arcsin(√a)\n\nAmplitude Estimation:\n  |ã⟩ = a ± O(√(a(1-a))/M + 1/M²)\n  Uses m ancilla qubits → precision 2π/2^m',
+    intuition: 'If you are searching for a needle in a haystack with 1-in-N probability, classical search needs ~N tries. Amplitude Amplification rotates the quantum state toward the solution quadratically faster: just √N oracle calls.',
+    applications: ['Monte Carlo financial option pricing with quantum speedup', 'Quantum counting (how many solutions exist?)', 'Subroutine in HHL, quantum walks, and many quantum algorithms', 'Risk analysis and derivative pricing on quantum hardware'],
+    preset: null,
+    furtherReading: 'Brassard, Høyer, Mosca, Tapp (2002) AMS Contemp. Math. 305; arXiv:quant-ph/0005055'
+  },
+
+  // ==========================================
+  // QUANTUM HARDWARE — EXTENDED
+  // ==========================================
+  {
+    keys: ['ion trap', 'trapped ion', 'ion qubit', 'hyperfine', 'motional mode', 'laser cooling'],
+    title: 'Trapped-Ion Quantum Computing',
+    category: 'Hardware',
+    arxiv: null,
+    definition: 'Trapped-ion quantum computers encode qubits in long-lived internal electronic states (hyperfine or optical) of laser-cooled atomic ions confined in electromagnetic Paul or Penning traps. Two-qubit gates (Mølmer-Sørensen, Cirac-Zoller) are mediated via shared motional (phonon) modes, enabling all-to-all qubit connectivity with gate fidelities exceeding 99.9%.',
+    math: 'Qubit states: |0⟩ = |↓⟩ (ground), |1⟩ = |↑⟩ (excited hyperfine)\nTransition frequency: ω_hf ~ 12.6 GHz (¹³³Cs) or ~1.25 GHz (⁹Be⁺)\n\nMølmer-Sørensen gate (XX interaction):\n  U_MS = exp(-i π/4 · σx⊗σx) achieves entangled Bell pair\n  Implemented via bichromatic laser fields with detuning δ from motional modes\n\nGate fidelities (2024 state-of-art):\n  Single-qubit: 99.999%+\n  Two-qubit (MS gate): 99.9%+\n  Measurement: 99.9%+\nCoherence times: T₂ > 10 minutes (optical clock qubits)',
+    intuition: 'Imagine atoms floating in space held by invisible electromagnetic springs, cooled to near absolute zero by laser beams. Their quantum states are extraordinarily stable because they\'re shielded from environmental noise. Two-qubit gates work by gently shaking one ion and letting the vibration propagate to its neighbor through the shared crystal structure.',
+    applications: ['IonQ, Quantinuum (H-series), Oxford Ionics commercial platforms', 'Quantum simulation of molecular energy spectra (chemistry)', 'Quantum error correction demonstrations (Quantinuum 2023)', 'Quantum networking over fiber with photon-mediated entanglement'],
+    preset: null,
+    furtherReading: 'Cirac & Zoller (1995) Phys. Rev. Lett. 74; Bruzewicz et al. (2019) Appl. Phys. Rev. 6'
+  },
+  {
+    keys: ['photonic quantum', 'photon qubit', 'linear optical', 'boson sampling', 'beam splitter', 'knill laflamme milburn'],
+    title: 'Photonic Quantum Computing',
+    category: 'Hardware',
+    arxiv: null,
+    definition: 'Photonic quantum computers use individual photons as qubits, encoded in polarization (H/V), path, time-bin, or continuous-variable quadratures. Linear optical elements (beam splitters, phase shifters) perform single-qubit gates. Two-qubit gates require either measurement-induced nonlinearity (KLM scheme), nonlinear media (e.g., EIT), or Gaussian boson sampling.',
+    math: 'Beam splitter unitary (50:50):\n  U_BS = (1/√2) [[1, i], [i, 1]]\n  Transforms: a†_in → (a†_1 + i·a†_2)/√2\n\nKLM (Knill-Laflamme-Milburn) scheme:\n  Probabilistic nonlinear sign gate: success prob = 1/4 per attempt\n  With teleportation boosting → scalable universal QC in principle\n\nGaussian Boson Sampling (Xanadu):\n  Input: squeezed vacuum states |r⟩\n  Circuit: random Haar-random interferometer\n  Output: click pattern from photon-number-resolving detectors\n  Sampling hard for classical computers (permanent of complex matrix)',
+    intuition: 'Photons are the ideal qubit — they travel at the speed of light, don\'t interact with their environment (no decoherence from heat), and can be entangled over long distances. The challenge: making two photons interact with each other is very hard, requiring clever tricks or probabilistic gates.',
+    applications: ['Xanadu (PsiQuantum) integrated photonic chips', 'Quantum key distribution over optical fiber', 'Boson sampling demonstration of quantum computational advantage (USTC 2020)', 'Quantum networks and long-distance quantum internet'],
+    preset: null,
+    furtherReading: 'Knill, Laflamme, Milburn (2001) Nature 409; Zhong et al. (2020) Science 370'
+  },
+  {
+    keys: ['neutral atom', 'rydberg atom', 'optical tweezer', 'atom array', 'rydberg blockade'],
+    title: 'Neutral Atom Quantum Computing (Rydberg Arrays)',
+    category: 'Hardware',
+    arxiv: null,
+    definition: 'Neutral atom quantum computers trap individual atoms in arrays of optical tweezers (focused laser beams). Qubits are encoded in ground-state hyperfine levels. Two-qubit gates exploit the Rydberg blockade: when one atom is excited to a high-n Rydberg state, a nearby atom is blockaded from excitation due to strong dipole-dipole interactions (range ~10 μm).',
+    math: 'Rydberg interaction energy:\n  V_dd = C₆ / R⁶   (van der Waals, dominant at large R)\n  V_dd = C₃ / R³   (dipole-dipole, resonant states)\n  For Rb Rydberg n=70: C₆ ≈ 860 GHz·μm⁶\n\nRydberg blockade condition: V_dd >> Ω_Rabi\n  Ensures only one atom excited at a time within blockade radius r_b\n  r_b = (C₆/Ω)^{1/6} ≈ 5-10 μm\n\nCZ gate via blockade:\n1. Rydberg π-pulse on control qubit (|1⟩ → |r⟩)\n2. 2π-pulse on target: blocked if control in |r⟩\n3. π-pulse returns control: |r⟩ → |1⟩\nResult: CZ gate with fidelity >99.5% (2023)',
+    intuition: 'Each atom sits in its own laser spotlight. When you excite one atom to a giant "Rydberg" state, it creates a force field that prevents any nearby atom from also being excited — the Rydberg blockade. This blockade is the two-qubit gate: one atom controls whether another can flip.',
+    applications: ['QuEra, Pasqal, Atom Computing commercial platforms', 'Quantum simulation of lattice gauge theories', 'Fault-tolerant logical qubit demonstrations (Harvard/MIT 2023)', '2D programmable quantum processors with >1000 physical qubits'],
+    preset: null,
+    furtherReading: 'Jaksch et al. (2000) Phys. Rev. Lett. 85; Saffman et al. (2010) Rev. Mod. Phys. 82'
+  },
+  {
+    keys: ['topological qubit', 'majorana fermion', 'topological quantum computation', 'anyons', 'non-abelian'],
+    title: 'Topological Quantum Computing & Majorana Fermions',
+    category: 'Hardware',
+    arxiv: 'arXiv:quant-ph/0306164',
+    definition: 'Topological quantum computing encodes quantum information in non-local topological degrees of freedom of anyonic quasiparticles, making the information inherently immune to local perturbations. Non-Abelian anyons (e.g., Majorana zero modes in topological superconductors) implement quantum gates by braiding world-lines, enabling intrinsically fault-tolerant computation.',
+    math: 'Majorana operators γᵢ satisfy: {γᵢ, γⱼ} = 2δᵢⱼ, γᵢ = γᵢ†\nFermionic qubit from pair (γ₁, γ₂): n = ½(1 + iγ₁γ₂) ∈ {0,1}\n\nBraiding matrix for non-Abelian anyons σᵢ:\n  σᵢ σᵢ₊₁ σᵢ = σᵢ₊₁ σᵢ σᵢ₊₁  (Yang-Baxter braid relation)\n  σᵢ acts on computational space as a unitary matrix\n\nFor Fibonacci anyons: braiding is computationally universal\nFor Ising anyons (Majorana): Clifford gates by braiding alone\n(T gate requires additional magic state distillation)\n\nTopological protection: gap Δ protects ground state\n  Error rate: e^{-Δ/T} (exponentially suppressed at T << Δ)',
+    intuition: 'Imagine writing information not on a single point, but woven into the global fabric of a material — like a knot in a rope. No local disturbance can "unknot" the information without acting on the entire system. This topological protection is the holy grail of quantum error correction.',
+    applications: ['Microsoft\'s quantum computing roadmap (topological qubits)', 'Intrinsically fault-tolerant logical qubits', 'Quantum simulation of topological phases of matter', 'Condensed matter physics: quantum spin liquids, fractional quantum Hall'],
+    preset: null,
+    furtherReading: 'Kitaev (2003) Ann. Phys. 303; Nayak et al. (2008) Rev. Mod. Phys. 80'
+  },
+  {
+    keys: ['josephson junction', 'cooper pair', 'superconducting qubit physics', 'transmon circuit qed'],
+    title: 'Josephson Junctions & Superconducting Qubit Physics',
+    category: 'Hardware',
+    arxiv: null,
+    definition: 'Superconducting qubits are macroscopic quantum circuits built from Josephson junctions — thin insulating barriers between two superconductors across which Cooper pairs tunnel coherently. The nonlinear inductance of the junction creates an anharmonic oscillator whose lowest two energy levels form the qubit. The transmon, charge qubit, and flux qubit are all variants of this architecture.',
+    math: 'Josephson junction equations:\n  I = Ic sin(φ)              (Josephson current)\n  V = (Φ₀/2π) dφ/dt        (Josephson voltage, Φ₀ = h/2e)\n\nTransmon Hamiltonian:\n  H = 4Ec(n - ng)² - Ej cos(φ)\n  Ec = e²/2C (charging energy), Ej = Ic·Φ₀/2π (Josephson energy)\n  Operating regime: Ej/Ec >> 1 → insensitive to charge noise\n\nQubit frequency: ωq ≈ √(8EcEj) - Ec\nAnharmonicity: α = E12 - E01 ≈ -Ec\n  Typical: ωq/2π ~ 5 GHz, α/2π ~ -300 MHz\nT1 (energy relaxation): 10 - 500 μs (state of art)\nT2 (dephasing): 1 - 300 μs',
+    intuition: 'A Josephson junction is a quantum switch the size of a few nanometers. When cooled to 15 millikelvin (colder than outer space), it becomes a tiny quantum harmonic oscillator, but one with unequal energy level spacings — that anharmonicity is what makes it a qubit rather than a boring oscillator.',
+    applications: ['IBM Quantum (Eagle, Osprey, Condor processors), Google Sycamore, Rigetti', 'Circuit QED architecture for qubit-microwave photon coupling', 'Quantum error correction with surface code on superconducting grids', 'Quantum sensing: SQUID magnetometers for brain imaging (MEG)'],
+    preset: null,
+    furtherReading: 'Koch et al. (2007) Phys. Rev. A 76 (transmon); Krantz et al. (2019) Appl. Phys. Rev. 6'
+  },
+
+  // ==========================================
+  // QUANTUM ERROR CORRECTION — EXTENDED
+  // ==========================================
+  {
+    keys: ['surface code', 'toric code', 'planar code', 'topological error correction', 'syndrome measurement'],
+    title: 'Surface Code — Leading Fault-Tolerant Architecture',
+    category: 'Error Correction',
+    arxiv: 'arXiv:quant-ph/9811052',
+    definition: 'The surface code (Kitaev 1997, Fowler et al. 2012) is a 2D topological quantum error correcting code defined on an L×L lattice of physical qubits. Logical qubits are encoded in the ground space of a local stabilizer Hamiltonian with vertex (X-type) and plaquette (Z-type) stabilizers. It has the highest known fault-tolerant threshold (~1%) and requires only nearest-neighbor gates, making it the leading architecture for large-scale quantum computers.',
+    math: 'Code parameters: [[L², (L-1)², d=L]]\n  n = L² physical qubits (data)\n  n-1 = (L-1)² ancilla qubits (syndrome)\n  Logical distance d = L (minimum weight logical operator)\n\nStabilizer generators:\n  A_v = ∏_{e∋v} σx_e   (vertex/star operators)\n  B_p = ∏_{e∈∂p} σz_e  (plaquette operators)\n  All commute: [A_v, B_p] = 0 ✓\n\nLogical operators:\n  X̄ = string of X across the lattice (left to right)\n  Z̄ = string of Z across the lattice (top to bottom)\n\nFault-tolerance threshold: p_th ≈ 0.7-1% (depolarizing noise)\nLogical error rate: p_L ≈ (p/p_th)^{(d+1)/2}  (exponential suppression)',
+    intuition: 'Imagine a checkerboard where every square and every corner is measured to detect errors. If a physical qubit flips, it shows up as two highlighted squares sharing that qubit. You can identify and fix errors as long as they don\'t form a chain stretching all the way across the board.',
+    applications: ['Google, IBM, Microsoft long-term fault-tolerant roadmaps', 'Logical qubit demonstrations on superconducting and trapped-ion hardware', 'Magic state distillation factories on surface code patches', 'Threshold theorem proof backbone for large-scale QC viability'],
+    preset: null,
+    furtherReading: 'Fowler, Martinis et al. (2012) Phys. Rev. A 86; Kitaev (2003) Ann. Phys.'
+  },
+  {
+    keys: ['shor code', 'shor 9 qubit', '9-qubit code', 'quantum error correction code shor'],
+    title: "Shor's 9-Qubit Error Correction Code",
+    category: 'Error Correction',
+    arxiv: null,
+    definition: "Peter Shor's 9-qubit code (1995) was the first quantum error correcting code, demonstrating that quantum information can be protected against arbitrary single-qubit errors. It concatenates a phase-flip code (|0⟩_L = |+++⟩, |1⟩_L = |---⟩) with a bit-flip code using 3 qubits each, resulting in [[9,1,3]] encoding that corrects any single-qubit error.",
+    math: '|0⟩_L = (1/2√2)(|000⟩ + |111⟩)⊗³\n|1⟩_L = (1/2√2)(|000⟩ - |111⟩)⊗³\n\nCode parameters: [[9, 1, 3]]\n  n=9 physical qubits, k=1 logical qubit, distance d=3\n  Corrects any 1 of 3 error types on 1 qubit:\n    - Bit flip (X error): detected by Z₁Z₂, Z₂Z₃ in each triplet\n    - Phase flip (Z error): detected by X₁X₂X₃X₄X₅X₆ and similar\n    - Combined Y error: caught by both\n\n8 stabilizer generators: Z₁Z₂, Z₂Z₃, Z₄Z₅, Z₅Z₆, Z₇Z₈, Z₈Z₉,\n  X₁X₂X₃X₄X₅X₆, X₄X₅X₆X₇X₈X₉',
+    intuition: "Shor's code is like storing information with triple redundancy in two orthogonal ways simultaneously. Three copies protect against bit-flips, and three copies of those triplets encoded with X gates protect against phase-flips. Any single error in the system leaves a detectable signature that uniquely identifies the error without revealing the logical information.",
+    applications: ['First proof-of-principle quantum error correction experiment', 'Pedagogical foundation for all CSS (Calderbank-Shor-Steane) codes', 'Blueprint for concatenated quantum codes', 'Experimental demonstrations on IBM Q (Ofek et al. 2016)'],
+    preset: null,
+    furtherReading: "Shor (1995) Phys. Rev. A 52; Nielsen & Chuang Ch. 10.1"
+  },
+  {
+    keys: ['steane code', 'steane 7 qubit', '7-qubit code', 'css code calderbank shor steane'],
+    title: "Steane 7-Qubit Code & CSS Codes",
+    category: 'Error Correction',
+    arxiv: null,
+    definition: 'The Steane [[7,1,3]] code (1996) encodes 1 logical qubit into 7 physical qubits using the classical Hamming [7,4,3] code for both X and Z stabilizers (CSS construction). It is the smallest CSS code with transversal CNOT, Hadamard (H), and phase (S) gates, enabling fault-tolerant Clifford operations without magic state distillation.',
+    math: 'Code parameters: [[7, 1, 3]] — corrects any single-qubit error\n\nX-stabilizers (from Hamming H-matrix):\n  g₁ = X₄X₅X₆X₇\n  g₂ = X₂X₃X₆X₇\n  g₃ = X₁X₃X₅X₇\n\nZ-stabilizers (same pattern):\n  g₄ = Z₄Z₅Z₆Z₇,  g₅ = Z₂Z₃Z₆Z₇,  g₆ = Z₁Z₃Z₅Z₇\n\nLogical operators:\n  X̄ = X₁X₂X₃X₄X₅X₆X₇  (weight 7)\n  Z̄ = Z₁Z₂Z₃Z₄Z₅Z₆Z₇  (weight 7)\n\nTransversal gates: H̄ = H⊗⁷, CNOT̄ = CNOT⊗⁷, S̄ = S⊗⁷ (Clifford complete)',
+    intuition: 'The Steane code cleverly uses the same parity-check structure for both X and Z errors, inheriting the beautiful symmetry of classical Hamming codes. Every logical gate in the Clifford group can be performed transversally — qubit by qubit — meaning a single fault cannot propagate into a logical error.',
+    applications: ['Fault-tolerant Clifford group computation', 'Concatenated Steane code for universal computation with magic states', 'Trapped-ion implementations (highest gate fidelity hardware)', 'Threshold analysis and concatenation proofs for fault tolerance'],
+    preset: null,
+    furtherReading: 'Steane (1996) Phys. Rev. Lett. 77; Calderbank & Shor (1996) Phys. Rev. A 54'
+  },
+  {
+    keys: ['magic state distillation', 'magic state', 'non-clifford', 't gate fault tolerant'],
+    title: 'Magic State Distillation & Non-Clifford Gates',
+    category: 'Error Correction',
+    arxiv: 'arXiv:quant-ph/0403025',
+    definition: 'Magic state distillation (Bravyi & Kitaev 2005) is the leading method to achieve universal fault-tolerant quantum computation when only Clifford gates are transversal. By injecting many noisy copies of a "magic state" |T⟩ = (|0⟩ + e^{iπ/4}|1⟩)/√2 and distilling them using Clifford circuits, one obtains high-fidelity magic states that implement the non-Clifford T gate via gate teleportation.',
+    math: 'Magic state: |T⟩ = T|+⟩ = (|0⟩ + e^{iπ/4}|1⟩)/√2\n  where T = [[1,0],[0,e^{iπ/4}]] (π/8 gate)\n\n15-to-1 distillation protocol:\n  Input: 15 noisy |T⟩ states with error rate p < 0.14\n  Output: 1 high-fidelity |T⟩ with error rate 35p³\n  Cost: 15 physical magic states per logical T gate\n\nGate teleportation circuit:\n1. Prepare magic state |T⟩\n2. Apply CNOT(|ψ⟩, |T⟩)\n3. Measure |ψ⟩ register in X basis\n4. Classically correct: T|ψ⟩ obtained (up to Clifford correction)\n\nOverhead estimate (surface code + distillation):\n  ~1000 physical qubits per logical T gate (current estimates)',
+    intuition: 'The Clifford group alone cannot be universal — you\'re missing the T gate. Magic states are the "fuel" that injects T gate capability into an otherwise Clifford-only fault-tolerant machine. Distillation purifies the fuel: start with many low-quality magic states and refine them into fewer high-quality ones, like refining crude oil.',
+    applications: ['Universal fault-tolerant quantum computing resource overhead estimates', 'IBM/Google T-gate budget calculations for algorithm compilation', 'Quantum resource theory and computational power of mixed states', 'Alternative approaches: code switching, color codes with transversal T'],
+    preset: null,
+    furtherReading: 'Bravyi & Kitaev (2005) Phys. Rev. A 71; Litinski (2019) Quantum 3:205'
+  },
+
+  // ==========================================
+  // QUANTUM INFORMATION — FOUNDATIONS
+  // ==========================================
+  {
+    keys: ['no cloning theorem', 'no-cloning', 'quantum cloning', 'wootters zurek'],
+    title: 'No-Cloning Theorem',
+    category: 'Quantum Information',
+    arxiv: null,
+    definition: 'The no-cloning theorem (Wootters & Zurek, 1982) proves that it is impossible to create a perfect identical copy of an arbitrary unknown quantum state. This is a fundamental consequence of the linearity of quantum mechanics and underpins the security of quantum cryptography.',
+    math: 'Assume a cloning unitary U exists such that:\n  U(|ψ⟩ ⊗ |0⟩) = |ψ⟩ ⊗ |ψ⟩  for all |ψ⟩\n\nProof by contradiction:\n  For |0⟩: U(|0⟩|0⟩) = |0⟩|0⟩\n  For |1⟩: U(|1⟩|0⟩) = |1⟩|1⟩\n  For |+⟩ = (|0⟩+|1⟩)/√2:\n    U(|+⟩|0⟩) = U((|0⟩+|1⟩)|0⟩)/√2\n              = (|00⟩ + |11⟩)/√2  [by linearity]\n    But |+⟩⊗|+⟩ = (|00⟩+|01⟩+|10⟩+|11⟩)/2\n    These are not equal → Contradiction! ✗\n\nConclusion: No such U can exist for all quantum states.',
+    intuition: 'You cannot perfectly photocopy a quantum state because measuring it disturbs it, and not measuring it leaves you without enough information to reproduce it. This is why quantum information is fundamentally different from classical: you cannot back up a qubit like a hard drive.',
+    applications: ['Security proof for BB84 quantum key distribution', 'Impossibility of quantum eavesdropping without detection', 'Quantum money and unforgeable quantum tokens', 'No-broadcasting theorem generalization to mixed states'],
+    preset: null,
+    furtherReading: 'Wootters & Zurek (1982) Nature 299; Dieks (1982) Phys. Lett. A 92'
+  },
+  {
+    keys: ['quantum teleportation', 'teleportation circuit', 'bennett brassard', 'teleport qubit'],
+    title: 'Quantum Teleportation Protocol',
+    category: 'Quantum Information',
+    arxiv: null,
+    definition: 'Quantum teleportation (Bennett et al. 1993) transfers an unknown quantum state |ψ⟩ from Alice to Bob using one pre-shared Bell pair and 2 classical bits of communication. The original state is destroyed at Alice\'s location and recreated at Bob\'s — no matter is transmitted, and no superluminal communication occurs.',
+    math: 'Protocol:\n  Resources: 1 EPR pair |Φ⁺⟩₂₃ = (|00⟩+|11⟩)/√2 shared (Alice has q2, Bob has q3)\n  Input: |ψ⟩₁ = α|0⟩ + β|1⟩ (Alice wants to send this)\n\nStep 1: Total state\n  |ψ⟩₁|Φ⁺⟩₂₃ = (α|0⟩+β|1⟩)(|00⟩+|11⟩)/√2\n\nStep 2: Alice applies CNOT(q1,q2) then H(q1)\n  = ½[|00⟩(α|0⟩+β|1⟩) + |01⟩(α|1⟩+β|0⟩) + |10⟩(α|0⟩-β|1⟩) + |11⟩(α|1⟩-β|0⟩)]\n\nStep 3: Alice measures q1,q2 → sends 2 classical bits (m₁,m₂)\nStep 4: Bob applies X^{m₂} Z^{m₁} to q3 → gets |ψ⟩ = α|0⟩ + β|1⟩ ✓\n\nClassical bits required: exactly 2 (enforces no-FTL signaling)',
+    intuition: 'Alice cannot send the qubit directly (no-cloning). Instead she uses a shared quantum "resource" (entanglement) plus a classical phone call to Bob. The entanglement acts like a perfect quantum fax machine: after the call, Bob\'s qubit becomes the exact quantum state Alice had, even though Alice never measured it and doesn\'t know what it is.',
+    applications: ['Quantum repeaters for long-distance quantum networks', 'Gate teleportation in fault-tolerant computing (T gate injection)', 'Satellite-based quantum communication (MICIUS satellite, China 2017)', 'Blind quantum computing protocols'],
+    preset: 'bell',
+    furtherReading: 'Bennett et al. (1993) Phys. Rev. Lett. 70; Pan et al. (1997) Nature 390'
+  },
+  {
+    keys: ['superdense coding', 'super dense coding', 'two classical bits one qubit', 'bennett wiesner'],
+    title: 'Superdense Coding',
+    category: 'Quantum Information',
+    arxiv: null,
+    definition: 'Superdense coding (Bennett & Wiesner, 1992) is the dual of quantum teleportation: it uses 1 pre-shared entangled qubit to transmit 2 classical bits of information by sending only 1 qubit. This doubles the classical capacity of a quantum channel, demonstrating that entanglement is a communications resource.',
+    math: 'Protocol (Alice sends 2 bits to Bob using 1 qubit):\n  Pre-shared Bell pair: |Φ⁺⟩ = (|00⟩+|11⟩)/√2 (Alice has q1, Bob has q2)\n\nAlice encodes 2 classical bits (a,b) by applying local gate to q1:\n  00 → I   → |Φ⁺⟩ = (|00⟩+|11⟩)/√2\n  01 → X   → |Ψ⁺⟩ = (|10⟩+|01⟩)/√2\n  10 → Z   → |Φ⁻⟩ = (|00⟩-|11⟩)/√2\n  11 → iY  → |Ψ⁻⟩ = (|10⟩-|01⟩)/√2\n\nAlice sends q1 to Bob (1 qubit sent over channel)\nBob performs Bell measurement → reads out (a,b) exactly\n\nCapacity: 2 classical bits per 1 qubit of channel use\n  (Holevo bound for classical: 1 bit/qubit without entanglement)',
+    intuition: 'Normally, 1 qubit carries at most 1 bit of classical information (Holevo bound). But if Alice and Bob already share a pair of entangled qubits, Alice\'s single qubit acts like a steering wheel for the Bell pair — she can steer it into four distinguishable states, each encoding 2 bits.',
+    applications: ['Quantum communication protocols and quantum channel capacity', 'Quantum cryptographic protocols beyond key distribution', 'Dense coding experiments (photons, NMR, ion traps)', 'Motivates entanglement as a physical resource'],
+    preset: 'bell',
+    furtherReading: 'Bennett & Wiesner (1992) Phys. Rev. Lett. 69; Nielsen & Chuang Ch. 2.3'
+  },
+  {
+    keys: ['bb84', 'quantum key distribution', 'qkd', 'e91', 'quantum cryptography', 'bennett brassard 1984'],
+    title: 'BB84 Quantum Key Distribution',
+    category: 'Quantum Cryptography',
+    arxiv: null,
+    definition: 'BB84 (Bennett & Brassard, 1984) is the first quantum key distribution (QKD) protocol. It allows two parties to establish a provably secure shared secret key, where any eavesdropping is detectable due to the no-cloning theorem and the disturbance caused by quantum measurement. Security is guaranteed by the laws of physics, not computational complexity.',
+    math: 'Protocol:\n1. Alice prepares random bits in random bases {Z={|0⟩,|1⟩}, X={|+⟩,|-⟩}}\n   Encoding: 0→|0⟩ or |+⟩, 1→|1⟩ or |-⟩\n2. Bob measures each qubit in randomly chosen basis Z or X\n3. Alice and Bob announce bases publicly (not values)\n4. Sift: keep only bits where bases matched (~50%)\n5. Check subset for errors → estimate QBER (error rate)\n   If QBER > 11%: abort (Eve present)\n   If QBER < 11%: apply privacy amplification → secure key\n\nSecurity:\n  Any measurement by Eve disturbs state (uncertainty principle)\n  QBER introduced by Eve: ~25% per qubit measured\n  Secure key rate: r = 1 - 2H(e) where e is error rate\n  Provably secure in information-theoretic sense (Mayers 1996)',
+    intuition: 'Alice sends polarized photons like secret messages in sealed envelopes. Eve, trying to intercept, must open each envelope to read it — but opening quantum envelopes inevitably disturbs the contents. Alice and Bob detect Eve\'s presence by comparing a sample of their results: if too many disagree, someone was listening.',
+    applications: ['Commercial QKD systems: ID Quantique, Toshiba, MagiQ Technologies', 'Quantum satellite links: China\'s MICIUS satellite QKD over 1200km', 'Financial institution and government secure communications', 'Quantum internet protocol layer: post-quantum security'],
+    preset: null,
+    furtherReading: 'Bennett & Brassard (1984) Proc. IEEE Intl. Conf.; Gisin et al. (2002) Rev. Mod. Phys. 74'
+  },
+
+  // ==========================================
+  // VARIATIONAL & NISQ
+  // ==========================================
+  {
+    keys: ['barren plateau', 'vanishing gradient', 'gradient vanishing vqc', 'trainability variational'],
+    title: 'Barren Plateaus in Variational Quantum Circuits',
+    category: 'Variational Algorithms',
+    arxiv: 'arXiv:1803.11173',
+    definition: 'Barren plateaus (McClean et al. 2018) are a fundamental trainability problem in variational quantum algorithms (VQAs): for random parameterized quantum circuits on n qubits, the variance of cost function gradients decreases exponentially in n, making optimization intractably slow on classical gradient-descent methods.',
+    math: 'For a parameterized circuit U(θ) and cost C(θ) = ⟨0|U†(θ)OU(θ)|0⟩:\n\nBarren plateau condition:\n  Var[∂C/∂θⱼ] ≤ F(n) · 2^{-n}  where F(n) is polynomial in n\n\nOrigin: For deep random circuits, U†(θ)OU(θ) concentrates on\n  the maximally mixed state: ⟨O⟩ → Tr(O)/2^n (exponentially small)\n\nTypes of barren plateaus:\n1. Random initialization: random circuits → global barren plateaus\n2. Global cost functions: e.g. Tr(ρU†OU) → gradients vanish for global O\n3. Noise-induced: decoherence creates effective barren plateaus\n4. Entanglement-induced: highly entangled states → barren plateaus\n\nMitigation strategies:\n  - Local cost functions (local Pauli measurements)\n  - Structured ansatz (QMPS, HEA with limited depth)\n  - Layer-by-layer training\n  - Quantum natural gradient (geometric optimization)',
+    intuition: 'Imagine trying to find the lowest valley in a landscape that becomes completely flat as it gets bigger — every direction looks equally uphill at random starting points. That\'s a barren plateau: the gradient signal disappears in quantum noise, and the optimizer has no direction to follow.',
+    applications: ['Fundamental limitation of VQE, QAOA, and quantum neural networks', 'Guides ansatz design for near-term quantum algorithms', 'Quantum machine learning trainability analysis', 'Motivates quantum natural gradient and structured initialization'],
+    preset: null,
+    furtherReading: 'McClean et al. (2018) Nat. Comms. 9:4812; Cerezo et al. (2021) Nat. Comms. 12:1791'
+  },
+  {
+    keys: ['stabilizer code', 'stabilizer formalism', 'pauli group', 'gottesman knill', 'clifford group'],
+    title: 'Stabilizer Formalism & Clifford Group',
+    category: 'Error Correction',
+    arxiv: null,
+    definition: 'The stabilizer formalism (Gottesman 1997) provides an efficient classical description of a class of quantum states called stabilizer states. The stabilizer group S of a state |ψ⟩ is an Abelian subgroup of the Pauli group Gₙ such that M|ψ⟩ = |ψ⟩ for all M ∈ S. The Clifford group is the normalizer of the Pauli group and maps stabilizer states to stabilizer states.',
+    math: 'Pauli group on n qubits:\n  Gₙ = {±1, ±i} × {I,X,Y,Z}⊗ⁿ  (4^n Hermitian elements)\n\nStabilizer state: |ψ⟩ stabilized by S = ⟨g₁,...,gₙ⟩\n  gᵢ|ψ⟩ = |ψ⟩ for all gᵢ ∈ S\n  Described by n commuting Pauli generators (n² bits of data)\n\nClifford group Cn: unitaries mapping Gₙ → Gₙ under conjugation\n  U ∈ Cn iff U gᵢ U† ∈ Gₙ for all gᵢ ∈ Gₙ\n  Generated by: H, S, CNOT\n\nGottesman-Knill theorem:\n  Any Clifford circuit (H, S, CNOT, Pauli measurements, Pauli prep)\n  on stabilizer states can be efficiently simulated in O(n²) time classically!\n\n→ T gate (non-Clifford) is what makes quantum computation hard to simulate.',
+    intuition: 'Stabilizer states are the quantum states that can be completely described by their symmetries rather than all their amplitudes. The Clifford group maps one symmetric state to another — efficiently trackable on a classical computer. Adding a T gate breaks this symmetry and is the source of genuine quantum computational power.',
+    applications: ['Efficient simulation of Clifford circuits (Google, IBM noise calibration)', 'Quantum error correction code design (all CSS/stabilizer codes)', 'Randomized benchmarking protocols for gate fidelity', 'Magic state distillation resource analysis'],
+    preset: null,
+    furtherReading: 'Gottesman (1997) PhD Thesis; Nielsen & Chuang Ch. 10.5; Aaronson & Gottesman (2004) Phys. Rev. A 70'
   }
 ];
 
