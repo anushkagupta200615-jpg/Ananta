@@ -4,3 +4,6 @@ Thumbs.db
 *.crt
 *.pem
 *.cer
+
+# Local API Keys and secrets
+js/config.js

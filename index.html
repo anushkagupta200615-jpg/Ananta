@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -41,7 +41,7 @@
         <!-- Learn Dropdown -->
         <div class="nav-dropdown-item">
           <a href="#overview" class="nav-item active" data-tab="overview">
-            Learn <span class="nav-caret">▾</span>
+            Learn <span class="nav-caret">â–¾</span>
           </a>
           <div class="nav-dropdown-menu">
             <a href="#overview" class="dropdown-link" data-tab="overview">What is quantum computing?</a>
@@ -54,7 +54,7 @@
         <!-- Hardware Dropdown -->
         <div class="nav-dropdown-item">
           <a href="#overview" class="nav-item" data-tab="overview" onclick="window.scrollToSection('mission-section'); return false;">
-            Hardware <span class="nav-caret">▾</span>
+            Hardware <span class="nav-caret">â–¾</span>
           </a>
           <div class="nav-dropdown-menu">
             <a href="#overview" class="dropdown-link" onclick="window.scrollToSection('mission-section')">Quantum Computer (Cryo-Array)</a>
@@ -66,7 +66,7 @@
         <!-- Software Dropdown -->
         <div class="nav-dropdown-item">
           <a href="#simulator" class="nav-item" data-tab="simulator">
-            Software <span class="nav-caret">▾</span>
+            Software <span class="nav-caret">â–¾</span>
           </a>
           <div class="nav-dropdown-menu">
             <a href="#simulator" class="dropdown-link" data-tab="simulator">Cirq Open Source Tools</a>
@@ -97,7 +97,7 @@
     <div class="nav-right">
       <!-- Theme Toggle (icon only on mobile) -->
       <button class="theme-switch-btn" id="btn-theme-toggle" title="Toggle Light / Dark Mode" onclick="window.toggleTheme()">
-        <span id="theme-toggle-icon">☀️</span>
+        <span id="theme-toggle-icon">â˜€ï¸</span>
         <span id="theme-toggle-text" class="theme-text-label">Light</span>
       </button>
 
@@ -124,16 +124,16 @@
   <nav class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation">
     <div class="mobile-nav-header">
       <span class="mobile-nav-title">Menu</span>
-      <button class="mobile-nav-close" onclick="window.closeMobileNav()">✕</button>
+      <button class="mobile-nav-close" onclick="window.closeMobileNav()">âœ•</button>
     </div>
-    <a href="#overview" class="mobile-nav-item" data-tab="overview" onclick="window.closeMobileNav()">🏠 Overview</a>
-    <a href="#simulator" class="mobile-nav-item" data-tab="simulator" onclick="window.closeMobileNav()">⚛️ Composer</a>
-    <a href="#algorithms" class="mobile-nav-item" data-tab="algorithms" onclick="window.closeMobileNav()">📐 Algorithms</a>
-    <a href="#research" class="mobile-nav-item" data-tab="research" onclick="window.closeMobileNav()">📚 Research</a>
-    <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">📄 Docs</a>
-    <a href="#intuition" class="mobile-nav-item" data-tab="intuition" onclick="window.closeMobileNav()">🔬 Intuition Lab</a>
-    <a href="#ai-assistant" class="mobile-nav-item" data-tab="ai-assistant" onclick="window.closeMobileNav()">🤖 AI Mentor</a>
-    <a href="#challenges" class="mobile-nav-item" data-tab="challenges" onclick="window.closeMobileNav()">🏆 Challenges</a>
+    <a href="#overview" class="mobile-nav-item" data-tab="overview" onclick="window.closeMobileNav()">ðŸ  Overview</a>
+    <a href="#simulator" class="mobile-nav-item" data-tab="simulator" onclick="window.closeMobileNav()">âš›ï¸ Composer</a>
+    <a href="#algorithms" class="mobile-nav-item" data-tab="algorithms" onclick="window.closeMobileNav()">ðŸ“ Algorithms</a>
+    <a href="#research" class="mobile-nav-item" data-tab="research" onclick="window.closeMobileNav()">ðŸ“š Research</a>
+    <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">ðŸ“„ Docs</a>
+    <a href="#intuition" class="mobile-nav-item" data-tab="intuition" onclick="window.closeMobileNav()">ðŸ”¬ Intuition Lab</a>
+    <a href="#ai-assistant" class="mobile-nav-item" data-tab="ai-assistant" onclick="window.closeMobileNav()">ðŸ¤– AI Mentor</a>
+    <a href="#challenges" class="mobile-nav-item" data-tab="challenges" onclick="window.closeMobileNav()">ðŸ† Challenges</a>
     <div class="mobile-nav-divider"></div>
     <!-- Mobile search bar -->
     <div class="mobile-nav-search" onclick="window.closeMobileNav(); window.focusKnowledgeEngineSearch();">
@@ -143,7 +143,7 @@
       <span style="font-size:13px;color:var(--text-dim)">Search quantum topics...</span>
     </div>
     <div class="mobile-nav-divider"></div>
-    <a href="#login" class="mobile-nav-item mobile-nav-signin" id="mobile-nav-signin-link" data-tab="login" onclick="window.closeMobileNav()">🔑 Sign In</a>
+    <a href="#login" class="mobile-nav-item mobile-nav-signin" id="mobile-nav-signin-link" data-tab="login" onclick="window.closeMobileNav()">ðŸ”‘ Sign In</a>
     <div id="mobile-nav-user-box" style="display: none;" class="mobile-nav-user-box">
       <span class="mobile-user-greeting" id="mobile-user-greeting">Signed in as User</span>
       <button class="mobile-nav-signout-btn" onclick="window.closeMobileNav(); window.logoutUser();">Sign Out</button>
@@ -214,7 +214,7 @@
               </p>
               <div class="featured-panel-actions">
                 <button class="btn-primary-action" onclick="window.switchTab('simulator')">
-                  Launch Quantum Composer ➔
+                  Launch Quantum Composer âž”
                 </button>
                 <button class="btn-secondary-action" onclick="window.switchTab('research')">
                   Explore Research Papers
@@ -288,8 +288,8 @@
                 <span class="roadmap-eyebrow">MILESTONE 2</span>
                 <h3 class="roadmap-card-title">Quantum error correction</h3>
                 <div class="roadmap-specs">
-                  <span>Physical Qubits: 10²</span>
-                  <span>Logical Qubit Error Rate: 10⁻²</span>
+                  <span>Physical Qubits: 10Â²</span>
+                  <span>Logical Qubit Error Rate: 10â»Â²</span>
                 </div>
                 <div class="roadmap-year-badge">2023</div>
               </div>
@@ -316,8 +316,8 @@
                 <span class="roadmap-eyebrow">MILESTONE 3</span>
                 <h3 class="roadmap-card-title">Building a long-lived logical qubit</h3>
                 <div class="roadmap-specs">
-                  <span>Physical Qubits: 10³</span>
-                  <span>Logical Qubit Error Rate: 10⁻⁴</span>
+                  <span>Physical Qubits: 10Â³</span>
+                  <span>Logical Qubit Error Rate: 10â»â´</span>
                 </div>
                 <div class="roadmap-year-badge">Current</div>
               </div>
@@ -342,8 +342,8 @@
                 <span class="roadmap-eyebrow">MILESTONE 4</span>
                 <h3 class="roadmap-card-title">Creating a logical gate</h3>
                 <div class="roadmap-specs">
-                  <span>Physical Qubits: 10⁴</span>
-                  <span>Logical Qubit Error Rate: 10⁻⁶</span>
+                  <span>Physical Qubits: 10â´</span>
+                  <span>Logical Qubit Error Rate: 10â»â¶</span>
                 </div>
                 <div class="roadmap-year-badge">Phase 4</div>
               </div>
@@ -368,8 +368,8 @@
                 <span class="roadmap-eyebrow">MILESTONE 5</span>
                 <h3 class="roadmap-card-title">Engineering scale up</h3>
                 <div class="roadmap-specs">
-                  <span>Physical Qubits: 10⁵</span>
-                  <span>Logical Qubit Error Rate: 10⁻⁶</span>
+                  <span>Physical Qubits: 10âµ</span>
+                  <span>Logical Qubit Error Rate: 10â»â¶</span>
                 </div>
                 <div class="roadmap-year-badge">Phase 5</div>
               </div>
@@ -393,8 +393,8 @@
                 <span class="roadmap-eyebrow">MILESTONE 6</span>
                 <h3 class="roadmap-card-title">Large error-corrected quantum computer</h3>
                 <div class="roadmap-specs">
-                  <span>Physical Qubits: 10⁶</span>
-                  <span>Logical Qubit Error Rate: 10⁻¹³</span>
+                  <span>Physical Qubits: 10â¶</span>
+                  <span>Logical Qubit Error Rate: 10â»Â¹Â³</span>
                 </div>
                 <div class="roadmap-year-badge">Goal</div>
               </div>
@@ -428,7 +428,7 @@
               </div>
               <div class="timeline-node" onclick="window.selectMilestone(6)">
                 <div class="node-bullet"></div>
-                <span class="node-label">10⁶ Qubits</span>
+                <span class="node-label">10â¶ Qubits</span>
               </div>
             </div>
           </div>
@@ -450,7 +450,7 @@
               <span class="gqai-card-eyebrow">HARDWARE MILESTONE</span>
               <h3 class="gqai-card-title">Willow QPU Architecture</h3>
               <p class="gqai-card-body">105 physical qubits operating at 15 millikelvin with real-time feedback. First experimental proof that scaling physical qubit counts decreases logical error rates exponentially.</p>
-              <a href="#simulator" class="gqai-card-link" onclick="window.switchTab('simulator')">Explore QPU Simulation →</a>
+              <a href="#simulator" class="gqai-card-link" onclick="window.switchTab('simulator')">Explore QPU Simulation â†’</a>
             </div>
           </div>
 
@@ -460,7 +460,7 @@
               <span class="gqai-card-eyebrow">OPEN-SOURCE CIRQ</span>
               <h3 class="gqai-card-title">Algorithmic Software Stack</h3>
               <p class="gqai-card-body">Write quantum algorithms with Cirq, Google's open-source library for NISQ architectures. Synthesize circuits, analyze Pauli expectations, and compile to physical pulses.</p>
-              <a href="#algorithms" class="gqai-card-link" onclick="window.switchTab('algorithms')">Explore Cirq Algorithms →</a>
+              <a href="#algorithms" class="gqai-card-link" onclick="window.switchTab('algorithms')">Explore Cirq Algorithms â†’</a>
             </div>
           </div>
 
@@ -470,7 +470,7 @@
               <span class="gqai-card-eyebrow">SCIENCE & NATURE PAPERS</span>
               <h3 class="gqai-card-title">Peer-Reviewed Archives</h3>
               <p class="gqai-card-body">Interactive reproductions of landmark publications including random circuit sampling, topological surface codes distance-5, and Hartree-Fock molecular electronic simulations.</p>
-              <a href="#research" class="gqai-card-link" onclick="window.switchTab('research')">Browse Research Papers →</a>
+              <a href="#research" class="gqai-card-link" onclick="window.switchTab('research')">Browse Research Papers â†’</a>
             </div>
           </div>
         </div>
@@ -490,9 +490,9 @@
             <div class="rishi-quote-box">
               <div class="rishi-tag-row" style="justify-content: center; margin-bottom: 6px;">
                 <span class="rishi-era-badge">6th Century BCE</span>
-                <span class="rishi-interactive-hint">✦ Interactive Quantum Energy: Move cursor or click</span>
+                <span class="rishi-interactive-hint">âœ¦ Interactive Quantum Energy: Move cursor or click</span>
               </div>
-              <div class="sanskrit-phrase">"सर्वं द्रव्यं परमाणु रूपम्"</div>
+              <div class="sanskrit-phrase">"à¤¸à¤°à¥à¤µà¤‚ à¤¦à¥à¤°à¤µà¥à¤¯à¤‚ à¤ªà¤°à¤®à¤¾à¤£à¥ à¤°à¥‚à¤ªà¤®à¥"</div>
               <div class="quote-attribution">
                 <strong>Maharshi Kanada: The Genesis of Atomic Theory</strong>
               </div>
@@ -562,7 +562,7 @@
                 </div>
 
                 <button type="submit" class="btn-email-submit" id="btn-submit-signin">
-                  Verify via Gmail OTP →
+                  Verify via Gmail OTP â†’
                 </button>
               </form>
 
@@ -582,7 +582,7 @@
                   <label for="signup-pass">Create Strong Password</label>
                   <div class="password-input-wrapper">
                     <input type="password" id="signup-pass" class="clean-input" placeholder="e.g. Quantum@2026#" required autocomplete="new-password" value="" oninput="window.checkPasswordStrength(this.value)">
-                    <button type="button" class="btn-toggle-pw" onclick="window.togglePasswordVisibility('signup-pass')">👁</button>
+                    <button type="button" class="btn-toggle-pw" onclick="window.togglePasswordVisibility('signup-pass')">ðŸ‘</button>
                   </div>
                   
                   <!-- Live Password Strength Meter -->
@@ -595,29 +595,29 @@
                       <strong id="strength-text" class="strength-text-weak">Weak</strong>
                     </div>
                     <div class="pw-criteria-list">
-                      <div class="pw-rule" id="rule-len">✕ At least 8 characters</div>
-                      <div class="pw-rule" id="rule-case">✕ Uppercase & lowercase letters</div>
-                      <div class="pw-rule" id="rule-num">✕ At least one number (0-9)</div>
-                      <div class="pw-rule" id="rule-sym">✕ Special character (!@#$%^&*)</div>
+                      <div class="pw-rule" id="rule-len">âœ• At least 8 characters</div>
+                      <div class="pw-rule" id="rule-case">âœ• Uppercase & lowercase letters</div>
+                      <div class="pw-rule" id="rule-num">âœ• At least one number (0-9)</div>
+                      <div class="pw-rule" id="rule-sym">âœ• Special character (!@#$%^&*)</div>
                     </div>
                   </div>
                 </div>
 
                 <button type="submit" class="btn-email-submit btn-signup-submit" id="btn-submit-signup">
-                  Verify & Send OTP to Gmail →
+                  Verify & Send OTP to Gmail â†’
                 </button>
               </form>
 
               <div class="auth-guest-footer">
                 <span>Just exploring?</span>
-                <button type="button" class="btn-link-guest" id="btn-guest-entry">Enter Simulator Directly →</button>
+                <button type="button" class="btn-link-guest" id="btn-guest-entry">Enter Simulator Directly â†’</button>
               </div>
             </div>
 
             <!-- STEP 2: GMAIL OTP VERIFICATION SCREEN -->
             <div id="auth-step-otp" style="display: none;" class="otp-verification-panel">
               <div class="otp-panel-header">
-                <div class="otp-icon-bubble">📩</div>
+                <div class="otp-icon-bubble">ðŸ“©</div>
                 <h3>Check your Gmail</h3>
                 <p class="otp-subtitle">We sent a 6-digit one-time verification code to:<br><strong id="otp-target-email" class="otp-highlight-email">your.email@example.com</strong></p>
               </div>
@@ -631,7 +631,7 @@
                   <span class="toast-subject">Your Studio Verification Code:</span>
                   <div class="toast-otp-display" id="toast-otp-code">------</div>
                 </div>
-                <button type="button" class="btn-quick-fill-otp" onclick="window.autoFillOtp()">⚡ Auto-fill Code</button>
+                <button type="button" class="btn-quick-fill-otp" onclick="window.autoFillOtp()">âš¡ Auto-fill Code</button>
               </div>
 
               <!-- 6-Digit OTP Input Grid -->
@@ -649,7 +649,7 @@
               </button>
 
               <div class="otp-actions-row">
-                <button type="button" class="btn-back-auth" onclick="window.cancelOtpFlow()">← Change Email</button>
+                <button type="button" class="btn-back-auth" onclick="window.cancelOtpFlow()">â† Change Email</button>
                 <button type="button" class="btn-resend-otp" id="btn-resend-otp" onclick="window.resendOtp()">Resend Code in <span id="resend-countdown">30s</span></button>
               </div>
             </div>
@@ -669,28 +669,28 @@
           <div class="ribbon-meta">
             <span class="file-name-label" id="circuit-filename-label">bell_state.qc</span>
             <div class="quick-tools">
-              <button class="tool-btn active-preset" onclick="window.loadPresetSafe('bell')" title="Bell State |Φ⁺⟩ = (|000⟩ + |110⟩)/√2: Maximally entangled bipartite quantum state">⚡ Bell State</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('ghz')" title="GHZ 3-Qubit State (|000⟩ + |111⟩)/√2: Tripartite entangled superposition">🔮 GHZ 3-Qubit</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('teleport')" title="Quantum Teleportation: Teleports an unknown qubit using an EPR channel and Bell measurement">📡 Teleportation</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('grover')" title="Grover Quantum Search: Quadratic speedup over classical unstructured search">🔍 Grover</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('vqe')" title="Variational Quantum Eigensolver: Molecular ground state energy for Hydrogen H2">⚛️ VQE (H₂)</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('chsh')" title="CHSH Bell Inequality Violation Test: Quantum non-locality proof with S = 2.828 > 2">📐 CHSH Test</button>
-              <button class="tool-btn" onclick="window.loadPresetSafe('qft')" title="Quantum Fourier Transform: Backbone of Shor's and phase estimation algorithms">🌊 QFT</button>
+              <button class="tool-btn active-preset" onclick="window.loadPresetSafe('bell')" title="Bell State |Î¦âºâŸ© = (|000âŸ© + |110âŸ©)/âˆš2: Maximally entangled bipartite quantum state">âš¡ Bell State</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('ghz')" title="GHZ 3-Qubit State (|000âŸ© + |111âŸ©)/âˆš2: Tripartite entangled superposition">ðŸ”® GHZ 3-Qubit</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('teleport')" title="Quantum Teleportation: Teleports an unknown qubit using an EPR channel and Bell measurement">ðŸ“¡ Teleportation</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('grover')" title="Grover Quantum Search: Quadratic speedup over classical unstructured search">ðŸ” Grover</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('vqe')" title="Variational Quantum Eigensolver: Molecular ground state energy for Hydrogen H2">âš›ï¸ VQE (Hâ‚‚)</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('chsh')" title="CHSH Bell Inequality Violation Test: Quantum non-locality proof with S = 2.828 > 2">ðŸ“ CHSH Test</button>
+              <button class="tool-btn" onclick="window.loadPresetSafe('qft')" title="Quantum Fourier Transform: Backbone of Shor's and phase estimation algorithms">ðŸŒŠ QFT</button>
             </div>
           </div>
 
           <div class="ribbon-actions">
             <button class="tool-drawer-btn" id="btn-toggle-ke-drawer" onclick="window.toggleKnowledgeEngineDrawer()" title="Toggle IIT/IISc Research Knowledge Assistant (Press /)">
-              🔬 Knowledge Engine ▾
+              ðŸ”¬ Knowledge Engine â–¾
             </button>
             <button class="tool-drawer-btn" id="btn-toggle-hw-drawer" onclick="window.toggleHardwareLabDrawer()" title="Toggle Physical QPU Noise and Microwave Pulse Lab">
-              ⚙️ QPU Noise Lab ▾
+              âš™ï¸ QPU Noise Lab â–¾
             </button>
-            <button class="tool-btn btn-reset-circ" id="btn-clear-circ" title="Reset all qubit registers to ground state |000⟩">
+            <button class="tool-btn btn-reset-circ" id="btn-clear-circ" title="Reset all qubit registers to ground state |000âŸ©">
               Reset
             </button>
-            <button class="btn-run-calc" id="btn-run-calc" onclick="window.circuitUI.runInteractiveSimulation()" title="Execute unitary propagation and compute the full statevector |ψ⟩">
-              Run Simulation ⚡
+            <button class="btn-run-calc" id="btn-run-calc" onclick="window.circuitUI.runInteractiveSimulation()" title="Execute unitary propagation and compute the full statevector |ÏˆâŸ©">
+              Run Simulation âš¡
             </button>
           </div>
         </div>
@@ -698,22 +698,22 @@
         <!-- In-Simulator Active Challenge HUD Banner -->
         <div class="composer-challenge-hud" id="composer-challenge-hud" style="display: none;">
           <div class="hud-left-meta">
-            <span class="hud-trophy-icon">🎯</span>
+            <span class="hud-trophy-icon">ðŸŽ¯</span>
             <div class="hud-info">
               <strong id="hud-challenge-title">Active Challenge: The Quantum Coin Flip</strong>
               <div class="hud-target-wrap">
                 <span class="hud-target-label">Target:</span>
-                <code id="hud-challenge-target" class="hud-target-code">|ψ⟩ = (|000⟩ + |100⟩) / √2</code>
+                <code id="hud-challenge-target" class="hud-target-code">|ÏˆâŸ© = (|000âŸ© + |100âŸ©) / âˆš2</code>
               </div>
             </div>
           </div>
           <div class="hud-actions-right">
             <span class="hud-badge hud-badge-pending" id="hud-challenge-status">In Progress</span>
             <button class="btn-hud-check" onclick="if(window.missionManager && window.circuitUI) { const probs = window.circuitUI.engine.getProbabilities(); window.missionManager.evaluate(window.circuitUI.grid, probs); }">
-              Verify Circuit 🔍
+              Verify Circuit ðŸ”
             </button>
             <button class="btn-hud-return" onclick="if(window.switchView) window.switchView('challenges');">
-              Puzzle Arena →
+              Puzzle Arena â†’
             </button>
           </div>
         </div>
@@ -723,19 +723,19 @@
           <div class="knowledge-engine-bar" id="knowledge-engine-bar">
             <div class="ke-header">
               <div class="ke-title-group">
-                <span class="ke-icon">🔬</span>
+                <span class="ke-icon">ðŸ”¬</span>
                 <div>
                   <h3 class="ke-title">Quantum Knowledge Engine (IIT & IISc Curriculum)</h3>
                   <p class="ke-subtitle">Formal mathematical definitions, physical intuition, and research applications for advanced learners</p>
                 </div>
               </div>
-              <button class="ke-collapse-btn" onclick="window.toggleKnowledgeEngineDrawer()" title="Close Drawer">✕ Close</button>
+              <button class="ke-collapse-btn" onclick="window.toggleKnowledgeEngineDrawer()" title="Close Drawer">âœ• Close</button>
             </div>
             <div class="ke-search-row">
               <div class="ke-input-wrapper">
-                <span class="ke-search-icon">⌕</span>
+                <span class="ke-search-icon">âŒ•</span>
                 <input type="text" id="ke-search-input" class="ke-search-input" placeholder="Type any topic: VQE, phase kickback, Shor's algorithm, surface codes, decoherence..." autocomplete="off" />
-                <button class="ke-search-btn" id="btn-ke-search">Explain ↗</button>
+                <button class="ke-search-btn" id="btn-ke-search">Explain â†—</button>
               </div>
               <div class="ke-quick-chips">
                 <span class="ke-chips-label">Quick topics:</span>
@@ -763,10 +763,10 @@
           <div class="hardware-control-panel">
             <div class="hw-panel-header">
               <div class="hw-title-box">
-                <span class="hw-badge">🔬 QPU Hardware & Noise Engineering Lab</span>
+                <span class="hw-badge">ðŸ”¬ QPU Hardware & Noise Engineering Lab</span>
                 <h3>Physical Error Models & Microwave Pulse Dynamics</h3>
               </div>
-              <button class="ke-collapse-btn" onclick="window.toggleHardwareLabDrawer()" title="Close Drawer">✕ Close</button>
+              <button class="ke-collapse-btn" onclick="window.toggleHardwareLabDrawer()" title="Close Drawer">âœ• Close</button>
             </div>
             <div class="hw-lab-grid">
               <!-- 1. Noise & Decoherence Lab -->
@@ -785,21 +785,21 @@
                   </div>
                   <div class="noise-slider-item">
                     <div class="noise-slider-labels">
-                      <span>T₁ Longitudinal Relaxation (Energy Decay):</span>
-                      <strong id="val-t1">50 µs</strong>
+                      <span>Tâ‚ Longitudinal Relaxation (Energy Decay):</span>
+                      <strong id="val-t1">50 Âµs</strong>
                     </div>
                     <input type="range" id="slider-t1" min="10" max="150" value="50" class="hw-range" />
                   </div>
                   <div class="noise-slider-item">
                     <div class="noise-slider-labels">
-                      <span>T₂ Transverse Dephasing (Phase Coherence Loss):</span>
-                      <strong id="val-t2">30 µs</strong>
+                      <span>Tâ‚‚ Transverse Dephasing (Phase Coherence Loss):</span>
+                      <strong id="val-t2">30 Âµs</strong>
                     </div>
                     <input type="range" id="slider-t2" min="5" max="100" value="30" class="hw-range" />
                   </div>
                   <div class="noise-slider-item">
                     <div class="noise-slider-labels">
-                      <span>Gate Depolarizing Error Rate ε:</span>
+                      <span>Gate Depolarizing Error Rate Îµ:</span>
                       <strong id="val-gate-error">0.8%</strong>
                     </div>
                     <input type="range" id="slider-gate-error" min="0.1" max="4.0" step="0.1" value="0.8" class="hw-range" />
@@ -807,21 +807,21 @@
                 </div>
                 <div class="hw-metrics-row">
                   <div class="hw-gauge-box">
-                    <span class="gauge-name">State Fidelity F = |⟨ψ_ideal|ψ_noisy⟩|²:</span>
+                    <span class="gauge-name">State Fidelity F = |âŸ¨Ïˆ_ideal|Ïˆ_noisyâŸ©|Â²:</span>
                     <strong id="hardware-fidelity-val">100.0%</strong>
                     <div class="gauge-track">
                       <div id="hardware-fidelity-bar" class="gauge-bar" style="width: 100%;"></div>
                     </div>
                   </div>
                   <div class="purity-box">
-                    <span id="hardware-purity-val">Tr(ρ²) = 1.000</span>
+                    <span id="hardware-purity-val">Tr(ÏÂ²) = 1.000</span>
                   </div>
                 </div>
                 <div id="hardware-noise-note" class="hw-note-text">
                   <span style="color:#8ab4f8;">Ideal Noiseless Mode:</span> F = 1.000 (perfect unitary evolution, no decoherence channels active).
                 </div>
                 <button id="btn-apply-decoupling" class="btn-decoupling-action">
-                  Apply Dynamical Decoupling (DD Sequence) 🛡️
+                  Apply Dynamical Decoupling (DD Sequence) ðŸ›¡ï¸
                 </button>
               </div>
 
@@ -834,7 +834,7 @@
                 <div class="pulse-chips-row">
                   <span class="chips-hint">Select Gate:</span>
                   <button class="pulse-gate-select-btn active" data-gate="H">H (Y/2)</button>
-                  <button class="pulse-gate-select-btn" data-gate="X">X (π-pulse)</button>
+                  <button class="pulse-gate-select-btn" data-gate="X">X (Ï€-pulse)</button>
                   <button class="pulse-gate-select-btn" data-gate="Z">Z (Virtual)</button>
                   <button class="pulse-gate-select-btn" data-gate="CX">CX (Cross-Resonance)</button>
                 </div>
@@ -865,7 +865,7 @@
 
         <!-- Quick Hint Bar -->
         <div class="sim-quick-hint-strip">
-          <span>💡 <strong>Quick Start:</strong> Click any gate on the left palette to arm, then click wire slots on <code>q[0]</code>, <code>q[1]</code>, or <code>q[2]</code>. Multi-qubit gates auto-link.</span>
+          <span>ðŸ’¡ <strong>Quick Start:</strong> Click any gate on the left palette to arm, then click wire slots on <code>q[0]</code>, <code>q[1]</code>, or <code>q[2]</code>. Multi-qubit gates auto-link.</span>
         </div>
 
         <!-- Two Column Editor: Gate Palette + Circuit Canvas -->
@@ -879,15 +879,15 @@
             </div>
 
             <div class="operations-grid">
-              <button class="gate-btn btn-coral" draggable="true" data-gate="H" title="Hadamard (H): H = (1/√2)[[1,1],[1,-1]]. Maps |0⟩→|+⟩ and |1⟩→|−⟩. Creates equal superposition.">
+              <button class="gate-btn btn-coral" draggable="true" data-gate="H" title="Hadamard (H): H = (1/âˆš2)[[1,1],[1,-1]]. Maps |0âŸ©â†’|+âŸ© and |1âŸ©â†’|âˆ’âŸ©. Creates equal superposition.">
                 <span class="gate-key">H</span>
                 <span class="gate-label">Hadamard</span>
               </button>
-              <button class="gate-btn btn-blue" draggable="true" data-gate="CX" title="CNOT (CX): Controlled-X gate. Flips target qubit if control is |1⟩. Creates entanglement.">
-                <span class="gate-key">⊕</span>
+              <button class="gate-btn btn-blue" draggable="true" data-gate="CX" title="CNOT (CX): Controlled-X gate. Flips target qubit if control is |1âŸ©. Creates entanglement.">
+                <span class="gate-key">âŠ•</span>
                 <span class="gate-label">CNOT</span>
               </button>
-              <button class="gate-btn btn-crimson" draggable="true" data-gate="X" title="Pauli-X: Quantum bit-flip. X = [[0,1],[1,0]]. Maps |0⟩→|1⟩ and |1⟩→|0⟩.">
+              <button class="gate-btn btn-crimson" draggable="true" data-gate="X" title="Pauli-X: Quantum bit-flip. X = [[0,1],[1,0]]. Maps |0âŸ©â†’|1âŸ© and |1âŸ©â†’|0âŸ©.">
                 <span class="gate-key">X</span>
                 <span class="gate-label">Pauli-X</span>
               </button>
@@ -895,42 +895,42 @@
                 <span class="gate-key">Y</span>
                 <span class="gate-label">Pauli-Y</span>
               </button>
-              <button class="gate-btn btn-purple" draggable="true" data-gate="Z" title="Pauli-Z: Phase flip gate. Z = diag(1,-1). Maps |+⟩→|−⟩. Leaves |0⟩ unchanged, flips phase of |1⟩.">
+              <button class="gate-btn btn-purple" draggable="true" data-gate="Z" title="Pauli-Z: Phase flip gate. Z = diag(1,-1). Maps |+âŸ©â†’|âˆ’âŸ©. Leaves |0âŸ© unchanged, flips phase of |1âŸ©.">
                 <span class="gate-key">Z</span>
                 <span class="gate-label">Pauli-Z</span>
               </button>
-              <button class="gate-btn btn-cyan" draggable="true" data-gate="S" title="Phase S gate: S = diag(1, i). Applies π/2 phase shift to |1⟩. Used in QFT and stabilizer circuits.">
+              <button class="gate-btn btn-cyan" draggable="true" data-gate="S" title="Phase S gate: S = diag(1, i). Applies Ï€/2 phase shift to |1âŸ©. Used in QFT and stabilizer circuits.">
                 <span class="gate-key">S</span>
                 <span class="gate-label">Phase S</span>
               </button>
-              <button class="gate-btn btn-sky" draggable="true" data-gate="T" title="T gate: T = diag(1, e^(iπ/4)). Applies π/4 phase shift to |1⟩. Non-Clifford universal gate.">
+              <button class="gate-btn btn-sky" draggable="true" data-gate="T" title="T gate: T = diag(1, e^(iÏ€/4)). Applies Ï€/4 phase shift to |1âŸ©. Non-Clifford universal gate.">
                 <span class="gate-key">T</span>
                 <span class="gate-label">T Gate</span>
               </button>
               <button class="gate-btn btn-slate" draggable="true" data-gate="M" title="Projective Measurement: Collapses quantum superposition into classical bit via Born rule.">
-                <span class="gate-key">∿</span>
+                <span class="gate-key">âˆ¿</span>
                 <span class="gate-label">Measure</span>
               </button>
             </div>
 
             <!-- Gate Info Hint Bar -->
             <div class="palette-hint-bar" id="palette-hint-bar">
-              <span id="palette-hint-text">💡 Click a gate above, then click a qubit wire slot to place.</span>
+              <span id="palette-hint-text">ðŸ’¡ Click a gate above, then click a qubit wire slot to place.</span>
             </div>
 
             <!-- Pauli Expectation Value Gauges -->
             <div class="pauli-gauges-panel" id="pauli-gauges-panel">
               <div class="pauli-gauges-header">
                 <span class="pauli-gauges-title">Pauli Observables</span>
-                <span class="pauli-gauges-sub">Per-qubit ⟨Z⟩, ⟨X⟩, ⟨Y⟩</span>
+                <span class="pauli-gauges-sub">Per-qubit âŸ¨ZâŸ©, âŸ¨XâŸ©, âŸ¨YâŸ©</span>
               </div>
               <div class="pauli-gauges-grid" id="pauli-gauges-grid">
                 <!-- Rendered by JS -->
               </div>
               <div class="pauli-legend">
-                <span class="pauli-legend-item"><span class="pl-dot pl-z"></span>⟨Z⟩ = P(0) - P(1)</span>
-                <span class="pauli-legend-item"><span class="pl-dot pl-x"></span>⟨X⟩ Coherence (Re)</span>
-                <span class="pauli-legend-item"><span class="pl-dot pl-y"></span>⟨Y⟩ Coherence (Im)</span>
+                <span class="pauli-legend-item"><span class="pl-dot pl-z"></span>âŸ¨ZâŸ© = P(0) - P(1)</span>
+                <span class="pauli-legend-item"><span class="pl-dot pl-x"></span>âŸ¨XâŸ© Coherence (Re)</span>
+                <span class="pauli-legend-item"><span class="pl-dot pl-y"></span>âŸ¨YâŸ© Coherence (Im)</span>
               </div>
             </div>
 
@@ -946,15 +946,15 @@
             <div id="guided-algo-tour-bar" class="guided-algo-tour-bar" style="display: none;">
               <div class="tour-header-row">
                 <div class="tour-meta">
-                  <span class="tour-badge">🎓 Guided Algorithm Tour</span>
+                  <span class="tour-badge">ðŸŽ“ Guided Algorithm Tour</span>
                   <strong id="tour-algo-title" class="tour-algo-title">Algorithm Walkthrough</strong>
                   <span id="tour-step-badge" class="tour-step-badge">Step 1 of 2</span>
                 </div>
                 <div class="tour-nav-actions">
-                  <button id="btn-tour-prev" class="tour-nav-btn">◀ Previous</button>
-                  <button id="btn-tour-next" class="tour-nav-btn tour-primary">Next Step ▶</button>
-                  <button id="btn-tour-auto" class="tour-nav-btn">Auto-Play ⏩</button>
-                  <button id="btn-tour-exit" class="tour-exit-btn" title="Close Tour">✕</button>
+                  <button id="btn-tour-prev" class="tour-nav-btn">â—€ Previous</button>
+                  <button id="btn-tour-next" class="tour-nav-btn tour-primary">Next Step â–¶</button>
+                  <button id="btn-tour-auto" class="tour-nav-btn">Auto-Play â©</button>
+                  <button id="btn-tour-exit" class="tour-exit-btn" title="Close Tour">âœ•</button>
                 </div>
               </div>
               <p id="tour-explanation-text" class="tour-explanation-text">
@@ -965,15 +965,15 @@
             <!-- Stepper Playback (Quantum Time Machine) -->
             <div class="circuit-stepper-bar">
               <div class="stepper-controls-group">
-                <button id="btn-step-start" class="step-btn" title="Reset to Initial Ground State |000⟩">⏮</button>
-                <button id="btn-step-prev" class="step-btn" title="Propagate Backward One Gate">◀</button>
-                <button id="btn-step-play" class="step-btn step-btn-play" title="Auto-Play Unitary Evolution">▶ Play</button>
-                <button id="btn-step-next" class="step-btn" title="Propagate Forward One Gate">▶</button>
-                <button id="btn-step-end" class="step-btn" title="Jump to Full Circuit Output">⏭</button>
+                <button id="btn-step-start" class="step-btn" title="Reset to Initial Ground State |000âŸ©">â®</button>
+                <button id="btn-step-prev" class="step-btn" title="Propagate Backward One Gate">â—€</button>
+                <button id="btn-step-play" class="step-btn step-btn-play" title="Auto-Play Unitary Evolution">â–¶ Play</button>
+                <button id="btn-step-next" class="step-btn" title="Propagate Forward One Gate">â–¶</button>
+                <button id="btn-step-end" class="step-btn" title="Jump to Full Circuit Output">â­</button>
               </div>
               <div class="stepper-info-group">
                 <span id="step-counter-display" class="step-counter-label"><strong>Full Circuit Output</strong> (Step 6 of 6)</span>
-                <span id="entanglement-status-indicator" class="entanglement-badge" style="display: none;">⚡ Entangled Bell State Detected</span>
+                <span id="entanglement-status-indicator" class="entanglement-badge" style="display: none;">âš¡ Entangled Bell State Detected</span>
               </div>
             </div>
 
@@ -996,14 +996,14 @@
         <!-- Live Dirac Bra-Ket HUD -->
         <div class="dirac-math-strip">
           <div class="dirac-hud-left">
-            <span class="dirac-hud-tag">Live Statevector |ψ⟩</span>
-            <code id="dirac-math-hud" class="dirac-math-code">|ψ⟩ = 1.00 |000⟩</code>
+            <span class="dirac-hud-tag">Live Statevector |ÏˆâŸ©</span>
+            <code id="dirac-math-hud" class="dirac-math-code">|ÏˆâŸ© = 1.00 |000âŸ©</code>
           </div>
           <div class="dirac-hud-right">
             <button id="btn-toggle-quantum-audio" class="btn-audio-harmony" title="Synthesize quantum state into a harmonic soundscape via quantum audio mapping">
-              <span id="audio-btn-icon">🔊</span> Sonify State
+              <span id="audio-btn-icon">ðŸ”Š</span> Sonify State
             </button>
-            <span class="dirac-hud-hint">Normalized superposition across 2³ = 8 computational basis states</span>
+            <span class="dirac-hud-hint">Normalized superposition across 2Â³ = 8 computational basis states</span>
           </div>
         </div>
 
@@ -1012,19 +1012,19 @@
           <!-- Deck Navigation Tabs -->
           <div class="analytics-deck-tabs" role="tablist">
             <button class="analytics-deck-tab active" data-deck-tab="statevector" role="tab">
-              📊 Statevector & Probabilities
+              ðŸ“Š Statevector & Probabilities
             </button>
             <button class="analytics-deck-tab" data-deck-tab="bloch" role="tab">
-              🌐 3D Bloch Sphere
+              ðŸŒ 3D Bloch Sphere
             </button>
             <button class="analytics-deck-tab" data-deck-tab="unitary" role="tab">
-              🧮 Unitary Matrix U_total & Derivations
+              ðŸ§® Unitary Matrix U_total & Derivations
             </button>
             <button class="analytics-deck-tab" data-deck-tab="entanglement" role="tab">
-              🔬 Entanglement & Purity Lab
+              ðŸ”¬ Entanglement & Purity Lab
             </button>
             <button class="analytics-deck-tab" data-deck-tab="export" role="tab">
-              💻 Framework Code Export
+              ðŸ’» Framework Code Export
             </button>
           </div>
 
@@ -1035,7 +1035,7 @@
               <div class="analytics-sub-card">
                 <div class="vis-dock-header">
                   <h4>Amplitude Spectrum & Phase Portrait</h4>
-                  <span class="vis-dock-sub">Born probability |cᵢ|² and complex phase angle φᵢ</span>
+                  <span class="vis-dock-sub">Born probability |cáµ¢|Â² and complex phase angle Ï†áµ¢</span>
                 </div>
                 <div class="probability-bars-container" id="probability-bars"></div>
               </div>
@@ -1044,7 +1044,7 @@
               <div class="analytics-sub-card">
                 <div class="vis-dock-header">
                   <h4>Monte Carlo Measurement Engine (1024 Shots)</h4>
-                  <button id="btn-run-shots" class="btn-run-shots">Sample 1024 Shots 🎲</button>
+                  <button id="btn-run-shots" class="btn-run-shots">Sample 1024 Shots ðŸŽ²</button>
                 </div>
                 <div id="shots-results-container" class="shots-results-box">
                   <div class="shots-empty-prompt">
@@ -1084,8 +1084,8 @@
               <!-- Left: Unitary Matrix Inspector -->
               <div class="analytics-sub-card">
                 <div class="vis-dock-header">
-                  <h4>Full Unitary Operator Matrix (U_total = ∏ Uₖ)</h4>
-                  <span class="vis-dock-sub">8×8 complex matrix transformation across computational basis</span>
+                  <h4>Full Unitary Operator Matrix (U_total = âˆ Uâ‚–)</h4>
+                  <span class="vis-dock-sub">8Ã—8 complex matrix transformation across computational basis</span>
                 </div>
                 <div class="unitary-invariants-bar" id="unitary-invariants-bar">
                   <!-- Populated by circuitUI -->
@@ -1100,7 +1100,7 @@
                 <div class="vis-dock-header">
                   <h4>Step-by-Step Analytical Dirac Proof</h4>
                   <button class="btn-copy-chip" id="btn-copy-latex-derivation" title="Copy full derivation formatted for LaTeX / Overleaf">
-                    Copy LaTeX Proof 📋
+                    Copy LaTeX Proof ðŸ“‹
                   </button>
                 </div>
                 <div class="derivation-steps-scroll" id="derivation-steps-container">
@@ -1127,12 +1127,12 @@
               <!-- Right: Density Matrix Heatmap -->
               <div class="analytics-sub-card">
                 <div class="vis-dock-header">
-                  <h4>Full Density Matrix ρ = |ψ⟩⟨ψ|</h4>
+                  <h4>Full Density Matrix Ï = |ÏˆâŸ©âŸ¨Ïˆ|</h4>
                   <span id="density-entropy-badge" class="vis-dock-sub">Von Neumann Entropy S = 0.00</span>
                 </div>
                 <div id="density-matrix-container" class="density-matrix-grid-box"></div>
                 <div class="density-matrix-legend">
-                  <span class="legend-item"><span class="legend-dot dot-pop"></span> Diagonal: Population |cᵢ|²</span>
+                  <span class="legend-item"><span class="legend-dot dot-pop"></span> Diagonal: Population |cáµ¢|Â²</span>
                   <span class="legend-item"><span class="legend-dot dot-coh"></span> Off-Diagonal: Quantum Coherence</span>
                 </div>
               </div>
@@ -1190,7 +1190,7 @@
             </div>
             <div class="mentor-header-controls">
               <button id="btn-toggle-llm-settings" class="btn-llm-settings-toggle" title="Configure Cloud LLM (Gemini / OpenAI)">
-                ⚙️ LLM Provider: <span id="llm-active-pill" class="llm-pill local">Offline Expert</span>
+                âš™ï¸ LLM Provider: <span id="llm-active-pill" class="llm-pill local">Offline Expert</span>
               </button>
               <div class="mentor-mode-switch">
                 <span id="ai-mode-label">Intuitive (ELI5)</span>
@@ -1205,8 +1205,8 @@
           <!-- Slide-down LLM Configuration Panel -->
           <div id="llm-settings-drawer" class="llm-settings-drawer" style="display: none;">
             <div class="llm-settings-header">
-              <h4>🤖 Connect Cloud LLM to Quantum Studio</h4>
-              <span class="llm-telemetry-badge">⚡ Real-time Circuit Telemetry Synced</span>
+              <h4>ðŸ¤– Connect Cloud LLM to Quantum Studio</h4>
+              <span class="llm-telemetry-badge">âš¡ Real-time Circuit Telemetry Synced</span>
             </div>
             <div class="llm-settings-grid">
               <div class="llm-form-group">
@@ -1222,14 +1222,14 @@
                 <label for="llm-api-key-input">API Key (Stored locally in your browser):</label>
                 <div class="api-key-input-wrap">
                   <input type="password" id="llm-api-key-input" class="llm-input" placeholder="Enter Gemini or OpenAI API Key...">
-                  <button type="button" id="btn-toggle-api-key-visibility" class="btn-eye-toggle" title="Show/Hide Key">👁️</button>
+                  <button type="button" id="btn-toggle-api-key-visibility" class="btn-eye-toggle" title="Show/Hide Key">ðŸ‘ï¸</button>
                 </div>
               </div>
             </div>
 
             <div class="llm-settings-footer">
               <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="llm-link-hint" id="llm-get-key-link">
-                Get a free Google Gemini API Key at Google AI Studio ↗
+                Get a free Google Gemini API Key at Google AI Studio â†—
               </a>
               <div class="llm-footer-actions">
                 <button id="btn-save-llm-settings" class="btn-save-llm">Save & Connect</button>
@@ -1271,7 +1271,7 @@
         <!-- Arena Hero Banner -->
         <div class="challenges-hero-banner">
           <div class="challenges-pill-tag">
-            <span>🎮</span> Gamified Quantum Mastery
+            <span>ðŸŽ®</span> Gamified Quantum Mastery
           </div>
           <div class="arena-hero-title-row">
             <div>
@@ -1281,7 +1281,7 @@
               </p>
             </div>
             <button class="btn-reset-puzzles" onclick="if(window.missionManager) window.missionManager.resetProgress();" title="Reset puzzle solved progress">
-              Reset Progress ↺
+              Reset Progress â†º
             </button>
           </div>
 
@@ -1303,7 +1303,7 @@
 
             <div class="arena-stat-card">
               <span class="arena-stat-label">Current Player Rank</span>
-              <div class="arena-stat-val arena-rank-val" id="challenges-rank-label">Novice Quantum Observer 🔬</div>
+              <div class="arena-stat-val arena-rank-val" id="challenges-rank-label">Novice Quantum Observer ðŸ”¬</div>
               <span class="arena-stat-sub">Solve 6+ puzzles for Quantum Algorithm Engineer</span>
             </div>
           </div>
@@ -1326,7 +1326,7 @@
         <div class="skill-tree-section">
           <div class="skill-tree-header">
             <div class="skill-tree-title-box">
-              <span class="hw-badge">🏆 Quantum Skill Tree & Achievements</span>
+              <span class="hw-badge">ðŸ† Quantum Skill Tree & Achievements</span>
               <h3>Hardware & Theoretical Mastery Unlocks</h3>
               <p class="skill-tree-sub">Complete real-time operations in the Composer to unlock persistent achievements across superposition, entanglement, and noise mitigation.</p>
             </div>
@@ -1347,7 +1347,7 @@
         <!-- Docs Hero Banner -->
         <div class="docs-hero-banner">
           <div class="docs-pill-tag">
-            <span>📖</span> Architecture & Engineering Reference
+            <span>ðŸ“–</span> Architecture & Engineering Reference
           </div>
           <h1 class="docs-hero-title">Ananta Quantum Simulation Engine & Mathematical Specifications</h1>
           <p class="docs-hero-desc">
@@ -1362,7 +1362,7 @@
                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input type="text" id="docs-filter-input" placeholder="Search documentation: statevector, CNOT, density matrix, Lindblad, VQE..." oninput="window.filterDocsSections(this.value)" />
-              <button id="docs-filter-clear" onclick="window.clearDocsFilter()" style="display:none;" title="Clear search">✕</button>
+              <button id="docs-filter-clear" onclick="window.clearDocsFilter()" style="display:none;" title="Clear search">âœ•</button>
             </div>
           </div>
 
@@ -1398,19 +1398,19 @@
             <div class="doc-code-shell">
               <div class="code-shell-header">
                 <span class="code-lang-label">MATHEMATICAL FORMULATION</span>
-                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formula 📋</button>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formula ðŸ“‹</button>
               </div>
-              <pre class="doc-pre-block"><code>|ψ⟩ = ∑_{i=0}^{2^n - 1} c_i |i⟩  ∈  ℂ^(2^n)
+              <pre class="doc-pre-block"><code>|ÏˆâŸ© = âˆ‘_{i=0}^{2^n - 1} c_i |iâŸ©  âˆˆ  â„‚^(2^n)
 
 Born Normalization Constraint:
-  ⟨ψ|ψ⟩ = ∑_{i=0}^{2^n - 1} |c_i|² = ∑_{i=0}^{2^n - 1} (Re[c_i]² + Im[c_i]²) = 1.0
+  âŸ¨Ïˆ|ÏˆâŸ© = âˆ‘_{i=0}^{2^n - 1} |c_i|Â² = âˆ‘_{i=0}^{2^n - 1} (Re[c_i]Â² + Im[c_i]Â²) = 1.0
 
-Measurement Probability of basis bitstring |k⟩:
-  P(k) = |⟨k|ψ⟩|² = |c_k|² = c_k* · c_k</code></pre>
+Measurement Probability of basis bitstring |kâŸ©:
+  P(k) = |âŸ¨k|ÏˆâŸ©|Â² = |c_k|Â² = c_k* Â· c_k</code></pre>
             </div>
 
             <div class="doc-mobile-callout">
-              <strong>💡 Physical Meaning:</strong> In a 3-qubit register, the simulator continuously maintains $2^3 = 8$ complex values spanning $|000\rangle \dots |111\rangle$. When any single gate is applied, the matrix transformation acts on all 8 amplitudes simultaneously, enabling quantum parallelism.
+              <strong>ðŸ’¡ Physical Meaning:</strong> In a 3-qubit register, the simulator continuously maintains $2^3 = 8$ complex values spanning $|000\rangle \dots |111\rangle$. When any single gate is applied, the matrix transformation acts on all 8 amplitudes simultaneously, enabling quantum parallelism.
             </div>
           </article>
 
@@ -1432,7 +1432,7 @@ Measurement Probability of basis bitstring |k⟩:
                   <span class="gate-tag tag-h">H</span>
                   <strong>Hadamard</strong>
                 </div>
-                <pre class="mini-matrix">1/√2 · [  1   1 ]
+                <pre class="mini-matrix">1/âˆš2 Â· [  1   1 ]
       [  1  -1 ]</pre>
                 <span class="matrix-desc">Creates 50/50 superposition</span>
               </div>
@@ -1474,7 +1474,7 @@ Measurement Probability of basis bitstring |k⟩:
                 </div>
                 <pre class="mini-matrix">[ 1  0 ]
 [ 0  i ]</pre>
-                <span class="matrix-desc">+90° rotation around Z</span>
+                <span class="matrix-desc">+90Â° rotation around Z</span>
               </div>
 
               <div class="gate-matrix-card">
@@ -1483,7 +1483,7 @@ Measurement Probability of basis bitstring |k⟩:
                   <strong>$\pi/8$ ($Z^{1/4}$)</strong>
                 </div>
                 <pre class="mini-matrix">[ 1    0    ]
-[ 0  e^(iπ/4) ]</pre>
+[ 0  e^(iÏ€/4) ]</pre>
                 <span class="matrix-desc">Non-Clifford universal gate</span>
               </div>
             </div>
@@ -1491,10 +1491,10 @@ Measurement Probability of basis bitstring |k⟩:
             <div class="doc-code-shell">
               <div class="code-shell-header">
                 <span class="code-lang-label">2-QUBIT CNOT & TENSOR PRODUCT PROPAGATION</span>
-                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formulation 📋</button>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formulation ðŸ“‹</button>
               </div>
               <pre class="doc-pre-block"><code>CNOT (Control: q0, Target: q1):
-  |00⟩ ↦ |00⟩,   |01⟩ ↦ |01⟩,   |10⟩ ↦ |11⟩,   |11⟩ ↦ |10⟩
+  |00âŸ© â†¦ |00âŸ©,   |01âŸ© â†¦ |01âŸ©,   |10âŸ© â†¦ |11âŸ©,   |11âŸ© â†¦ |10âŸ©
 
 Matrix Representation in computational basis:
   CX = [ 1  0  0  0 ]
@@ -1503,7 +1503,7 @@ Matrix Representation in computational basis:
        [ 0  0  1  0 ]
 
 Kronecker Tensor Product for Gate G on Qubit 1 of 3:
-  U_total = I_2 ⊗ G ⊗ I_2  ∈  ℂ^(8×8)</code></pre>
+  U_total = I_2 âŠ— G âŠ— I_2  âˆˆ  â„‚^(8Ã—8)</code></pre>
             </div>
           </article>
 
@@ -1521,23 +1521,23 @@ Kronecker Tensor Product for Gate G on Qubit 1 of 3:
             <div class="doc-code-shell">
               <div class="code-shell-header">
                 <span class="code-lang-label">DENSITY MATRIX & PARTIAL TRACE COMPUTATION</span>
-                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Math 📋</button>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Math ðŸ“‹</button>
               </div>
-              <pre class="doc-pre-block"><code>Properties of Density Operator ρ:
-  1. Hermiticity:          ρ = ρ†
-  2. Unit Trace:           Tr(ρ) = ∑_i ρ_ii = 1.0
-  3. Positive Semi-Definite: ⟨φ|ρ|φ⟩ ≥ 0 for all |φ⟩
-  4. Purity Measure:       γ = Tr(ρ²)   (γ = 1 for pure states, γ &lt; 1 for mixed states)
+              <pre class="doc-pre-block"><code>Properties of Density Operator Ï:
+  1. Hermiticity:          Ï = Ïâ€ 
+  2. Unit Trace:           Tr(Ï) = âˆ‘_i Ï_ii = 1.0
+  3. Positive Semi-Definite: âŸ¨Ï†|Ï|Ï†âŸ© â‰¥ 0 for all |Ï†âŸ©
+  4. Purity Measure:       Î³ = Tr(ÏÂ²)   (Î³ = 1 for pure states, Î³ &lt; 1 for mixed states)
 
 Von Neumann Entropy (Quantum Information Entropy):
-  S(ρ) = -Tr(ρ log₂ ρ) = -∑_i λ_i log₂ λ_i    (λ_i = eigenvalues of ρ)
+  S(Ï) = -Tr(Ï logâ‚‚ Ï) = -âˆ‘_i Î»_i logâ‚‚ Î»_i    (Î»_i = eigenvalues of Ï)
 
 Partial Trace for Subsystem A (Tracing out Subsystem B):
-  ρ_A = Tr_B(ρ_AB) = ∑_k (I_A ⊗ ⟨k|_B) ρ_AB (I_A ⊗ |k⟩_B)</code></pre>
+  Ï_A = Tr_B(Ï_AB) = âˆ‘_k (I_A âŠ— âŸ¨k|_B) Ï_AB (I_A âŠ— |kâŸ©_B)</code></pre>
             </div>
 
             <div class="doc-mobile-callout">
-              <strong>🔬 Observation:</strong> If Qubit 0 is maximally entangled with Qubit 1 (e.g. in a Bell state), its reduced density matrix is $\rho_0 = \text{diag}(0.5, 0.5)$, yielding $S(\rho_0) = 1.0$ bit and purity $\gamma = 0.5$. This confirms that local subsystems of an entangled pure state appear completely mixed.
+              <strong>ðŸ”¬ Observation:</strong> If Qubit 0 is maximally entangled with Qubit 1 (e.g. in a Bell state), its reduced density matrix is $\rho_0 = \text{diag}(0.5, 0.5)$, yielding $S(\rho_0) = 1.0$ bit and purity $\gamma = 0.5$. This confirms that local subsystems of an entangled pure state appear completely mixed.
             </div>
           </article>
 
@@ -1555,21 +1555,21 @@ Partial Trace for Subsystem A (Tracing out Subsystem B):
             <div class="doc-code-shell">
               <div class="code-shell-header">
                 <span class="code-lang-label">OBSERVABLE EXPECTATIONS</span>
-                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Math 📋</button>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Math ðŸ“‹</button>
               </div>
               <pre class="doc-pre-block"><code>Z Expectation (Population Difference):
-  ⟨Z⟩ = Tr(Z · ρ_i) = ρ₀₀ - ρ₁₁ = P(|0⟩) - P(|1⟩)
+  âŸ¨ZâŸ© = Tr(Z Â· Ï_i) = Ïâ‚€â‚€ - Ïâ‚â‚ = P(|0âŸ©) - P(|1âŸ©)
 
 X Expectation (Real Coherence / Transverse Polarization):
-  ⟨X⟩ = Tr(X · ρ_i) = ρ₀₁ + ρ₁₀ = 2 · Re[ρ₀₁]
+  âŸ¨XâŸ© = Tr(X Â· Ï_i) = Ïâ‚€â‚ + Ïâ‚â‚€ = 2 Â· Re[Ïâ‚€â‚]
 
 Y Expectation (Imaginary Coherence):
-  ⟨Y⟩ = Tr(Y · ρ_i) = i(ρ₀₁ - ρ₁₀) = -2 · Im[ρ₀₁]
+  âŸ¨YâŸ© = Tr(Y Â· Ï_i) = i(Ïâ‚€â‚ - Ïâ‚â‚€) = -2 Â· Im[Ïâ‚€â‚]
 
 Bloch Radius (State Purity Indicator):
-  |r| = √(⟨X⟩² + ⟨Y⟩² + ⟨Z⟩²) ≤ 1.0
-  • |r| = 1.0  ⟹ Pure state on the surface of the Bloch sphere
-  • |r| &lt; 1.0  ⟹ Mixed state inside the Bloch sphere (decohered or entangled)</code></pre>
+  |r| = âˆš(âŸ¨XâŸ©Â² + âŸ¨YâŸ©Â² + âŸ¨ZâŸ©Â²) â‰¤ 1.0
+  â€¢ |r| = 1.0  âŸ¹ Pure state on the surface of the Bloch sphere
+  â€¢ |r| &lt; 1.0  âŸ¹ Mixed state inside the Bloch sphere (decohered or entangled)</code></pre>
             </div>
           </article>
 
@@ -1587,21 +1587,21 @@ Bloch Radius (State Purity Indicator):
             <div class="doc-code-shell">
               <div class="code-shell-header">
                 <span class="code-lang-label">OPEN QUANTUM SYSTEM DYNAMICS</span>
-                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Equations 📋</button>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Equations ðŸ“‹</button>
               </div>
               <pre class="doc-pre-block"><code>Lindblad Master Equation:
-  dρ/dt = -i/ℏ [H, ρ] + ∑_k ( L_k ρ L_k† - ½ {L_k† L_k, ρ} )
+  dÏ/dt = -i/â„ [H, Ï] + âˆ‘_k ( L_k Ï L_kâ€  - Â½ {L_kâ€  L_k, Ï} )
 
-1. Longitudinal Energy Relaxation (T₁):
-   Jump operator: L₁ = √(1/T₁) · |0⟩⟨1| = √(1/T₁) · σ⁻
-   Excited state population decay: ρ₁₁(t) = ρ₁₁(0) · e^(-t / T₁)
+1. Longitudinal Energy Relaxation (Tâ‚):
+   Jump operator: Lâ‚ = âˆš(1/Tâ‚) Â· |0âŸ©âŸ¨1| = âˆš(1/Tâ‚) Â· Ïƒâ»
+   Excited state population decay: Ïâ‚â‚(t) = Ïâ‚â‚(0) Â· e^(-t / Tâ‚)
 
-2. Transverse Dephasing (T₂):
-   Jump operator: L_φ = √(1 / 2 T_φ) · Z
-   Total dephasing rate: 1/T₂ = 1/(2 T₁) + 1/T_φ   ⟹  T₂ ≤ 2 T₁
+2. Transverse Dephasing (Tâ‚‚):
+   Jump operator: L_Ï† = âˆš(1 / 2 T_Ï†) Â· Z
+   Total dephasing rate: 1/Tâ‚‚ = 1/(2 Tâ‚) + 1/T_Ï†   âŸ¹  Tâ‚‚ â‰¤ 2 Tâ‚
 
-3. Depolarizing Channel (Gate Infidelity ε):
-   E(ρ) = (1 - ε) ρ + (ε / 3)(X ρ X + Y ρ Y + Z ρ Z)</code></pre>
+3. Depolarizing Channel (Gate Infidelity Îµ):
+   E(Ï) = (1 - Îµ) Ï + (Îµ / 3)(X Ï X + Y Ï Y + Z Ï Z)</code></pre>
             </div>
           </article>
 
@@ -1619,7 +1619,7 @@ Bloch Radius (State Purity Indicator):
             <div class="doc-code-shell">
               <div class="code-shell-header">
                 <span class="code-lang-label">SAMPLE CIRQ (PYTHON 3) CODE OUTPUT</span>
-                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Code 📋</button>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Code ðŸ“‹</button>
               </div>
               <pre class="doc-pre-block"><code>import cirq
 
@@ -1653,19 +1653,19 @@ print(result.histogram(key='result'))</code></pre>
             <div class="doc-code-shell">
               <div class="code-shell-header">
                 <span class="code-lang-label">WOOTTERS CONCURRENCE DERIVATION</span>
-                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formula 📋</button>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formula ðŸ“‹</button>
               </div>
               <pre class="doc-pre-block"><code>Spin-Flipped Density Matrix:
-  ρ̃ = (σ_y ⊗ σ_y) · ρ* · (σ_y ⊗ σ_y)
+  ÏÌƒ = (Ïƒ_y âŠ— Ïƒ_y) Â· Ï* Â· (Ïƒ_y âŠ— Ïƒ_y)
 
-Eigenvalues of R = √(√ρ · ρ̃ · √ρ):
-  Sorted in descending order: λ₁ ≥ λ₂ ≥ λ₃ ≥ λ₄ ≥ 0
+Eigenvalues of R = âˆš(âˆšÏ Â· ÏÌƒ Â· âˆšÏ):
+  Sorted in descending order: Î»â‚ â‰¥ Î»â‚‚ â‰¥ Î»â‚ƒ â‰¥ Î»â‚„ â‰¥ 0
 
 Concurrence:
-  C(ρ) = max(0, λ₁ - λ₂ - λ₃ - λ₄)
+  C(Ï) = max(0, Î»â‚ - Î»â‚‚ - Î»â‚ƒ - Î»â‚„)
 
 Entanglement of Formation:
-  E_F(ρ) = h( ½ (1 + √(1 - C²)) ),   where h(x) = -x log₂ x - (1-x) log₂ (1-x)</code></pre>
+  E_F(Ï) = h( Â½ (1 + âˆš(1 - CÂ²)) ),   where h(x) = -x logâ‚‚ x - (1-x) logâ‚‚ (1-x)</code></pre>
             </div>
           </article>
 
@@ -1683,22 +1683,22 @@ Entanglement of Formation:
             <div class="doc-code-shell">
               <div class="code-shell-header">
                 <span class="code-lang-label">STEP-BY-STEP MATHEMATICAL TELEPORTATION PROOF</span>
-                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Protocol 📋</button>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Protocol ðŸ“‹</button>
               </div>
               <pre class="doc-pre-block"><code>Initial 3-Qubit State:
-  |Ψ₀⟩ = (α|0⟩ + β|1⟩)_A ⊗ (1/√2)(|00⟩ + |11⟩)_BC
+  |Î¨â‚€âŸ© = (Î±|0âŸ© + Î²|1âŸ©)_A âŠ— (1/âˆš2)(|00âŸ© + |11âŸ©)_BC
 
-1. Alice applies CNOT(A → B):
-  |Ψ₁⟩ = (1/√2) [ α|0⟩(|00⟩ + |11⟩) + β|1⟩(|10⟩ + |01⟩) ]
+1. Alice applies CNOT(A â†’ B):
+  |Î¨â‚âŸ© = (1/âˆš2) [ Î±|0âŸ©(|00âŸ© + |11âŸ©) + Î²|1âŸ©(|10âŸ© + |01âŸ©) ]
 
 2. Alice applies Hadamard on Qubit A:
-  |Ψ₂⟩ = ½ [ |00⟩(α|0⟩ + β|1⟩) + |01⟩(α|1⟩ + β|0⟩) + |10⟩(α|0⟩ - β|1⟩) + |11⟩(α|1⟩ - β|0⟩) ]
+  |Î¨â‚‚âŸ© = Â½ [ |00âŸ©(Î±|0âŸ© + Î²|1âŸ©) + |01âŸ©(Î±|1âŸ© + Î²|0âŸ©) + |10âŸ©(Î±|0âŸ© - Î²|1âŸ©) + |11âŸ©(Î±|1âŸ© - Î²|0âŸ©) ]
 
 3. Alice measures qubits A and B, obtaining classical outcomes (m_A, m_B):
-  • 00 ⟹ Bob applies I         (State: α|0⟩ + β|1⟩)
-  • 01 ⟹ Bob applies X         (State: α|0⟩ + β|1⟩)
-  • 10 ⟹ Bob applies Z         (State: α|0⟩ + β|1⟩)
-  • 11 ⟹ Bob applies Z · X = Y (State: α|0⟩ + β|1⟩)</code></pre>
+  â€¢ 00 âŸ¹ Bob applies I         (State: Î±|0âŸ© + Î²|1âŸ©)
+  â€¢ 01 âŸ¹ Bob applies X         (State: Î±|0âŸ© + Î²|1âŸ©)
+  â€¢ 10 âŸ¹ Bob applies Z         (State: Î±|0âŸ© + Î²|1âŸ©)
+  â€¢ 11 âŸ¹ Bob applies Z Â· X = Y (State: Î±|0âŸ© + Î²|1âŸ©)</code></pre>
             </div>
           </article>
 
@@ -1716,19 +1716,19 @@ Entanglement of Formation:
             <div class="doc-code-shell">
               <div class="code-shell-header">
                 <span class="code-lang-label">GROVER OPERATOR DEFINITION</span>
-                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formulation 📋</button>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Formulation ðŸ“‹</button>
               </div>
               <pre class="doc-pre-block"><code>Grover Iteration Operator:
-  G = -D · O = (2|s⟩⟨s| - I) · (I - 2|w⟩⟨w|)
+  G = -D Â· O = (2|sâŸ©âŸ¨s| - I) Â· (I - 2|wâŸ©âŸ¨w|)
 
 Where:
-  |s⟩ = (1/√N) ∑ |x⟩        (Uniform equal superposition)
-  O = I - 2|w⟩⟨w|           (Phase oracle: marks target |w⟩ by -1)
-  D = 2|s⟩⟨s| - I           (Diffusion operator: reflection about the mean)
+  |sâŸ© = (1/âˆšN) âˆ‘ |xâŸ©        (Uniform equal superposition)
+  O = I - 2|wâŸ©âŸ¨w|           (Phase oracle: marks target |wâŸ© by -1)
+  D = 2|sâŸ©âŸ¨s| - I           (Diffusion operator: reflection about the mean)
 
 Optimal Number of Rotations:
-  R = ⌊ (π / 4) · √(N / M) ⌋
-  • For N=4 (2 qubits), M=1 ⟹ R = 1 iteration achieves 100% success probability!</code></pre>
+  R = âŒŠ (Ï€ / 4) Â· âˆš(N / M) âŒ‹
+  â€¢ For N=4 (2 qubits), M=1 âŸ¹ R = 1 iteration achieves 100% success probability!</code></pre>
             </div>
           </article>
 
@@ -1746,18 +1746,18 @@ Optimal Number of Rotations:
             <div class="doc-code-shell">
               <div class="code-shell-header">
                 <span class="code-lang-label">PARAMETER SHIFT RULE FORMULA</span>
-                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Rule 📋</button>
+                <button class="btn-copy-code-chip" onclick="window.copySnippetText(this)">Copy Rule ðŸ“‹</button>
               </div>
               <pre class="doc-pre-block"><code>Rayleigh-Ritz Variational Principle:
-  E(θ) = ⟨ψ(θ)| H |ψ(θ)⟩ ≥ E_ground
+  E(Î¸) = âŸ¨Ïˆ(Î¸)| H |Ïˆ(Î¸)âŸ© â‰¥ E_ground
 
 Parameter-Shift Rule (Exact Analytical Derivative on QPU):
-  For any parameterized rotation gate G(θ) = exp(-i θ P / 2) with Pauli P:
-  ∂E / ∂θ_i = ½ [ E(θ + (π/2) e_i) - E(θ - (π/2) e_i) ]
+  For any parameterized rotation gate G(Î¸) = exp(-i Î¸ P / 2) with Pauli P:
+  âˆ‚E / âˆ‚Î¸_i = Â½ [ E(Î¸ + (Ï€/2) e_i) - E(Î¸ - (Ï€/2) e_i) ]
 
 Key Advantage:
-  Unlike classical finite differences (E(θ+h) - E(θ))/h which drown in quantum shot noise,
-  parameter shifts evaluate at macroscopic ±π/2 angles, robust against hardware stochasticity.</code></pre>
+  Unlike classical finite differences (E(Î¸+h) - E(Î¸))/h which drown in quantum shot noise,
+  parameter shifts evaluate at macroscopic Â±Ï€/2 angles, robust against hardware stochasticity.</code></pre>
             </div>
           </article>
 
@@ -1773,10 +1773,10 @@ Key Advantage:
         <!-- Primary Research View Mode Switcher -->
         <div class="research-mode-switcher">
           <button class="research-mode-tab active" id="tab-mode-papers" onclick="window.switchResearchMode('papers')">
-            📑 Landmark Papers & Textbooks (38)
+            ðŸ“‘ Landmark Papers & Textbooks (38)
           </button>
           <button class="research-mode-tab" id="tab-mode-zoo" onclick="window.switchResearchMode('zoo')">
-            ⚡ Universal Algorithm Catalog (74 Algorithms)
+            âš¡ Universal Algorithm Catalog (74 Algorithms)
           </button>
         </div>
 
@@ -1784,7 +1784,7 @@ Key Advantage:
         <div id="research-papers-subview">
           <div class="research-hero-banner">
             <div class="research-pill-tag">
-              <span>📚</span> Academic & Open-Access Knowledge Repository
+              <span>ðŸ“š</span> Academic & Open-Access Knowledge Repository
             </div>
             <h1 class="research-hero-title">Quantum Research Archive & Textbook Library</h1>
             <p class="research-hero-desc">
@@ -1800,7 +1800,7 @@ Key Advantage:
                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input type="text" id="research-search-input" placeholder="Search publications by title, author, year, keyword, or arXiv ID..." />
-              <button id="btn-clear-search" class="btn-clear-search" style="display:none;" title="Clear search">✕</button>
+              <button id="btn-clear-search" class="btn-clear-search" style="display:none;" title="Clear search">âœ•</button>
             </div>
 
             <div class="research-category-pills" id="research-category-pills">
@@ -1847,7 +1847,7 @@ Key Advantage:
             <!-- Executive KPI Metrics Dashboard (Google DeepMind Style) -->
             <div class="g-metrics-grid">
               <div class="g-metric-card">
-                <div class="g-metric-icon">⚛️</div>
+                <div class="g-metric-icon">âš›ï¸</div>
                 <div class="g-metric-data">
                   <span class="g-metric-val">74</span>
                   <span class="g-metric-label">Verified Algorithms</span>
@@ -1856,7 +1856,7 @@ Key Advantage:
               </div>
 
               <div class="g-metric-card">
-                <div class="g-metric-icon">⚡</div>
+                <div class="g-metric-icon">âš¡</div>
                 <div class="g-metric-data">
                   <span class="g-metric-val g-val-speedup">Superpolynomial</span>
                   <span class="g-metric-label">Asymptotic Frontier</span>
@@ -1865,7 +1865,7 @@ Key Advantage:
               </div>
 
               <div class="g-metric-card">
-                <div class="g-metric-icon">📚</div>
+                <div class="g-metric-icon">ðŸ“š</div>
                 <div class="g-metric-data">
                   <span class="g-metric-val">550+</span>
                   <span class="g-metric-label">Peer-Reviewed Papers</span>
@@ -1874,7 +1874,7 @@ Key Advantage:
               </div>
 
               <div class="g-metric-card">
-                <div class="g-metric-icon">🛠️</div>
+                <div class="g-metric-icon">ðŸ› ï¸</div>
                 <div class="g-metric-data">
                   <span class="g-metric-val g-val-impl">Google Cirq & OpenQASM</span>
                   <span class="g-metric-label">Native Code Integration</span>
@@ -1893,15 +1893,15 @@ Key Advantage:
                   <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
                 <input type="text" id="zoo-search-input" placeholder="Search 74 algorithms by name, problem, speedup, or citation (e.g. Shor, Grover, HHL, Cirq)..." oninput="window.filterZooAlgorithms()" />
-                <button id="btn-clear-zoo-search" class="btn-clear-search" style="display:none;" onclick="window.clearZooSearch()" title="Clear search">✕</button>
+                <button id="btn-clear-zoo-search" class="btn-clear-search" style="display:none;" onclick="window.clearZooSearch()" title="Clear search">âœ•</button>
               </div>
 
               <!-- Speedup Quick Filter -->
               <div class="g-speedup-filter-group">
                 <button class="g-speedup-btn active" data-speed="all" onclick="window.setZooSpeedupFilter('all')">All Speeds</button>
-                <button class="g-speedup-btn" data-speed="superpoly" onclick="window.setZooSpeedupFilter('superpoly')">Superpolynomial 🚀</button>
-                <button class="g-speedup-btn" data-speed="poly" onclick="window.setZooSpeedupFilter('poly')">Polynomial ⚡</button>
-                <button class="g-speedup-btn" data-speed="expo" onclick="window.setZooSpeedupFilter('expo')">Exponential 🌌</button>
+                <button class="g-speedup-btn" data-speed="superpoly" onclick="window.setZooSpeedupFilter('superpoly')">Superpolynomial ðŸš€</button>
+                <button class="g-speedup-btn" data-speed="poly" onclick="window.setZooSpeedupFilter('poly')">Polynomial âš¡</button>
+                <button class="g-speedup-btn" data-speed="expo" onclick="window.setZooSpeedupFilter('expo')">Exponential ðŸŒŒ</button>
               </div>
             </div>
 
@@ -1911,16 +1911,16 @@ Key Advantage:
                 <span class="chip-dot"></span> All Paradigms (74)
               </button>
               <button class="g-cat-chip" data-zoocat="Algebraic and Number Theoretic Algorithms" onclick="window.setZooCategory('Algebraic and Number Theoretic Algorithms')">
-                ∑ Algebraic & Number Theory (13)
+                âˆ‘ Algebraic & Number Theory (13)
               </button>
               <button class="g-cat-chip" data-zoocat="Oracular Algorithms" onclick="window.setZooCategory('Oracular Algorithms')">
-                🔮 Oracular & Query Complexity (23)
+                ðŸ”® Oracular & Query Complexity (23)
               </button>
               <button class="g-cat-chip" data-zoocat="Approximation and Simulation Algorithms" onclick="window.setZooCategory('Approximation and Simulation Algorithms')">
-                ⚛️ Quantum Simulation & Physics (18)
+                âš›ï¸ Quantum Simulation & Physics (18)
               </button>
               <button class="g-cat-chip" data-zoocat="Optimization, Numerics, and Machine Learning" onclick="window.setZooCategory('Optimization, Numerics, and Machine Learning')">
-                📈 Optimization & Quantum ML (20)
+                ðŸ“ˆ Optimization & Quantum ML (20)
               </button>
             </div>
 
@@ -1944,7 +1944,7 @@ Key Advantage:
         
         <div class="intuition-hero-banner">
           <div class="intuition-pill-tag">
-            <span>💡</span> Physical Analogies & Intuition Bridges
+            <span>ðŸ’¡</span> Physical Analogies & Intuition Bridges
           </div>
           <h1 class="intuition-hero-title">Real-World Quantum Intuition Lab</h1>
           <p class="intuition-hero-desc">
@@ -1955,14 +1955,14 @@ Key Advantage:
         <!-- ================= CONCEPT DOCTOR: ASK & ANIMATE ================= -->
         <div class="concept-doctor-panel">
           <div class="doctor-header-row">
-            <div class="doctor-badge">🩺 AI Quantum Concept Doctor</div>
+            <div class="doctor-badge">ðŸ©º AI Quantum Concept Doctor</div>
             <h2>Struggling with a Concept? Type it below and see it animated!</h2>
             <p>Tell us what is confusing you (e.g., "I don't get Quantum Tunneling", "Why can't we clone qubits?", "Wavefunction collapse", "Teleportation"). Our engine translates it into a real-world analogy and runs a live interactive simulation.</p>
           </div>
 
           <div class="doctor-input-bar">
             <input type="text" id="concept-query-input" placeholder="e.g., I am facing problem in Quantum Tunneling..." class="doctor-input-field" />
-            <button id="btn-concept-ask" class="btn-doctor-ask">Diagnose & Animate ⚡</button>
+            <button id="btn-concept-ask" class="btn-doctor-ask">Diagnose & Animate âš¡</button>
           </div>
 
           <div class="doctor-quick-chips">
@@ -2017,13 +2017,13 @@ Key Advantage:
             <div class="coin-stage-container">
               <div class="coin-pedestal">
                 <div id="quantum-coin-3d" class="quantum-coin-disc coin-resting">
-                  <div class="coin-face coin-front">|0⟩</div>
-                  <div class="coin-face coin-back">|1⟩</div>
+                  <div class="coin-face coin-front">|0âŸ©</div>
+                  <div class="coin-face coin-back">|1âŸ©</div>
                 </div>
               </div>
               <div class="coin-readout-box">
-                <div id="coin-status-text" class="coin-status">Coin is resting flat on Heads (|0⟩). Click Spin to create Superposition.</div>
-                <div id="coin-state-formula" class="coin-formula">|ψ⟩ = 1.0 |0⟩</div>
+                <div id="coin-status-text" class="coin-status">Coin is resting flat on Heads (|0âŸ©). Click Spin to create Superposition.</div>
+                <div id="coin-state-formula" class="coin-formula">|ÏˆâŸ© = 1.0 |0âŸ©</div>
               </div>
             </div>
 
@@ -2036,8 +2036,8 @@ Key Advantage:
             <div class="exp-metrics-box">
               <div class="metric-row">
                 <span>Flips: <strong id="coin-stat-total">0</strong></span>
-                <span>Heads (|0⟩): <strong id="coin-stat-heads" style="color:#10b981;">0</strong></span>
-                <span>Tails (|1⟩): <strong id="coin-stat-tails" style="color:#ee5396;">0</strong></span>
+                <span>Heads (|0âŸ©): <strong id="coin-stat-heads" style="color:#10b981;">0</strong></span>
+                <span>Tails (|1âŸ©): <strong id="coin-stat-tails" style="color:#ee5396;">0</strong></span>
               </div>
               <div class="ratio-bar-track">
                 <div id="coin-bar-heads" class="ratio-bar-fill-heads" style="width: 50%;"></div>
@@ -2047,7 +2047,7 @@ Key Advantage:
 
             <div class="exp-bridge-footer">
               <button class="btn-bridge-simulator" onclick="window.loadPresetSafe('superposition'); window.switchView('simulator');">
-                ⚡ Open Superposition in Circuit Studio →
+                âš¡ Open Superposition in Circuit Studio â†’
               </button>
             </div>
           </div>
@@ -2066,21 +2066,21 @@ Key Advantage:
 
             <div class="phase-control-panel">
               <div class="slider-label-row">
-                <span>Phase Shift (φ): <strong id="wave-phase-val">180° (1.00π rad)</strong></span>
+                <span>Phase Shift (Ï†): <strong id="wave-phase-val">180Â° (1.00Ï€ rad)</strong></span>
                 <span id="wave-interp-type">100% Destructive Cancellation (Absolute Silence)</span>
               </div>
               <input type="range" id="wave-phase-slider" min="0" max="6.28318" step="0.05" value="3.14159" class="phase-slider" />
               
               <div class="preset-pills-row">
-                <button id="btn-preset-destructive" class="btn-phase-preset active">180° Destructive (Cancel to 0)</button>
-                <button id="btn-preset-constructive" class="btn-phase-preset">0° Constructive (Amplify 2x)</button>
-                <button id="btn-preset-quarter" class="btn-phase-preset">90° Quarter Phase (S Gate)</button>
+                <button id="btn-preset-destructive" class="btn-phase-preset active">180Â° Destructive (Cancel to 0)</button>
+                <button id="btn-preset-constructive" class="btn-phase-preset">0Â° Constructive (Amplify 2x)</button>
+                <button id="btn-preset-quarter" class="btn-phase-preset">90Â° Quarter Phase (S Gate)</button>
               </div>
             </div>
 
             <div class="exp-bridge-footer">
               <button class="btn-bridge-simulator" onclick="window.loadPresetSafe('grover'); window.switchView('simulator');">
-                ⚡ Open Grover's Interference Search in Studio →
+                âš¡ Open Grover's Interference Search in Studio â†’
               </button>
             </div>
           </div>
@@ -2103,7 +2103,7 @@ Key Advantage:
 
               <div class="dice-bridge-center">
                 <div id="entanglement-beam" class="entanglement-laser-beam beam-active"></div>
-                <span id="dice-mode-label" class="beam-status-tag">Quantum Entangled (Bell State |Φ⁺⟩)</span>
+                <span id="dice-mode-label" class="beam-status-tag">Quantum Entangled (Bell State |Î¦âºâŸ©)</span>
               </div>
 
               <div class="die-station">
@@ -2120,7 +2120,7 @@ Key Advantage:
                   <input type="checkbox" id="toggle-entangled-dice" checked />
                   <span class="slider-round"></span>
                 </label>
-                <span id="dice-state-badge" class="state-math-badge">|ψ⟩ = (1/√2) |00⟩ + (1/√2) |11⟩</span>
+                <span id="dice-state-badge" class="state-math-badge">|ÏˆâŸ© = (1/âˆš2) |00âŸ© + (1/âˆš2) |11âŸ©</span>
               </div>
 
               <div class="dice-actions-row">
@@ -2135,7 +2135,7 @@ Key Advantage:
 
             <div class="exp-bridge-footer">
               <button class="btn-bridge-simulator" onclick="window.loadPresetSafe('bell'); window.switchView('simulator');">
-                ⚡ Open Bell State in Circuit Studio →
+                âš¡ Open Bell State in Circuit Studio â†’
               </button>
             </div>
           </div>
@@ -2150,25 +2150,25 @@ Key Advantage:
 
             <div class="industry-showcase-grid">
               <div class="industry-item">
-                <div class="ind-icon">💊</div>
+                <div class="ind-icon">ðŸ’Š</div>
                 <h3>Drug Discovery & Cancer Therapies</h3>
                 <p>Molecules are quantum mechanical. Simulating the entangled electrons in penicillin or caffeine exceeds classical supercomputer memory. Quantum simulators design targeted cancer therapies in hours.</p>
               </div>
 
               <div class="industry-item">
-                <div class="ind-icon">🌱</div>
+                <div class="ind-icon">ðŸŒ±</div>
                 <h3>Clean Energy & Global Fertilizer</h3>
-                <p>Humanity uses 2-3% of all global electricity making fertilizer at 500°C (Haber-Bosch). Soil bacteria do this at room temperature using a quantum enzyme (Nitrogenase). Quantum simulation could save gigawatts of energy.</p>
+                <p>Humanity uses 2-3% of all global electricity making fertilizer at 500Â°C (Haber-Bosch). Soil bacteria do this at room temperature using a quantum enzyme (Nitrogenase). Quantum simulation could save gigawatts of energy.</p>
               </div>
 
               <div class="industry-item">
-                <div class="ind-icon">🛡️</div>
+                <div class="ind-icon">ðŸ›¡ï¸</div>
                 <h3>Physics-Proof Cybersecurity</h3>
                 <p>Quantum Key Distribution (QKD) utilizes the observer effect: if an eavesdropper listens to your bank encryption key, the quantum wavefunction collapses, instantly revealing the spy.</p>
               </div>
 
               <div class="industry-item">
-                <div class="ind-icon">🚢</div>
+                <div class="ind-icon">ðŸš¢</div>
                 <h3>Global Maritime & Climate Logistics</h3>
                 <p>Optimizing flight paths, cargo ships, and energy grids with millions of variables via QAOA algorithms to reduce global carbon emissions.</p>
               </div>
@@ -2230,7 +2230,7 @@ Key Advantage:
     <div class="bibtex-modal-dialog">
       <div class="bibtex-modal-header">
         <h3 id="bibtex-modal-title">BibTeX Citation</h3>
-        <button class="btn-close-modal" onclick="window.closeBibtexModal()">✕</button>
+        <button class="btn-close-modal" onclick="window.closeBibtexModal()">âœ•</button>
       </div>
       <div class="bibtex-modal-body">
         <pre><code id="bibtex-code-content"></code></pre>
@@ -2247,7 +2247,7 @@ Key Advantage:
   <script src="js/quantum-audio.js"></script>
   <script src="js/bloch-sphere.js"></script>
   <script src="js/circuit-ui.js"></script>
-  <script src="js/ai-tutor.js"></script>
+  <script src="js/quantum-expanded-corpus.js"></script>`n  <script src="js/config.js"></script>`n  <script src="js/ai-tutor.js"></script>
   <script src="js/algorithms.js"></script>
   <script src="js/research-papers.js"></script>
   <script src="js/quantum-algorithm-zoo-data.js"></script>
@@ -2258,3 +2258,5 @@ Key Advantage:
   <script src="js/app.js"></script>
 </body>
 </html>
+
+
