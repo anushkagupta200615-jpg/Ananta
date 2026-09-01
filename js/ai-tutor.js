@@ -34,16 +34,18 @@ class QuantaAITutor {
       || (this.geminiApiKey ? 'gemini' : (envConfig.DEFAULT_PROVIDER || 'local'));
 
     // Verified working model (cached after first successful call)
-    this.geminiModel = 'gemini-2.0-flash-lite';
+    this.geminiModel = 'gemini-3.5-flash-lite';
 
-    // Ordered fallback list — free-tier first, then paid-tier
+    // Ordered fallback list — newest first, then legacy fallbacks
     this.candidateModels = [
-      'gemini-2.0-flash-lite',
+      'gemini-3.5-flash-lite',
+      'gemini-3.5-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.5-flash',
       'gemini-2.0-flash',
       'gemini-1.5-flash-latest',
       'gemini-1.5-flash',
-      'gemini-1.5-flash-8b',
-      'gemini-1.0-pro'
+      'gemini-1.5-flash-8b'
     ];
 
     this.initLLMSettingsDOM();
