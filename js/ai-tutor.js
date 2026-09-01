@@ -35,6 +35,23 @@ class QuantaAITutor {
     this.updateProviderBadge();
   }
 
+  initLLMSettingsDOM() {
+    this.toggleSettingsBtn = document.getElementById('btn-toggle-llm-settings');
+    this.providerPill = document.getElementById('llm-active-pill');
+    this.settingsDrawer = document.getElementById('llm-settings-drawer');
+    this.providerSelect = document.getElementById('llm-provider-select');
+    this.apiKeyGroup = document.getElementById('api-key-group');
+    this.apiKeyInput = document.getElementById('llm-api-key-input');
+    this.toggleVisibilityBtn = document.getElementById('btn-toggle-api-key-visibility');
+    this.getKeyLink = document.getElementById('llm-get-key-link');
+    this.saveSettingsBtn = document.getElementById('btn-save-llm-settings');
+
+    if (this.providerSelect) {
+      this.providerSelect.value = this.llmProvider;
+      this.updateApiKeyInputForProvider(this.llmProvider);
+    }
+  }
+
   initInTabLLMSettingsDOM() {
     this.inTabProviderSelect = document.getElementById('in-tab-provider-select');
     this.inTabApiKeyInput = document.getElementById('in-tab-api-key-input');
