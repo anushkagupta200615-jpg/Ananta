@@ -907,13 +907,13 @@ body {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 16px;
-  margin-bottom: 48px;
+  margin-bottom: 24px;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
   .roadmap-cards-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    gap: 18px;
   }
 }
 
@@ -924,43 +924,133 @@ body {
 }
 
 .roadmap-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: rgba(12, 18, 32, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 20px 14px;
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.roadmap-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.4), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .roadmap-card:hover {
-  border-color: var(--google-blue);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border-color: rgba(0, 240, 255, 0.5);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.18);
+  background: rgba(16, 26, 48, 0.92);
+}
+
+.roadmap-card:hover::before {
+  opacity: 1;
 }
 
 .roadmap-card.active {
-  border-color: var(--google-blue);
-  background: var(--bg-subtle);
-  box-shadow: 0 0 0 2px var(--google-blue);
+  border-color: #00f0ff;
+  background: linear-gradient(180deg, rgba(0, 240, 255, 0.1) 0%, rgba(12, 22, 42, 0.95) 100%);
+  box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.4), 0 12px 32px rgba(0, 240, 255, 0.2);
+  transform: translateY(-4px);
 }
 
+.roadmap-card.active::before {
+  opacity: 1;
+  background: linear-gradient(90deg, #00f0ff, #3b82f6, #a78bfa);
+  height: 3px;
+}
+
+/* Isometric SVG Animated Visuals */
 .roadmap-isometric-box {
   width: 100%;
   height: 110px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   color: var(--text-white);
+  position: relative;
 }
 
 .isometric-svg {
   width: 100%;
   max-height: 95px;
   display: block;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+  transition: transform 0.3s ease;
+}
+
+.roadmap-card:hover .isometric-svg {
+  transform: scale(1.08);
+}
+
+/* SVG Micro-Animations */
+.roadmap-card[data-milestone="1"] .isometric-svg line:last-of-type {
+  animation: pulseArrow 2.5s ease-in-out infinite alternate;
+  transform-origin: 80px 70px;
+}
+@keyframes pulseArrow {
+  0% { stroke: #1a73e8; transform: rotate(-5deg); }
+  100% { stroke: #00f0ff; transform: rotate(8deg); }
+}
+
+.roadmap-card[data-milestone="2"] .isometric-svg circle {
+  animation: pulseSurfaceQubits 2.2s ease-in-out infinite alternate;
+}
+.roadmap-card[data-milestone="2"] .isometric-svg circle:nth-child(odd) {
+  animation-delay: 0.4s;
+}
+.roadmap-card[data-milestone="2"] .isometric-svg circle:nth-child(3n) {
+  animation-delay: 0.8s;
+}
+@keyframes pulseSurfaceQubits {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(1.25); opacity: 1; filter: drop-shadow(0 0 6px currentColor); }
+}
+
+.roadmap-card[data-milestone="3"] .isometric-svg line {
+  animation: laserBeams 2s ease-in-out infinite alternate;
+}
+@keyframes laserBeams {
+  0% { stroke-dashoffset: 0; stroke: #1a73e8; opacity: 0.6; }
+  100% { stroke-dashoffset: 8; stroke: #00f0ff; opacity: 1; filter: drop-shadow(0 0 5px #00f0ff); }
+}
+
+.roadmap-card[data-milestone="4"] .isometric-svg line:nth-of-type(1) {
+  animation: bridgePulse 1.8s ease-in-out infinite;
+}
+@keyframes bridgePulse {
+  0%, 100% { stroke: #1a73e8; stroke-width: 2.5; }
+  50% { stroke: #38bdf8; stroke-width: 4; filter: drop-shadow(0 0 8px #38bdf8); }
+}
+
+.roadmap-card[data-milestone="5"] .isometric-svg line {
+  animation: gridScanner 3s linear infinite;
+}
+@keyframes gridScanner {
+  0% { stroke: #5f6368; }
+  50% { stroke: #00f0ff; filter: drop-shadow(0 0 4px #00f0ff); }
+  100% { stroke: #5f6368; }
+}
+
+.roadmap-card[data-milestone="6"] .isometric-svg path {
+  animation: cryoAura 3s ease-in-out infinite alternate;
+}
+@keyframes cryoAura {
+  0% { fill: rgba(26, 115, 232, 0.08); stroke: rgba(255,255,255,0.7); }
+  100% { fill: rgba(0, 240, 255, 0.2); stroke: #00f0ff; filter: drop-shadow(0 0 10px rgba(0,240,255,0.4)); }
 }
 
 .roadmap-meta {
@@ -971,21 +1061,21 @@ body {
 
 .roadmap-eyebrow {
   font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: #00f0ff;
   margin-bottom: 6px;
 }
 
 .roadmap-card-title {
-  font-family: var(--font-display);
+  font-family: 'Google Sans', 'Inter', var(--font-display);
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 700;
   line-height: 1.35;
   color: var(--text-white);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   min-height: 42px;
 }
 
@@ -993,21 +1083,22 @@ body {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font-family: var(--font-sans);
+  font-family: 'Google Sans Text', var(--font-sans);
   font-size: 11.5px;
-  color: var(--text-dim);
+  color: rgba(255, 255, 255, 0.65);
   margin-bottom: 14px;
   flex: 1;
 }
 
 .roadmap-year-badge {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--google-blue);
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: rgba(138, 180, 248, 0.1);
+  color: #00f0ff;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.25);
   display: inline-block;
   align-self: flex-start;
 }
@@ -1015,29 +1106,30 @@ body {
 /* Horizontal Interactive Timeline Track */
 .roadmap-timeline-track {
   position: relative;
-  padding: 24px 16px;
-  margin-top: 16px;
+  padding: 20px 16px 10px;
+  margin-top: 8px;
 }
 
 .timeline-line-bg {
   position: absolute;
-  top: 36px;
+  top: 32px;
   left: 32px;
   right: 32px;
   height: 2px;
-  background: var(--border-color);
+  background: rgba(255, 255, 255, 0.1);
   z-index: 0;
 }
 
 .timeline-line-progress {
   position: absolute;
-  top: 36px;
+  top: 32px;
   left: 32px;
   width: 25%;
-  height: 2px;
-  background: var(--google-blue);
+  height: 3px;
+  background: linear-gradient(90deg, #00f0ff, #3b82f6);
   z-index: 1;
-  transition: width 0.3s ease;
+  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
 }
 
 .timeline-points-row {
@@ -1053,44 +1145,344 @@ body {
   align-items: center;
   gap: 10px;
   cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.timeline-node:hover {
+  transform: translateY(-2px);
 }
 
 .node-bullet {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: var(--bg-card);
-  border: 2px solid var(--border-color);
-  transition: all 0.2s ease;
+  background: #080c16;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  transition: all 0.25s ease;
 }
 
 .timeline-node.completed .node-bullet {
-  background: var(--google-blue);
-  border-color: var(--google-blue);
+  background: #00f0ff;
+  border-color: #00f0ff;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
 }
 
 .timeline-node.active .node-bullet {
-  transform: scale(1.4);
-  box-shadow: 0 0 12px var(--google-blue);
+  transform: scale(1.45);
+  box-shadow: 0 0 16px #00f0ff, 0 0 0 3px rgba(0, 240, 255, 0.3);
+  background: #ffffff;
+  border-color: #00f0ff;
 }
 
 .timeline-node.current .node-bullet {
-  border-color: var(--google-blue);
-  background: var(--bg-card);
-  box-shadow: 0 0 8px rgba(138, 180, 248, 0.6);
+  border-color: #00f0ff;
+  background: #080c16;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.7);
+  animation: currentPulse 1.5s infinite alternate;
+}
+@keyframes currentPulse {
+  0% { transform: scale(1); box-shadow: 0 0 6px rgba(0,240,255,0.4); }
+  100% { transform: scale(1.3); box-shadow: 0 0 16px rgba(0,240,255,0.9); }
 }
 
 .node-label {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text-dim);
+  color: rgba(255, 255, 255, 0.5);
   white-space: nowrap;
+  transition: color 0.2s ease;
 }
 
 .timeline-node.active .node-label,
 .timeline-node:hover .node-label {
-  color: var(--google-blue);
+  color: #00f0ff;
   font-weight: 700;
+}
+
+/* =========================================================================
+   INTERACTIVE ROADMAP DETAIL VIEWER (DEEP-DIVE CARD)
+   ========================================================================= */
+.roadmap-detail-viewer {
+  margin-top: 32px;
+  animation: milestoneFadeIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes milestoneFadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.roadmap-detail-card {
+  background: rgba(8, 14, 28, 0.94);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 18px;
+  padding: 28px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 240, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.roadmap-detail-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #00f0ff 0%, #3b82f6 50%, #a78bfa 100%);
+}
+
+.rm-detail-header {
+  margin-bottom: 24px;
+}
+
+.rm-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.rm-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.8px;
+}
+
+.rm-status-tag {
+  font-family: 'Google Sans Text', var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+.rm-status-tag.status-achieved {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.rm-status-tag.status-current {
+  background: rgba(0, 240, 255, 0.15);
+  color: #00f0ff;
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  animation: pulseGlow 2s infinite alternate;
+}
+.rm-status-tag.status-future {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.rm-year-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.rm-detail-heading {
+  font-family: 'Google Sans', 'Inter', var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+
+.rm-detail-tagline {
+  font-family: 'Google Sans Text', 'Inter', var(--font-sans);
+  font-size: 14.5px;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 2-Column Grid */
+.rm-detail-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 28px;
+}
+
+@media (max-width: 900px) {
+  .rm-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+.rm-section-block {
+  margin-bottom: 18px;
+}
+
+.rm-block-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 8px;
+}
+
+.rm-desc-text {
+  font-family: 'Google Sans Text', 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.88);
+  margin: 0;
+}
+
+.rm-callout-breakthrough {
+  background: rgba(0, 240, 255, 0.06);
+  border-left: 3px solid #00f0ff;
+  border-radius: 0 10px 10px 0;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.rm-callout-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.rm-callout-content strong {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #00f0ff;
+  margin-bottom: 3px;
+}
+
+.rm-callout-content span {
+  font-family: 'Google Sans Text', 'Inter', sans-serif;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #e2e8f0;
+}
+
+.rm-reference-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rm-ref-label {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 10.5px;
+}
+
+.rm-ref-text {
+  color: #60a5fa;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 11.5px;
+}
+
+/* Right Column: Specs Deck */
+.rm-specs-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.rm-spec-item {
+  background: rgba(16, 24, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rm-spec-name {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.rm-spec-val {
+  font-family: 'Google Sans', 'Inter', var(--font-display);
+  font-size: 14px;
+  color: #ffffff;
+  line-height: 1.4;
+}
+.rm-spec-val.highlight-qubits {
+  color: #00f0ff;
+  font-size: 15.5px;
+  font-weight: 700;
+}
+.rm-spec-val.highlight-error {
+  color: #34d399;
+  font-size: 15.5px;
+  font-weight: 700;
+}
+
+/* Action Toolbar */
+.rm-action-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-rm-action {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  letter-spacing: 0.02em;
+}
+
+.btn-rm-primary {
+  background: linear-gradient(135deg, #00f0ff 0%, #0072ff 100%);
+  color: #050a14;
+  box-shadow: 0 4px 16px rgba(0, 240, 255, 0.35);
+}
+
+.btn-rm-primary:hover {
+  background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(0, 240, 255, 0.5);
+}
+
+.btn-rm-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-rm-secondary:hover {
+  background: rgba(0, 240, 255, 0.12);
+  border-color: #00f0ff;
+  color: #00f0ff;
+  transform: translateY(-2px);
 }
 
 /* Google Primary Pill Action */
