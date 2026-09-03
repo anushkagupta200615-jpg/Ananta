@@ -72,7 +72,6 @@ Ananta/
 │   ├── bloch-sphere.js     # Three.js 3D Bloch sphere renderer
 │   ├── circuit-ui.js       # Wire grid, gate placement & visualizers
 │   ├── algorithms.js       # Canonical presets & mission challenges
-│   ├── ai-tutor.js         # Interactive quantum AI mentor
 │   └── app.js              # Coordinator, tab routing & Google auth flow
 └── README.md
 ```

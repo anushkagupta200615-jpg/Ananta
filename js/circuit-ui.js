@@ -43,6 +43,7 @@ class CircuitUI {
     this.bindAudioEvents();
     this.bindBlochPillEvents();
     this.initAnalyticsDeck();
+    this.initGateEducationalTooltips();
     this.updateSimulation();
   }
 
@@ -84,6 +85,12 @@ class CircuitUI {
       // Wire track with continuous luminous quantum line
       const wireTrack = document.createElement('div');
       wireTrack.className = 'wire-track';
+
+      // Live animated quantum photon stream layer
+      const photonLayer = document.createElement('div');
+      photonLayer.className = 'photon-stream-layer';
+      photonLayer.innerHTML = '<div class="photon-particle"></div><div class="photon-particle"></div>';
+      wireTrack.appendChild(photonLayer);
 
       for (let c = 0; c < this.numCols; c++) {
         const slot = document.createElement('div');
@@ -148,7 +155,10 @@ class CircuitUI {
     }
 
     // Render vertical CNOT quantum entanglement connectors
-    setTimeout(() => this.renderCnotConnectors(), 10);
+    setTimeout(() => {
+      this.renderCnotConnectors();
+      this.bindGateTooltips();
+    }, 10);
   }
 
   renderCnotConnectors() {
@@ -279,6 +289,21 @@ class CircuitUI {
 
     this.renderGrid();
     this.updateSimulation();
+
+    // Trigger dynamic shockwave burst animation on placed slot
+    const slot1 = document.getElementById(`slot-${qubit}-${col}`);
+    if (slot1) {
+      slot1.classList.add('gate-shockwave');
+      setTimeout(() => slot1.classList.remove('gate-shockwave'), 500);
+    }
+    if (gateName === 'CX') {
+      const targetQubit = (qubit + 1) % this.numQubits;
+      const slot2 = document.getElementById(`slot-${targetQubit}-${col}`);
+      if (slot2) {
+        slot2.classList.add('gate-shockwave');
+        setTimeout(() => slot2.classList.remove('gate-shockwave'), 500);
+      }
+    }
   }
 
   removeGate(qubit, col) {
@@ -453,10 +478,6 @@ class CircuitUI {
       this.qasmCodeBlock.textContent = this.engine.toQASM(this.grid);
     }
 
-    // Trigger AI explanation update
-    if (window.quantaAI) {
-      window.quantaAI.onCircuitChanged(this.grid, probs, blochCoords, this.selectedQubitForBloch);
-    }
 
     // Check gamified missions
     if (window.missionManager) {
@@ -573,22 +594,147 @@ class CircuitUI {
 
   runMeasurementShots() {
     const resultsBox = document.getElementById('shots-results-container');
+    const showerWrap = document.getElementById('monte-carlo-shower-wrap');
+    const canvas = document.getElementById('monte-carlo-canvas');
     const btn = document.getElementById('btn-run-shots');
     if (!resultsBox) return;
 
     if (btn) {
-      btn.textContent = 'Measuring 1024 Particles...';
+      btn.textContent = '⚡ Showering 1024 Particles...';
       btn.disabled = true;
     }
 
-    setTimeout(() => {
-      const shotsData = this.engine.sampleShots(1024);
-      if (btn) {
-        btn.textContent = 'Run 1024 Physical Shots 🎲';
-        btn.disabled = false;
+    if (showerWrap) showerWrap.style.display = 'block';
+
+    const shotsData = this.engine.sampleShots(1024);
+    const activeResults = shotsData.results.filter(r => r.measuredCount > 0);
+
+    // Run interactive canvas particle shower
+    if (canvas && activeResults.length > 0) {
+      this.animateMonteCarloShower(canvas, shotsData, () => {
+        if (btn) {
+          btn.textContent = 'Sample 1024 Shots 🎲';
+          btn.disabled = false;
+        }
+        this.renderShotsResults(shotsData);
+      });
+    } else {
+      setTimeout(() => {
+        if (btn) {
+          btn.textContent = 'Sample 1024 Shots 🎲';
+          btn.disabled = false;
+        }
+        this.renderShotsResults(shotsData);
+      }, 400);
+    }
+  }
+
+  animateMonteCarloShower(canvas, shotsData, onComplete) {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const numParticles = 54;
+    const particles = [];
+
+    // Map 8 basis states to discrete detector bucket coordinates
+    const allStates = ['|000⟩', '|001⟩', '|010⟩', '|011⟩', '|100⟩', '|101⟩', '|110⟩', '|111⟩'];
+    const binX = {};
+    allStates.forEach((st, idx) => {
+      binX[st] = 36 + (idx / 7) * (width - 72);
+    });
+
+    // Cumulative distribution for Born rule collapse
+    const cumulative = [];
+    let sum = 0;
+    shotsData.results.forEach(r => {
+      sum += r.measuredPct / 100;
+      cumulative.push({ state: r.state, sum });
+    });
+
+    for (let i = 0; i < numParticles; i++) {
+      const rand = Math.random();
+      let targetState = cumulative.length > 0 ? cumulative[cumulative.length - 1].state : '|000⟩';
+      for (const entry of cumulative) {
+        if (rand <= entry.sum) {
+          targetState = entry.state;
+          break;
+        }
       }
-      this.renderShotsResults(shotsData);
-    }, 350);
+      particles.push({
+        x: width / 2 + (Math.random() - 0.5) * 24,
+        y: -10 - Math.random() * 50,
+        vx: (Math.random() - 0.5) * 1.6,
+        vy: 2.2 + Math.random() * 3.2,
+        targetX: binX[targetState] || width / 2,
+        targetState: targetState,
+        color: targetState.includes('1') ? '#00f0ff' : '#a855f7',
+        radius: 2.2 + Math.random() * 1.4,
+        landed: false
+      });
+    }
+
+    let frame = 0;
+    const maxFrames = 48;
+
+    const renderFrame = () => {
+      ctx.fillStyle = 'rgba(6, 9, 17, 0.38)';
+      ctx.fillRect(0, 0, width, height);
+
+      // Beam Splitter Lattice (Galton Array)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      for (let r = 0; r < 4; r++) {
+        const rowY = 22 + r * 18;
+        const count = r + 2;
+        for (let j = 0; j < count; j++) {
+          const pinX = width / 2 - (count - 1) * 16 + j * 32;
+          ctx.beginPath();
+          ctx.arc(pinX, rowY, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Basis state buckets
+      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      allStates.forEach(st => {
+        const bx = binX[st];
+        const match = shotsData.results.find(r => r.state === st);
+        const hasCount = match && match.measuredCount > 0;
+        ctx.fillStyle = hasCount ? 'rgba(0, 240, 255, 0.5)' : 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(bx - 12, height - 12, 24, 2);
+        ctx.fillStyle = hasCount ? '#00f0ff' : '#64748b';
+        ctx.fillText(st, bx, height - 3);
+      });
+
+      // Update particles
+      particles.forEach(p => {
+        if (!p.landed) {
+          p.x += (p.targetX - p.x) * 0.08 + p.vx;
+          p.y += p.vy;
+          if (p.y >= height - 14) {
+            p.landed = true;
+            p.y = height - 14;
+          }
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 6;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+
+      frame++;
+      if (frame < maxFrames) {
+        requestAnimationFrame(renderFrame);
+      } else {
+        if (onComplete) onComplete();
+      }
+    };
+
+    renderFrame();
   }
 
   renderShotsResults(shotsData) {
@@ -599,11 +745,11 @@ class CircuitUI {
     const activeResults = shotsData.results.filter(r => r.measuredCount > 0);
 
     if (activeResults.length === 0) {
-      container.innerHTML = `<div style="font-size:12px; color:var(--text-dim);">No physical shots registered yet. Click "Run 1024 Physical Shots".</div>`;
+      container.innerHTML = `<div style="font-size:12px; color:var(--text-dim);">No physical shots registered yet. Click "Sample 1024 Shots 🎲".</div>`;
       return;
     }
 
-    // Play crisp measurement detector collapse sound
+    // Play measurement sound
     if (this.audio && this.audio.isEnabled && activeResults[0]) {
       this.audio.playMeasurementClick(activeResults[0].state);
     }
@@ -1164,6 +1310,158 @@ class CircuitUI {
     this.renderGrid();
     this.updateSimulation();
   }
+
+  // =========================================================================
+  // INTERACTIVE GATE EDUCATIONAL PHYSICAL MECHANISM HOVER CARDS
+  // =========================================================================
+  initGateEducationalTooltips() {
+    this.eduCard = document.getElementById('gate-edu-card');
+    if (!this.eduCard) return;
+
+    // Bind palette buttons
+    document.querySelectorAll('.gate-btn').forEach(btn => {
+      const g = btn.getAttribute('data-gate');
+      if (g) this.attachEduTooltip(btn, g);
+    });
+  }
+
+  bindGateTooltips() {
+    if (!this.eduCard) return;
+    // Bind placed gates on circuit
+    document.querySelectorAll('.placed-gate').forEach(el => {
+      const rawGate = el.getAttribute('data-gate');
+      const g = rawGate ? rawGate.replace('_CTRL', '').replace('_TGT', '') : null;
+      if (g) this.attachEduTooltip(el, g);
+    });
+  }
+
+  attachEduTooltip(element, gateKey) {
+    const data = GATE_EDUCATIONAL_DATA[gateKey] || GATE_EDUCATIONAL_DATA['H'];
+
+    element.addEventListener('mouseenter', (e) => {
+      const badge = document.getElementById('edu-gate-badge');
+      const title = document.getElementById('edu-gate-title');
+      const role = document.getElementById('edu-gate-role');
+      const math = document.getElementById('edu-gate-math');
+      const desc = document.getElementById('edu-gate-desc');
+      const wave = document.getElementById('edu-gate-wave');
+
+      if (badge) {
+        badge.textContent = gateKey === 'CX' ? '⊕' : gateKey;
+        badge.style.background = data.color;
+      }
+      if (title) title.textContent = data.name;
+      if (role) role.textContent = data.role;
+      if (math) math.textContent = data.matrix;
+      if (desc) desc.textContent = data.concept;
+      if (wave) wave.innerHTML = data.waveSvg;
+
+      this.eduCard.style.display = 'block';
+      this.positionEduCard(e);
+      requestAnimationFrame(() => this.eduCard.classList.add('visible'));
+    });
+
+    element.addEventListener('mousemove', (e) => {
+      this.positionEduCard(e);
+    });
+
+    element.addEventListener('mouseleave', () => {
+      if (this.eduCard) {
+        this.eduCard.classList.remove('visible');
+        setTimeout(() => {
+          if (!this.eduCard.classList.contains('visible')) {
+            this.eduCard.style.display = 'none';
+          }
+        }, 180);
+      }
+    });
+  }
+
+  positionEduCard(e) {
+    if (!this.eduCard) return;
+    const cardWidth = 300;
+    const cardHeight = 180;
+    let x = e.clientX + 16;
+    let y = e.clientY + 16;
+
+    if (x + cardWidth > window.innerWidth - 12) {
+      x = e.clientX - cardWidth - 12;
+    }
+    if (y + cardHeight > window.innerHeight - 12) {
+      y = e.clientY - cardHeight - 12;
+    }
+
+    this.eduCard.style.left = `${Math.max(10, x)}px`;
+    this.eduCard.style.top = `${Math.max(10, y)}px`;
+  }
 }
+
+// Educational Physical Mechanism Reference Data
+const GATE_EDUCATIONAL_DATA = {
+  'H': {
+    name: 'Hadamard Gate',
+    role: 'Superposition Creator',
+    color: '#ea580c',
+    matrix: 'H = 1/√2 [[1, 1], [1, -1]]',
+    concept: 'Acts like a 50:50 quantum beam splitter. Maps deterministic ground state |0⟩ into equal wave interference superposition with 50% probability of |0⟩ and 50% probability of |1⟩.',
+    waveSvg: '<svg viewBox="0 0 160 36" width="100%" height="36"><path d="M 10 18 Q 40 4 80 18 T 150 18" fill="none" stroke="#f97316" stroke-width="2.5"><animate attributeName="d" values="M 10 18 Q 40 4 80 18 T 150 18; M 10 18 Q 40 32 80 18 T 150 18; M 10 18 Q 40 4 80 18 T 150 18" dur="2s" repeatCount="indefinite"/></path></svg>'
+  },
+  'CX': {
+    name: 'Controlled-NOT (CNOT)',
+    role: 'Entanglement Generator',
+    color: '#6366f1',
+    matrix: 'CX = [[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]]',
+    concept: 'Flips target qubit if and only if control qubit is |1⟩. Combined with Hadamard, it produces maximally entangled Bell states where neither qubit possesses an independent state.',
+    waveSvg: '<svg viewBox="0 0 160 36" width="100%" height="36"><circle cx="40" cy="18" r="5" fill="#6366f1"><animate attributeName="r" values="4;7;4" dur="1.5s" repeatCount="indefinite"/></circle><line x1="40" y1="18" x2="120" y2="18" stroke="#00f0ff" stroke-width="2" stroke-dasharray="4 2"><animate attributeName="stroke-dashoffset" values="0;12" dur="1s" repeatCount="indefinite"/></line><circle cx="120" cy="18" r="8" fill="none" stroke="#6366f1" stroke-width="2"/><line x1="120" y1="10" x2="120" y2="26" stroke="#6366f1" stroke-width="2"/><line x1="112" y1="18" x2="128" y2="18" stroke="#6366f1" stroke-width="2"/></svg>'
+  },
+  'X': {
+    name: 'Pauli-X Gate',
+    role: 'Quantum Bit-Flip (NOT)',
+    color: '#ef4444',
+    matrix: 'X = [[0, 1], [1, 0]]',
+    concept: 'Rotates the statevector by π radians (180°) around the X-axis of the Bloch sphere, inverting computational ground |0⟩ and excited |1⟩ states.',
+    waveSvg: '<svg viewBox="0 0 160 36" width="100%" height="36"><path d="M 20 28 L 60 28 L 100 8 L 140 8" fill="none" stroke="#ef4444" stroke-width="2.5"><animate attributeName="stroke" values="#ef4444;#f87171;#ef4444" dur="2s" repeatCount="indefinite"/></path></svg>'
+  },
+  'Z': {
+    name: 'Pauli-Z Gate',
+    role: 'Phase-Flip Gate',
+    color: '#8b5cf6',
+    matrix: 'Z = [[1, 0], [0, -1]]',
+    concept: 'Rotates the statevector by π radians around the Z-axis. Leaves probabilities unchanged (|−1|² = 1) but introduces destructive quantum interference.',
+    waveSvg: '<svg viewBox="0 0 160 36" width="100%" height="36"><path d="M 10 18 Q 45 4 80 18 Q 115 32 150 18" fill="none" stroke="#8b5cf6" stroke-width="2.5"><animate attributeName="d" values="M 10 18 Q 45 4 80 18 Q 115 32 150 18; M 10 18 Q 45 32 80 18 Q 115 4 150 18; M 10 18 Q 45 4 80 18 Q 115 32 150 18" dur="1.8s" repeatCount="indefinite"/></path></svg>'
+  },
+  'Y': {
+    name: 'Pauli-Y Gate',
+    role: 'Bit & Phase Flip',
+    color: '#ec4899',
+    matrix: 'Y = [[0, −i], [i, 0]]',
+    concept: 'Rotates the statevector by π radians around the Y-axis. Combines both a bit-flip and a complex imaginary phase shift.',
+    waveSvg: '<svg viewBox="0 0 160 36" width="100%" height="36"><circle cx="80" cy="18" r="11" fill="none" stroke="#ec4899" stroke-width="2" stroke-dasharray="6 3"><animateTransform attributeName="transform" type="rotate" from="0 80 18" to="360 80 18" dur="3s" repeatCount="indefinite"/></circle></svg>'
+  },
+  'S': {
+    name: 'Phase Gate (S / √Z)',
+    role: '90° Equatorial Rotation',
+    color: '#06b6d4',
+    matrix: 'S = [[1, 0], [0, i]]',
+    concept: 'Quarter-turn phase shift (+π/2) on the equatorial plane. Fundamental building block for the Quantum Fourier Transform (QFT).',
+    waveSvg: '<svg viewBox="0 0 160 36" width="100%" height="36"><path d="M 20 18 A 60 18 0 0 1 140 18" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-dasharray="8 4"><animate attributeName="stroke-dashoffset" values="24;0" dur="2s" repeatCount="indefinite"/></path></svg>'
+  },
+  'T': {
+    name: 'T-Gate (π/8 / ∜Z)',
+    role: 'Universal Non-Clifford Gate',
+    color: '#0ea5e9',
+    matrix: 'T = [[1, 0], [0, e^(iπ/4)]]',
+    concept: 'Injects non-Clifford magic states (+π/4). Enables universal fault-tolerant quantum computation beyond classical simulability (Gottesman-Knill theorem).',
+    waveSvg: '<svg viewBox="0 0 160 36" width="100%" height="36"><polygon points="80,6 92,28 68,28" fill="rgba(14,165,233,0.3)" stroke="#0ea5e9" stroke-width="2"><animateTransform attributeName="transform" type="rotate" from="0 80 18" to="360 80 18" dur="4s" repeatCount="indefinite"/></polygon></svg>'
+  },
+  'M': {
+    name: 'Measurement Detector',
+    role: 'Born Rule State Collapse',
+    color: '#64748b',
+    matrix: 'M = |0⟩⟨0| or |1⟩⟨1|',
+    concept: 'Forces a delicate superposition to collapse into a classical 0 or 1 eigenstate via interaction with a macroscopic dispersive readout resonator.',
+    waveSvg: '<svg viewBox="0 0 160 36" width="100%" height="36"><path d="M 10 26 Q 40 24 60 26 Q 80 2 80 2 Q 80 26 100 26 Q 130 24 150 26" fill="none" stroke="#94a3b8" stroke-width="2.5"><animate attributeName="stroke" values="#94a3b8;#00f0ff;#94a3b8" dur="1.2s" repeatCount="indefinite"/></path></svg>'
+  }
+};
 
 window.CircuitUI = CircuitUI;

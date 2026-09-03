@@ -49,7 +49,6 @@
             <a href="#overview" class="dropdown-link" data-tab="overview">What is quantum computing?</a>
             <a href="#docs" class="dropdown-link" data-tab="docs">Educational & Technical Specs</a>
             <a href="#intuition" class="dropdown-link" data-tab="intuition">Intuition Lab (Wave Collapse)</a>
-            <a href="#ai-assistant" class="dropdown-link" data-tab="ai-assistant">AI Mentor (IISc/IIT Guidance)</a>
           </div>
         </div>
 
@@ -134,7 +133,6 @@
     <a href="#research" class="mobile-nav-item" data-tab="research" onclick="window.closeMobileNav()">📚 Research</a>
     <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">📄 Docs</a>
     <a href="#intuition" class="mobile-nav-item" data-tab="intuition" onclick="window.closeMobileNav()">🔬 Intuition Lab</a>
-    <a href="#ai-assistant" class="mobile-nav-item" data-tab="ai-assistant" onclick="window.closeMobileNav()">🤖 AI Mentor</a>
     <a href="#challenges" class="mobile-nav-item" data-tab="challenges" onclick="window.closeMobileNav()">🏆 Challenges</a>
     <div class="mobile-nav-divider"></div>
     <!-- Mobile search bar -->
@@ -941,10 +939,6 @@
               </div>
             </div>
 
-            <!-- Live State Interpretation Card -->
-            <div class="state-analysis-box" id="ai-explanation-text">
-              <!-- Populated dynamically -->
-            </div>
           </div>
 
           <!-- Right: Circuit Canvas -->
@@ -1052,6 +1046,14 @@
                 <div class="vis-dock-header">
                   <h4>Monte Carlo Measurement Engine (1024 Shots)</h4>
                   <button id="btn-run-shots" class="btn-run-shots">Sample 1024 Shots 🎲</button>
+                </div>
+                <!-- Interactive Quantum Particle Shower Animation Container -->
+                <div class="monte-carlo-shower-wrap" id="monte-carlo-shower-wrap" style="display: none;">
+                  <canvas id="monte-carlo-canvas" class="monte-carlo-canvas" width="480" height="110"></canvas>
+                  <div class="monte-carlo-stats-row">
+                    <span>Physical State: <strong id="mc-active-sample" class="monte-carlo-stat-val">Collapsing 1024 Particles...</strong></span>
+                    <span>Empirical Fidelity: <strong id="mc-fidelity-val" class="monte-carlo-stat-val">99.8%</strong></span>
+                  </div>
                 </div>
                 <div id="shots-results-container" class="shots-results-box">
                   <div class="shots-empty-prompt">
@@ -1182,91 +1184,6 @@
 
         <div class="algorithms-main-wrapper" id="algorithm-cards-container">
           <!-- Populated by algorithms.js -->
-        </div>
-      </div>
-    </section>
-
-    <!-- ================= VIEW 5: AI MENTOR ================= -->
-    <section class="viewport-section" id="view-ai-assistant">
-      <div class="standard-page-container">
-        <div class="mentor-console">
-          <div class="mentor-header">
-            <div>
-              <h3>Ananta AI Research Mentor</h3>
-              <p>Statevector diagnostics, unitary decomposition, parameter-shift gradient explanations, and real-time circuit guidance powered by Gemini. Calibrated for undergraduate through postgraduate quantum computing depth.</p>
-            </div>
-            <div class="mentor-header-controls">
-              <button id="btn-toggle-llm-settings" class="btn-llm-settings-toggle" title="Configure Cloud LLM (Gemini / OpenAI)">
-                ⚙️ LLM Provider: <span id="llm-active-pill" class="llm-pill local">Offline Expert</span>
-              </button>
-              <div class="mentor-mode-switch">
-                <span id="ai-mode-label">Intuitive (ELI5)</span>
-                <label class="custom-toggle">
-                  <input type="checkbox" id="ai-mode-toggle">
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Slide-down LLM Configuration Panel -->
-          <div id="llm-settings-drawer" class="llm-settings-drawer" style="display: none;">
-            <div class="llm-settings-header">
-              <h4>🤖 Connect Cloud LLM to Quantum Studio</h4>
-              <span class="llm-telemetry-badge">⚡ Real-time Circuit Telemetry Synced</span>
-            </div>
-            <div class="llm-settings-grid">
-              <div class="llm-form-group">
-                <label for="llm-provider-select">AI Model Provider:</label>
-                <select id="llm-provider-select" class="llm-select">
-                  <option value="gemini">Google Gemini 2.0 / 1.5 Flash (Recommended - Free Tier)</option>
-                  <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
-                  <option value="local">Built-in Offline Expert System (No API Key Required)</option>
-                </select>
-              </div>
-
-              <div class="llm-form-group" id="api-key-group">
-                <label for="llm-api-key-input">API Key (Stored locally in your browser):</label>
-                <div class="api-key-input-wrap">
-                  <input type="password" id="llm-api-key-input" class="llm-input" placeholder="Enter Gemini or OpenAI API Key...">
-                  <button type="button" id="btn-toggle-api-key-visibility" class="btn-eye-toggle" title="Show/Hide Key">👁️</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="llm-settings-footer">
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="llm-link-hint" id="llm-get-key-link">
-                Get a free Google Gemini API Key at Google AI Studio ↗
-              </a>
-              <div class="llm-footer-actions">
-                <button id="btn-save-llm-settings" class="btn-save-llm">Save & Connect</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="prompt-chips-bar">
-            <span>Ask about:</span>
-            <button class="prompt-chip" data-query="Explain quantum superposition with the Bloch sphere representation and its physical meaning">Superposition</button>
-            <button class="prompt-chip" data-query="Derive the Bell state from Hadamard and CNOT, and explain why it is maximally entangled">Entanglement</button>
-            <button class="prompt-chip" data-query="Walk me through Grover's diffusion operator and how it inverts amplitudes through the mean">Grover's</button>
-            <button class="prompt-chip" data-query="What is the Quantum Fourier Transform and how does it relate to Shor's algorithm?">QFT & Shor's</button>
-            <button class="prompt-chip" data-query="Explain the parameter-shift rule for computing quantum gradients in variational algorithms">VQE Gradients</button>
-            <button class="prompt-chip" data-query="What is decoherence and how do T1 and T2 times affect NISQ device performance?">Decoherence</button>
-          </div>
-
-          <div class="mentor-chat-stream" id="ai-chat-history">
-            <div class="chat-bubble chat-ai">
-              <div class="chat-sender-label">Ananta AI Mentor</div>
-              <div class="chat-text">
-                Welcome to Ananta. I can explain the mathematics behind your active circuit, derive gate unitaries and their physical interpretations, walk through algorithm complexity and quantum advantage arguments, or help you understand NISQ hardware constraints. What would you like to explore?
-              </div>
-            </div>
-          </div>
-
-          <div class="mentor-input-row">
-            <input type="text" id="ai-chat-input" class="chat-text-input" placeholder="Ask about quantum states, gates, or algorithms..." autocomplete="off">
-            <button class="btn-mentor-send" id="btn-send-ai">Send</button>
-          </div>
         </div>
       </div>
     </section>
@@ -2248,18 +2165,29 @@ Key Advantage:
     </div>
   </div>
 
+  <!-- Interactive Gate Educational Mechanism Floating Card -->
+  <div class="gate-edu-card" id="gate-edu-card" style="display: none;">
+    <div class="gate-edu-header">
+      <div class="gate-edu-badge" id="edu-gate-badge">H</div>
+      <div>
+        <h4 class="gate-edu-title" id="edu-gate-title">Hadamard Gate</h4>
+        <span class="gate-edu-role" id="edu-gate-role">Superposition Creator</span>
+      </div>
+    </div>
+    <div class="gate-edu-math" id="edu-gate-math">H = 1/√2 [[1, 1], [1, -1]]</div>
+    <p class="gate-edu-body" id="edu-gate-desc">
+      Acts like a 50:50 quantum beam splitter.
+    </p>
+    <div class="gate-edu-wave-preview" id="edu-gate-wave"></div>
+  </div>
+
   <!-- Script Pipeline -->
-  <script>
-    window.ANANTA_CONFIG = window.ANANTA_CONFIG || { GEMINI_API_KEY: '', OPENAI_API_KEY: '', DEFAULT_PROVIDER: 'gemini' };
-  </script>
-  <script src="js/config.js" onerror="/* optional local secrets */"></script>
   <script src="js/quantum-knowledge-data.js"></script>
   <script src="js/quantum-engine.js"></script>
   <script src="js/quantum-audio.js"></script>
   <script src="js/bloch-sphere.js"></script>
   <script src="js/circuit-ui.js"></script>
   <script src="js/quantum-expanded-corpus.js"></script>
-  <script src="js/ai-tutor.js"></script>
   <script src="js/algorithms.js"></script>
   <script src="js/research-papers.js"></script>
   <script src="js/quantum-algorithm-zoo-data.js"></script>

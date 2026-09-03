@@ -1426,13 +1426,9 @@ body {
   color: #ffffff;
   line-height: 1.4;
 }
-.rm-spec-val.highlight-qubits {
-  color: #00f0ff;
-  font-size: 15.5px;
-  font-weight: 700;
-}
+.rm-spec-val.highlight-qubits,
 .rm-spec-val.highlight-error {
-  color: #34d399;
+  color: #00f0ff;
   font-size: 15.5px;
   font-weight: 700;
 }
@@ -3037,16 +3033,256 @@ body {
   line-height: 1;
 }
 
-/* CNOT Vertical Quantum Entanglement Linker */
+/* CNOT Vertical Quantum Entanglement Linker - Animated Plasma Beam */
 .cnot-vertical-connector {
   position: absolute;
-  width: 3px;
-  background: #00f0ff;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.9);
+  width: 4px;
+  background: linear-gradient(180deg, #6366f1 0%, #00f0ff 50%, #a855f7 100%);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.95), 0 0 28px rgba(99, 102, 241, 0.7);
   z-index: 1;
   pointer-events: none;
   transform: translateX(-50%);
+  border-radius: 4px;
+  animation: cnotPlasmaPulse 1.8s ease-in-out infinite alternate;
 }
+
+.cnot-vertical-connector::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -3px; right: -3px; bottom: 0;
+  background: linear-gradient(180deg, transparent, rgba(0, 240, 255, 0.8), transparent);
+  filter: blur(3px);
+  animation: energyPacketFlow 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.cnot-vertical-connector::after {
+  content: '⚡ ENTANGLED';
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.9px;
+  color: #00f0ff;
+  background: rgba(8, 14, 28, 0.92);
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  pointer-events: auto;
+  cursor: help;
+  animation: badgeBreathe 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes cnotPlasmaPulse {
+  0% { box-shadow: 0 0 10px rgba(0, 240, 255, 0.6), 0 0 20px rgba(99, 102, 241, 0.4); }
+  100% { box-shadow: 0 0 20px rgba(0, 240, 255, 1.0), 0 0 35px rgba(168, 85, 247, 0.85); }
+}
+
+@keyframes energyPacketFlow {
+  0% { transform: translateY(-80%); opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { transform: translateY(80%); opacity: 0.2; }
+}
+
+@keyframes badgeBreathe {
+  0% { transform: translateY(-50%) scale(0.96); border-color: rgba(0, 240, 255, 0.4); }
+  100% { transform: translateY(-50%) scale(1.04); border-color: rgba(0, 240, 255, 0.85); box-shadow: 0 0 14px rgba(0, 240, 255, 0.7); }
+}
+
+/* CNOT Node Micro-Animations */
+.gate-cnot-ctrl .cnot-dot {
+  position: relative;
+  display: inline-block;
+  animation: ctrlPulseRing 1.6s ease-in-out infinite;
+}
+@keyframes ctrlPulseRing {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px #818cf8); }
+  50% { transform: scale(1.35); filter: drop-shadow(0 0 14px #00f0ff); }
+}
+
+.gate-cnot-tgt .cnot-cross {
+  display: inline-block;
+  animation: tgtCrossSpin 6s linear infinite;
+}
+@keyframes tgtCrossSpin {
+  0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 4px #818cf8); }
+  50% { transform: rotate(180deg) scale(1.15); filter: drop-shadow(0 0 12px #00f0ff); }
+  100% { transform: rotate(360deg) scale(1); filter: drop-shadow(0 0 4px #818cf8); }
+}
+
+/* Photon Wavepacket Stream along Qubit Wires */
+.photon-stream-layer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.photon-particle {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 15%, #00f0ff 65%, transparent 100%);
+  box-shadow: 0 0 10px #00f0ff, 0 0 20px rgba(0, 240, 255, 0.85);
+  animation: photonWireTravel 3.2s linear infinite;
+}
+
+.photon-particle:nth-child(2) {
+  animation-delay: -1.6s;
+  background: radial-gradient(circle, #ffffff 15%, #a855f7 65%, transparent 100%);
+  box-shadow: 0 0 10px #a855f7, 0 0 20px rgba(168, 85, 247, 0.85);
+}
+
+@keyframes photonWireTravel {
+  0% { left: 0%; opacity: 0; transform: scale(0.5); }
+  8% { opacity: 1; transform: scale(1); }
+  92% { opacity: 1; transform: scale(1); }
+  100% { left: 100%; opacity: 0; transform: scale(0.5); }
+}
+
+/* Gate Placed Dynamic Shockwave Burst */
+.gate-shockwave {
+  animation: shockwaveBurst 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes shockwaveBurst {
+  0% { transform: scale(0.75); box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.9); }
+  45% { transform: scale(1.15); box-shadow: 0 0 24px 8px rgba(0, 240, 255, 0.6); }
+  100% { transform: scale(1); box-shadow: 0 4px 14px rgba(0,0,0,0.5); }
+}
+
+/* Monte Carlo Particle Shower Canvas */
+.monte-carlo-shower-wrap {
+  position: relative;
+  width: 100%;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #060911;
+  border: 1px solid var(--border-color);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+.monte-carlo-canvas {
+  width: 100%;
+  height: 110px;
+  display: block;
+}
+
+.monte-carlo-stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.monte-carlo-stat-val {
+  color: #00f0ff;
+  font-weight: 700;
+}
+
+/* Interactive Gate Educational Physical Mechanism Hover Card */
+.gate-edu-card {
+  position: fixed;
+  z-index: 9999;
+  width: 290px;
+  background: rgba(10, 16, 30, 0.95);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 240, 255, 0.25);
+  backdrop-filter: blur(16px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.gate-edu-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.gate-edu-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 6px;
+}
+
+.gate-edu-badge {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 900;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.gate-edu-title {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.gate-edu-role {
+  font-size: 10.5px;
+  color: #00f0ff;
+  font-family: var(--font-mono);
+  margin: 0;
+}
+
+.gate-edu-body {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 8px 0;
+}
+
+.gate-edu-math {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #38bdf8;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.gate-edu-wave-preview {
+  width: 100%;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 
 /* Academic Analytics Studio Deck */
 .composer-analytics-deck {
@@ -3566,7 +3802,7 @@ body {
 }
 
 /* ==========================================================================
-   VIEW 4: Algorithms, Mentor, Challenges & Docs (Adaptive Dual Theme)
+   VIEW 4: Algorithms, Challenges & Docs (Adaptive Dual Theme)
    ========================================================================== */
 
 .standard-page-container {
@@ -3596,658 +3832,6 @@ body {
   flex-direction: column;
   gap: 20px;
   width: 100%;
-}
-
-/* Mentor Console */
-.mentor-console {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-height: 600px;
-  box-shadow: var(--card-shadow);
-}
-
-.mentor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 14px;
-}
-
-.mentor-header h3 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-white);
-}
-
-.mentor-header p {
-  font-size: 13px;
-  color: var(--text-dim);
-}
-
-.mentor-mode-switch {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--accent-blue);
-}
-
-.custom-toggle {
-  position: relative;
-  display: inline-block;
-  width: 36px;
-  height: 20px;
-}
-
-.custom-toggle input { opacity: 0; width: 0; height: 0; }
-
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background-color: var(--border-darker);
-  border-radius: 20px;
-  transition: .2s;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 14px;
-  width: 14px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  border-radius: 50%;
-  transition: .2s;
-}
-
-input:checked + .toggle-slider {
-  background-color: var(--accent-blue);
-}
-
-input:checked + .toggle-slider:before {
-  transform: translateX(16px);
-}
-
-.prompt-chips-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 12px;
-  color: var(--text-subtle);
-}
-
-.prompt-chip {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  color: var(--text-white);
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  cursor: pointer;
-  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.2);
-  transition: all 0.15s ease;
-}
-
-.prompt-chip:hover {
-  background: rgba(16, 185, 129, 0.12);
-  border-color: #10b981;
-  color: #34d399;
-  transform: translateY(-1px);
-}
-
-.prompt-chip:active {
-  transform: translateY(1px);
-  background: rgba(16, 185, 129, 0.2);
-}
-
-.mentor-chat-stream {
-  flex-grow: 1;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 380px;
-  overflow-y: auto;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   CHAT UI — Premium Redesign (Ananta v3.0)
-   Typography: Google Sans Text / Inter, 14px/1.65
-   Bubbles: Glassmorphism AI, Gradient User
-   Code: Dark pre blocks with mono font
-═══════════════════════════════════════════════════════════════ */
-
-.chat-bubble {
-  max-width: 88%;
-  padding: 12px 16px;
-  border-radius: 14px;
-  font-family: 'Google Sans Text', 'Inter', 'Segoe UI', system-ui, sans-serif;
-  font-size: 14px;
-  line-height: 1.65;
-  word-break: break-word;
-  animation: chatBubbleIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-@keyframes chatBubbleIn {
-  from { opacity: 0; transform: translateY(8px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)   scale(1); }
-}
-
-.chat-sender-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  margin-bottom: 5px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-/* AI Bubble — Glassmorphism */
-.chat-ai {
-  align-self: flex-start;
-  background: rgba(12, 18, 32, 0.85);
-  border: 1px solid rgba(0, 240, 255, 0.15);
-  border-left: 3px solid #00f0ff;
-  color: #e8eaf0;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 240, 255, 0.05);
-}
-
-.chat-ai .chat-sender-label {
-  color: #00f0ff;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
-}
-
-.chat-ai .chat-sender-label::before {
-  content: '⚛';
-  font-size: 12px;
-}
-
-/* User Bubble — Gradient */
-.chat-user {
-  align-self: flex-end;
-  background: linear-gradient(135deg, #059669 0%, #0d9488 50%, #0891b2 100%);
-  color: #ffffff;
-  border: 1px solid rgba(52, 211, 153, 0.25);
-  box-shadow: 0 4px 16px rgba(5, 150, 105, 0.3);
-}
-
-.chat-user .chat-sender-label {
-  color: rgba(255,255,255,0.8);
-}
-
-/* Chat text content */
-.chat-text {
-  color: inherit;
-}
-
-/* Inline code */
-.chat-inline-code {
-  font-family: 'Roboto Mono', 'Fira Code', monospace;
-  font-size: 12.5px;
-  background: rgba(0, 240, 255, 0.1);
-  border: 1px solid rgba(0, 240, 255, 0.2);
-  color: #67e8f9;
-  padding: 1px 6px;
-  border-radius: 4px;
-}
-
-/* Fenced code blocks */
-.chat-code-pre {
-  font-family: 'Roboto Mono', 'Fira Code', 'Courier New', monospace;
-  font-size: 12px;
-  line-height: 1.6;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(0, 240, 255, 0.12);
-  border-left: 3px solid #00f0ff;
-  border-radius: 6px;
-  padding: 12px 14px;
-  margin: 10px 0 4px;
-  overflow-x: auto;
-  color: #a5f3fc;
-  white-space: pre;
-}
-
-/* Math blocks */
-.chat-math-block {
-  background: rgba(139, 92, 246, 0.08);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin: 10px 0;
-}
-
-.chat-math-block .chat-code-pre {
-  border-left-color: #a78bfa;
-  color: #c4b5fd;
-  background: rgba(0,0,0,0.3);
-  margin: 6px 0 0;
-}
-
-/* Intuition block */
-.chat-intuition-block {
-  background: rgba(16, 185, 129, 0.07);
-  border-left: 2px solid #10b981;
-  border-radius: 0 6px 6px 0;
-  padding: 8px 12px;
-  margin: 10px 0;
-  color: #6ee7b7;
-  font-style: italic;
-  font-size: 13.5px;
-}
-
-/* Topic header */
-.chat-topic-header {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.chat-topic-header strong {
-  font-size: 15px;
-  color: #ffffff;
-}
-
-.chat-topic-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 20px;
-  background: rgba(0, 240, 255, 0.12);
-  color: #00f0ff;
-  border: 1px solid rgba(0, 240, 255, 0.25);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.chat-arxiv-link {
-  font-size: 11px;
-  font-weight: 600;
-  color: #60a5fa;
-  text-decoration: none;
-  padding: 2px 7px;
-  border: 1px solid rgba(96, 165, 250, 0.3);
-  border-radius: 4px;
-  transition: all 0.15s;
-}
-
-.chat-arxiv-link:hover {
-  background: rgba(96, 165, 250, 0.1);
-  color: #93c5fd;
-}
-
-/* Lists */
-.chat-list {
-  margin: 8px 0 4px 16px;
-  padding: 0;
-}
-
-.chat-list li {
-  margin-bottom: 4px;
-  line-height: 1.55;
-}
-
-/* Headings inside chat */
-.chat-h1 { font-size: 16px; font-weight: 700; color: #fff; margin: 10px 0 4px; }
-.chat-h2 { font-size: 14.5px; font-weight: 700; color: #e2e8f0; margin: 8px 0 3px; }
-.chat-h3 { font-size: 13.5px; font-weight: 600; color: #cbd5e1; margin: 6px 0 2px; }
-
-.chat-hr {
-  border: none;
-  border-top: 1px solid rgba(255,255,255,0.1);
-  margin: 10px 0;
-}
-
-/* RAG Citation Box */
-.rag-citation-box {
-  margin-top: 12px;
-  padding: 7px 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 6px;
-  font-size: 11.5px;
-  color: var(--text-dim);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-
-.rag-citation-title {
-  font-weight: 700;
-  color: #60a5fa;
-  flex-shrink: 0;
-}
-
-/* Input Row */
-.mentor-input-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.chat-text-input {
-  flex-grow: 1;
-  background: rgba(8, 12, 24, 0.9);
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  padding: 11px 18px;
-  border-radius: 24px;
-  font-family: 'Google Sans Text', 'Inter', system-ui, sans-serif;
-  font-size: 14px;
-  outline: none;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(8px);
-}
-
-.chat-text-input::placeholder {
-  color: rgba(255,255,255,0.3);
-  font-style: italic;
-}
-
-.chat-text-input:focus {
-  border-color: #00f0ff;
-  box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.12), 0 0 16px rgba(0, 240, 255, 0.08);
-  background: rgba(0, 10, 24, 0.95);
-}
-
-/* Send Button */
-.btn-mentor-send {
-  background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
-  color: #ffffff;
-  border: none;
-  padding: 11px 24px;
-  border-radius: 24px;
-  font-family: 'Google Sans', sans-serif;
-  font-size: 13.5px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 114, 255, 0.4);
-  transition: all 0.18s ease;
-  flex-shrink: 0;
-  letter-spacing: 0.02em;
-}
-
-.btn-mentor-send:hover {
-  background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 100%);
-  box-shadow: 0 6px 20px rgba(0, 198, 255, 0.5);
-  transform: translateY(-1px);
-}
-
-.btn-mentor-send:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 8px rgba(0, 114, 255, 0.3);
-}
-
-/* LLM Error Tag */
-.llm-error-tag {
-  font-size: 11.5px;
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.08);
-  border: 1px solid rgba(251, 191, 36, 0.2);
-  border-radius: 5px;
-  padding: 5px 10px;
-  margin-bottom: 10px;
-  display: block;
-}
-
-
-
-/* LLM Configuration Header Controls */
-.mentor-header-controls {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.btn-llm-settings-toggle {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  color: var(--text-white);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.15s ease;
-}
-
-.btn-llm-settings-toggle:hover {
-  border-color: #00f0ff;
-  color: #00f0ff;
-}
-
-.llm-pill {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 10px;
-}
-
-.llm-pill.local {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-dim);
-  border: 1px solid var(--border-color);
-}
-
-.llm-pill.gemini {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.4);
-}
-
-.llm-pill.openai {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.4);
-}
-
-.llm-pill.warning {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.4);
-}
-
-/* Slide-down LLM Configuration Drawer */
-.llm-settings-drawer {
-  background: #080c14;
-  border: 1px solid #00f0ff;
-  border-radius: 8px;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 240, 255, 0.2);
-  animation: fadeInDown 0.25s ease-out;
-}
-
-@keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.llm-settings-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 10px;
-}
-
-.llm-settings-header h4 {
-  font-size: 14px;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0;
-}
-
-.llm-telemetry-badge {
-  font-size: 11px;
-  font-weight: 600;
-  color: #00f0ff;
-  background: rgba(0, 240, 255, 0.1);
-  border: 1px solid rgba(0, 240, 255, 0.25);
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.llm-settings-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-@media (max-width: 720px) {
-  .llm-settings-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.llm-form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.llm-form-group label {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-dim);
-}
-
-.llm-select, .llm-input {
-  background: #020408;
-  border: 1px solid var(--border-color);
-  color: #ffffff;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12.5px;
-  outline: none;
-  transition: border-color 0.15s ease;
-}
-
-.llm-select:focus, .llm-input:focus {
-  border-color: #00f0ff;
-}
-
-.api-key-input-wrap {
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.api-key-input-wrap .llm-input {
-  width: 100%;
-  padding-right: 36px;
-  box-sizing: border-box;
-}
-
-.btn-eye-toggle {
-  position: absolute;
-  right: 8px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.llm-settings-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 10px;
-}
-
-.llm-link-hint {
-  font-size: 12px;
-  color: #60a5fa;
-  text-decoration: none;
-}
-
-.llm-link-hint:hover {
-  text-decoration: underline;
-  color: #93c5fd;
-}
-
-.btn-save-llm {
-  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-  color: #ffffff;
-  box-shadow: 0 3px 0 0 #047857;
-  border: none;
-  font-size: 12.5px;
-  font-weight: 700;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-save-llm:hover {
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.5);
-  transform: translateY(-1px);
-}
-
-/* Typing Indicator Animation */
-.chat-typing {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.typing-dots {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.typing-dots span {
-  width: 7px;
-  height: 7px;
-  background: #00f0ff;
-  border-radius: 50%;
-  display: inline-block;
-  animation: typingBounce 1.4s infinite ease-in-out both;
-}
-
-.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
-.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
-
-@keyframes typingBounce {
-  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
-  40% { transform: scale(1); opacity: 1; }
-}
-
-.typing-hint {
-  font-size: 11.5px;
-  color: var(--text-dim);
-  font-style: italic;
-  margin-left: 6px;
 }
 
 /* Challenges Panel */
@@ -8401,23 +7985,6 @@ input:checked + .slider-round:before {
     padding: 16px;
   }
 
-  /* AI MENTOR */
-  .mentor-console {
-    padding: 16px;
-    min-height: auto;
-  }
-  .mentor-header {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
-  }
-  .mentor-input-row {
-    flex-direction: column;
-  }
-  .btn-mentor-send {
-    width: 100%;
-    text-align: center;
-  }
   .doctor-stage-card {
     grid-template-columns: 1fr;
   }
@@ -8596,23 +8163,6 @@ input:checked + .slider-round:before {
     padding: 16px;
   }
 
-  /* AI MENTOR */
-  .mentor-console {
-    padding: 16px;
-    min-height: auto;
-  }
-  .mentor-header {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
-  }
-  .mentor-input-row {
-    flex-direction: column;
-  }
-  .btn-mentor-send {
-    width: 100%;
-    text-align: center;
-  }
   .doctor-stage-card {
     grid-template-columns: 1fr;
   }

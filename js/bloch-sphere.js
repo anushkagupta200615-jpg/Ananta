@@ -128,6 +128,34 @@ class BlochSphereVisualizer {
     });
     this.arrowCone = new THREE.Mesh(coneGeo, coneMat);
     this.arrowGroup.add(this.arrowCone);
+
+    // Glowing Quantum Probability Uncertainty Halo at vector tip
+    const haloGeo = new THREE.SphereGeometry(0.16, 16, 16);
+    haloGeo.translate(0, radius, 0);
+    this.haloMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      transparent: true,
+      opacity: 0.65,
+      wireframe: true
+    });
+    this.arrowHalo = new THREE.Mesh(haloGeo, this.haloMat);
+    this.arrowGroup.add(this.arrowHalo);
+
+    // Trajectory Trail Arc (Great circle path on sphere surface)
+    this.maxTrailPoints = 64;
+    this.trailPositions = new Float32Array(this.maxTrailPoints * 3);
+    this.trailGeometry = new THREE.BufferGeometry();
+    this.trailGeometry.setAttribute('position', new THREE.BufferAttribute(this.trailPositions, 3));
+    this.trailMat = new THREE.LineBasicMaterial({
+      color: 0x00f0ff,
+      transparent: true,
+      opacity: 0.85,
+      linewidth: 3
+    });
+    this.trailLine = new THREE.Line(this.trailGeometry, this.trailMat);
+    this.blochGroup.add(this.trailLine);
+    this.trailIndex = 0;
+    this.radius = radius;
   }
 
   createAxis(dir, length, color, labelText) {
@@ -167,6 +195,23 @@ class BlochSphereVisualizer {
     } else {
       this.targetVector.set(0, 1, 0);
     }
+
+    // Trigger trail arc refresh on coordinate change
+    this.addTrailPoint(this.currentVector.clone().normalize().multiplyScalar(this.radius));
+  }
+
+  addTrailPoint(pt) {
+    if (!this.trailPositions) return;
+    const pos = this.trailPositions;
+    // Shift points forward
+    for (let i = (this.maxTrailPoints - 1) * 3; i >= 3; i--) {
+      pos[i] = pos[i - 3];
+    }
+    pos[0] = pt.x;
+    pos[1] = pt.y;
+    pos[2] = pt.z;
+    this.trailGeometry.attributes.position.needsUpdate = true;
+    this.trailMat.opacity = 0.9;
   }
 
   setupInteractivity() {
@@ -228,7 +273,30 @@ class BlochSphereVisualizer {
       return;
     }
 
+    // Spherical arc interpolation (maintains unit sphere surface traversal)
     this.currentVector.lerp(this.targetVector, 0.12);
+    if (this.currentVector.lengthSq() > 0.001) {
+      this.currentVector.normalize();
+    }
+
+    // Record trail along the sphere surface
+    const surfacePt = this.currentVector.clone().multiplyScalar(this.radius);
+    this.addTrailPoint(surfacePt);
+
+    // Gently fade trail when state settles
+    if (this.currentVector.distanceTo(this.targetVector) < 0.01) {
+      if (this.trailMat.opacity > 0.25) {
+        this.trailMat.opacity *= 0.96;
+      }
+    }
+
+    // Animate pulsating quantum state halo
+    if (this.arrowHalo) {
+      const time = performance.now() * 0.003;
+      const pulse = 1.0 + Math.sin(time) * 0.18;
+      this.arrowHalo.scale.set(pulse, pulse, pulse);
+      this.haloMat.opacity = 0.5 + Math.sin(time * 1.5) * 0.25;
+    }
 
     const up = new THREE.Vector3(0, 1, 0);
     const quat = new THREE.Quaternion().setFromUnitVectors(up, this.currentVector.clone().normalize());

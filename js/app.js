@@ -81,9 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const circuitUI = new CircuitUI(engine, blochVisualizer);
   window.circuitUI = circuitUI;
 
-  const aiTutor = new QuantaAITutor();
-  window.quantaAI = aiTutor;
-
   const missionManager = new MissionManager();
   window.missionManager = missionManager;
 
@@ -139,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Also highlight dropdown parent if a child view is selected
-    const learnTabs = ['overview', 'docs', 'intuition', 'ai-assistant'];
+    const learnTabs = ['overview', 'docs', 'intuition'];
     const learnNav = document.querySelector('.nav-item[data-tab="overview"]');
     if (learnNav && learnTabs.includes(tabKey)) {
       learnNav.classList.add('active');
@@ -260,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listen for browser hash changes (back/forward or URL typing)
   window.addEventListener('hashchange', () => {
     const h = window.location.hash.replace('#', '');
-    const valid = ['overview', 'simulator', 'algorithms', 'intuition', 'research', 'ai-assistant', 'challenges', 'docs', 'login'];
+    const valid = ['overview', 'simulator', 'algorithms', 'intuition', 'research', 'challenges', 'docs', 'login'];
     if (h && valid.includes(h)) {
       switchView(h);
     }
@@ -1455,7 +1452,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 9. Determine Initial Active View & Routing
   // ==========================================
-  const validTabs = ['overview', 'simulator', 'algorithms', 'intuition', 'research', 'ai-assistant', 'challenges', 'docs', 'login'];
+  const validTabs = ['overview', 'simulator', 'algorithms', 'intuition', 'research', 'challenges', 'docs', 'login'];
   const isLoggedIn = updateNavUser();
   const hash = window.location.hash.replace('#', '');
 
@@ -1515,8 +1512,7 @@ document.addEventListener('DOMContentLoaded', () => {
       keyTech: 'Cross-Entropy Benchmarking (XEB), Tunable Transmon Coupling, 15 mK Dilution Cryostat',
       paperTitle: 'Quantum Supremacy Using a Programmable Superconducting Processor (Arute et al., Nature 574)',
       actionPreset: 'superposition',
-      actionLabel: 'Simulate Sycamore Superposition in Studio',
-      aiQuery: 'Explain Google Quantum Supremacy 2019 milestone and cross entropy benchmarking on Sycamore'
+      actionLabel: 'Simulate Sycamore Superposition in Studio'
     },
     2: {
       num: 2,
@@ -1534,8 +1530,7 @@ document.addEventListener('DOMContentLoaded', () => {
       keyTech: 'Real-time FPGA Syndrome Decoding, Repetitive X & Z Plaquette Measurements, 1 μs Cycle Time',
       paperTitle: 'Suppressing Quantum Errors by Scaling a Quantum Error-Correcting Code (Google AI, Nature 614)',
       actionPreset: 'bell',
-      actionLabel: 'Explore Surface Code Stabilizer Simulation',
-      aiQuery: 'How does scaling surface code from distance 3 to distance 5 suppress logical errors?'
+      actionLabel: 'Explore Surface Code Stabilizer Simulation'
     },
     3: {
       num: 3,
@@ -1553,8 +1548,7 @@ document.addEventListener('DOMContentLoaded', () => {
       keyTech: 'Sub-microsecond Cryo-Decoding, Correlated Cosmic Ray Mitigation, Purcell Filters',
       paperTitle: 'Break-even Point and Fault-Tolerant Quantum Memories (Preskill 2024)',
       actionPreset: 'deutsch',
-      actionLabel: 'Launch Noise & Decoherence Lab',
-      aiQuery: 'What is the break even point for a long lived logical qubit and how do surface codes reach it?'
+      actionLabel: 'Launch Noise & Decoherence Lab'
     },
     4: {
       num: 4,
@@ -1572,8 +1566,7 @@ document.addEventListener('DOMContentLoaded', () => {
       keyTech: 'Transversal Gates, Distillation Factories, Code Deformation, Fault-Tolerant Teleportation',
       paperTitle: 'Universal Fault-Tolerant Quantum Computation with Magic States (Bravyi & Kitaev)',
       actionPreset: 'teleportation',
-      actionLabel: 'Test Logical CNOT in Composer',
-      aiQuery: 'How does lattice surgery and magic state distillation enable universal fault tolerant logical gates?'
+      actionLabel: 'Test Logical CNOT in Composer'
     },
     5: {
       num: 5,
@@ -1591,8 +1584,7 @@ document.addEventListener('DOMContentLoaded', () => {
       keyTech: 'Cryo-CMOS Multiplexers, Microwave-to-Optical Transducers, Vacuum Enclosures',
       paperTitle: 'Modular Architectures for Fault-Tolerant Quantum Computing (Monroe et al.)',
       actionPreset: 'qft',
-      actionLabel: 'Explore Multi-QPU Topology in Studio',
-      aiQuery: 'How do cryo-CMOS and optical interconnects solve the quantum wiring bottleneck?'
+      actionLabel: 'Explore Multi-QPU Topology in Studio'
     },
     6: {
       num: 6,
@@ -1610,8 +1602,7 @@ document.addEventListener('DOMContentLoaded', () => {
       keyTech: 'Million-Qubit Cryo-Arrays, Automated Continuous Calibration, Fault-Tolerant QROM',
       paperTitle: 'Elucidating Reaction Mechanisms on Quantum Computers (Reiher et al., PNAS)',
       actionPreset: 'grover',
-      actionLabel: 'Explore 74 Algorithms in Compendium',
-      aiQuery: 'What industrial problems will a million-qubit error-corrected quantum computer solve?'
+      actionLabel: 'Explore 74 Algorithms in Compendium'
     }
   };
 
@@ -1685,9 +1676,6 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="btn-rm-action btn-rm-primary" onclick="window.launchMilestonePreset('${data.actionPreset}')">
                 <span>🚀</span> ${data.actionLabel}
               </button>
-              <button class="btn-rm-action btn-rm-secondary" onclick="window.askAIMilestone('${data.aiQuery.replace(/'/g, "\\'")}')">
-                <span>⚛️</span> Ask AI Mentor About Milestone
-              </button>
             </div>
           </div>
         </div>
@@ -1714,20 +1702,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.switchView) {
       window.switchView('simulator');
     }
-  };
-
-  window.askAIMilestone = function(query) {
-    if (window.switchView) {
-      window.switchView('ai-assistant');
-    }
-    setTimeout(() => {
-      const input = document.getElementById('ai-chat-input');
-      const sendBtn = document.getElementById('btn-send-ai');
-      if (input) {
-        input.value = query;
-        if (sendBtn) sendBtn.click();
-      }
-    }, 150);
   };
 
   // 6-Milestone Interactive Roadmap Selection
