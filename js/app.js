@@ -96,6 +96,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const algorithmLibrary = new AlgorithmLibrary();
   window.algorithmLibrary = algorithmLibrary;
 
+  // 4 Killer Differentiating Studios
+  let surfaceCodeStudio = null;
+  if (window.SurfaceCodeStudio) {
+    surfaceCodeStudio = new window.SurfaceCodeStudio();
+    window.surfaceCodeStudio = surfaceCodeStudio;
+  }
+
+  let transpilerDoctor = null;
+  if (window.TranspilerDoctor) {
+    transpilerDoctor = new window.TranspilerDoctor();
+    window.transpilerDoctor = transpilerDoctor;
+  }
+
+  let vqeChemistryStudio = null;
+  if (window.VQEChemistryStudio) {
+    vqeChemistryStudio = new window.VQEChemistryStudio();
+    window.vqeChemistryStudio = vqeChemistryStudio;
+  }
+
+  let microwavePulseStudio = null;
+  if (window.MicrowavePulseStudio) {
+    microwavePulseStudio = new window.MicrowavePulseStudio();
+    window.microwavePulseStudio = microwavePulseStudio;
+  }
+
   // Initialize Living Rishi Quantum Canvas
   if (window.RishiQuantumCanvas) {
     try {
@@ -118,12 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabKey === 'hardware') tabKey = 'overview';
     if (tabKey === 'software') tabKey = 'simulator';
 
-    // If already logged in and navigating to login, redirect to overview
-    if (tabKey === 'login') {
-      const userJson = localStorage.getItem('ananta_user');
-      if (userJson) {
-        tabKey = 'overview';
-      }
+    // If navigating to login view, refresh active session state or credentials panel
+    if (tabKey === 'login' && window.renderLoginSessionState) {
+      window.renderLoginSessionState();
     }
 
     // Update active class on nav items
@@ -137,6 +159,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Also highlight dropdown parent if a child view is selected
     const learnTabs = ['overview', 'docs', 'intuition'];
+    const hwTabs = ['surface-code', 'pulse-studio'];
+    const swTabs = ['simulator', 'transpiler', 'vqe-chemistry', 'algorithms', 'challenges', 'research'];
+
     const learnNav = document.querySelector('.nav-item[data-tab="overview"]');
     if (learnNav && learnTabs.includes(tabKey)) {
       learnNav.classList.add('active');
@@ -183,6 +208,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.conceptDoctor.stopAnimation();
       }
     }
+    if (tabKey !== 'pulse-studio') {
+      if (window.microwavePulseStudio && window.microwavePulseStudio.stopRenderLoop) {
+        window.microwavePulseStudio.stopRenderLoop();
+      }
+    }
 
     // Resize Bloch sphere & refresh microwave pulse canvas when entering simulator
     if (tabKey === 'simulator') {
@@ -203,6 +233,36 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         window.rishiCanvasMain.initSize();
         window.rishiCanvasMain.start();
+      }, 50);
+    }
+
+    // Refresh Surface Code View
+    if (tabKey === 'surface-code' && window.surfaceCodeStudio) {
+      setTimeout(() => {
+        window.surfaceCodeStudio.renderLattice();
+        window.surfaceCodeStudio.updateStats();
+      }, 50);
+    }
+
+    // Refresh Transpiler View
+    if (tabKey === 'transpiler' && window.transpilerDoctor) {
+      setTimeout(() => {
+        window.transpilerDoctor.translate();
+        window.transpilerDoctor.runDoctor();
+      }, 50);
+    }
+
+    // Refresh VQE Chemistry View
+    if (tabKey === 'vqe-chemistry' && window.vqeChemistryStudio) {
+      setTimeout(() => {
+        window.vqeChemistryStudio.updateAll();
+      }, 50);
+    }
+
+    // Refresh Pulse Studio View
+    if (tabKey === 'pulse-studio' && window.microwavePulseStudio) {
+      setTimeout(() => {
+        window.microwavePulseStudio.startRenderLoop();
       }, 50);
     }
 
@@ -296,12 +356,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   } catch (e) {}
 
+  function getAuthRedirectTarget() {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirect = urlParams.get('redirect');
+      const valid = ['simulator', 'algorithms', 'intuition', 'research', 'challenges', 'docs', 'overview'];
+      if (redirect && valid.includes(redirect)) {
+        return redirect;
+      }
+    } catch (e) {}
+
+    // Check if hash has a destination other than login
+    const hash = window.location.hash.replace('#', '');
+    const valid = ['simulator', 'algorithms', 'intuition', 'research', 'challenges', 'docs', 'overview'];
+    if (hash && hash !== 'login' && valid.includes(hash)) {
+      return hash;
+    }
+
+    // Default entrance destination for quantum developers
+    return 'simulator';
+  }
+
+  function completeLogin(userObj, targetTab) {
+    if (!userObj.loggedInAt) userObj.loggedInAt = new Date().toISOString();
+    if (!userObj.avatar) userObj.avatar = userObj.name ? userObj.name.charAt(0).toUpperCase() : 'Q';
+    if (!userObj.role) userObj.role = 'Quantum Engineer';
+    if (!userObj.roleType) userObj.roleType = 'iam';
+
+    localStorage.setItem('ananta_user', JSON.stringify(userObj));
+    updateNavUser();
+
+    // Render session card if on login view
+    if (window.renderLoginSessionState) window.renderLoginSessionState();
+
+    const dest = targetTab || getAuthRedirectTarget();
+    showAuthSuccess(`✓ Authenticated as ${userObj.name} (${userObj.role}). Entering Studio...`);
+
+    setTimeout(() => {
+      switchView(dest);
+    }, 450);
+  }
+
+  window.completeLogin = completeLogin;
+  window.getAuthRedirectTarget = getAuthRedirectTarget;
+
   function updateNavUser() {
     const userJson = localStorage.getItem('ananta_user');
     const userContainer = document.getElementById('nav-user-container');
     const loginBtn = document.getElementById('nav-login-btn');
     const userAvatar = document.getElementById('nav-user-avatar');
     const userName = document.getElementById('nav-user-name');
+    const userRole = document.getElementById('nav-user-role');
     const mobileSignin = document.getElementById('mobile-nav-signin-link');
     const mobileUserBox = document.getElementById('mobile-nav-user-box');
     const mobileGreeting = document.getElementById('mobile-user-greeting');
@@ -313,11 +418,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loginBtn) loginBtn.style.display = 'none';
         if (userAvatar) userAvatar.textContent = user.avatar || (user.name ? user.name.charAt(0).toUpperCase() : 'A');
         if (userName) userName.textContent = user.name || 'User';
+        if (userRole) userRole.textContent = user.role || 'Quantum User';
 
         // Mobile drawer user state
         if (mobileSignin) mobileSignin.style.display = 'none';
         if (mobileUserBox) mobileUserBox.style.display = 'flex';
-        if (mobileGreeting) mobileGreeting.textContent = `Signed in as ${user.name || 'User'}`;
+        if (mobileGreeting) mobileGreeting.textContent = `Signed in as ${user.name || 'User'} (${user.role || 'Active'})`;
         return true;
       } catch (e) {
         console.error('Error parsing user session', e);
@@ -329,6 +435,124 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mobileUserBox) mobileUserBox.style.display = 'none';
     return false;
   }
+
+  window.updateNavUser = updateNavUser;
+
+  // Render AWS Active Session state on #view-login if user is already authenticated
+  window.renderLoginSessionState = () => {
+    const userJson = localStorage.getItem('ananta_user');
+    const sessionCard = document.getElementById('auth-active-session-box');
+    const credsBox = document.getElementById('auth-step-credentials');
+    const otpBox = document.getElementById('auth-step-otp');
+
+    if (userJson && sessionCard) {
+      try {
+        const user = JSON.parse(userJson);
+        const nameEl = document.getElementById('session-user-name');
+        const emailEl = document.getElementById('session-user-email');
+        const roleEl = document.getElementById('session-user-role');
+        const avatarEl = document.getElementById('session-user-avatar');
+        const timeEl = document.getElementById('session-login-time');
+
+        if (nameEl) nameEl.textContent = user.name || 'Active Quantum User';
+        if (emailEl) emailEl.textContent = user.email || 'developer@ananta-quantum.io';
+        if (roleEl) roleEl.textContent = user.role || 'IAM Quantum Engineer';
+        if (avatarEl) avatarEl.textContent = user.avatar || (user.name ? user.name.charAt(0).toUpperCase() : 'Q');
+        if (timeEl) {
+          const date = user.loggedInAt ? new Date(user.loggedInAt) : new Date();
+          timeEl.textContent = 'Session active since ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        sessionCard.style.display = 'block';
+        if (credsBox) credsBox.style.display = 'none';
+        if (otpBox) otpBox.style.display = 'none';
+        return;
+      } catch (e) {}
+    }
+
+    if (sessionCard) sessionCard.style.display = 'none';
+    if (credsBox) credsBox.style.display = 'block';
+    if (otpBox) otpBox.style.display = 'none';
+  };
+
+  // Switch Account button on Active Session card reveals credentials form
+  window.switchAccountDirect = () => {
+    const sessionCard = document.getElementById('auth-active-session-box');
+    const credsBox = document.getElementById('auth-step-credentials');
+    const otpBox = document.getElementById('auth-step-otp');
+    if (sessionCard) sessionCard.style.display = 'none';
+    if (credsBox) credsBox.style.display = 'block';
+    if (otpBox) otpBox.style.display = 'none';
+  };
+
+  // 1-Click AWS Preset Account Access
+  window.loginWithPreset = (presetType) => {
+    let user;
+    if (presetType === 'root') {
+      user = {
+        name: 'Root Administrator',
+        email: 'root@ananta-quantum.aws',
+        role: 'Root Administrator',
+        roleType: 'root',
+        tier: 'Full Cryo-Array Admin Privileges',
+        avatar: '🛡️',
+        provider: 'root_auth'
+      };
+    } else if (presetType === 'researcher') {
+      user = {
+        name: 'Dr. Quantum Researcher',
+        email: 'researcher@ananta-quantum.io',
+        role: 'Lead Quantum Scientist',
+        roleType: 'iam',
+        tier: '54-Qubit Sycamore Lattice Access',
+        avatar: '🔬',
+        provider: 'iam_auth'
+      };
+    } else if (presetType === 'developer') {
+      user = {
+        name: 'Cirq Quantum Engineer',
+        email: 'dev@cirq-quantum.io',
+        role: 'Cirq Developer',
+        roleType: 'iam',
+        tier: 'Quantum Statevector Composer',
+        avatar: '⚛️',
+        provider: 'iam_auth'
+      };
+    } else {
+      user = {
+        name: 'Guest Explorer',
+        email: 'guest@ananta-quantum.io',
+        role: 'Sandbox Guest',
+        roleType: 'guest',
+        tier: 'Interactive Simulation Sandbox',
+        avatar: '🚀',
+        provider: 'guest'
+      };
+    }
+    completeLogin(user);
+  };
+
+  // AWS Identity Type Switcher (Root User vs IAM User)
+  window.switchIdentityType = (type) => {
+    const pillRoot = document.getElementById('pill-identity-root');
+    const pillIam = document.getElementById('pill-identity-iam');
+    const emailLabel = document.getElementById('label-auth-identifier');
+    const emailInput = document.getElementById('login-email');
+    const errBanner = document.getElementById('auth-error-banner');
+    if (errBanner) errBanner.style.display = 'none';
+
+    if (type === 'root') {
+      if (pillRoot) pillRoot.classList.add('active');
+      if (pillIam) pillIam.classList.remove('active');
+      if (emailLabel) emailLabel.textContent = 'Root User Email Address (Account Owner)';
+      if (emailInput) emailInput.placeholder = 'root-owner@ananta-quantum.aws';
+    } else {
+      if (pillIam) pillIam.classList.add('active');
+      if (pillRoot) pillRoot.classList.remove('active');
+      if (emailLabel) emailLabel.textContent = 'IAM User Email or Account Alias';
+      if (emailInput) emailInput.placeholder = 'quantum-developer@ananta-quantum.io';
+    }
+  };
 
   const navLoginBtn = document.getElementById('nav-login-btn');
   if (navLoginBtn) {
@@ -345,7 +569,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const formSignin = document.getElementById('form-signin');
     const formSignup = document.getElementById('form-signup');
     const errBanner = document.getElementById('auth-error-banner');
+    const succBanner = document.getElementById('auth-success-banner');
     if (errBanner) errBanner.style.display = 'none';
+    if (succBanner) succBanner.style.display = 'none';
 
     if (tab === 'signin') {
       if (btnSignin) btnSignin.classList.add('active');
@@ -372,17 +598,16 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.selectGoogleAccount = (name, email) => {
+    window.closeGoogleDialog();
     const user = {
       name: name,
       email: email,
+      role: 'Federated Google Researcher',
+      roleType: 'sso',
       provider: 'google',
-      avatar: name.charAt(0).toUpperCase(),
-      loggedInAt: new Date().toISOString()
+      avatar: name.charAt(0).toUpperCase()
     };
-    localStorage.setItem('ananta_user', JSON.stringify(user));
-    window.closeGoogleDialog();
-    updateNavUser();
-    switchView('overview');
+    completeLogin(user);
   };
 
   window.promptCustomGoogleAccount = () => {
@@ -455,13 +680,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fillBar) fillBar.style.background = '#10b981';
       }
     }
-    return score >= 75; // Requires at least 3 out of 4 criteria (strong)
+    return score >= 75; // Requires at least 3 out of 4 criteria
   };
 
-  window.togglePasswordVisibility = (inputId) => {
+  window.togglePasswordVisibility = (inputId, btnEl) => {
     const input = document.getElementById(inputId);
     if (input) {
-      input.type = input.type === 'password' ? 'text' : 'password';
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      if (btnEl) btnEl.textContent = isPass ? '🔒' : '👁️';
+    }
+  };
+
+  window.checkCapsActive = (e, warningId) => {
+    const warn = document.getElementById(warningId);
+    if (!warn) return;
+    if (e.getModifierState && e.getModifierState('CapsLock')) {
+      warn.style.display = 'inline-flex';
+    } else {
+      warn.style.display = 'none';
     }
   };
 
@@ -472,6 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (errBanner) {
       errBanner.textContent = msg;
       errBanner.style.display = 'block';
+      errBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } else {
       alert(msg);
     }
@@ -487,7 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Generate a random secure 6-digit OTP
+  // Generate random secure 6-digit OTP
   function generate6DigitOtp() {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
@@ -546,7 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentOtp = generate6DigitOtp();
     const toastOtp = document.getElementById('toast-otp-code');
     if (toastOtp) toastOtp.textContent = currentOtp;
-    showAuthSuccess('A fresh 6-digit OTP has been sent to your Gmail inbox!');
+    showAuthSuccess('A fresh 6-digit OTP has been dispatched to your inbox!');
     startResendCountdown();
   };
 
@@ -569,13 +807,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (stepCreds) stepCreds.style.display = 'block';
   };
 
-  // Setup auto-tabbing for OTP inputs
-  document.addEventListener('DOMContentLoaded', () => {
+  // Setup auto-tabbing and auto-paste for 6-digit OTP inputs
+  function setupOtpInputs() {
     for (let i = 1; i <= 6; i++) {
       const input = document.getElementById('otp-' + i);
       if (input) {
         input.addEventListener('input', (e) => {
-          if (input.value.length === 1 && i < 6) {
+          if (input.value.length >= 1 && i < 6) {
             const next = document.getElementById('otp-' + (i + 1));
             if (next) next.focus();
           }
@@ -588,9 +826,21 @@ document.addEventListener('DOMContentLoaded', () => {
             window.verifyOtpAndLogin();
           }
         });
+        input.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
+          if (/^\d{6}$/.test(pasteData)) {
+            for (let j = 0; j < 6; j++) {
+              const digitEl = document.getElementById('otp-' + (j + 1));
+              if (digitEl) digitEl.value = pasteData.charAt(j);
+            }
+            window.verifyOtpAndLogin();
+          }
+        });
       }
     }
-  });
+  }
+  setupOtpInputs();
 
   // Verify OTP and complete login
   window.verifyOtpAndLogin = () => {
@@ -601,12 +851,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (enteredCode.length < 6) {
-      showAuthError('Please enter all 6 digits of the OTP sent to your Gmail.');
+      showAuthError('Please enter all 6 digits of the OTP verification code.');
       return;
     }
 
     if (enteredCode !== currentOtp) {
-      showAuthError('Invalid OTP code. Please check your Gmail notification.');
+      showAuthError('Invalid OTP code. Please check your simulated notification.');
       return;
     }
 
@@ -626,31 +876,56 @@ document.addEventListener('DOMContentLoaded', () => {
       const sessionUser = {
         name: pendingAuthUser.name,
         email: pendingAuthUser.email,
+        role: pendingAuthUser.role || 'Quantum Scientist',
+        roleType: 'email_otp',
         provider: 'email_otp',
-        avatar: pendingAuthUser.name.charAt(0).toUpperCase(),
-        loggedInAt: new Date().toISOString()
+        avatar: pendingAuthUser.name.charAt(0).toUpperCase()
       };
-      localStorage.setItem('ananta_user', JSON.stringify(sessionUser));
-      updateNavUser();
       
-      // Return UI state to normal
       window.cancelOtpFlow();
-      showAuthSuccess('Verification successful! Welcome to Ananta Studio.');
-      setTimeout(() => {
-        switchView('overview');
-      }, 500);
+      completeLogin(sessionUser);
     }
   };
 
-  // Sign In Flow (Validates password, then sends Gmail OTP)
+  let inAppIsSignUp = false;
+  window.toggleInAppMode = () => {
+    inAppIsSignUp = !inAppIsSignUp;
+    const title = document.getElementById('inapp-auth-title');
+    const subtitle = document.getElementById('inapp-auth-subtitle');
+    const nameField = document.getElementById('inapp-name-field');
+    const submitBtn = document.getElementById('btn-submit-signin');
+    const toggleText = document.getElementById('inapp-toggle-text');
+    const toggleLink = document.getElementById('inapp-toggle-link');
+    const errBanner = document.getElementById('auth-error-banner');
+    if (errBanner) errBanner.style.display = 'none';
+
+    if (inAppIsSignUp) {
+      if (title) title.textContent = 'Create Account';
+      if (subtitle) subtitle.textContent = 'Join Ananta Quantum Studio today.';
+      if (nameField) nameField.style.display = 'block';
+      if (submitBtn) submitBtn.textContent = 'Create Account';
+      if (toggleText) toggleText.textContent = 'Already have an account?';
+      if (toggleLink) toggleLink.textContent = 'Sign in';
+    } else {
+      if (title) title.textContent = 'Sign In';
+      if (subtitle) subtitle.textContent = 'Enter your account to access the Quantum Studio.';
+      if (nameField) nameField.style.display = 'none';
+      if (submitBtn) submitBtn.textContent = 'Sign In';
+      if (toggleText) toggleText.textContent = "Don't have an account?";
+      if (toggleLink) toggleLink.textContent = 'Create account';
+    }
+  };
+
+  // Direct, fast, friction-free sign-in
   window.startSignInFlow = () => {
     const emailInput = document.getElementById('login-email');
     const passInput = document.getElementById('login-pass');
+    const nameInput = document.getElementById('signup-name');
     const email = emailInput ? emailInput.value.trim() : '';
     const pass = passInput ? passInput.value : '';
 
     if (!email || !email.includes('@')) {
-      showAuthError('Please enter your valid Gmail / Email address.');
+      showAuthError('Please enter a valid email address.');
       return;
     }
     if (!pass) {
@@ -658,28 +933,21 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const accounts = JSON.parse(localStorage.getItem('ananta_registered_users') || '[]');
-    const existing = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+    const name = (nameInput && nameInput.value.trim()) || email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-    let name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    if (existing) {
-      if (existing.password && existing.password !== pass) {
-        showAuthError('Incorrect password for this account. Please try again.');
-        return;
-      }
-      name = existing.name || name;
-    }
-
-    // Pass password verification -> Trigger Gmail OTP
-    initiateOtpVerification({
+    const user = {
       name: name,
       email: email,
-      password: pass,
-      isNewAccount: false
-    });
+      role: inAppIsSignUp ? 'Quantum Developer' : 'Quantum Researcher',
+      avatar: name.charAt(0).toUpperCase(),
+      provider: 'email',
+      loggedInAt: new Date().toISOString()
+    };
+
+    completeLogin(user);
   };
 
-  // Sign Up Flow (Checks for strong password, then sends Gmail OTP)
+  // Sign Up Flow (Checks for strong password, then sends OTP)
   window.startSignUpFlow = () => {
     const nameInput = document.getElementById('signup-name');
     const emailInput = document.getElementById('signup-email');
@@ -693,31 +961,32 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (!email || !email.includes('@')) {
-      showAuthError('Please enter a valid Gmail / Email address.');
+      showAuthError('Please enter a valid email address.');
       return;
     }
     
     // Check Password Strength
     const isStrong = window.checkPasswordStrength(pass);
     if (!isStrong) {
-      showAuthError('Password is too weak! Must be at least 8 chars with uppercase, numbers, and symbols.');
+      showAuthError('Password must meet at least 3 security criteria.');
       return;
     }
 
-    // Proceed to OTP Verification before creating account
+    // Proceed to OTP Verification before saving account
     initiateOtpVerification({
       name: name,
       email: email,
       password: pass,
+      role: 'Quantum Developer',
       isNewAccount: true
     });
   };
 
   window.startOtpLoginDirect = () => {
     const emailInput = document.getElementById('login-email');
-    const email = emailInput && emailInput.value.trim() ? emailInput.value.trim() : window.prompt('Enter your Gmail address to send OTP:');
+    const email = emailInput && emailInput.value.trim() ? emailInput.value.trim() : window.prompt('Enter your email address to receive OTP:');
     if (!email || !email.includes('@')) {
-      showAuthError('A valid Gmail address is required for OTP login.');
+      showAuthError('A valid email address is required for OTP login.');
       return;
     }
     const name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -725,6 +994,7 @@ document.addEventListener('DOMContentLoaded', () => {
       name: name,
       email: email,
       password: '',
+      role: 'Direct OTP User',
       isNewAccount: false
     });
   };
@@ -732,22 +1002,15 @@ document.addEventListener('DOMContentLoaded', () => {
   window.logoutUser = () => {
     localStorage.removeItem('ananta_user');
     updateNavUser();
+    if (window.renderLoginSessionState) window.renderLoginSessionState();
     switchView('login');
+    showAuthSuccess('Signed out successfully. Session terminated.');
   };
 
   const guestEntry = document.getElementById('btn-guest-entry');
   if (guestEntry) {
     guestEntry.addEventListener('click', () => {
-      const user = {
-        name: 'Guest Researcher',
-        email: 'guest@ananta-quantum.io',
-        provider: 'guest',
-        avatar: 'G',
-        loggedInAt: new Date().toISOString()
-      };
-      localStorage.setItem('ananta_user', JSON.stringify(user));
-      updateNavUser();
-      switchView('overview');
+      window.loginWithPreset('guest');
     });
   }
 
@@ -1832,5 +2095,19 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Failed to copy', err);
     });
   };
+
+  // ==========================================
+  // INITIAL ROUTE & SESSION RESOLUTION
+  // ==========================================
+  try {
+    const rawHash = window.location.hash.replace('#', '');
+    const validTabs = ['overview', 'simulator', 'algorithms', 'intuition', 'research', 'challenges', 'docs', 'login'];
+    const initialTab = (rawHash && validTabs.includes(rawHash)) ? rawHash : 'overview';
+    switchView(initialTab);
+    updateNavUser();
+  } catch (err) {
+    console.warn('Initial route resolution error:', err);
+  }
 });
+
 

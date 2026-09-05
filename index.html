@@ -54,11 +54,13 @@
 
         <!-- Hardware Dropdown -->
         <div class="nav-dropdown-item">
-          <a href="#overview" class="nav-item" data-tab="overview" onclick="window.scrollToSection('mission-section'); return false;">
+          <a href="#overview" class="nav-item" data-tab="overview">
             Hardware <span class="nav-caret">▾</span>
           </a>
           <div class="nav-dropdown-menu">
             <a href="#overview" class="dropdown-link" onclick="window.scrollToSection('mission-section')">Quantum Computer (Cryo-Array)</a>
+            <a href="#surface-code" class="dropdown-link" data-tab="surface-code">🛡️ Surface Code & QEC Lab (FTQC)</a>
+            <a href="#pulse-studio" class="dropdown-link" data-tab="pulse-studio">🎛️ Microwave Pulse Physics Studio</a>
             <a href="#overview" class="dropdown-link" onclick="window.scrollToSection('roadmap-section')">Roadmap (6 Milestones)</a>
             <a href="#simulator" class="dropdown-link" data-tab="simulator">Noise & Decoherence Lab</a>
           </div>
@@ -70,7 +72,9 @@
             Software <span class="nav-caret">▾</span>
           </a>
           <div class="nav-dropdown-menu">
-            <a href="#simulator" class="dropdown-link" data-tab="simulator">Cirq Open Source Tools</a>
+            <a href="#simulator" class="dropdown-link" data-tab="simulator">Cirq Quantum Composer</a>
+            <a href="#transpiler" class="dropdown-link" data-tab="transpiler">⚡ Universal Transpiler & AI Doctor</a>
+            <a href="#vqe-chemistry" class="dropdown-link" data-tab="vqe-chemistry">🧪 VQE Molecular Chemistry Sandbox</a>
             <a href="#algorithms" class="dropdown-link" data-tab="algorithms">Algorithm Library (Grover, Shor, VQE)</a>
             <a href="#research" class="dropdown-link" onclick="if(window.switchResearchMode) window.switchResearchMode('zoo');" data-tab="research">Universal Algorithm Catalog (74 Algorithms)</a>
             <a href="#challenges" class="dropdown-link" data-tab="challenges">Quantum Circuit Challenges</a>
@@ -78,6 +82,10 @@
         </div>
 
         <a href="#simulator" class="nav-item nav-item-composer-highlight" data-tab="simulator">Composer</a>
+        <a href="#surface-code" class="nav-item" data-tab="surface-code">Surface Code</a>
+        <a href="#transpiler" class="nav-item" data-tab="transpiler">Transpiler</a>
+        <a href="#vqe-chemistry" class="nav-item" data-tab="vqe-chemistry">VQE Chem</a>
+        <a href="#pulse-studio" class="nav-item" data-tab="pulse-studio">Pulse Studio</a>
         <a href="#algorithms" class="nav-item" data-tab="algorithms">Algorithms</a>
         <a href="#research" class="nav-item" data-tab="research">Research</a>
         <a href="#docs" class="nav-item" data-tab="docs">Docs</a>
@@ -104,8 +112,12 @@
 
       <!-- Authenticated User Profile Badge -->
       <div id="nav-user-container" style="display: none;" class="user-profile-nav">
-        <div class="user-avatar-badge" id="nav-user-avatar">A</div>
-        <span class="user-name-label nav-desktop-only" id="nav-user-name">User</span>
+        <div class="user-avatar-badge" id="nav-user-avatar">Q</div>
+        <div class="nav-user-info nav-desktop-only">
+          <span class="user-name-label" id="nav-user-name">User</span>
+          <span class="user-role-badge" id="nav-user-role">Quantum Engineer</span>
+        </div>
+        <button class="btn-nav-switch-account nav-desktop-only" onclick="window.switchView('login')" title="Switch Identity or View Session">Session</button>
         <button class="btn-signout nav-desktop-only" id="btn-signout" onclick="window.logoutUser()">Sign Out</button>
       </div>
 
@@ -129,6 +141,10 @@
     </div>
     <a href="#overview" class="mobile-nav-item" data-tab="overview" onclick="window.closeMobileNav()">🏠 Overview</a>
     <a href="#simulator" class="mobile-nav-item" data-tab="simulator" onclick="window.closeMobileNav()">⚛️ Composer</a>
+    <a href="#surface-code" class="mobile-nav-item" data-tab="surface-code" onclick="window.closeMobileNav()">🛡️ Surface Code (FTQC)</a>
+    <a href="#transpiler" class="mobile-nav-item" data-tab="transpiler" onclick="window.closeMobileNav()">⚡ Multi-Transpiler & Doctor</a>
+    <a href="#vqe-chemistry" class="mobile-nav-item" data-tab="vqe-chemistry" onclick="window.closeMobileNav()">🧪 VQE Chemistry Sandbox</a>
+    <a href="#pulse-studio" class="mobile-nav-item" data-tab="pulse-studio" onclick="window.closeMobileNav()">🎛️ Microwave Pulse Studio</a>
     <a href="#algorithms" class="mobile-nav-item" data-tab="algorithms" onclick="window.closeMobileNav()">📐 Algorithms</a>
     <a href="#research" class="mobile-nav-item" data-tab="research" onclick="window.closeMobileNav()">📚 Research</a>
     <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">📄 Docs</a>
@@ -479,6 +495,54 @@
             </div>
           </div>
         </div>
+
+        <!-- SECTION 5: Ananta Killer Differentiating Innovations -->
+        <div class="killer-spotlight-section" style="margin-top: 60px;">
+          <div class="gqai-section-heading">
+            <span class="gqai-eyebrow">DIFFERENTIATING ARCHITECTURE</span>
+            <h2 class="gqai-heading-title">ADVANCED QUANTUM STUDIOS (FTQC, AI & PULSE)</h2>
+            <p class="gqai-heading-sub">Beyond classical cloud script-runners: Zero-install real-time interactive physics, fault-tolerant logical qubits, universal transpilation, and molecular Hamiltonians.</p>
+          </div>
+
+          <div class="killer-spotlight-grid">
+            <!-- Killer 1: Surface Code -->
+            <div class="killer-spotlight-card" onclick="window.switchTab('surface-code')">
+              <div class="card-icon-halo">🛡️</div>
+              <span class="spotlight-tag">FTQC Frontier</span>
+              <h3>Surface Code & QEC Studio</h3>
+              <p>Rotated planar surface codes ($d=3, d=5$), stabilizer parity syndromes ($X/Z$), real-time Pauli error injection, and visual Minimum-Weight Perfect Matching (MWPM) decoders.</p>
+              <span class="card-action-btn">Launch Surface Code Studio →</span>
+            </div>
+
+            <!-- Killer 2: Universal Transpiler -->
+            <div class="killer-spotlight-card" onclick="window.switchTab('transpiler')">
+              <div class="card-icon-halo">⚡</div>
+              <span class="spotlight-tag">AI-Native Optimizer</span>
+              <h3>Universal Transpiler & AI Doctor</h3>
+              <p>6-way cross-framework bridge across Cirq, Qiskit, Braket, PennyLane, OpenQASM 3.0 & PyQuil with live peephole gate cancellation and KAK Cartan analysis.</p>
+              <span class="card-action-btn">Launch Transpiler & Doctor →</span>
+            </div>
+
+            <!-- Killer 3: VQE Chemistry -->
+            <div class="killer-spotlight-card" onclick="window.switchTab('vqe-chemistry')">
+              <div class="card-icon-halo">🧪</div>
+              <span class="spotlight-tag">Materials Science</span>
+              <h3>VQE Molecular Chemistry Sandbox</h3>
+              <p>Ground-state potential energy surfaces (PES) for $H_2, HeH^+, LiH, BeH_2$, second-quantized Pauli terms, and animated variational gradient descent convergence.</p>
+              <span class="card-action-btn">Launch Chemistry Sandbox →</span>
+            </div>
+
+            <!-- Killer 4: Pulse Physics -->
+            <div class="killer-spotlight-card" onclick="window.switchTab('pulse-studio')">
+              <div class="card-icon-halo">🎛️</div>
+              <span class="spotlight-tag">Superconducting Physics</span>
+              <h3>Microwave Pulse Physics Studio</h3>
+              <p>Superconducting transmon Hamiltonian dynamics, DRAG leakage suppression pulse shaping, and live 60-FPS Rabi oscillations, Ramsey fringes & Hahn echo.</p>
+              <span class="card-action-btn">Launch Microwave Studio →</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -508,7 +572,7 @@
           </div>
         </div>
 
-        <!-- Right: Simple, Clean Sign-In Card with "Sign In with Google" -->
+        <!-- Right: Simple, Clean Sign-In Card -->
         <div class="login-card-panel">
           <div class="clean-auth-card">
             
@@ -522,141 +586,61 @@
                 </svg>
                 <span class="auth-app-title">Ananta</span>
               </div>
-              <h2 class="auth-welcome-title">Welcome to Ananta</h2>
-              <p class="auth-welcome-desc">Sign in to access your quantum circuits, simulations, and saved experiments.</p>
+              <h2 class="auth-welcome-title" id="inapp-auth-title">Sign In</h2>
+              <p class="auth-welcome-desc" id="inapp-auth-subtitle">Enter your account to access the Quantum Studio.</p>
             </div>
 
             <div id="auth-error-banner" class="auth-error-banner" style="display: none;"></div>
             <div id="auth-success-banner" class="auth-success-banner" style="display: none;"></div>
 
-            <!-- STEP 1: CREDENTIALS (SIGN IN & SIGN UP) -->
-            <div id="auth-step-credentials">
-              <div class="auth-tabs-header">
-                <button type="button" class="auth-tab-btn active" id="tab-btn-signin" onclick="window.switchAuthTab('signin')">Sign In</button>
-                <button type="button" class="auth-tab-btn" id="tab-btn-signup" onclick="window.switchAuthTab('signup')">Create Account</button>
-              </div>
+            <!-- Sign In with Google -->
+            <button type="button" class="btn-google-signin" id="btn-google-login" onclick="window.selectGoogleAccount('Quantum Researcher', 'researcher@ananta-quantum.io')">
+              <svg class="google-svg-icon" viewBox="0 0 24 24" width="18" height="18">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+              <span>Sign in with Google</span>
+            </button>
 
-              <!-- Google Sign-In with Real Account Selector -->
-              <button type="button" class="btn-google-signin" id="btn-google-login" onclick="window.openGoogleDialog()">
-                <svg class="google-svg-icon" viewBox="0 0 24 24" width="20" height="20">
-                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
-                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                </svg>
-                <span>Continue with Google</span>
-              </button>
-
-              <div class="simple-divider">
-                <span>or continue with email & OTP</span>
-              </div>
-
-              <!-- Sign In Form -->
-              <form class="simple-auth-form" id="form-signin" onsubmit="event.preventDefault(); window.startSignInFlow();" autocomplete="off">
-                <div class="field-item">
-                  <label for="login-email">Gmail / Email Address</label>
-                  <input type="email" id="login-email" class="clean-input" placeholder="name@gmail.com" required autocomplete="off" value="">
-                </div>
-
-                <div class="field-item">
-                  <div class="label-split">
-                    <label for="login-pass">Password</label>
-                    <a href="#forgot" class="forgot-pass-link" onclick="window.startOtpLoginDirect(); return false;">Login with OTP instead</a>
-                  </div>
-                  <input type="password" id="login-pass" class="clean-input" placeholder="Enter your password" required autocomplete="new-password" value="">
-                </div>
-
-                <button type="submit" class="btn-email-submit" id="btn-submit-signin">
-                  Verify via Gmail OTP →
-                </button>
-              </form>
-
-              <!-- Create Account Form with Password Strength Checking -->
-              <form class="simple-auth-form" id="form-signup" style="display: none;" onsubmit="event.preventDefault(); window.startSignUpFlow();" autocomplete="off">
-                <div class="field-item">
-                  <label for="signup-name">Full Name</label>
-                  <input type="text" id="signup-name" class="clean-input" placeholder="Quantum Researcher" required autocomplete="off" value="">
-                </div>
-
-                <div class="field-item">
-                  <label for="signup-email">Gmail / Email Address</label>
-                  <input type="email" id="signup-email" class="clean-input" placeholder="your.name@gmail.com" required autocomplete="off" value="">
-                </div>
-
-                <div class="field-item">
-                  <label for="signup-pass">Create Strong Password</label>
-                  <div class="password-input-wrapper">
-                    <input type="password" id="signup-pass" class="clean-input" placeholder="e.g. Quantum@2026#" required autocomplete="new-password" value="" oninput="window.checkPasswordStrength(this.value)">
-                    <button type="button" class="btn-toggle-pw" onclick="window.togglePasswordVisibility('signup-pass')">👁</button>
-                  </div>
-                  
-                  <!-- Live Password Strength Meter -->
-                  <div class="password-strength-container" id="pw-strength-box">
-                    <div class="strength-meter-bar">
-                      <div class="strength-fill" id="strength-fill-bar"></div>
-                    </div>
-                    <div class="strength-status-row">
-                      <span class="strength-label">Security:</span>
-                      <strong id="strength-text" class="strength-text-weak">Weak</strong>
-                    </div>
-                    <div class="pw-criteria-list">
-                      <div class="pw-rule" id="rule-len">✕ At least 8 characters</div>
-                      <div class="pw-rule" id="rule-case">✕ Uppercase & lowercase letters</div>
-                      <div class="pw-rule" id="rule-num">✕ At least one number (0-9)</div>
-                      <div class="pw-rule" id="rule-sym">✕ Special character (!@#$%^&*)</div>
-                    </div>
-                  </div>
-                </div>
-
-                <button type="submit" class="btn-email-submit btn-signup-submit" id="btn-submit-signup">
-                  Verify & Send OTP to Gmail →
-                </button>
-              </form>
-
-              <div class="auth-guest-footer">
-                <span>Just exploring?</span>
-                <button type="button" class="btn-link-guest" id="btn-guest-entry">Enter Simulator Directly →</button>
-              </div>
+            <div class="simple-divider">
+              <span>or</span>
             </div>
 
-            <!-- STEP 2: GMAIL OTP VERIFICATION SCREEN -->
-            <div id="auth-step-otp" style="display: none;" class="otp-verification-panel">
-              <div class="otp-panel-header">
-                <div class="otp-icon-bubble">📩</div>
-                <h3>Check your Gmail</h3>
-                <p class="otp-subtitle">We sent a 6-digit one-time verification code to:<br><strong id="otp-target-email" class="otp-highlight-email">your.email@example.com</strong></p>
+            <!-- Sign In Form -->
+            <form class="simple-auth-form" id="form-signin" onsubmit="event.preventDefault(); window.startSignInFlow();">
+              <div class="field-item" id="inapp-name-field" style="display: none;">
+                <label for="signup-name">Full Name</label>
+                <input type="text" id="signup-name" class="clean-input" placeholder="Your Name">
               </div>
 
-              <!-- Realistic Gmail Incoming Mail Toast Alert -->
-              <div class="gmail-live-toast" id="gmail-live-toast">
-                <div class="gmail-toast-badge">
-                  <span class="gmail-badge-dot"></span> New Email from Ananta Quantum Security
+              <div class="field-item">
+                <label for="login-email">Email address</label>
+                <input type="email" id="login-email" class="clean-input" placeholder="name@example.com" required value="">
+              </div>
+
+              <div class="field-item">
+                <label for="login-pass">Password</label>
+                <div class="password-input-wrapper" style="position: relative; display: flex; align-items: center;">
+                  <input type="password" id="login-pass" class="clean-input" placeholder="••••••••" required value="">
+                  <button type="button" class="btn-toggle-pw" onclick="window.togglePasswordVisibility('login-pass', this)">👁️</button>
                 </div>
-                <div class="gmail-toast-content">
-                  <span class="toast-subject">Your Studio Verification Code:</span>
-                  <div class="toast-otp-display" id="toast-otp-code">------</div>
-                </div>
-                <button type="button" class="btn-quick-fill-otp" onclick="window.autoFillOtp()">⚡ Auto-fill Code</button>
               </div>
 
-              <!-- 6-Digit OTP Input Grid -->
-              <div class="otp-inputs-grid" id="otp-inputs-container">
-                <input type="text" maxlength="1" class="otp-digit" id="otp-1" inputmode="numeric" pattern="[0-9]*" autofocus>
-                <input type="text" maxlength="1" class="otp-digit" id="otp-2" inputmode="numeric" pattern="[0-9]*">
-                <input type="text" maxlength="1" class="otp-digit" id="otp-3" inputmode="numeric" pattern="[0-9]*">
-                <input type="text" maxlength="1" class="otp-digit" id="otp-4" inputmode="numeric" pattern="[0-9]*">
-                <input type="text" maxlength="1" class="otp-digit" id="otp-5" inputmode="numeric" pattern="[0-9]*">
-                <input type="text" maxlength="1" class="otp-digit" id="otp-6" inputmode="numeric" pattern="[0-9]*">
-              </div>
-
-              <button type="button" class="btn-email-submit btn-verify-otp" onclick="window.verifyOtpAndLogin()">
-                Confirm OTP & Access Studio
+              <button type="submit" class="btn-email-submit" id="btn-submit-signin">
+                Sign In
               </button>
+            </form>
 
-              <div class="otp-actions-row">
-                <button type="button" class="btn-back-auth" onclick="window.cancelOtpFlow()">← Change Email</button>
-                <button type="button" class="btn-resend-otp" id="btn-resend-otp" onclick="window.resendOtp()">Resend Code in <span id="resend-countdown">30s</span></button>
-              </div>
+            <!-- Instant Guest Button -->
+            <button type="button" class="btn-link-guest" style="width: 100%; border: 1px solid var(--border-color); border-radius: 24px; padding: 10px; margin-top: 10px; font-weight: 500;" onclick="window.loginWithPreset('guest')">
+              🚀 Instant Guest Pass (Skip Sign In) →
+            </button>
+
+            <div class="auth-guest-footer" style="margin-top: 18px; text-align: center; font-size: 12.5px;">
+              <span id="inapp-toggle-text">Don't have an account?</span>
+              <a href="#toggle" class="forgot-pass-link" style="font-weight: 600;" onclick="window.toggleInAppMode(); return false;" id="inapp-toggle-link">Create account</a>
             </div>
 
           </div>
@@ -2104,6 +2088,452 @@ Key Advantage:
       </div>
     </section>
 
+    <!-- ================= VIEW: SURFACE CODE & FTQC STUDIO ================= -->
+    <section class="viewport-section" id="view-surface-code" style="display: none;">
+      <div class="killer-feature-container">
+        
+        <!-- Header -->
+        <div class="feature-header-bar">
+          <div class="feature-header-badge">FAULT-TOLERANT QUANTUM COMPUTING (FTQC)</div>
+          <h1 class="feature-header-title">Surface Code & Stabilizer Syndrome Studio</h1>
+          <p class="feature-header-desc">
+            Explore rotated planar surface codes ($d=3, d=5$), $X$/$Z$ stabilizer plaquettes, real-time Pauli defect extraction, and Minimum-Weight Perfect Matching (MWPM) visual decoding.
+          </p>
+        </div>
+
+        <!-- Interactive Toolbar Ribbon -->
+        <div class="qec-toolbar">
+          <div class="toolbar-group">
+            <span class="group-label">Code Distance:</span>
+            <button class="btn-qec-toggle active" id="btn-qec-d3">Distance 3 (9 Data Qubits)</button>
+            <button class="btn-qec-toggle" id="btn-qec-d5">Distance 5 (25 Data Qubits)</button>
+          </div>
+
+          <div class="toolbar-group">
+            <span class="group-label">Noise Rate ($p$):</span>
+            <input type="range" id="slider-qec-error-rate" min="1" max="25" value="5" class="qec-slider">
+            <span class="slider-val-badge" id="qec-error-rate-val">5.0%</span>
+            <button class="btn-qec-action" id="btn-qec-noise" title="Inject random Pauli errors">🎲 Thermal Shower</button>
+          </div>
+
+          <div class="toolbar-group">
+            <button class="btn-qec-action btn-highlight-green" id="btn-qec-decode">🛡️ Run MWPM Decoder</button>
+            <button class="btn-qec-action" id="btn-qec-reset">🔄 Clean Lattice</button>
+          </div>
+        </div>
+
+        <!-- Presets Bar -->
+        <div class="qec-presets-bar">
+          <span class="presets-label">⚡ Error Presets:</span>
+          <button class="btn-preset-chip" id="btn-qec-preset-x">Single X Bit-Flip (Z-Syndrome Pair)</button>
+          <button class="btn-preset-chip" id="btn-qec-preset-z">Single Z Phase-Flip (X-Syndrome Pair)</button>
+          <button class="btn-preset-chip btn-preset-danger" id="btn-qec-preset-chain">⚠️ Spanning Homological Chain (Logical Error)</button>
+        </div>
+
+        <!-- Main Studio Grid -->
+        <div class="qec-studio-grid">
+          <!-- Left: Interactive Lattice Visualizer -->
+          <div class="qec-lattice-card">
+            <div class="card-top-info">
+              <div class="legend-items">
+                <span class="legend-dot dot-data"></span> Data Qubit ($D_i$)
+                <span class="legend-dot dot-z"></span> $Z$-Stabilizer (Bit-Flip Check)
+                <span class="legend-dot dot-x"></span> $X$-Stabilizer (Phase-Flip Check)
+                <span class="legend-dot dot-defect"></span> Syndrome Defect ($-1$)
+              </div>
+              <span class="card-hint">Click any data qubit to inject / cycle Pauli errors</span>
+            </div>
+
+            <div class="lattice-canvas-wrapper" id="surface-code-lattice-container">
+              <!-- Rendered dynamically by SurfaceCodeStudio -->
+            </div>
+          </div>
+
+          <!-- Right: Quantum Telemetry & Decoder Deck -->
+          <div class="qec-telemetry-card">
+            <!-- Status Banner -->
+            <div class="qec-status-banner banner-info" id="qec-status-banner">
+              Lattice clean. Logical qubit state |0_L⟩ preserved.
+            </div>
+
+            <!-- Metrics Row -->
+            <div class="qec-metrics-deck">
+              <div class="qec-metric-box">
+                <span class="metric-label">Logical State</span>
+                <div class="qec-logical-badge badge-clean" id="qec-logical-state-display">|0_L⟩ (Clean)</div>
+              </div>
+              <div class="qec-metric-box">
+                <span class="metric-label">Logical Fidelity</span>
+                <span class="metric-value-huge" id="qec-logical-fidelity">100.0%</span>
+              </div>
+              <div class="qec-metric-box">
+                <span class="metric-label">Physical Errors</span>
+                <span class="metric-value" id="qec-active-errors-count">0</span>
+              </div>
+              <div class="qec-metric-box">
+                <span class="metric-label">Syndrome Defects</span>
+                <span class="metric-value" id="qec-syndromes-count">0</span>
+              </div>
+            </div>
+
+            <!-- Syndrome Defect Event Stream -->
+            <div class="qec-syndrome-stream">
+              <div class="stream-header">
+                <span>📡 Syndrome Extraction & Decoder Log</span>
+              </div>
+              <div class="stream-body" id="qec-syndrome-log">
+                <div class="qec-log-item log-normal">[System] Surface code initialized. Code distance d=3, 9 data qubits, 8 stabilizers.</div>
+              </div>
+            </div>
+
+            <!-- FTQC Mathematical Foundation -->
+            <div class="qec-theory-card">
+              <h4>📐 Threshold Theorem & Error Scaling</h4>
+              <p>
+                In a rotated surface code, the logical error rate scales exponentially with distance below threshold $p_{th} \approx 1\%$:
+              </p>
+              <div class="math-callout">$$p_L \approx C \left(\frac{p}{p_{th}}\right)^{\frac{d+1}{2}}$$</div>
+              <p>
+                Each $Z$-plaquette measures $Z_1 Z_2 Z_3 Z_4$. An $X$ error flips the adjacent syndrome measurement from $+1$ to $-1$. The MWPM decoder pairs defects to boundary endpoints or mutually annihilates them.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= VIEW: UNIVERSAL TRANSPILER & AI CIRCUIT DOCTOR ================= -->
+    <section class="viewport-section" id="view-transpiler" style="display: none;">
+      <div class="killer-feature-container">
+        
+        <!-- Header -->
+        <div class="feature-header-bar">
+          <div class="feature-header-badge">UNIVERSAL MULTI-FRAMEWORK QUANTUM BRIDGE</div>
+          <h1 class="feature-header-title">Universal Transpiler & AI Circuit Doctor</h1>
+          <p class="feature-header-desc">
+            Bidirectional translation across **Google Cirq**, **IBM Qiskit**, **Amazon Braket**, **PennyLane**, **OpenQASM 3.0**, and **PyQuil** with live peephole gate cancellation, KAK Cartan decomposition, and topology SWAP routing.
+          </p>
+        </div>
+
+        <!-- Preset Circuits -->
+        <div class="transpiler-presets-bar">
+          <span class="presets-label">⚡ Benchmark Circuits:</span>
+          <button class="btn-preset-chip" id="btn-sample-bell">Bell State + Redundant Gates (Doctor Test)</button>
+          <button class="btn-preset-chip" id="btn-sample-ghz">4-Qubit GHZ State</button>
+          <button class="btn-preset-chip" id="btn-sample-qft">3-Qubit Quantum Fourier Transform (QFT)</button>
+        </div>
+
+        <!-- Dual Code Editor Workbench -->
+        <div class="transpiler-dual-workbench">
+          <!-- Left: Source Editor -->
+          <div class="code-editor-panel">
+            <div class="editor-top-bar">
+              <span class="editor-title">Source Framework:</span>
+              <select class="clean-select" id="transpiler-source-select">
+                <option value="qiskit">IBM Qiskit (Python)</option>
+                <option value="cirq">Google Cirq (Python)</option>
+                <option value="braket">Amazon Braket (Python)</option>
+                <option value="pennylane">PennyLane (Python)</option>
+                <option value="qasm">OpenQASM 3.0</option>
+                <option value="pyquil">Rigetti PyQuil (Python)</option>
+              </select>
+            </div>
+            <textarea class="code-textarea" id="transpiler-source-code" spellcheck="false" placeholder="Enter or paste quantum circuit code..."></textarea>
+          </div>
+
+          <!-- Middle Action Controls -->
+          <div class="transpiler-center-actions">
+            <button class="btn-transpile-execute" onclick="window.transpilerDoctor.translate(); window.transpilerDoctor.runDoctor();" title="Transpile code">
+              ➔ Universal Transpile ➔
+            </button>
+            <button class="btn-doctor-execute" id="btn-run-doctor" title="Analyze and optimize circuit">
+              ⚡ Run Circuit Doctor
+            </button>
+          </div>
+
+          <!-- Right: Target Editor -->
+          <div class="code-editor-panel">
+            <div class="editor-top-bar">
+              <span class="editor-title">Target Framework:</span>
+              <select class="clean-select" id="transpiler-target-select">
+                <option value="cirq">Google Cirq (Python)</option>
+                <option value="qiskit">IBM Qiskit (Python)</option>
+                <option value="braket">Amazon Braket (Python)</option>
+                <option value="pennylane">PennyLane (Python)</option>
+                <option value="qasm">OpenQASM 3.0</option>
+                <option value="pyquil">Rigetti PyQuil (Python)</option>
+              </select>
+              <button class="btn-copy-code" id="btn-copy-transpiled">Copy Code</button>
+            </div>
+            <textarea class="code-textarea" id="transpiler-target-code" readonly spellcheck="false" placeholder="Transpiled code will appear here..."></textarea>
+          </div>
+        </div>
+
+        <!-- AI Circuit Doctor Diagnostic Deck -->
+        <div class="doctor-diagnostics-deck">
+          <div class="doctor-deck-header">
+            <h3>🔬 AI Circuit Doctor Diagnostics & Optimization Metrics</h3>
+          </div>
+
+          <div class="doctor-metrics-row">
+            <div class="doctor-metric-card">
+              <span class="doc-label">Gate Compression</span>
+              <span class="doc-val" id="doctor-gate-reduction">11 → 7 gates (-4 gates)</span>
+            </div>
+            <div class="doctor-metric-card">
+              <span class="doc-label">Circuit Depth Reduction</span>
+              <span class="doc-val" id="doctor-depth-reduction">8 → 5 (-3)</span>
+            </div>
+            <div class="doctor-metric-card">
+              <span class="doc-label">KAK Cartan 2-Qubit Limit</span>
+              <span class="doc-val" id="doctor-kak-cnot-count">2 CNOTs (Cartan limit: 2)</span>
+            </div>
+            <div class="doctor-metric-card">
+              <span class="doc-label">Entanglement Entropy ($S_{vN}$)</span>
+              <span class="doc-val" id="doctor-entropy-val">1.000 (Max Entangled)</span>
+            </div>
+          </div>
+
+          <div class="doctor-split-analysis">
+            <!-- Left: Peephole Optimizer Log -->
+            <div class="doctor-findings-card">
+              <h4>Peephole Inverse Cancellations & Merges</h4>
+              <div id="doctor-diagnostic-results" class="doctor-findings-list">
+                <!-- Dynamically populated by TranspilerDoctor -->
+              </div>
+            </div>
+
+            <!-- Right: Hardware Topology SWAP Routing -->
+            <div class="doctor-topology-card">
+              <h4>Hardware Architecture SWAP Overhead</h4>
+              <p class="topo-desc">Estimates SWAP gate routing cost across physical superconducting and trapped-ion coupling graphs:</p>
+              <div id="doctor-hw-routing-stats" class="hw-routing-list">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= VIEW: VQE MOLECULAR CHEMISTRY SANDBOX ================= -->
+    <section class="viewport-section" id="view-vqe-chemistry" style="display: none;">
+      <div class="killer-feature-container">
+        
+        <!-- Header -->
+        <div class="feature-header-bar">
+          <div class="feature-header-badge">QUANTUM CHEMISTRY & MATERIALS DISCOVERY</div>
+          <h1 class="feature-header-title">Visual VQE Molecular Chemistry Sandbox</h1>
+          <p class="feature-header-desc">
+            Simulate molecular electronic structure, calculate ground-state potential energy surfaces (PES), and observe variational gradient descent convergence to chemical accuracy ($< 1.6 \text{ mHa}$).
+          </p>
+        </div>
+
+        <!-- Molecule Selection & Controls Toolbar -->
+        <div class="vqe-toolbar">
+          <div class="toolbar-group">
+            <span class="group-label">Molecule:</span>
+            <select class="clean-select" id="vqe-molecule-select">
+              <option value="H2">Molecular Hydrogen (H₂)</option>
+              <option value="HeH+">Helium Hydride Cation (HeH⁺)</option>
+              <option value="LiH">Lithium Hydride (LiH - 4 Qubits)</option>
+              <option value="BeH2">Beryllium Hydride (BeH₂ - 6 Qubits)</option>
+            </select>
+            <span class="badge-qubit-count" id="vqe-qubit-badge">2 Qubits Active Space</span>
+          </div>
+
+          <div class="toolbar-group">
+            <span class="group-label">Bond Distance ($R$):</span>
+            <input type="range" id="vqe-bond-slider" min="0.2" max="2.8" step="0.01" value="0.741" class="vqe-slider">
+            <span class="slider-val-badge" id="vqe-bond-val">0.741 Å</span>
+          </div>
+
+          <div class="toolbar-group">
+            <button class="btn-vqe-action" id="btn-vqe-optimize">Auto-Optimize VQE 🚀</button>
+            <label class="vqe-noise-check">
+              <input type="checkbox" id="vqe-noise-toggle"> Cryo-Decoherence Noise
+            </label>
+          </div>
+        </div>
+
+        <!-- Chemistry Studio Grid -->
+        <div class="vqe-studio-grid">
+          <!-- Left: Potential Energy Surface Canvas -->
+          <div class="vqe-pes-card">
+            <div class="card-top-info">
+              <h3 id="vqe-molecule-title">Molecular Hydrogen (H₂)</h3>
+              <div class="pes-legend">
+                <span class="legend-item"><span class="line-fci"></span> Exact Full-CI Ground State</span>
+                <span class="legend-item"><span class="line-hf"></span> Hartree-Fock Limit</span>
+                <span class="legend-item"><span class="dot-vqe"></span> Current VQE State</span>
+              </div>
+            </div>
+            <div class="canvas-box">
+              <canvas id="vqe-pes-canvas" width="560" height="280"></canvas>
+            </div>
+          </div>
+
+          <!-- Right: Telemetry, Variational Knobs & Pauli Terms -->
+          <div class="vqe-telemetry-card">
+            <!-- Energy Metrics -->
+            <div class="vqe-metrics-deck">
+              <div class="vqe-metric-box">
+                <span class="metric-label">Current VQE Energy</span>
+                <span class="metric-value-huge" id="vqe-current-energy">-1.13730 Ha</span>
+              </div>
+              <div class="vqe-metric-box">
+                <span class="metric-label">Exact FCI Energy</span>
+                <span class="metric-value" id="vqe-exact-energy">-1.13730 Ha</span>
+              </div>
+              <div class="vqe-metric-box">
+                <span class="metric-label">Energy Error</span>
+                <span class="metric-value" id="vqe-energy-delta">ΔE = 0.00 mHa 🎯</span>
+              </div>
+            </div>
+
+            <!-- Variational Parameter Knobs -->
+            <div class="vqe-ansatz-knobs">
+              <h4>Unitary Coupled Cluster (UCCSD) Parameter Knobs</h4>
+              <div class="knob-row">
+                <label>Entangler Angle $\theta_1$ (Excitation):</label>
+                <input type="range" id="vqe-theta1-slider" min="-3.14" max="3.14" step="0.01" value="0.0" class="vqe-slider">
+                <span class="knob-val" id="vqe-theta1-val">0.000 rad</span>
+              </div>
+              <div class="knob-row">
+                <label>Phase Angle $\theta_2$ (Interferometry):</label>
+                <input type="range" id="vqe-theta2-slider" min="-3.14" max="3.14" step="0.01" value="0.0" class="vqe-slider">
+                <span class="knob-val" id="vqe-theta2-val">0.000 rad</span>
+              </div>
+            </div>
+
+            <!-- Second Quantized Pauli Hamiltonian -->
+            <div class="vqe-hamiltonian-card">
+              <h4>Second-Quantized Jordan-Wigner Pauli Terms</h4>
+              <div class="pauli-terms-grid" id="vqe-pauli-terms-display">
+                <!-- Populated dynamically by VQEChemistryStudio -->
+              </div>
+            </div>
+
+            <!-- Convergence Stream Log -->
+            <div class="vqe-log-stream" id="vqe-convergence-log">
+              <div class="vqe-log-item">VQE Engine ready. Select bond distance or click Auto-Optimize to run gradient descent.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= VIEW: MICROWAVE PULSE PHYSICS STUDIO ================= -->
+    <section class="viewport-section" id="view-pulse-studio" style="display: none;">
+      <div class="killer-feature-container">
+        
+        <!-- Header -->
+        <div class="feature-header-bar">
+          <div class="feature-header-badge">HARDWARE PHYSICS & MICROWAVE CONTROL</div>
+          <h1 class="feature-header-title">Microwave Pulse Physics & Cryogenic Noise Studio</h1>
+          <p class="feature-header-desc">
+            Simulate superconducting transmon qubit Hamiltonians, DRAG pulse shaping to suppress $|1\rangle \to |2\rangle$ leakage, and live 60-FPS Rabi oscillations, Ramsey dephasing fringes, and Hahn spin echo.
+          </p>
+        </div>
+
+        <!-- Experiment Mode Selector -->
+        <div class="pulse-toolbar">
+          <div class="toolbar-group">
+            <span class="group-label">Experiment:</span>
+            <button class="btn-pulse-exp active" id="btn-exp-rabi">Rabi Oscillations (Drive Power)</button>
+            <button class="btn-pulse-exp" id="btn-exp-ramsey">Ramsey Dephasing ($T_2^*$ Fringes)</button>
+            <button class="btn-pulse-exp" id="btn-exp-hahn">Hahn Spin Echo (Refocusing)</button>
+          </div>
+
+          <div class="toolbar-group">
+            <span class="group-label">Pulse Envelope:</span>
+            <select class="clean-select" id="pulse-shape-select">
+              <option value="drag">DRAG (Derivative Removal by Adiabatic Gate)</option>
+              <option value="gaussian">Gaussian Envelope</option>
+              <option value="square">Square Rectangular Pulse</option>
+              <option value="cosine">Cosine / Hann Window</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Main Studio Grid -->
+        <div class="pulse-studio-grid">
+          <!-- Left: Controls & Cryogenic Parameters Deck -->
+          <div class="pulse-controls-card">
+            <h3>🎛️ Microwave Generator & Cryostat Controls</h3>
+
+            <div class="control-slider-group">
+              <label>Drive Amplitude ($\Omega_{max}$):</label>
+              <input type="range" id="pulse-amp-slider" min="5" max="80" value="25" class="pulse-slider">
+              <span class="slider-badge" id="pulse-amp-val">25.0 MHz</span>
+            </div>
+
+            <div class="control-slider-group">
+              <label>Gate Duration ($t_g$):</label>
+              <input type="range" id="pulse-dur-slider" min="10" max="100" value="40" class="pulse-slider">
+              <span class="slider-badge" id="pulse-dur-val">40 ns</span>
+            </div>
+
+            <div class="control-slider-group">
+              <label>Drive Detuning ($\Delta = \omega_d - \omega_0$):</label>
+              <input type="range" id="pulse-detuning-slider" min="-30" max="30" value="0" class="pulse-slider">
+              <span class="slider-badge" id="pulse-detuning-val">0.0 MHz</span>
+            </div>
+
+            <div class="cryo-divider"></div>
+            <h4>❄️ Cryogenic Dilution Refrigerator Noise</h4>
+
+            <div class="control-slider-group">
+              <label>Relaxation Time ($T_1$):</label>
+              <input type="range" id="pulse-t1-slider" min="10" max="150" value="65" class="pulse-slider">
+              <span class="slider-badge" id="pulse-t1-val">65 µs</span>
+            </div>
+
+            <div class="control-slider-group">
+              <label>Dephasing Time ($T_2^*$):</label>
+              <input type="range" id="pulse-t2-slider" min="5" max="100" value="35" class="pulse-slider">
+              <span class="slider-badge" id="pulse-t2-val">35 µs</span>
+            </div>
+
+            <div class="pulse-theory-box">
+              <p>
+                <strong>DRAG Correction:</strong> Superconducting transmons are weakly anharmonic ($|\alpha| \approx 200 \text{ MHz}$). Standard short Gaussian pulses drive unwanted $|1\rangle \to |2\rangle$ leakage transitions. DRAG applies a derivative quadrature $-\frac{\beta}{\alpha} \dot{\Omega}(t)$ in the $Q$-channel to cancel out-of-phase leakage.
+              </p>
+            </div>
+          </div>
+
+          <!-- Right: Live 60-FPS Waveform & Dynamics Canvases -->
+          <div class="pulse-canvases-card">
+            <!-- Waveform Canvas -->
+            <div class="canvas-section">
+              <div class="canvas-header">
+                <span>Microwave Pulse Waveform (In-Phase $I$ & Quadrature $Q$ DRAG)</span>
+                <span class="rabi-badge" id="pulse-rabi-freq-badge">Ω_R = 25.0 MHz</span>
+              </div>
+              <div class="canvas-box">
+                <canvas id="pulse-waveform-canvas" width="520" height="180"></canvas>
+              </div>
+            </div>
+
+            <!-- Dynamics Canvas -->
+            <div class="canvas-section" style="margin-top: 20px;">
+              <div class="canvas-header">
+                <span>Live Quantum State Population Dynamics ($P(|1\rangle)$ vs Time)</span>
+                <span class="state-badge" id="pulse-state-p1-badge">P(|1⟩) = 50.0%</span>
+              </div>
+              <div class="canvas-box">
+                <canvas id="pulse-dynamics-canvas" width="520" height="200"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
   </main>
 
   <!-- Interactive Google OAuth Account Picker Modal -->
@@ -2195,6 +2625,10 @@ Key Advantage:
   <script src="js/concept-doctor.js"></script>
   <script src="js/hardware-control.js"></script>
   <script src="js/rishi-canvas.js"></script>
+  <script src="js/surface-code.js"></script>
+  <script src="js/transpiler-doctor.js"></script>
+  <script src="js/vqe-chemistry.js"></script>
+  <script src="js/pulse-studio.js"></script>
   <script src="js/app.js"></script>
   <!-- KaTeX Auto-Render Engine -->
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>

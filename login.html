@@ -3,47 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In - Ananta Quantum Studio</title>
+  <title>Sign In - Ananta</title>
   
-  <!-- Google Quantum AI Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@400;500;700&family=Google+Sans+Text:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Text:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
   
   <style>
-    /* Google Quantum AI Official Theme Tokens */
     :root, body, body.dark-theme, [data-theme="dark"] {
-      --bg-page: #202124;
-      --bg-card: #292a2d;
-      --border-color: #3c4043;
-      --border-darker: #5f6368;
-      --text-main: #e8eaed;
+      --bg-page: #121316;
+      --bg-card: #1e2024;
+      --bg-input: #16171a;
+      --border: #2e3238;
+      --border-focus: #8ab4f8;
+      --text-main: #f1f3f5;
       --text-sub: #9aa0a6;
-      --text-muted: #70757a;
-      --accent-blue: #8ab4f8;
-      --accent-blue-hover: #aecbfa;
-      --google-blue: #8ab4f8;
-      --btn-primary-bg: #8ab4f8;
-      --btn-primary-text: #202124;
-      --btn-primary-hover: #aecbfa;
+      --accent: #8ab4f8;
+      --accent-hover: #aecbfa;
+      --btn-text: #121316;
       --card-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
     }
 
     body.light-theme, [data-theme="light"] {
-      --bg-page: #ffffff;
-      --bg-card: #f8f9fa;
-      --border-color: #dadce0;
-      --border-darker: #bdc1c6;
+      --bg-page: #f8f9fa;
+      --bg-card: #ffffff;
+      --bg-input: #ffffff;
+      --border: #dadce0;
+      --border-focus: #1a73e8;
       --text-main: #202124;
       --text-sub: #5f6368;
-      --text-muted: #80868b;
-      --accent-blue: #1a73e8;
-      --accent-blue-hover: #185abc;
-      --google-blue: #1a73e8;
-      --btn-primary-bg: #1a73e8;
-      --btn-primary-text: #ffffff;
-      --btn-primary-hover: #185abc;
-      --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+      --accent: #1a73e8;
+      --accent-hover: #185abc;
+      --btn-text: #ffffff;
+      --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
     }
 
     * {
@@ -53,261 +45,123 @@
     }
 
     body {
-      font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: var(--bg-page);
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 20px;
       position: relative;
-      transition: background-color 0.2s ease, color 0.2s ease;
+      transition: background-color 0.2s, color 0.2s;
     }
 
-    /* Floating Theme Toggle */
-    .login-theme-btn {
+    /* Top Floating Theme Switcher */
+    .theme-btn {
       position: absolute;
-      top: 24px;
-      right: 28px;
+      top: 20px;
+      right: 20px;
       background: var(--bg-card);
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border);
       color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      transition: all 0.15s ease;
-      z-index: 10;
+      transition: all 0.15s;
     }
 
-    .login-theme-btn:hover {
-      border-color: var(--accent-blue);
+    .theme-btn:hover {
+      border-color: var(--accent);
     }
 
-    .login-container {
-      max-width: 1060px;
+    /* Simple Centered Container */
+    .auth-container {
+      max-width: 860px;
       width: 100%;
       background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
       overflow: hidden;
       display: grid;
-      grid-template-columns: 1.15fr 1fr;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 240, 255, 0.08);
-      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.3s ease;
-      position: relative;
+      grid-template-columns: 1fr 1.15fr;
+      box-shadow: var(--card-shadow);
     }
 
-    .login-container:hover {
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.95), 0 0 50px rgba(0, 240, 255, 0.15);
-      border-color: rgba(0, 240, 255, 0.3);
-    }
-
-    @media (max-width: 860px) {
-      .login-container {
+    @media (max-width: 768px) {
+      .auth-container {
         grid-template-columns: 1fr;
+        max-width: 420px;
+      }
+      .visual-side {
+        display: none;
       }
     }
 
-    /* Left Side: Ancient Rishi Artwork with Living Canvas */
-    .rishi-image-panel {
+    /* Left Side: Artwork Visual */
+    .visual-side {
       position: relative;
       background: #000000;
+      min-height: 480px;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
+      padding: 24px;
       overflow: hidden;
-      min-height: 560px;
-      cursor: crosshair;
-      perspective: 1000px;
-      transition: transform 0.2s ease-out;
     }
 
-    .rishi-img {
+    .visual-img {
       position: absolute;
-      top: 0;
-      left: 0;
+      inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center;
-      transition: transform 8s ease;
-      z-index: 1;
+      opacity: 0.85;
     }
 
-    .login-container:hover .rishi-img {
-      transform: scale(1.025);
-    }
-
-    .rishi-quantum-canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 2;
-      pointer-events: auto;
-    }
-
-    .rishi-overlay-gradient {
+    .visual-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.5) 60%, rgba(0, 0, 0, 0.92) 85%, rgba(0, 0, 0, 0.98) 100%);
-      pointer-events: none;
-      z-index: 3;
+      background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.85) 90%);
     }
 
-    .rishi-caption-box {
+    .visual-caption {
       position: relative;
-      z-index: 4;
-      padding: 26px 30px;
-      pointer-events: none;
-    }
-
-    .rishi-tag-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-
-    .rishi-era-badge {
-      font-family: var(--font-mono);
-      font-size: 10.5px;
-      font-weight: 700;
-      color: #00f0ff;
-      background: rgba(0, 240, 255, 0.12);
-      border: 1px solid rgba(0, 240, 255, 0.35);
-      padding: 2px 8px;
-      border-radius: 4px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    .rishi-interactive-hint {
-      font-size: 11px;
-      font-weight: 600;
-      color: #fbbf24;
-      background: rgba(251, 191, 36, 0.12);
-      border: 1px solid rgba(251, 191, 36, 0.3);
-      padding: 2px 8px;
-      border-radius: 4px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .sanskrit-verse {
-      font-size: 21px;
-      font-weight: 700;
-      color: #fbbf24;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.9), 0 0 20px rgba(251, 191, 36, 0.4);
-    }
-
-    .rishi-title {
-      font-size: 14px;
+      z-index: 2;
       color: #ffffff;
+    }
+
+    .visual-sanskrit {
+      color: #fbbf24;
+      font-size: 16px;
       font-weight: 700;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
 
-    .rishi-desc {
-      font-size: 12px;
-      color: #cbd5e1;
-      line-height: 1.55;
-    }
-
-    /* QPU Telemetry Strip on Top of Form */
-    .qpu-telemetry-strip {
-      background: rgba(0, 240, 255, 0.05);
-      border: 1px solid rgba(0, 240, 255, 0.2);
-      border-radius: 6px;
-      padding: 8px 12px;
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-    }
-
-    .telemetry-status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #10b981;
-      font-weight: 700;
-    }
-
-    .telemetry-dot {
-      width: 7px;
-      height: 7px;
-      background: #10b981;
-      border-radius: 50%;
-      box-shadow: 0 0 8px #10b981;
-      animation: pulseDot 2s infinite ease-in-out;
-    }
-
-    @keyframes pulseDot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
-
-    .telemetry-specs {
-      color: var(--text-muted);
-    }
-
-    /* Instant Simulator Launch Button */
-    .btn-instant-launch {
-      background: rgba(138, 180, 248, 0.08);
-      border: 1px solid rgba(138, 180, 248, 0.35);
-      color: var(--google-blue);
-      font-family: var(--font-sans);
+    .visual-title {
       font-size: 13px;
-      font-weight: 500;
-      width: 100%;
-      padding: 10px 16px;
-      border-radius: 24px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      margin-top: 10px;
+      font-weight: 600;
+      color: #e2e8f0;
     }
 
-    .btn-instant-launch:hover {
-      background: rgba(138, 180, 248, 0.18);
-      border-color: var(--google-blue);
-      transform: translateY(-1px);
-    }
-
-    /* Right Side: Sign-In Card */
-    .signin-form-panel {
-      padding: 44px 38px;
+    /* Right Side: Simple Clean Form */
+    .form-side {
+      padding: 40px 36px;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      background: var(--bg-card);
     }
 
-    .brand-header {
+    .brand-logo-row {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .brand-svg {
@@ -315,58 +169,53 @@
       height: 32px;
     }
 
-    .brand-text {
+    .brand-name {
       font-size: 20px;
-      font-weight: 900;
+      font-weight: 700;
       color: var(--text-main);
-      letter-spacing: -0.5px;
     }
 
-    .form-title {
-      font-size: 26px;
+    .page-title {
+      font-size: 22px;
       font-weight: 700;
       margin-bottom: 6px;
       color: var(--text-main);
     }
 
-    .form-subtitle {
+    .page-subtitle {
       font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 24px;
-      line-height: 1.4;
+      color: var(--text-sub);
+      margin-bottom: 22px;
     }
 
-    /* Google Sign-In Button */
+    /* Google Button */
     .btn-google {
       width: 100%;
       background: #ffffff;
       color: #1f2937;
-      border: 1px solid var(--border-darker);
+      border: 1px solid #dadce0;
       border-radius: 24px;
-      padding: 11px 16px;
+      padding: 10px 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      font-family: var(--font-sans);
+      gap: 10px;
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-      transition: all 0.15s ease;
-      text-decoration: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      transition: all 0.15s;
     }
 
     .btn-google:hover {
       background: #f8fafc;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     }
 
     .divider {
       text-align: center;
       position: relative;
-      margin: 22px 0;
+      margin: 18px 0;
     }
 
     .divider::before {
@@ -376,273 +225,186 @@
       left: 0;
       right: 0;
       height: 1px;
-      background: var(--border-color);
+      background: var(--border);
     }
 
     .divider span {
       position: relative;
       background: var(--bg-card);
-      padding: 0 12px;
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 14px;
-    }
-
-    .input-group label {
+      padding: 0 10px;
       font-size: 12px;
-      font-weight: 600;
       color: var(--text-sub);
     }
 
-    .text-input {
-      background: var(--bg-page);
-      border: 1px solid var(--border-color);
-      color: var(--text-main);
-      padding: 11px 14px;
-      border-radius: 6px;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.15s;
+    .form-group {
+      margin-bottom: 14px;
     }
 
-    .text-input:focus {
-      border-color: var(--google-blue);
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .form-input:focus {
+      border-color: var(--border-focus);
       box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.25);
+    }
+
+    .pw-toggle {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px;
     }
 
     .btn-submit {
       width: 100%;
-      background: var(--btn-primary-bg);
-      color: var(--btn-primary-text);
+      background: var(--accent);
+      color: var(--btn-text);
       border: none;
-      padding: 11px;
+      padding: 11px 16px;
       border-radius: 24px;
-      font-family: var(--font-sans);
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      margin-top: 8px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-      transition: all 0.2s ease;
-      letter-spacing: 0.02em;
+      margin-top: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      transition: all 0.15s;
     }
 
     .btn-submit:hover {
-      background: var(--btn-primary-hover);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+      background: var(--accent-hover);
       transform: translateY(-1px);
     }
 
-    .btn-submit:active {
-      transform: translateY(1px);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    /* Guest Instant Entry Button */
+    .btn-guest-fast {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--accent);
+      padding: 9px 16px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: all 0.15s;
     }
 
-    .guest-link-box {
-      margin-top: 22px;
-      padding-top: 18px;
-      border-top: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      color: var(--text-muted);
+    .btn-guest-fast:hover {
+      background: rgba(138, 180, 248, 0.1);
+      border-color: var(--accent);
     }
 
-    .guest-action {
-      color: var(--accent-blue);
+    .bottom-links {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 12.5px;
+      color: var(--text-sub);
+    }
+
+    .bottom-links a {
+      color: var(--accent);
       text-decoration: none;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
     }
 
-    .guest-action:hover {
+    .bottom-links a:hover {
       text-decoration: underline;
     }
 
-    /* Interactive Google OAuth Modal */
-    .google-modal-backdrop {
+    /* Alert Banner */
+    .alert-banner {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.65);
-      backdrop-filter: blur(4px);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .google-modal-backdrop.active {
-      display: flex;
-    }
-
-    .google-oauth-dialog {
-      background: #ffffff;
-      border-radius: 8px;
-      max-width: 420px;
-      width: 100%;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-      overflow: hidden;
-      animation: modalPop 0.2s ease-out;
-    }
-
-    @keyframes modalPop {
-      from { transform: scale(0.95); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    .oauth-header {
-      padding: 20px 24px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border-bottom: 1px solid #f1f5f9;
-    }
-
-    .oauth-title-text h3 {
-      font-size: 16px;
-      font-weight: 600;
-      color: #1f2937;
-    }
-
-    .oauth-title-text p {
-      font-size: 12px;
-      color: #6b7280;
-    }
-
-    .oauth-body {
-      padding: 16px 24px;
-    }
-
-    .account-item {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 12px;
+      padding: 8px 12px;
       border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.15s;
-      border: 1px solid transparent;
-    }
-
-    .account-item:hover {
-      background: #f8fafc;
-      border-color: #e2e8f0;
-    }
-
-    .user-avatar-circle {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 16px;
-    }
-
-    .account-info strong {
-      display: block;
-      font-size: 14px;
-      color: #1f2937;
-    }
-
-    .account-info span {
       font-size: 12px;
-      color: #6b7280;
+      margin-bottom: 14px;
+      text-align: center;
     }
 
-    .oauth-footer {
-      padding: 14px 24px;
-      border-top: 1px solid #f1f5f9;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      color: #6b7280;
+    .alert-error {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
     }
 
-    .btn-cancel-oauth {
-      background: none;
-      border: none;
-      color: #6b7280;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .btn-cancel-oauth:hover {
-      color: #1f2937;
+    .alert-success {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
     }
   </style>
 </head>
 <body>
 
   <!-- Floating Theme Switcher -->
-  <button class="login-theme-btn" id="btn-theme-toggle" onclick="toggleTheme()" title="Toggle Black/White Theme">
+  <button class="theme-btn" onclick="toggleTheme()">
     <span id="theme-icon">☀️</span>
-    <span id="theme-text">White</span>
+    <span id="theme-text">Light</span>
   </button>
 
-  <div class="login-container">
+  <div class="auth-container">
     
-    <!-- Left: Ancient Rishi Kanada Artwork with Living Quantum Engine -->
-    <div class="rishi-image-panel" id="rishi-panel-container">
-      <img src="assets/ancient_rishi.jpg" alt="Maharshi Kanada Meditating with Quantum Atomic Orbits" class="rishi-img">
-      <canvas id="rishi-quantum-canvas" class="rishi-quantum-canvas"></canvas>
-      <div class="rishi-overlay-gradient"></div>
-      <div class="rishi-caption-box">
-        <div class="rishi-tag-row">
-          <span class="rishi-era-badge">6th Century BCE</span>
-          <span class="rishi-interactive-hint">✦ Interactive Quantum Energy: Move cursor or click</span>
-        </div>
-        <div class="sanskrit-verse">"सर्वं द्रव्यं परमाणु रूपम्"</div>
-        <div class="rishi-title">Maharshi Kanada: The Genesis of Atomic Theory</div>
-        <p class="rishi-desc">
-          Author of the <em>Vaisheshika Sutra</em>, who established that all physical reality consists of eternal, vibrating, indivisible quanta (<em>Parmanu</em>) millennia before modern physics.
-        </p>
+    <!-- Left Visual Panel -->
+    <div class="visual-side">
+      <img src="assets/ancient_rishi.jpg" alt="Maharshi Kanada" class="visual-img">
+      <div class="visual-overlay"></div>
+      <div class="visual-caption">
+        <div class="visual-sanskrit">"सर्वं द्रव्यं परमाणु रूपम्"</div>
+        <div class="visual-title">Maharshi Kanada • Pioneer of Atomic Theory</div>
       </div>
     </div>
 
-    <!-- Right: High-Tech Sign-In Card -->
-    <div class="signin-form-panel">
-      <!-- QPU Telemetry Strip -->
-      <div class="qpu-telemetry-strip">
-        <div class="telemetry-status">
-          <span class="telemetry-dot"></span>
-          <span>QPU Cryo-Array: Online (15 mK)</span>
-        </div>
-        <span class="telemetry-specs">3-Qubit Lattice | T1: 82 µs</span>
-      </div>
-
-      <div class="brand-header">
-        <svg class="brand-svg" viewBox="0 0 44 44" width="32" height="32">
+    <!-- Right Form Panel -->
+    <div class="form-side">
+      <div class="brand-logo-row">
+        <svg class="brand-svg" viewBox="0 0 44 44">
           <path d="M 22 22 C 16 12, 6 12, 6 22 C 6 32, 16 32, 22 22 C 28 12, 38 12, 38 22 C 38 32, 28 32, 22 22 Z" 
                 fill="none" stroke="#8ab4f8" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
           <circle cx="14" cy="22" r="2.5" fill="#8ab4f8" />
           <circle cx="30" cy="22" r="2.5" fill="#d367c4" />
           <circle cx="22" cy="22" r="2" fill="#81c995" />
         </svg>
-        <span class="brand-text">Ananta</span>
+        <span class="brand-name">Ananta</span>
       </div>
 
-      <h1 class="form-title">Quantum Portal</h1>
-      <p class="form-subtitle">Launch the Quantum Circuit Studio, simulate statevectors, and synthesize multi-qubit algorithms with Google Cirq.</p>
+      <h1 class="page-title" id="form-title">Sign In</h1>
+      <p class="page-subtitle" id="form-subtitle">Enter your account to access the Quantum Studio.</p>
 
-      <!-- Google Sign In Button -->
-      <button class="btn-google" id="btn-google-signin" onclick="openGoogleDialog()">
-        <svg viewBox="0 0 24 24" width="20" height="20">
+      <div id="alert-banner" class="alert-banner"></div>
+
+      <!-- Google 1-Click Sign In -->
+      <button type="button" class="btn-google" onclick="loginWithGoogle()">
+        <svg viewBox="0 0 24 24" width="18" height="18">
           <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
           <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
           <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
@@ -651,160 +413,143 @@
         <span>Sign in with Google</span>
       </button>
 
-      <!-- Instant Guest Demo Launch -->
-      <a href="index.html#simulator" class="btn-instant-launch" onclick="loginGuest()">
-        <span>🚀 Instant Guest Launch: Full Simulator Access →</span>
-      </a>
-
       <div class="divider">
-        <span>or sign in with email</span>
+        <span>or</span>
       </div>
 
-      <form onsubmit="event.preventDefault(); submitEmailLogin();">
-        <div class="input-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" class="text-input" placeholder="developer@ananta-quantum.io" value="" required>
+      <!-- Sign In / Sign Up Form -->
+      <form onsubmit="event.preventDefault(); handleFormSubmit();">
+        <div class="form-group" id="name-group" style="display: none;">
+          <label for="name-input">Full Name</label>
+          <input type="text" id="name-input" class="form-input" placeholder="Your Name">
         </div>
 
-        <div class="input-group">
-          <label for="pass">Password</label>
-          <input type="password" id="pass" class="text-input" value="••••••••••••" required>
+        <div class="form-group">
+          <label for="email-input">Email address</label>
+          <input type="email" id="email-input" class="form-input" placeholder="name@example.com" required>
         </div>
 
-        <button type="submit" class="btn-submit">Sign In</button>
+        <div class="form-group">
+          <label for="pass-input">Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="pass-input" class="form-input" placeholder="••••••••" required>
+            <button type="button" class="pw-toggle" onclick="togglePass()">👁️</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submit-btn">Sign In</button>
       </form>
 
-      <div class="guest-link-box">
-        <span>Curious about the science?</span>
-        <a href="index.html#doctor" class="guest-action">Open Concept Doctor & Physics Labs →</a>
-      </div>
+      <!-- Instant Guest Sandbox Pass -->
+      <button type="button" class="btn-guest-fast" onclick="loginAsGuest()">
+        🚀 Instant Guest Pass (Skip Sign In) →
+      </button>
 
-    </div>
-
-    </div>
-
-  </div>
-
-  <!-- Interactive Google OAuth Account Picker Modal -->
-  <div class="google-modal-backdrop" id="google-modal">
-    <div class="google-oauth-dialog">
-      <div class="oauth-header">
-        <svg viewBox="0 0 24 24" width="28" height="28">
-          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
-          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-        </svg>
-        <div class="oauth-title-text">
-          <h3>Choose an account</h3>
-          <p>to continue to Ananta Quantum Studio</p>
-        </div>
-      </div>
-
-      <div class="oauth-body">
-        <div class="account-item" onclick="selectGoogleAccount('Quantum Researcher', 'researcher@ananta-quantum.io')">
-          <div class="user-avatar-circle" style="background: linear-gradient(135deg, #00f0ff 0%, #0284c7 100%); color: #000;">Q</div>
-          <div class="account-info">
-            <strong>Quantum Researcher</strong>
-            <span>researcher@ananta-quantum.io</span>
-          </div>
-        </div>
-        <div class="account-item" onclick="selectGoogleAccount('Quantum Developer', 'developer@ananta-quantum.io')">
-          <div class="user-avatar-circle" style="background:#8b5cf6;">D</div>
-          <div class="account-info">
-            <strong>Quantum Developer</strong>
-            <span>developer@ananta-quantum.io</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="oauth-footer">
-        <button class="btn-cancel-oauth" onclick="closeGoogleDialog()">Cancel</button>
-        <span>Protected by Google OAuth</span>
+      <div class="bottom-links">
+        <span id="switch-prompt">Don't have an account?</span>
+        <a id="switch-link" onclick="toggleMode()">Create account</a>
       </div>
     </div>
+
   </div>
 
   <script>
-    // Theme logic for login page
+    let isSignUp = false;
+
+    // Theme logic
     function applyTheme(theme) {
       const isDark = theme === 'dark';
       document.body.className = isDark ? 'dark-theme' : 'light-theme';
-      document.body.setAttribute('data-theme', theme);
-      const icon = document.getElementById('theme-icon');
-      const text = document.getElementById('theme-text');
-      if (icon) icon.textContent = isDark ? '☀️' : '🌙';
-      if (text) text.textContent = isDark ? 'White' : 'Black';
+      document.getElementById('theme-icon').textContent = isDark ? '☀️' : '🌙';
+      document.getElementById('theme-text').textContent = isDark ? 'Light' : 'Dark';
       localStorage.setItem('ananta_theme', theme);
     }
 
     function toggleTheme() {
-      const current = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      const current = localStorage.getItem('ananta_theme') === 'light' ? 'dark' : 'light';
       applyTheme(current);
     }
+    applyTheme(localStorage.getItem('ananta_theme') || 'dark');
 
-    const savedTheme = localStorage.getItem('ananta_theme') || 'dark';
-    applyTheme(savedTheme);
-
-    // If user clicks enter simulator
-    function checkLoggedInStatus() {
-      // Keep user on login page so they can view and interact with it
+    // Toggle Sign In / Sign Up
+    function toggleMode() {
+      isSignUp = !isSignUp;
+      document.getElementById('form-title').textContent = isSignUp ? 'Create Account' : 'Sign In';
+      document.getElementById('form-subtitle').textContent = isSignUp ? 'Join Ananta Quantum Studio today.' : 'Enter your account to access the Quantum Studio.';
+      document.getElementById('name-group').style.display = isSignUp ? 'block' : 'none';
+      document.getElementById('submit-btn').textContent = isSignUp ? 'Create Account' : 'Sign In';
+      document.getElementById('switch-prompt').textContent = isSignUp ? 'Already have an account?' : "Don't have an account?";
+      document.getElementById('switch-link').textContent = isSignUp ? 'Sign in' : 'Create account';
+      hideAlert();
     }
 
-    function openGoogleDialog() {
-      document.getElementById('google-modal').classList.add('active');
+    function togglePass() {
+      const input = document.getElementById('pass-input');
+      input.type = input.type === 'password' ? 'text' : 'password';
     }
 
-    function closeGoogleDialog() {
-      document.getElementById('google-modal').classList.remove('active');
+    function showAlert(msg, isSuccess) {
+      const banner = document.getElementById('alert-banner');
+      banner.textContent = msg;
+      banner.className = 'alert-banner ' + (isSuccess ? 'alert-success' : 'alert-error');
+      banner.style.display = 'block';
     }
 
-    function selectGoogleAccount(name, email) {
+    function hideAlert() {
+      document.getElementById('alert-banner').style.display = 'none';
+    }
+
+    function redirectToSimulator() {
+      window.location.href = 'index.html#simulator';
+    }
+
+    function handleFormSubmit() {
+      const email = document.getElementById('email-input').value.trim();
+      const pass = document.getElementById('pass-input').value;
+      const name = isSignUp ? (document.getElementById('name-input').value.trim() || email.split('@')[0]) : email.split('@')[0];
+
+      if (!email || !pass) {
+        showAlert('Please fill in all required fields.', false);
+        return;
+      }
+
       const user = {
         name: name,
         email: email,
-        provider: 'google',
         avatar: name.charAt(0).toUpperCase(),
-        loggedInAt: new Date().toISOString()
-      };
-      localStorage.setItem('ananta_user', JSON.stringify(user));
-      window.location.href = 'index.html#simulator';
-    }
-
-    function submitEmailLogin() {
-      const email = document.getElementById('email').value || 'developer@ananta-quantum.io';
-      const user = {
-        name: email.split('@')[0],
-        email: email,
         provider: 'email',
-        avatar: email.charAt(0).toUpperCase(),
+        loggedInAt: new Date().toISOString()
+      };
+
+      localStorage.setItem('ananta_user', JSON.stringify(user));
+      showAlert('Signed in successfully! Entering Studio...', true);
+      setTimeout(redirectToSimulator, 350);
+    }
+
+    function loginWithGoogle() {
+      const user = {
+        name: 'Quantum Researcher',
+        email: 'researcher@ananta-quantum.io',
+        avatar: 'Q',
+        provider: 'google',
         loggedInAt: new Date().toISOString()
       };
       localStorage.setItem('ananta_user', JSON.stringify(user));
-      window.location.href = 'index.html#simulator';
+      showAlert('Signed in with Google! Entering Studio...', true);
+      setTimeout(redirectToSimulator, 350);
     }
 
-    function loginGuest() {
+    function loginAsGuest() {
       const user = {
         name: 'Guest User',
         email: 'guest@ananta-quantum.io',
-        provider: 'guest',
         avatar: 'G',
+        provider: 'guest',
         loggedInAt: new Date().toISOString()
       };
       localStorage.setItem('ananta_user', JSON.stringify(user));
+      redirectToSimulator();
     }
   </script>
-
-  <!-- Living Rishi Quantum Animation Engine -->
-  <script src="js/rishi-canvas.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.RishiQuantumCanvas) {
-        window.rishiCanvas = new window.RishiQuantumCanvas('rishi-quantum-canvas', 'rishi-panel-container');
-      }
-    });
-  </script>
-
 </body>
 </html>
