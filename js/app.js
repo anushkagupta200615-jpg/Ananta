@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const icon = document.getElementById('theme-toggle-icon');
     const text = document.getElementById('theme-toggle-text');
     if (icon) icon.textContent = isDark ? '☀️' : '🌙';
-    if (text) text.textContent = isDark ? 'White' : 'Black';
+    if (text) text.textContent = isDark ? 'Light' : 'Dark';
 
     localStorage.setItem('ananta_theme', theme);
   }
@@ -148,24 +148,46 @@ document.addEventListener('DOMContentLoaded', () => {
       window.renderLoginSessionState();
     }
 
-    // Update active class on nav items
+    // Groups for dropdown highlights
+    const studioTabs = ['surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry'];
+    const algorithmTabs = ['algorithms', 'research'];
+    const learnTabs = ['intuition', 'challenges', 'docs'];
+
+    // Update active class on standalone nav items & dropdown triggers
     navItems.forEach(item => {
-      if (item.getAttribute('data-tab') === tabKey) {
+      const tab = item.getAttribute('data-tab');
+      const dropdown = item.getAttribute('data-dropdown');
+
+      if (tab && tab === tabKey) {
+        item.classList.add('active');
+      } else if (dropdown === 'studios' && studioTabs.includes(tabKey)) {
+        item.classList.add('active');
+      } else if (dropdown === 'algorithms' && algorithmTabs.includes(tabKey)) {
+        item.classList.add('active');
+      } else if (dropdown === 'learn' && learnTabs.includes(tabKey)) {
         item.classList.add('active');
       } else {
         item.classList.remove('active');
       }
     });
 
-    // Also highlight dropdown parent if a child view is selected
-    const learnTabs = ['overview', 'docs', 'intuition'];
-    const hwTabs = ['surface-code', 'pulse-studio'];
-    const swTabs = ['simulator', 'transpiler', 'vqe-chemistry', 'algorithms', 'challenges', 'research'];
+    // Update active state on rich dropdown items & legacy dropdown links
+    document.querySelectorAll('.dropdown-rich-item, .dropdown-link').forEach(link => {
+      if (link.getAttribute('data-tab') === tabKey) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
 
-    const learnNav = document.querySelector('.nav-item[data-tab="overview"]');
-    if (learnNav && learnTabs.includes(tabKey)) {
-      learnNav.classList.add('active');
-    }
+    // Update mobile nav items active state
+    document.querySelectorAll('.mobile-nav-item').forEach(mItem => {
+      if (mItem.getAttribute('data-tab') === tabKey) {
+        mItem.classList.add('active');
+      } else {
+        mItem.classList.remove('active');
+      }
+    });
 
     // Toggle viewport sections
     sections.forEach(sec => {
@@ -291,12 +313,55 @@ document.addEventListener('DOMContentLoaded', () => {
   window.switchView = switchView;
   window.switchTab = switchView;
 
-  // Bind click on all nav items and dropdown links
-  document.querySelectorAll('.nav-item, .dropdown-link').forEach(item => {
+  // Dropdown toggle on click/tap for accessibility & touch devices
+  const dropdownItems = document.querySelectorAll('.nav-dropdown-item');
+  dropdownItems.forEach(group => {
+    const trigger = group.querySelector('.nav-dropdown-trigger');
+    if (trigger) {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = group.classList.contains('is-open');
+        // Close all other dropdowns
+        dropdownItems.forEach(g => {
+          g.classList.remove('is-open');
+          const t = g.querySelector('.nav-dropdown-trigger');
+          if (t) t.setAttribute('aria-expanded', 'false');
+        });
+        if (!isOpen) {
+          group.classList.add('is-open');
+          trigger.setAttribute('aria-expanded', 'true');
+        }
+      });
+    }
+  });
+
+  // Close dropdowns on outside click or Escape key
+  document.addEventListener('click', () => {
+    dropdownItems.forEach(g => {
+      g.classList.remove('is-open');
+      const t = g.querySelector('.nav-dropdown-trigger');
+      if (t) t.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      dropdownItems.forEach(g => {
+        g.classList.remove('is-open');
+        const t = g.querySelector('.nav-dropdown-trigger');
+        if (t) t.setAttribute('aria-expanded', 'false');
+      });
+    }
+  });
+
+  // Bind click on all nav items, rich dropdown items, and dropdown links
+  document.querySelectorAll('.nav-item[data-tab], .dropdown-rich-item, .dropdown-link').forEach(item => {
     item.addEventListener('click', (e) => {
       const tab = item.getAttribute('data-tab');
       if (tab) {
         e.preventDefault();
+        // Close any open dropdowns
+        dropdownItems.forEach(g => g.classList.remove('is-open'));
         switchView(tab);
       }
     });
@@ -314,11 +379,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  const validAllTabs = [
+    'overview', 'simulator', 'surface-code', 'pulse-studio',
+    'transpiler', 'vqe-chemistry', 'algorithms', 'research',
+    'intuition', 'challenges', 'docs', 'login'
+  ];
+
   // Listen for browser hash changes (back/forward or URL typing)
   window.addEventListener('hashchange', () => {
     const h = window.location.hash.replace('#', '');
-    const valid = ['overview', 'simulator', 'algorithms', 'intuition', 'research', 'challenges', 'docs', 'login'];
-    if (h && valid.includes(h)) {
+    if (h && validAllTabs.includes(h)) {
       switchView(h);
     }
   });
@@ -1715,7 +1785,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 9. Determine Initial Active View & Routing
   // ==========================================
-  const validTabs = ['overview', 'simulator', 'algorithms', 'intuition', 'research', 'challenges', 'docs', 'login'];
+  const validTabs = [
+    'overview', 'simulator', 'surface-code', 'pulse-studio',
+    'transpiler', 'vqe-chemistry', 'algorithms', 'research',
+    'intuition', 'challenges', 'docs', 'login'
+  ];
   const isLoggedIn = updateNavUser();
   const hash = window.location.hash.replace('#', '');
 

@@ -38,57 +38,146 @@
         </div>
       </div>
 
-      <!-- DevSite Navigation Tabs with Animated Dropdowns -->
+      <!-- DevSite Navigation Tabs with Streamlined Architecture & Rich Dropdowns -->
       <nav class="nav-links" aria-label="Main Navigation">
-        <!-- Learn Dropdown -->
-        <div class="nav-dropdown-item">
-          <a href="#overview" class="nav-item active" data-tab="overview">
+        <!-- 1. Platform Overview Direct Tab -->
+        <a href="#overview" class="nav-item" data-tab="overview">Overview</a>
+
+        <!-- 2. Quantum Composer Direct Tab (Flagship Tool) -->
+        <a href="#simulator" class="nav-item nav-item-composer-highlight" data-tab="simulator">
+          <span class="nav-icon-sparkle">⚛️</span> Composer
+        </a>
+
+        <!-- 3. Quantum Studios Dropdown (FTQC, Pulse, Transpiler, VQE) -->
+        <div class="nav-dropdown-item" data-dropdown-group="studios">
+          <button type="button" class="nav-item nav-dropdown-trigger" data-dropdown="studios" aria-expanded="false">
+            Studios <span class="nav-caret">▾</span>
+          </button>
+          <div class="nav-dropdown-menu nav-dropdown-studios">
+            <div class="nav-dropdown-header">Quantum Hardware & Simulation Studios</div>
+            <a href="#surface-code" class="dropdown-rich-item" data-tab="surface-code">
+              <span class="dropdown-rich-icon">🛡️</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Surface Code Studio</span>
+                  <span class="dropdown-badge badge-ftqc">FTQC</span>
+                </div>
+                <span class="dropdown-rich-desc">Planar rotated codes, $X/Z$ stabilizers & live MWPM decoder</span>
+              </div>
+            </a>
+            <a href="#pulse-studio" class="dropdown-rich-item" data-tab="pulse-studio">
+              <span class="dropdown-rich-icon">🎛️</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Microwave Pulse Studio</span>
+                  <span class="dropdown-badge badge-physics">PHYSICS</span>
+                </div>
+                <span class="dropdown-rich-desc">Transmon Hamiltonian, DRAG pulse shaping & Rabi oscillations</span>
+              </div>
+            </a>
+            <a href="#transpiler" class="dropdown-rich-item" data-tab="transpiler">
+              <span class="dropdown-rich-icon">⚡</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Universal Transpiler & AI Doctor</span>
+                  <span class="dropdown-badge badge-sdk">MULTI-SDK</span>
+                </div>
+                <span class="dropdown-rich-desc">Cross-compile Cirq, Qiskit & Braket with AI gate routing</span>
+              </div>
+            </a>
+            <a href="#vqe-chemistry" class="dropdown-rich-item" data-tab="vqe-chemistry">
+              <span class="dropdown-rich-icon">🧪</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">VQE Molecular Chemistry</span>
+                  <span class="dropdown-badge badge-nisq">NISQ</span>
+                </div>
+                <span class="dropdown-rich-desc">Jordan-Wigner Pauli terms & ground state energy landscapes</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 4. Algorithms & Research Dropdown -->
+        <div class="nav-dropdown-item" data-dropdown-group="algorithms">
+          <button type="button" class="nav-item nav-dropdown-trigger" data-dropdown="algorithms" aria-expanded="false">
+            Algorithms <span class="nav-caret">▾</span>
+          </button>
+          <div class="nav-dropdown-menu nav-dropdown-algorithms">
+            <div class="nav-dropdown-header">Quantum Advantage & Algorithms</div>
+            <a href="#algorithms" class="dropdown-rich-item" data-tab="algorithms">
+              <span class="dropdown-rich-icon">📐</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Algorithm Benchmark Labs</span>
+                  <span class="dropdown-badge badge-speedup">SPEEDUP</span>
+                </div>
+                <span class="dropdown-rich-desc">Interactive speedup races: Grover, Shor, QFT, Simon's & Deutsch</span>
+              </div>
+            </a>
+            <a href="#research" class="dropdown-rich-item" data-tab="research">
+              <span class="dropdown-rich-icon">📚</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Algorithm Zoo & Papers</span>
+                  <span class="dropdown-badge badge-catalog">74 ALGOS</span>
+                </div>
+                <span class="dropdown-rich-desc">74 quantum algorithms catalog & interactive seminal paper reproductions</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 5. Learn & Docs Dropdown -->
+        <div class="nav-dropdown-item" data-dropdown-group="learn">
+          <button type="button" class="nav-item nav-dropdown-trigger" data-dropdown="learn" aria-expanded="false">
             Learn <span class="nav-caret">▾</span>
-          </a>
-          <div class="nav-dropdown-menu">
-            <a href="#overview" class="dropdown-link" data-tab="overview">What is quantum computing?</a>
-            <a href="#docs" class="dropdown-link" data-tab="docs">Educational & Technical Specs</a>
-            <a href="#intuition" class="dropdown-link" data-tab="intuition">Intuition Lab (Wave Collapse)</a>
+          </button>
+          <div class="nav-dropdown-menu nav-dropdown-learn">
+            <div class="nav-dropdown-header">Education & Reference</div>
+            <a href="#intuition" class="dropdown-rich-item" data-tab="intuition">
+              <span class="dropdown-rich-icon">🔬</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Quantum Intuition Lab</span>
+                  <span class="dropdown-badge badge-learn">VISUAL</span>
+                </div>
+                <span class="dropdown-rich-desc">Wavepacket collapse, superposition interference & Concept Doctor</span>
+              </div>
+            </a>
+            <a href="#challenges" class="dropdown-rich-item" data-tab="challenges">
+              <span class="dropdown-rich-icon">🏆</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Quantum Challenges</span>
+                  <span class="dropdown-badge badge-learn">QUESTS</span>
+                </div>
+                <span class="dropdown-rich-desc">Gamified circuit puzzles, skill tree & quantum achievement badges</span>
+              </div>
+            </a>
+            <a href="#docs" class="dropdown-rich-item" data-tab="docs">
+              <span class="dropdown-rich-icon">📄</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Technical Specs & Docs</span>
+                  <span class="dropdown-badge badge-learn">DOCS</span>
+                </div>
+                <span class="dropdown-rich-desc">Formal Dirac notation, Hamiltonian math, and unitary gate specs</span>
+              </div>
+            </a>
+            <div class="dropdown-menu-divider"></div>
+            <div class="dropdown-quick-links">
+              <a href="#overview" class="dropdown-quick-link" onclick="window.scrollToSection('mission-section')">
+                <span>❄️ Cryo-Array Hardware</span>
+                <span class="quick-link-arrow">→</span>
+              </a>
+              <a href="#overview" class="dropdown-quick-link" onclick="window.scrollToSection('roadmap-section')">
+                <span>🗺️ Engineering Roadmap (6 Milestones)</span>
+                <span class="quick-link-arrow">→</span>
+              </a>
+            </div>
           </div>
         </div>
-
-        <!-- Hardware Dropdown -->
-        <div class="nav-dropdown-item">
-          <a href="#overview" class="nav-item" data-tab="overview">
-            Hardware <span class="nav-caret">▾</span>
-          </a>
-          <div class="nav-dropdown-menu">
-            <a href="#overview" class="dropdown-link" onclick="window.scrollToSection('mission-section')">Quantum Computer (Cryo-Array)</a>
-            <a href="#surface-code" class="dropdown-link" data-tab="surface-code">🛡️ Surface Code & QEC Lab (FTQC)</a>
-            <a href="#pulse-studio" class="dropdown-link" data-tab="pulse-studio">🎛️ Microwave Pulse Physics Studio</a>
-            <a href="#overview" class="dropdown-link" onclick="window.scrollToSection('roadmap-section')">Roadmap (6 Milestones)</a>
-            <a href="#simulator" class="dropdown-link" data-tab="simulator">Noise & Decoherence Lab</a>
-          </div>
-        </div>
-
-        <!-- Software Dropdown -->
-        <div class="nav-dropdown-item">
-          <a href="#simulator" class="nav-item" data-tab="simulator">
-            Software <span class="nav-caret">▾</span>
-          </a>
-          <div class="nav-dropdown-menu">
-            <a href="#simulator" class="dropdown-link" data-tab="simulator">Cirq Quantum Composer</a>
-            <a href="#transpiler" class="dropdown-link" data-tab="transpiler">⚡ Universal Transpiler & AI Doctor</a>
-            <a href="#vqe-chemistry" class="dropdown-link" data-tab="vqe-chemistry">🧪 VQE Molecular Chemistry Sandbox</a>
-            <a href="#algorithms" class="dropdown-link" data-tab="algorithms">Algorithm Library (Grover, Shor, VQE)</a>
-            <a href="#research" class="dropdown-link" onclick="if(window.switchResearchMode) window.switchResearchMode('zoo');" data-tab="research">Universal Algorithm Catalog (74 Algorithms)</a>
-            <a href="#challenges" class="dropdown-link" data-tab="challenges">Quantum Circuit Challenges</a>
-          </div>
-        </div>
-
-        <a href="#simulator" class="nav-item nav-item-composer-highlight" data-tab="simulator">Composer</a>
-        <a href="#surface-code" class="nav-item" data-tab="surface-code">Surface Code</a>
-        <a href="#transpiler" class="nav-item" data-tab="transpiler">Transpiler</a>
-        <a href="#vqe-chemistry" class="nav-item" data-tab="vqe-chemistry">VQE Chem</a>
-        <a href="#pulse-studio" class="nav-item" data-tab="pulse-studio">Pulse Studio</a>
-        <a href="#algorithms" class="nav-item" data-tab="algorithms">Algorithms</a>
-        <a href="#research" class="nav-item" data-tab="research">Research</a>
-        <a href="#docs" class="nav-item" data-tab="docs">Docs</a>
       </nav>
     </div>
 
@@ -136,20 +225,32 @@
   <!-- Mobile Navigation Drawer -->
   <nav class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation">
     <div class="mobile-nav-header">
-      <span class="mobile-nav-title">Menu</span>
+      <span class="mobile-nav-title">Navigation</span>
       <button class="mobile-nav-close" onclick="window.closeMobileNav()">✕</button>
     </div>
+
+    <!-- Category: Core Workspace -->
+    <div class="mobile-nav-section-title">CORE WORKSPACE</div>
     <a href="#overview" class="mobile-nav-item" data-tab="overview" onclick="window.closeMobileNav()">🏠 Overview</a>
-    <a href="#simulator" class="mobile-nav-item" data-tab="simulator" onclick="window.closeMobileNav()">⚛️ Composer</a>
+    <a href="#simulator" class="mobile-nav-item" data-tab="simulator" onclick="window.closeMobileNav()">⚛️ Cirq Composer</a>
+
+    <!-- Category: Quantum Studios -->
+    <div class="mobile-nav-section-title">QUANTUM STUDIOS</div>
     <a href="#surface-code" class="mobile-nav-item" data-tab="surface-code" onclick="window.closeMobileNav()">🛡️ Surface Code (FTQC)</a>
-    <a href="#transpiler" class="mobile-nav-item" data-tab="transpiler" onclick="window.closeMobileNav()">⚡ Multi-Transpiler & Doctor</a>
-    <a href="#vqe-chemistry" class="mobile-nav-item" data-tab="vqe-chemistry" onclick="window.closeMobileNav()">🧪 VQE Chemistry Sandbox</a>
     <a href="#pulse-studio" class="mobile-nav-item" data-tab="pulse-studio" onclick="window.closeMobileNav()">🎛️ Microwave Pulse Studio</a>
-    <a href="#algorithms" class="mobile-nav-item" data-tab="algorithms" onclick="window.closeMobileNav()">📐 Algorithms</a>
-    <a href="#research" class="mobile-nav-item" data-tab="research" onclick="window.closeMobileNav()">📚 Research</a>
-    <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">📄 Docs</a>
+    <a href="#transpiler" class="mobile-nav-item" data-tab="transpiler" onclick="window.closeMobileNav()">⚡ Multi-Transpiler & Doctor</a>
+    <a href="#vqe-chemistry" class="mobile-nav-item" data-tab="vqe-chemistry" onclick="window.closeMobileNav()">🧪 VQE Molecular Chemistry</a>
+
+    <!-- Category: Algorithms & Research -->
+    <div class="mobile-nav-section-title">ALGORITHMS & RESEARCH</div>
+    <a href="#algorithms" class="mobile-nav-item" data-tab="algorithms" onclick="window.closeMobileNav()">📐 Benchmark Labs</a>
+    <a href="#research" class="mobile-nav-item" data-tab="research" onclick="window.closeMobileNav()">📚 Algorithm Zoo & Papers</a>
+
+    <!-- Category: Learn & Reference -->
+    <div class="mobile-nav-section-title">LEARN & REFERENCE</div>
     <a href="#intuition" class="mobile-nav-item" data-tab="intuition" onclick="window.closeMobileNav()">🔬 Intuition Lab</a>
-    <a href="#challenges" class="mobile-nav-item" data-tab="challenges" onclick="window.closeMobileNav()">🏆 Challenges</a>
+    <a href="#challenges" class="mobile-nav-item" data-tab="challenges" onclick="window.closeMobileNav()">🏆 Challenges & Quests</a>
+    <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">📄 Technical Specs</a>
     <div class="mobile-nav-divider"></div>
     <!-- Mobile search bar -->
     <div class="mobile-nav-search" onclick="window.closeMobileNav(); window.focusKnowledgeEngineSearch();">
