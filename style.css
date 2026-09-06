@@ -487,19 +487,7 @@ button.nav-dropdown-trigger.active {
   color: var(--google-blue);
 }
 
-.nav-icon-sparkle {
-  margin-right: 4px;
-  font-size: 13px;
-}
 
-.nav-item-composer-highlight {
-  color: var(--google-blue) !important;
-  font-weight: 600;
-}
-
-.nav-item-composer-highlight:hover {
-  background: rgba(138, 180, 248, 0.08);
-}
 
 /* Mobile Drawer Section Headers */
 .mobile-nav-section-title {
