@@ -299,10 +299,26 @@ class BlochSphereVisualizer {
     this.blochGroup.rotation.set(0, 0, 0);
     this.camera.position.set(3.4, 2.4, 4.4);
     this.camera.lookAt(0, 0, 0);
+    this.autoRotate = false;
+    const btnAuto = document.getElementById('btn-bloch-autorotate');
+    if (btnAuto) {
+      btnAuto.classList.remove('active');
+      btnAuto.textContent = '⟳ Auto-Rotate';
+    }
+    const btnReset = document.getElementById('btn-bloch-reset-cam');
+    if (btnReset) {
+      btnReset.classList.add('pulse-active');
+      setTimeout(() => btnReset.classList.remove('pulse-active'), 400);
+    }
   }
 
   toggleAutoRotation() {
     this.autoRotate = !this.autoRotate;
+    const btnAuto = document.getElementById('btn-bloch-autorotate');
+    if (btnAuto) {
+      btnAuto.classList.toggle('active', this.autoRotate);
+      btnAuto.textContent = this.autoRotate ? '⏸ Pause Spin' : '⟳ Auto-Rotate';
+    }
     return this.autoRotate;
   }
 
@@ -321,6 +337,23 @@ class BlochSphereVisualizer {
     let isDragging = false;
     let prevMousePos = { x: 0, y: 0 };
     const dom = this.renderer.domElement;
+
+    // Direct binding for control buttons
+    const btnReset = document.getElementById('btn-bloch-reset-cam');
+    if (btnReset) {
+      btnReset.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.resetOrientation();
+      });
+    }
+
+    const btnAuto = document.getElementById('btn-bloch-autorotate');
+    if (btnAuto) {
+      btnAuto.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.toggleAutoRotation();
+      });
+    }
 
     dom.addEventListener('mousedown', (e) => {
       isDragging = true;

@@ -788,32 +788,6 @@
           </div>
         </div>
 
-        <!-- In-Simulator Active Challenge HUD Banner -->
-        <div class="composer-challenge-hud" id="composer-challenge-hud" style="display: none;">
-          <div class="hud-left-meta">
-            <span class="hud-trophy-icon">🎯</span>
-            <div class="hud-info">
-              <strong id="hud-challenge-title">Active Challenge: The Quantum Coin Flip</strong>
-              <div class="hud-target-wrap">
-                <span class="hud-target-label">Target:</span>
-                <code id="hud-challenge-target" class="hud-target-code">|ψ⟩ = (|000⟩ + |100⟩) / √2</code>
-              </div>
-            </div>
-          </div>
-          <div class="hud-actions-right">
-            <span class="hud-badge hud-badge-pending" id="hud-challenge-status">In Progress</span>
-            <button type="button" class="btn-hud-check" id="btn-hud-verify-circuit" onclick="if(window.missionManager) window.missionManager.verifyActiveMission();" title="Verify if current circuit solves this active challenge">
-              Verify Circuit 🔍
-            </button>
-            <button type="button" class="btn-hud-return" onclick="if(window.switchView) window.switchView('challenges');" title="Browse full Quantum Challenge catalog">
-              Puzzle Arena →
-            </button>
-            <button type="button" class="btn-hud-close" id="btn-hud-dismiss-challenge" onclick="if(window.missionManager) window.missionManager.dismissChallengeBanner();" title="Dismiss this challenge HUD">
-              ✕
-            </button>
-          </div>
-        </div>
-
         <!-- Collapsible Knowledge Engine Drawer (Opens on Demand) -->
         <div class="collapsible-drawer-wrap" id="ke-collapsible-drawer">
           <div class="knowledge-engine-bar" id="knowledge-engine-bar">
@@ -1361,16 +1335,59 @@
                 </div>
               </div>
 
-              <!-- Right: Density Matrix Heatmap -->
-              <div class="analytics-sub-card">
+              <!-- Right: Density Matrix Heatmap & Quantum State Inspector -->
+              <div class="analytics-sub-card density-matrix-card">
                 <div class="vis-dock-header">
-                  <h4>Full Density Matrix ρ = |ψ⟩⟨ψ|</h4>
-                  <span id="density-entropy-badge" class="vis-dock-sub">Von Neumann Entropy S = 0.00</span>
+                  <div>
+                    <h4>Full Density Matrix ρ = |ψ⟩⟨ψ|</h4>
+                    <span id="density-entropy-badge" class="vis-dock-sub">Von Neumann Entropy S = 0.00</span>
+                  </div>
+                  <div class="density-quick-actions">
+                    <span class="density-dim-badge" id="density-dim-badge">8 × 8 Hilbert Space</span>
+                  </div>
                 </div>
+
+                <!-- Live Statevector Dirac Summary Line -->
+                <div class="density-state-banner" id="density-state-banner">
+                  <span class="state-label">State:</span>
+                  <code id="density-state-formula">|ψ⟩ = (|000⟩ + |111⟩)/√2</code>
+                </div>
+
+                <!-- Matrix Container with Row & Column Basis Labels -->
                 <div id="density-matrix-container" class="density-matrix-grid-box"></div>
+
+                <!-- Live Dynamic Inspector on Hover/Click -->
+                <div id="density-cell-inspector" class="density-cell-inspector">
+                  <span class="inspector-prompt">💡 Hover or click any cell above to inspect basis state amplitudes, populations, and quantum coherence.</span>
+                </div>
+
+                <!-- Color Legend -->
                 <div class="density-matrix-legend">
-                  <span class="legend-item"><span class="legend-dot dot-pop"></span> Diagonal: Population |cᵢ|²</span>
-                  <span class="legend-item"><span class="legend-dot dot-coh"></span> Off-Diagonal: Quantum Coherence</span>
+                  <span class="legend-item"><span class="legend-dot dot-pop"></span> <strong>Diagonal:</strong> Population |cᵢ|² (Measurement Prob)</span>
+                  <span class="legend-item"><span class="legend-dot dot-coh"></span> <strong>Off-Diagonal:</strong> Quantum Coherence (Superposition / Entanglement)</span>
+                  <span class="legend-item"><span class="legend-dot dot-zero"></span> <strong>Zero:</strong> No Correlation</span>
+                </div>
+
+                <!-- Educational Explainer Card -->
+                <div class="density-explainer-card">
+                  <div class="explainer-header">
+                    <span class="explainer-icon">🔬</span>
+                    <strong>What Does This Density Matrix Show?</strong>
+                  </div>
+                  <div class="explainer-grid">
+                    <div class="explainer-item">
+                      <span class="explainer-badge badge-diag">🟩 Diagonal Elements (ρᵢᵢ)</span>
+                      <p><strong>Populations:</strong> Probabilities of measuring each basis state |000⟩ … |111⟩. Always sum to 1.00 (Tr(ρ) = 1).</p>
+                    </div>
+                    <div class="explainer-item">
+                      <span class="explainer-badge badge-coh">🟦 Off-Diagonal Elements (ρᵢⱼ)</span>
+                      <p><strong>Quantum Coherences:</strong> The signature of quantum superposition. If off-diagonals vanish, it behaves as a classical statistical mixture.</p>
+                    </div>
+                    <div class="explainer-item">
+                      <span class="explainer-badge badge-bell">⚡ Corner Elements in Bell / GHZ</span>
+                      <p>In |Φ⁺⟩ = (|000⟩ + |111⟩)/√2, only |000⟩ and |111⟩ exist. Their mutual interference lights up the 4 outer corners (0.50 each).</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

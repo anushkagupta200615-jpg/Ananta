@@ -917,56 +917,183 @@ class CircuitUI {
   }
 
   // =========================================================================
-  // QUANTUM DENSITY MATRIX (ρ = |ψ⟩⟨ψ|) HEATMAP
+  // QUANTUM DENSITY MATRIX (ρ = |ψ⟩⟨ψ|) HEATMAP & INSPECTOR
   // =========================================================================
   renderDensityMatrix() {
     if (!this.densityContainer) return;
     const matrix = this.engine.getDensityMatrix();
+    const numStates = matrix.length;
+    const numQubits = Math.max(1, Math.round(Math.log2(numStates)));
     const entropy = this.engine.getEntanglementEntropy();
 
     if (this.densityEntropyBadge) {
-      this.densityEntropyBadge.textContent = `Entropy S = ${entropy.toFixed(2)}`;
-      if (entropy > 0.05) {
-        this.densityEntropyBadge.style.color = '#00f0ff';
-      } else {
-        this.densityEntropyBadge.style.color = 'var(--text-dim)';
-      }
+      this.densityEntropyBadge.textContent = `Von Neumann Entropy S = ${entropy.toFixed(2)}`;
+      this.densityEntropyBadge.style.color = (entropy > 0.05) ? '#00f0ff' : 'var(--text-dim)';
+    }
+
+    const dimBadge = document.getElementById('density-dim-badge');
+    if (dimBadge) {
+      dimBadge.textContent = `${numStates} × ${numStates} Hilbert Space (${numQubits} Qubit${numQubits > 1 ? 's' : ''})`;
+    }
+
+    const formulaEl = document.getElementById('density-state-formula');
+    if (formulaEl) {
+      formulaEl.textContent = this.engine.getDiracNotation();
+    }
+
+    // Build basis labels [000, 001, ..., 111]
+    const basisLabels = [];
+    for (let i = 0; i < numStates; i++) {
+      basisLabels.push(i.toString(2).padStart(numQubits, '0'));
     }
 
     this.densityContainer.innerHTML = '';
     const table = document.createElement('div');
-    table.className = 'density-matrix-table';
+    table.className = `density-matrix-table states-${numStates}`;
 
-    for (let r = 0; r < 8; r++) {
+    // 1. Column Headers Row
+    const headerRow = document.createElement('div');
+    headerRow.className = 'density-matrix-row density-header-row';
+
+    const cornerCell = document.createElement('div');
+    cornerCell.className = 'density-header-cell density-corner-cell';
+    cornerCell.innerHTML = '<span>ρ<sub>ij</sub></span>';
+    cornerCell.title = 'Density Matrix Element ρ_ij = ⟨i|ρ|j⟩';
+    headerRow.appendChild(cornerCell);
+
+    for (let c = 0; c < numStates; c++) {
+      const colHeader = document.createElement('div');
+      colHeader.className = 'density-header-cell density-col-header';
+      colHeader.innerHTML = `<span>|${basisLabels[c]}⟩</span>`;
+      colHeader.title = `Column computational basis state |${basisLabels[c]}⟩`;
+      headerRow.appendChild(colHeader);
+    }
+    table.appendChild(headerRow);
+
+    // Inspector Updater Function
+    const updateInspector = (r, c, cell) => {
+      const insp = document.getElementById('density-cell-inspector');
+      if (!insp) return;
+
+      const stateR = `|${basisLabels[r]}⟩`;
+      const stateC = `|${basisLabels[c]}⟩`;
+      const dualC = `⟨${basisLabels[c]}|`;
+      const isDiag = cell.isDiagonal;
+      const mag = cell.mag;
+
+      let typeDesc = 'Zero Amplitude';
+      let tagClass = 'tag-zero';
+      let interpretation = '';
+
+      if (isDiag) {
+        tagClass = 'tag-pop';
+        if (mag > 0.005) {
+          typeDesc = `Population (Prob = ${(mag * 100).toFixed(1)}%)`;
+          interpretation = `<strong>Diagonal Population:</strong> There is a <strong>${(mag * 100).toFixed(1)}% probability</strong> of measuring the system in basis state <code>${stateR}</code> upon measurement.`;
+        } else {
+          typeDesc = 'Zero Population (0.0%)';
+          interpretation = `<strong>Zero Population:</strong> The system has <strong>0% probability</strong> of being found in state <code>${stateR}</code>.`;
+        }
+      } else {
+        if (mag > 0.005) {
+          tagClass = 'tag-coh';
+          typeDesc = 'Quantum Coherence (Superposition/Entanglement)';
+          interpretation = `<strong>Off-Diagonal Quantum Coherence:</strong> Non-zero correlation between <code>${stateR}</code> and <code>${stateC}</code> proves quantum superposition. If this were a classical probability mixture, this term would be 0!`;
+        } else {
+          typeDesc = 'Zero Coherence (No Correlation)';
+          interpretation = `<strong>Zero Coherence:</strong> No direct quantum phase or superposition interference between <code>${stateR}</code> and <code>${stateC}</code>.`;
+        }
+      }
+
+      insp.innerHTML = `
+        <div class="insp-active-card">
+          <div class="insp-header">
+            <span class="insp-bracket">ρ(<code>${stateR}</code>, <code>${dualC}</code>)</span>
+            <span class="insp-tag ${tagClass}">${typeDesc}</span>
+            <span class="insp-val">Re: <strong>${cell.re.toFixed(4)}</strong> | Im: <strong>${cell.im.toFixed(4)}</strong> | |ρ|: <strong>${mag.toFixed(4)}</strong></span>
+          </div>
+          <p class="insp-desc">${interpretation}</p>
+        </div>
+      `;
+    };
+
+    let firstActiveCell = null;
+
+    // 2. Data Rows with Row Header
+    for (let r = 0; r < numStates; r++) {
       const rowDiv = document.createElement('div');
       rowDiv.className = 'density-matrix-row';
 
-      for (let c = 0; c < 8; c++) {
+      const rowHeader = document.createElement('div');
+      rowHeader.className = 'density-header-cell density-row-header';
+      rowHeader.innerHTML = `<span>⟨${basisLabels[r]}|</span>`;
+      rowHeader.title = `Row dual computational basis state ⟨${basisLabels[r]}|`;
+      rowDiv.appendChild(rowHeader);
+
+      for (let c = 0; c < numStates; c++) {
         const cell = matrix[r][c];
         const cellDiv = document.createElement('div');
-        cellDiv.className = 'density-cell' + (cell.isDiagonal ? ' diag-cell' : '');
-
-        // Color intensity based on magnitude
+        const isDiag = cell.isDiagonal;
         const mag = cell.mag;
-        if (mag > 0.005) {
-          if (cell.isDiagonal) {
-            cellDiv.style.background = `rgba(16, 185, 129, ${Math.min(1, mag * 1.1)})`;
+
+        let cellClass = 'density-cell';
+        let displayVal = '·';
+
+        if (isDiag) {
+          cellClass += ' diag-cell';
+          if (mag > 0.005) {
+            displayVal = mag.toFixed(2);
+            cellClass += ' has-value pop-active';
+            cellDiv.style.background = `rgba(16, 185, 129, ${Math.min(0.95, 0.28 + mag * 0.72)})`;
+            cellDiv.style.borderColor = '#10b981';
+            if (!firstActiveCell) firstActiveCell = { r, c, cell };
           } else {
-            cellDiv.style.background = `rgba(6, 182, 212, ${Math.min(0.9, mag * 0.95)})`;
+            displayVal = '0';
+            cellClass += ' cell-zero';
           }
         } else {
-          cellDiv.style.background = 'transparent';
+          if (mag > 0.005) {
+            cellClass += ' coh-cell has-value coh-active';
+            if (Math.abs(cell.im) > 0.005 && Math.abs(cell.re) > 0.005) {
+              displayVal = `${cell.re >= 0 ? '+' : ''}${cell.re.toFixed(1)}${cell.im >= 0 ? '+' : ''}${cell.im.toFixed(1)}i`;
+              cellDiv.style.background = `rgba(168, 85, 247, ${Math.min(0.9, 0.28 + mag * 0.7)})`;
+              cellDiv.style.borderColor = '#a855f7';
+            } else if (Math.abs(cell.im) > 0.005) {
+              displayVal = `${cell.im >= 0 ? '+' : ''}${cell.im.toFixed(2)}i`;
+              cellDiv.style.background = `rgba(236, 72, 153, ${Math.min(0.9, 0.28 + mag * 0.7)})`;
+              cellDiv.style.borderColor = '#ec4899';
+            } else {
+              displayVal = (cell.re < 0 ? '-' : '') + Math.abs(cell.re).toFixed(2);
+              cellDiv.style.background = `rgba(6, 182, 212, ${Math.min(0.9, 0.28 + mag * 0.7)})`;
+              cellDiv.style.borderColor = '#06b6d4';
+            }
+            if (!firstActiveCell || firstActiveCell.cell.isDiagonal) firstActiveCell = { r, c, cell };
+          } else {
+            displayVal = '·';
+            cellClass += ' cell-zero';
+          }
         }
 
-        const stateR = `|${r.toString(2).padStart(3, '0')}⟩`;
-        const stateC = `⟨${c.toString(2).padStart(3, '0')}|`;
-        cellDiv.title = `ρ(${stateR}, ${stateC})\nRe: ${cell.re.toFixed(3)}\nIm: ${cell.im.toFixed(3)}\n|ρ|: ${cell.mag.toFixed(3)}`;
+        cellDiv.className = cellClass;
+        cellDiv.innerHTML = `<span class="density-val">${displayVal}</span>`;
+
+        const stateR = `|${basisLabels[r]}⟩`;
+        const stateC = `⟨${basisLabels[c]}|`;
+        cellDiv.title = `ρ(${stateR}, ${stateC})\nRe: ${cell.re.toFixed(4)}\nIm: ${cell.im.toFixed(4)}\n|ρ|: ${cell.mag.toFixed(4)}`;
+
+        cellDiv.addEventListener('mouseenter', () => updateInspector(r, c, cell));
+        cellDiv.addEventListener('click', () => updateInspector(r, c, cell));
 
         rowDiv.appendChild(cellDiv);
       }
       table.appendChild(rowDiv);
     }
     this.densityContainer.appendChild(table);
+
+    // Initialize the inspector with the most informative cell
+    if (firstActiveCell) {
+      updateInspector(firstActiveCell.r, firstActiveCell.c, firstActiveCell.cell);
+    }
   }
 
   // =========================================================================

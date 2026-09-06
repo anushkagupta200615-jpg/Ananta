@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let blochVisualizer = null;
   try {
     blochVisualizer = new BlochSphereVisualizer('bloch-sphere-canvas');
+    window.blochVisualizer = blochVisualizer;
   } catch (err) {
     console.error('Three.js initialization:', err);
   }
