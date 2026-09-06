@@ -138,19 +138,39 @@
               <div class="dropdown-rich-info">
                 <div class="dropdown-rich-title-line">
                   <span class="dropdown-rich-title">Full Learning Roadmap</span>
-                  <span class="dropdown-badge badge-learn">ALL MODULES</span>
+                  <span class="dropdown-badge badge-learn">ALL 10 MODULES</span>
                 </div>
-                <span class="dropdown-rich-desc">Complete 10-module curriculum from Hilbert space to VQE & FTQC</span>
+                <span class="dropdown-rich-desc">Complete end-to-end curriculum from Hilbert space to VQE & FTQC</span>
+              </div>
+            </a>
+            <a href="#topic-roadmap" class="dropdown-rich-item" data-tab="topic-roadmap" onclick="if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('beginner-track'), 60)">
+              <span class="dropdown-rich-icon">🌱</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Roadmap for Basics</span>
+                  <span class="dropdown-badge badge-speedup">BEGINNER TRACK</span>
+                </div>
+                <span class="dropdown-rich-desc">Hilbert spaces, Pauli rotations, single-qubit gates & first circuits</span>
+              </div>
+            </a>
+            <a href="#topic-roadmap" class="dropdown-rich-item" data-tab="topic-roadmap" onclick="if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('advanced-track'), 60)">
+              <span class="dropdown-rich-icon">🚀</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Roadmap for Advanced</span>
+                  <span class="dropdown-badge badge-catalog">ADVANCED TRACK</span>
+                </div>
+                <span class="dropdown-rich-desc">Lindblad noise, Bell entanglement, Grover search & VQE chemistry</span>
               </div>
             </a>
             <a href="#topic-roadmap" class="dropdown-rich-item" data-tab="topic-roadmap">
               <span class="dropdown-rich-icon">🎯</span>
               <div class="dropdown-rich-info">
                 <div class="dropdown-rich-title-line">
-                  <span class="dropdown-rich-title">Topic Specific Roadmap</span>
-                  <span class="dropdown-badge badge-sdk">ADAPTIVE</span>
+                  <span class="dropdown-rich-title">Custom Topic Roadmap</span>
+                  <span class="dropdown-badge badge-sdk">ADAPTIVE AI</span>
                 </div>
-                <span class="dropdown-rich-desc">Personalized prerequisite pathway tailored to your specific topic & level</span>
+                <span class="dropdown-rich-desc">Generate an assembled prerequisite pathway for any specific topic</span>
               </div>
             </a>
             <div class="dropdown-menu-divider"></div>
@@ -259,7 +279,9 @@
     <!-- Category: Learn & Reference -->
     <div class="mobile-nav-section-title">LEARN & REFERENCE</div>
     <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">🗺️ Full Learning Roadmap</a>
-    <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav()">🎯 Topic Specific Roadmap</a>
+    <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav(); if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('beginner-track'), 60)">🌱 Roadmap for Basics</a>
+    <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav(); if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('advanced-track'), 60)">🚀 Roadmap for Advanced</a>
+    <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav()">🎯 Custom Topic Roadmap</a>
     <a href="#intuition" class="mobile-nav-item" data-tab="intuition" onclick="window.closeMobileNav()">🔬 Intuition Lab</a>
     <a href="#challenges" class="mobile-nav-item" data-tab="challenges" onclick="window.closeMobileNav()">🏆 Challenges & Quests</a>
     <div class="mobile-nav-divider"></div>
