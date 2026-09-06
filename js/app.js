@@ -128,6 +128,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.microwavePulseStudio = microwavePulseStudio;
   }
 
+  let topicRoadmapManager = null;
+  if (window.TopicRoadmapManager) {
+    topicRoadmapManager = new window.TopicRoadmapManager();
+    window.topicRoadmapManager = topicRoadmapManager;
+  }
+
   // Initialize Living Rishi Quantum Canvas
   if (window.RishiQuantumCanvas) {
     try {
@@ -158,7 +164,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Groups for dropdown highlights
     const studioTabs = ['surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry'];
     const algorithmTabs = ['algorithms', 'research'];
-    const learnTabs = ['intuition', 'challenges', 'docs'];
+    const learnTabs = ['intuition', 'challenges', 'docs', 'topic-roadmap'];
+
+    // Undock circuit designer from topic roadmap reader when switching away
+    if (tabKey !== 'topic-roadmap' && window.topicRoadmapManager && window.topicRoadmapManager.undockCircuitDesigner) {
+      window.topicRoadmapManager.undockCircuitDesigner();
+    }
 
     // Update active class on standalone nav items & dropdown triggers
     navItems.forEach(item => {
@@ -255,6 +266,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabKey !== 'pulse-studio') {
       if (window.microwavePulseStudio && window.microwavePulseStudio.stopRenderLoop) {
         window.microwavePulseStudio.stopRenderLoop();
+      }
+    }
+    if (tabKey !== 'topic-roadmap') {
+      if (window.topicRoadmapManager && window.topicRoadmapManager.undockCircuitDesigner) {
+        window.topicRoadmapManager.undockCircuitDesigner();
+      }
+    }
+    if (tabKey === 'topic-roadmap') {
+      if (window.topicRoadmapManager && window.topicRoadmapManager.initDOM) {
+        window.topicRoadmapManager.initDOM();
       }
     }
 
@@ -403,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const validAllTabs = [
     'overview', 'simulator', 'surface-code', 'pulse-studio',
     'transpiler', 'vqe-chemistry', 'algorithms', 'research',
-    'intuition', 'challenges', 'docs', 'login'
+    'intuition', 'challenges', 'docs', 'login', 'topic-roadmap'
   ];
 
   // Listen for browser hash changes (back/forward or URL typing)
@@ -451,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get('redirect');
-      const valid = ['overview', 'simulator', 'surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry', 'algorithms', 'research', 'intuition', 'challenges', 'docs'];
+      const valid = ['overview', 'simulator', 'surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry', 'algorithms', 'research', 'intuition', 'challenges', 'docs', 'topic-roadmap'];
       if (redirect && valid.includes(redirect)) {
         return redirect;
       }
@@ -459,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check if hash has a destination other than login
     const hash = window.location.hash.replace('#', '');
-    const valid = ['overview', 'simulator', 'surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry', 'algorithms', 'research', 'intuition', 'challenges', 'docs'];
+    const valid = ['overview', 'simulator', 'surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry', 'algorithms', 'research', 'intuition', 'challenges', 'docs', 'topic-roadmap'];
     if (hash && hash !== 'login' && valid.includes(hash)) {
       return hash;
     }
@@ -2213,7 +2234,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   try {
     const rawHash = window.location.hash.replace('#', '');
-    const validTabs = ['overview', 'simulator', 'algorithms', 'intuition', 'research', 'challenges', 'docs', 'login'];
+    const validTabs = [
+      'overview', 'simulator', 'surface-code', 'pulse-studio',
+      'transpiler', 'vqe-chemistry', 'algorithms', 'research',
+      'intuition', 'challenges', 'docs', 'login', 'topic-roadmap'
+    ];
     const initialTab = (rawHash && validTabs.includes(rawHash)) ? rawHash : 'overview';
     switchView(initialTab);
     updateNavUser();

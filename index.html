@@ -132,7 +132,49 @@
             Learn <span class="nav-caret">▾</span>
           </button>
           <div class="nav-dropdown-menu nav-dropdown-learn">
-            <div class="nav-dropdown-header">Education & Reference</div>
+            <div class="nav-dropdown-header">Curriculum & Learning Journeys</div>
+            <a href="#docs" class="dropdown-rich-item" data-tab="docs">
+              <span class="dropdown-rich-icon">🗺️</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Full Learning Roadmap</span>
+                  <span class="dropdown-badge badge-learn">ALL MODULES</span>
+                </div>
+                <span class="dropdown-rich-desc">Complete 10-module curriculum from Hilbert space to VQE & FTQC</span>
+              </div>
+            </a>
+            <a href="#topic-roadmap" class="dropdown-rich-item" data-tab="topic-roadmap">
+              <span class="dropdown-rich-icon">🎯</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Topic Specific Roadmap</span>
+                  <span class="dropdown-badge badge-sdk">ADAPTIVE</span>
+                </div>
+                <span class="dropdown-rich-desc">Personalized prerequisite pathway tailored to your specific topic</span>
+              </div>
+            </a>
+            <a href="#topic-roadmap" class="dropdown-rich-item" data-tab="topic-roadmap" onclick="if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('beginner-track'), 60)">
+              <span class="dropdown-rich-icon">🌱</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Beginner Roadmap Track</span>
+                  <span class="dropdown-badge badge-speedup">BEGINNER</span>
+                </div>
+                <span class="dropdown-rich-desc">Hilbert spaces, Pauli rotations, single-qubit gates & first circuits</span>
+              </div>
+            </a>
+            <a href="#topic-roadmap" class="dropdown-rich-item" data-tab="topic-roadmap" onclick="if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('advanced-track'), 60)">
+              <span class="dropdown-rich-icon">🚀</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Advanced Roadmap Track</span>
+                  <span class="dropdown-badge badge-catalog">ADVANCED</span>
+                </div>
+                <span class="dropdown-rich-desc">Lindblad noise, Bell entanglement, Grover search & VQE chemistry</span>
+              </div>
+            </a>
+            <div class="dropdown-menu-divider"></div>
+            <div class="nav-dropdown-header">Interactive Practice & Labs</div>
             <a href="#intuition" class="dropdown-rich-item" data-tab="intuition">
               <span class="dropdown-rich-icon">🔬</span>
               <div class="dropdown-rich-info">
@@ -151,16 +193,6 @@
                   <span class="dropdown-badge badge-learn">QUESTS</span>
                 </div>
                 <span class="dropdown-rich-desc">Gamified circuit puzzles, skill tree & quantum achievement badges</span>
-              </div>
-            </a>
-            <a href="#docs" class="dropdown-rich-item" data-tab="docs">
-              <span class="dropdown-rich-icon">📄</span>
-              <div class="dropdown-rich-info">
-                <div class="dropdown-rich-title-line">
-                  <span class="dropdown-rich-title">Technical Specs & Docs</span>
-                  <span class="dropdown-badge badge-learn">DOCS</span>
-                </div>
-                <span class="dropdown-rich-desc">Formal Dirac notation, Hamiltonian math, and unitary gate specs</span>
               </div>
             </a>
             <div class="dropdown-menu-divider"></div>
@@ -246,9 +278,12 @@
 
     <!-- Category: Learn & Reference -->
     <div class="mobile-nav-section-title">LEARN & REFERENCE</div>
+    <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">🗺️ Full Learning Roadmap</a>
+    <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav()">🎯 Topic Specific Roadmap</a>
+    <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav(); if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('beginner-track'), 60)">🌱 Beginner Roadmap Track</a>
+    <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav(); if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('advanced-track'), 60)">🚀 Advanced Roadmap Track</a>
     <a href="#intuition" class="mobile-nav-item" data-tab="intuition" onclick="window.closeMobileNav()">🔬 Intuition Lab</a>
     <a href="#challenges" class="mobile-nav-item" data-tab="challenges" onclick="window.closeMobileNav()">🏆 Challenges & Quests</a>
-    <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">📄 Technical Specs</a>
     <div class="mobile-nav-divider"></div>
     <!-- Mobile search bar -->
     <div class="mobile-nav-search" onclick="window.closeMobileNav(); window.focusKnowledgeEngineSearch();">
@@ -2798,6 +2833,9 @@ Key Advantage:
       </div>
     </section>
 
+    <!-- ================= VIEW: TOPIC-SPECIFIC LEARNING JOURNEY ================= -->
+    <section class="viewport-section" id="view-topic-roadmap" style="display: none;"></section>
+
   </main>
 
   <!-- Interactive Google OAuth Account Picker Modal -->
@@ -2970,6 +3008,7 @@ Key Advantage:
   <script src="js/vqe-chemistry.js"></script>
   <script src="js/pulse-studio.js"></script>
   <script src="js/cloud-qpu-bridge.js"></script>
+  <script src="js/topic-roadmap.js"></script>
   <script src="js/app.js"></script>
   <!-- KaTeX Auto-Render Engine -->
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
