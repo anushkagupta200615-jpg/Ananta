@@ -1285,9 +1285,16 @@
           <div class="analytics-deck-panel" id="deck-panel-bloch" role="tabpanel">
             <div class="bloch-studio-card">
               <div class="vis-dock-header">
-                <h4>Interactive 3D Bloch Sphere (Single-Qubit Projections)</h4>
+                <div>
+                  <h4>Interactive 3D Bloch Sphere (Single-Qubit Projections)</h4>
+                  <span class="vis-dock-sub">Exact physical pure states on surface (|r| = 1) vs. Entangled Bell mixed states at origin (|r| = 0)</span>
+                </div>
                 <div class="bloch-control-actions">
-                  <div class="bloch-quick-pills">
+                  <div class="bloch-view-controls">
+                    <button type="button" class="btn-bloch-control" id="btn-bloch-reset-cam" onclick="if(window.blochVisualizer) window.blochVisualizer.resetOrientation()" title="Reset 3D Sphere Camera Orientation">⟲ Reset View</button>
+                    <button type="button" class="btn-bloch-control" id="btn-bloch-autorotate" onclick="if(window.blochVisualizer) { const on = window.blochVisualizer.toggleAutoRotation(); this.classList.toggle('active', on); this.textContent = on ? '⏸ Pause Spin' : '⟳ Auto-Rotate'; }" title="Toggle Gentle 3D Auto-Rotation">⟳ Auto-Rotate</button>
+                  </div>
+                  <div class="bloch-quick-pills" id="bloch-quick-pills">
                     <button class="bloch-pill-btn active" data-qubit="0">q[0]</button>
                     <button class="bloch-pill-btn" data-qubit="1">q[1]</button>
                     <button class="bloch-pill-btn" data-qubit="2">q[2]</button>
@@ -1300,6 +1307,7 @@
                 </div>
               </div>
               <div class="bloch-canvas-container" id="bloch-sphere-canvas"></div>
+              <div id="bloch-entanglement-hud" class="bloch-entanglement-hud" style="display:none;"></div>
               <div class="bloch-coords-badge" id="bloch-coords"></div>
             </div>
           </div>

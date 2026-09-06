@@ -412,6 +412,7 @@ class CircuitUI {
         select.appendChild(opt);
       }
     }
+    this.bindBlochPillEvents();
   }
 
   // =========================================================================
@@ -529,12 +530,20 @@ class CircuitUI {
 
     // Update Coordinate Badges
     if (this.coordsBadge) {
+      const r = blochCoords.r !== undefined ? blochCoords.r : Math.sqrt(blochCoords.x * blochCoords.x + blochCoords.y * blochCoords.y + blochCoords.z * blochCoords.z);
+      const isMixed = r < 0.95;
+      const stateBadge = r < 0.15 
+        ? '<span style="color:#f472b6; font-weight:700;">⚡ Entangled Mixed Subsystem (|r| = 0.00)</span>' 
+        : (isMixed ? `<span style="color:#fbbf24; font-weight:600;">Mixed Subsystem (|r| = ${r.toFixed(2)})</span>` : '<span style="color:#34d399; font-weight:600;">Pure State (|r| = 1.00)</span>');
+
       this.coordsBadge.innerHTML = `
+        <span class="badge-item"><strong>State:</strong> ${stateBadge}</span>
         <span class="badge-item"><strong>X:</strong> ${blochCoords.x.toFixed(2)}</span>
         <span class="badge-item"><strong>Y:</strong> ${blochCoords.y.toFixed(2)}</span>
         <span class="badge-item"><strong>Z:</strong> ${blochCoords.z.toFixed(2)}</span>
-        <span class="badge-item state-amp"><strong>|0⟩:</strong> ${(blochCoords.p0 !== undefined ? blochCoords.p0 : 1).toFixed(2)}</span>
-        <span class="badge-item state-amp"><strong>|1⟩:</strong> ${(blochCoords.p1 !== undefined ? blochCoords.p1 : 0).toFixed(2)}</span>
+        <span class="badge-item"><strong>Purity Tr(ρ²):</strong> ${(blochCoords.purity !== undefined ? blochCoords.purity : (0.5 * (1 + r * r))).toFixed(2)}</span>
+        <span class="badge-item state-amp"><strong>P(|0⟩):</strong> ${(blochCoords.p0 !== undefined ? blochCoords.p0 : 1).toFixed(2)}</span>
+        <span class="badge-item state-amp"><strong>P(|1⟩):</strong> ${(blochCoords.p1 !== undefined ? blochCoords.p1 : 0).toFixed(2)}</span>
       `;
     }
 
@@ -1177,34 +1186,44 @@ class CircuitUI {
           activePanel.classList.add('active');
         }
 
-        // If bloch sphere selected, trigger canvas resize
+        // If bloch sphere selected, trigger immediate canvas resize and coordinate sync
         if (target === 'bloch' && this.bloch) {
+          if (this.bloch.resize) this.bloch.resize();
           setTimeout(() => {
+            if (this.bloch.resize) this.bloch.resize();
             window.dispatchEvent(new Event('resize'));
             const coords = this.engine.getBlochCoordinates(this.selectedQubitForBloch);
             this.bloch.updateCoordinates(coords);
-          }, 50);
+          }, 35);
         }
       });
     });
   }
 
   // =========================================================================
-  // BLOCH QUICK PILL BUTTONS
+  // BLOCH QUICK PILL BUTTONS (Dynamic 2 to 8 Qubits)
   // =========================================================================
   bindBlochPillEvents() {
-    const pills = document.querySelectorAll('.bloch-pill-btn');
-    pills.forEach(pill => {
+    const container = document.getElementById('bloch-quick-pills');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let q = 0; q < this.numQubits; q++) {
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = `bloch-pill-btn ${q === this.selectedQubitForBloch ? 'active' : ''}`;
+      pill.setAttribute('data-qubit', q);
+      pill.textContent = `q[${q}]`;
       pill.addEventListener('click', () => {
-        pills.forEach(p => p.classList.remove('active'));
+        container.querySelectorAll('.bloch-pill-btn').forEach(p => p.classList.remove('active'));
         pill.classList.add('active');
-        this.selectedQubitForBloch = parseInt(pill.dataset.qubit, 10);
+        this.selectedQubitForBloch = q;
         if (this.qubitSelect) {
-          this.qubitSelect.value = this.selectedQubitForBloch.toString();
+          this.qubitSelect.value = q.toString();
         }
         this.updateSimulation();
       });
-    });
+      container.appendChild(pill);
+    }
   }
 
   // =========================================================================
