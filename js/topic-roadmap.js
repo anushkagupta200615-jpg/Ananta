@@ -301,7 +301,7 @@ class TopicRoadmapManager {
         <div class="topic-entry-hero">
           <div class="topic-sparkle-halo"></div>
           <div class="topic-pill-badge">
-            <span class="topic-badge-icon">⚡</span>
+            <span class="topic-badge-dot"></span>
             <span>Adaptive Quantum Learning Path</span>
           </div>
 
@@ -318,7 +318,12 @@ class TopicRoadmapManager {
           <div class="topic-input-container">
             <form id="topic-roadmap-form" onsubmit="event.preventDefault(); window.topicRoadmapManager.handleSearch();">
               <div class="topic-input-wrapper">
-                <span class="topic-search-icon">🔍</span>
+                <span class="topic-search-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                </span>
                 <input
                   type="text"
                   id="topic-user-query"
@@ -329,7 +334,7 @@ class TopicRoadmapManager {
                 />
                 <button type="submit" class="btn-topic-generate" id="btn-generate-roadmap">
                   <span>Generate Roadmap</span>
-                  <span class="btn-arrow">➔</span>
+                  <span class="btn-arrow">→</span>
                 </button>
               </div>
             </form>
@@ -337,26 +342,26 @@ class TopicRoadmapManager {
             <!-- Quick Suggested Topic Chips -->
             <div class="topic-suggested-row">
               <span class="suggested-label">Featured tracks & topics:</span>
-              <button class="topic-chip highlight-chip" style="background:rgba(66,133,244,0.18);border-color:rgba(66,133,244,0.45);color:#8ab4f8;font-weight:600;" onclick="window.topicRoadmapManager.loadTopicById('beginner-track')">
-                🌱 Beginner Roadmap Track
+              <button class="topic-chip highlight-chip chip-beginner" onclick="window.topicRoadmapManager.loadTopicById('beginner-track')">
+                Beginner Roadmap Track
               </button>
-              <button class="topic-chip highlight-chip" style="background:rgba(234,67,53,0.15);border-color:rgba(234,67,53,0.4);color:#f28b82;font-weight:600;" onclick="window.topicRoadmapManager.loadTopicById('advanced-track')">
-                🚀 Advanced Roadmap Track
+              <button class="topic-chip highlight-chip chip-advanced" onclick="window.topicRoadmapManager.loadTopicById('advanced-track')">
+                Advanced Roadmap Track
               </button>
               <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('I want to learn how to make quantum circuits, I have 0 prior knowledge')">
-                🛠️ Circuits for Beginners
+                Circuit Fundamentals
               </button>
               <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('I want to understand quantum entanglement and Bell states')">
-                🔮 Entanglement & Bell Pairs
+                Entanglement & Bell States
               </button>
               <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('Explain quantum teleportation protocol')">
-                📡 Quantum Teleportation
+                Quantum Teleportation
               </button>
               <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('How does Grover search algorithm work?')">
-                🔍 Grover Algorithm
+                Grover Search
               </button>
               <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('Quantum chemistry and VQE molecular simulation')">
-                🧪 VQE Molecular Chemistry
+                VQE Molecular Chemistry
               </button>
             </div>
           </div>
@@ -686,7 +691,7 @@ class TopicRoadmapManager {
                   <span class="curated-module-badge">${mod.number}</span>
                   <span class="curated-level-badge level-${mod.level.toLowerCase()}">${mod.level}</span>
                 </div>
-                <span class="curated-time-badge">⏱️ ${mod.timeEst}</span>
+                <span class="curated-time-badge">${mod.timeEst}</span>
               </div>
 
               <h3 class="curated-card-title">${mod.title}</h3>
@@ -699,18 +704,18 @@ class TopicRoadmapManager {
               <div class="curated-card-footer">
                 ${hasLab ? `
                   <div class="curated-lab-pill">
-                    <span class="lab-icon">⚡</span>
+                    <span class="lab-pill-dot"></span>
                     <span>Interactive Circuit Lab Attached</span>
                   </div>
                 ` : `
                   <div class="curated-theory-pill">
-                    <span class="theory-icon">📖</span>
+                    <span class="theory-pill-dot"></span>
                     <span>Theoretical Foundations</span>
                   </div>
                 `}
 
                 <button class="btn-open-curated-module">
-                  <span>Start Module ${mod.number}</span>
+                  <span>Start ${mod.number}</span>
                   <span class="open-arrow">→</span>
                 </button>
               </div>
@@ -724,8 +729,8 @@ class TopicRoadmapManager {
     resultsContainer.innerHTML = `
       <div class="curated-results-header">
         <div class="curated-header-top">
-          <span class="results-tag">✅ ADAPTIVE PATHWAY ASSEMBLED</span>
-          <span class="results-level-badge level-${detectedLevel.toLowerCase()}">🎯 ${detectedLevel} TRACK</span>
+          <span class="results-tag">ADAPTIVE PATHWAY ASSEMBLED</span>
+          <span class="results-level-badge level-${detectedLevel.toLowerCase()}">${detectedLevel} TRACK</span>
           <span class="results-step-count">${modules.length} Ordered Steps to Mastery</span>
         </div>
         <h2 class="results-topic-title">${pattern.displayName}</h2>
@@ -733,7 +738,7 @@ class TopicRoadmapManager {
         
         ${levelRationale ? `
           <div class="results-rationale-box">
-            <span class="rationale-icon">💡</span>
+            <span class="rationale-accent-bar"></span>
             <span class="rationale-text"><strong>Adaptive Reasoning:</strong> ${levelRationale}</span>
           </div>
         ` : ''}
@@ -764,8 +769,8 @@ class TopicRoadmapManager {
 
     resultsContainer.innerHTML = `
       <div class="topic-fallback-card">
-        <div class="fallback-icon-halo">🔬</div>
-        <h2 class="fallback-title">No Direct Single-Topic Match Found</h2>
+        <div class="fallback-header-badge">NO DIRECT PATHWAY MATCH</div>
+        <h2 class="fallback-title">Explore Related Quantum Learning Resources</h2>
         <p class="fallback-desc">
           We couldn't automatically map <em>"${query}"</em> to a single specialized pathway, but here are the fastest ways to continue your quantum journey:
         </p>
@@ -773,7 +778,6 @@ class TopicRoadmapManager {
         <div class="fallback-options-grid">
           <!-- Option 1: Full Learning Roadmap -->
           <div class="fallback-action-card" onclick="window.switchView('docs')">
-            <span class="action-card-icon">🗺️</span>
             <h4>Browse Full Learning Roadmap</h4>
             <p>Explore all 10 core modules in sequential order from Hilbert space to VQE algorithms.</p>
             <span class="action-card-link">Open Full Curriculum →</span>
@@ -781,7 +785,6 @@ class TopicRoadmapManager {
 
           <!-- Option 2: Ask Concept Doctor -->
           <div class="fallback-action-card" onclick="window.switchView('intuition')">
-            <span class="action-card-icon">🩺</span>
             <h4>Ask the AI Concept Doctor</h4>
             <p>Type your exact confusing topic to get physical analogies and real-time interactive simulations.</p>
             <span class="action-card-link">Launch Concept Doctor →</span>
@@ -789,7 +792,6 @@ class TopicRoadmapManager {
 
           <!-- Option 3: Global Knowledge Search -->
           <div class="fallback-action-card" onclick="window.focusKnowledgeEngineSearch()">
-            <span class="action-card-icon">🔍</span>
             <h4>Search Global Knowledge Base</h4>
             <p>Search across 80+ quantum computing topics, arXiv landmark papers, and 74 quantum algorithms.</p>
             <span class="action-card-link">Open Knowledge Search (/) →</span>
@@ -797,11 +799,13 @@ class TopicRoadmapManager {
         </div>
 
         <div class="fallback-quick-re-search">
-          <span>Or try one of our popular topics:</span>
+          <span>Or explore popular tracks:</span>
           <div class="re-search-chips">
+            <button class="topic-chip" onclick="window.topicRoadmapManager.loadTopicById('beginner-track')">Beginner Roadmap</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.loadTopicById('advanced-track')">Advanced Roadmap</button>
             <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('quantum circuits for beginners')">Quantum Circuits</button>
             <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('bell state entanglement')">Bell Entanglement</button>
-            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('grover algorithm')">Grover Search</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('grover search algorithm')">Grover Search</button>
             <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('vqe molecular chemistry')">VQE Chemistry</button>
           </div>
         </div>
@@ -835,7 +839,7 @@ class TopicRoadmapManager {
           <div class="reader-meta-group">
             <span class="reader-module-num">${mod.number}</span>
             <span class="reader-module-cat">${mod.category}</span>
-            <span class="reader-module-time">⏱️ ${mod.timeEst}</span>
+            <span class="reader-module-time">${mod.timeEst}</span>
           </div>
         </div>
 
@@ -852,39 +856,39 @@ class TopicRoadmapManager {
               </div>
 
               <div class="theory-section">
-                <div class="theory-section-tag">📐 Mathematical Formulation</div>
+                <div class="theory-section-tag">Mathematical Formulation</div>
                 <div class="theory-math-block">
                   <code>${mod.mathFormula}</code>
                 </div>
               </div>
 
               <div class="theory-section">
-                <div class="theory-section-tag">💡 Physical Intuition</div>
+                <div class="theory-section-tag">Physical Intuition</div>
                 <p class="theory-text">${mod.intuition}</p>
               </div>
 
               ${hasCircuitLab ? `
                 <div class="theory-exercise-box">
                   <div class="exercise-header">
-                    <span class="exercise-icon">⚡</span>
+                    <span class="exercise-icon-dot"></span>
                     <h4>Hands-on Circuit Exercise</h4>
                   </div>
                   <p class="exercise-instructions">${mod.exerciseGoal}</p>
                   <div class="exercise-actions">
                     <button class="btn-load-exercise" onclick="window.topicRoadmapManager.loadExerciseIntoLab('${mod.circuitPreset}')">
-                      ↻ Reset Exercise Circuit
+                      Reset Circuit Exercise
                     </button>
                   </div>
                 </div>
               ` : `
                 <div class="theory-notice-box">
-                  <span>📖 This module focuses on foundational theoretical principles. Next step in your pathway includes interactive circuit synthesis.</span>
+                  <span>This module establishes foundational theoretical principles. Interactive circuit synthesis is available in subsequent modules.</span>
                 </div>
               `}
 
               <div class="theory-nav-footer">
                 <button class="btn-view-doc-manual" onclick="window.switchView('docs'); window.scrollDocIntoView(null, '${mod.docId}')">
-                  View Full Architecture Spec in Technical Manual ↗
+                  View Technical Manual Specification ↗
                 </button>
               </div>
             </div>
