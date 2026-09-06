@@ -291,8 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Refresh Transpiler View
     if (tabKey === 'transpiler' && window.transpilerDoctor) {
       setTimeout(() => {
-        window.transpilerDoctor.translate();
-        window.transpilerDoctor.runDoctor();
+        window.transpilerDoctor.renderTargetCode();
       }, 50);
     }
 

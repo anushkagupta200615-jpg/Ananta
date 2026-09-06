@@ -2478,7 +2478,7 @@ Key Advantage:
         <!-- Preset Circuits -->
         <div class="transpiler-presets-bar">
           <span class="presets-label">⚡ Benchmark Circuits:</span>
-          <button class="btn-preset-chip" id="btn-sample-bell">Bell State + Redundant Gates (Doctor Test)</button>
+          <button class="btn-preset-chip active" id="btn-sample-bell">Bell State + Redundant Gates (Doctor Test)</button>
           <button class="btn-preset-chip" id="btn-sample-ghz">4-Qubit GHZ State</button>
           <button class="btn-preset-chip" id="btn-sample-qft">3-Qubit Quantum Fourier Transform (QFT)</button>
         </div>
@@ -2503,10 +2503,10 @@ Key Advantage:
 
           <!-- Middle Action Controls -->
           <div class="transpiler-center-actions">
-            <button class="btn-transpile-execute" onclick="window.transpilerDoctor.translate(); window.transpilerDoctor.runDoctor();" title="Transpile code">
+            <button class="btn-transpile-execute" id="btn-transpile-direct" onclick="if(window.transpilerDoctor) window.transpilerDoctor.transpileDirect();" title="Transpile code directly (1:1 gate syntax conversion)">
               ➔ Universal Transpile ➔
             </button>
-            <button class="btn-doctor-execute" id="btn-run-doctor" title="Analyze and optimize circuit">
+            <button class="btn-doctor-execute" id="btn-run-doctor" onclick="if(window.transpilerDoctor) window.transpilerDoctor.transpileOptimized();" title="Analyze and optimize circuit with AI Circuit Doctor">
               ⚡ Run Circuit Doctor
             </button>
           </div>
@@ -2523,8 +2523,13 @@ Key Advantage:
                 <option value="qasm">OpenQASM 3.0</option>
                 <option value="pyquil">Rigetti PyQuil (Python)</option>
               </select>
+              <div class="transpiler-mode-toggle" id="transpiler-mode-toggle">
+                <button type="button" class="btn-mode-toggle" id="btn-target-direct" onclick="if(window.transpilerDoctor) window.transpilerDoctor.setTargetMode('direct')" title="Show 1:1 Direct Translation">Direct</button>
+                <button type="button" class="btn-mode-toggle active" id="btn-target-optimized" onclick="if(window.transpilerDoctor) window.transpilerDoctor.setTargetMode('optimized')" title="Show AI Doctor Optimized Circuit">⚡ Doctor Optimized</button>
+              </div>
               <button class="btn-copy-code" id="btn-copy-transpiled">Copy Code</button>
             </div>
+            <div class="transpiler-status-pill optimized" id="transpiler-status-pill">⚡ AI Circuit Doctor Active: 5 redundant gates eliminated (11 → 6 gates). Showing optimized circuit.</div>
             <textarea class="code-textarea" id="transpiler-target-code" readonly spellcheck="false" placeholder="Transpiled code will appear here..."></textarea>
           </div>
         </div>
