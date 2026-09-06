@@ -802,11 +802,14 @@
           </div>
           <div class="hud-actions-right">
             <span class="hud-badge hud-badge-pending" id="hud-challenge-status">In Progress</span>
-            <button class="btn-hud-check" onclick="if(window.missionManager && window.circuitUI) { const probs = window.circuitUI.engine.getProbabilities(); window.missionManager.evaluate(window.circuitUI.grid, probs); }">
+            <button type="button" class="btn-hud-check" id="btn-hud-verify-circuit" onclick="if(window.missionManager) window.missionManager.verifyActiveMission();" title="Verify if current circuit solves this active challenge">
               Verify Circuit 🔍
             </button>
-            <button class="btn-hud-return" onclick="if(window.switchView) window.switchView('challenges');">
+            <button type="button" class="btn-hud-return" onclick="if(window.switchView) window.switchView('challenges');" title="Browse full Quantum Challenge catalog">
               Puzzle Arena →
+            </button>
+            <button type="button" class="btn-hud-close" id="btn-hud-dismiss-challenge" onclick="if(window.missionManager) window.missionManager.dismissChallengeBanner();" title="Dismiss this challenge HUD">
+              ✕
             </button>
           </div>
         </div>

@@ -10157,6 +10157,25 @@ input:checked + .slider-round:before {
   color: var(--text-white, #ffffff);
 }
 
+.btn-hud-close {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.btn-hud-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #f87171;
+}
+
 /* Skill Tree Section */
 .skill-tree-section {
   background: var(--bg-card, #12161f);

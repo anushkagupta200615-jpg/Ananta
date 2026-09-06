@@ -2320,6 +2320,7 @@ class MissionManager {
     this.activeMission = parseInt(localStorage.getItem('ananta_active_mission') || '0', 10);
     if (this.activeMission >= this.missions.length) this.activeMission = 0;
     this.currentFilter = 'all';
+    this.hudDismissed = localStorage.getItem('ananta_hud_dismissed') === 'true';
 
     this.renderMissions();
     this.updateInSimChallengeBanner();
@@ -2379,8 +2380,10 @@ class MissionManager {
       card.querySelector('.btn-attempt-puzzle').addEventListener('click', () => {
         this.activeMission = globalIdx;
         localStorage.setItem('ananta_active_mission', this.activeMission.toString());
+        this.hudDismissed = false;
+        localStorage.removeItem('ananta_hud_dismissed');
         this.renderMissions();
-        this.updateInSimChallengeBanner();
+        this.updateInSimChallengeBanner(true);
 
         // Switch to simulator view
         const t = document.querySelector('[data-tab="simulator"]');
@@ -2464,14 +2467,49 @@ class MissionManager {
     this.updateInSimChallengeBanner();
   }
 
+  // Explicit verification triggered by "Verify Circuit 🔍" button
+  verifyActiveMission() {
+    if (!window.circuitUI || !window.circuitUI.engine) {
+      this.showToastNotification('⚠️ Circuit engine not ready. Please place a gate on the canvas first.', 'warn');
+      return;
+    }
+
+    const grid = window.circuitUI.grid;
+    const probs = window.circuitUI.engine.getProbabilities();
+    const m = this.missions[this.activeMission];
+
+    if (!m) {
+      this.showToastNotification('ℹ️ No active challenge selected. Open Puzzle Arena to choose a challenge!', 'info');
+      return;
+    }
+
+    const isMatch = m.check(grid, probs);
+    if (isMatch) {
+      if (!m.completed) {
+        this.markMissionSolved(m);
+      } else {
+        this.showSuccessNotification(m.title, 0);
+      }
+    } else {
+      this.showFailNotification(m.title);
+    }
+  }
+
+  dismissChallengeBanner() {
+    const banner = document.getElementById('composer-challenge-hud');
+    if (banner) banner.style.display = 'none';
+    this.hudDismissed = true;
+    localStorage.setItem('ananta_hud_dismissed', 'true');
+  }
+
   showSuccessNotification(title, xpAwarded = 50) {
     const t = document.createElement('div');
     t.className = 'mission-toast mission-toast-success';
     t.innerHTML = `
       <div class="toast-icon">🏆</div>
       <div class="toast-text-box">
-        <strong>Puzzle Solved: ${title}!</strong>
-        <span>+${xpAwarded} XP added to your Quantum Mastery score</span>
+        <strong>✓ Verified! Puzzle Solved: ${title}!</strong>
+        <span>${xpAwarded > 0 ? `+${xpAwarded} XP awarded to your Quantum Mastery score!` : 'Circuit successfully reproduces the target quantum state!'}</span>
       </div>
     `;
     document.body.appendChild(t);
@@ -2483,13 +2521,35 @@ class MissionManager {
   }
 
   showFailNotification(title) {
+    const m = this.missions[this.activeMission];
+    const targetState = m ? m.targetState : '';
+    const currentDirac = (window.circuitUI && window.circuitUI.engine) ? window.circuitUI.engine.getDiracNotation() : '';
+
     const t = document.createElement('div');
     t.className = 'mission-toast mission-toast-fail';
     t.innerHTML = `
       <div class="toast-icon">⚠️</div>
       <div class="toast-text-box">
-        <strong>Not Quite Solved Yet</strong>
-        <span>Current circuit does not match the target state for "${title}". Read the hint and try again!</span>
+        <strong>Verification Failed: ${title}</strong>
+        <span>Target: <code>${targetState}</code> | Current Output: <code>${currentDirac}</code></span>
+        <span style="font-size:11px; color:#94a3b8; margin-top:2px;">Hint: ${m ? m.hint : 'Read the puzzle hint in Puzzle Arena.'}</span>
+      </div>
+    `;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add('toast-show'), 20);
+    setTimeout(() => {
+      t.classList.remove('toast-show');
+      setTimeout(() => t.remove(), 400);
+    }, 5500);
+  }
+
+  showToastNotification(msg, type = 'info') {
+    const t = document.createElement('div');
+    t.className = `mission-toast mission-toast-${type}`;
+    t.innerHTML = `
+      <div class="toast-icon">${type === 'warn' ? '⚠️' : 'ℹ️'}</div>
+      <div class="toast-text-box">
+        <span>${msg}</span>
       </div>
     `;
     document.body.appendChild(t);
@@ -2531,9 +2591,14 @@ class MissionManager {
   }
 
   // Active Challenge HUD in Composer
-  updateInSimChallengeBanner() {
+  updateInSimChallengeBanner(force = false) {
     const banner = document.getElementById('composer-challenge-hud');
     if (!banner) return;
+
+    if (!force && this.hudDismissed) {
+      banner.style.display = 'none';
+      return;
+    }
 
     const m = this.missions[this.activeMission];
     if (!m) {
