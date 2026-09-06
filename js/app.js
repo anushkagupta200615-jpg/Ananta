@@ -210,7 +210,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Scroll viewport to top on tab switch
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    if (tabKey === 'overview') {
+      setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 50);
+      setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 150);
+    }
 
     // Stop background canvas render loops when tab is not active
     if (tabKey !== 'login' && window.rishiCanvasMain && window.rishiCanvasMain.stop) {
@@ -430,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get('redirect');
-      const valid = ['simulator', 'algorithms', 'intuition', 'research', 'challenges', 'docs', 'overview'];
+      const valid = ['overview', 'simulator', 'surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry', 'algorithms', 'research', 'intuition', 'challenges', 'docs'];
       if (redirect && valid.includes(redirect)) {
         return redirect;
       }
@@ -438,13 +453,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check if hash has a destination other than login
     const hash = window.location.hash.replace('#', '');
-    const valid = ['simulator', 'algorithms', 'intuition', 'research', 'challenges', 'docs', 'overview'];
+    const valid = ['overview', 'simulator', 'surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry', 'algorithms', 'research', 'intuition', 'challenges', 'docs'];
     if (hash && hash !== 'login' && valid.includes(hash)) {
       return hash;
     }
 
-    // Default entrance destination for quantum developers
-    return 'simulator';
+    // Default entrance destination after login -> Overview Hero slide
+    return 'overview';
   }
 
   function completeLogin(userObj, targetTab) {
@@ -2042,12 +2057,17 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // 6-Milestone Interactive Roadmap Selection
-  window.selectMilestone = function(idx) {
+  window.selectMilestone = function(idx, shouldScroll = false) {
     const cards = document.querySelectorAll('.roadmap-card');
     cards.forEach(c => {
       if (parseInt(c.dataset.milestone) === idx) {
         c.classList.add('active');
-        c.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        if (shouldScroll) {
+          const container = c.closest('.roadmap-cards-grid');
+          if (container && container.scrollWidth > container.clientWidth) {
+            c.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        }
       } else {
         c.classList.remove('active');
       }
@@ -2076,13 +2096,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.roadmap-card').forEach(card => {
     card.addEventListener('click', () => {
       const mId = parseInt(card.dataset.milestone);
-      if (mId) window.selectMilestone(mId);
+      if (mId) window.selectMilestone(mId, true);
     });
   });
 
-  // Initialize Milestone 2 / 3 details on page load
+  // Initialize Milestone 2 / 3 details on page load without scrolling the page
   setTimeout(() => {
-    window.selectMilestone(2);
+    window.selectMilestone(2, false);
   }, 100);
 
   // Interactive 3D Mouse Parallax for Floating Quantum Processor Chip
