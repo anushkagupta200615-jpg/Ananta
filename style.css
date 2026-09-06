@@ -4499,10 +4499,18 @@ button.nav-dropdown-trigger.active {
   padding: 10px 14px;
   border-radius: 8px;
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: fadeIn 0.25s ease-out;
+  transition: border-color 0.2s ease;
+}
+
+.bloch-entangle-top {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  animation: fadeIn 0.25s ease-out;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .bloch-entangle-badge {
@@ -4519,6 +4527,20 @@ button.nav-dropdown-trigger.active {
   font-size: 11px;
   color: #94a3b8;
   font-family: var(--font-mono);
+}
+
+.bloch-entangle-insight {
+  font-size: 11px;
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #38bdf8;
+  line-height: 1.45;
+}
+
+.bloch-entangle-insight strong {
+  color: #38bdf8;
 }
 
 /* Quick Camera Controls for Bloch Sphere */

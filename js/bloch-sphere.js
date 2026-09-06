@@ -19,6 +19,8 @@ class BlochSphereVisualizer {
     this.isAnimating = true;
     this.animFrameId = null;
 
+    window.blochVisualizer = this;
+
     this.initScene();
     this.buildBlochElements();
     this.setupInteractivity();
@@ -234,7 +236,7 @@ class BlochSphereVisualizer {
     this.blochGroup.add(sprite);
   }
 
-  updateCoordinates(blochCoords) {
+  updateCoordinates(blochCoords, qubitIndex = 0) {
     const bx = Number.isFinite(Number(blochCoords.x)) ? Number(blochCoords.x) : 0;
     const by = Number.isFinite(Number(blochCoords.y)) ? Number(blochCoords.y) : 0;
     const bz = Number.isFinite(Number(blochCoords.z)) ? Number(blochCoords.z) : 1;
@@ -251,35 +253,60 @@ class BlochSphereVisualizer {
       this.targetVector.set(0, 0.0001, 0);
     }
 
-    this.updateEntanglementDisplay(r, blochCoords);
+    this.updateEntanglementDisplay(r, blochCoords, qubitIndex);
   }
 
-  updateEntanglementDisplay(r, blochCoords) {
+  updateEntanglementDisplay(r, blochCoords, qubitIndex = 0) {
     const banner = document.getElementById('bloch-entanglement-hud');
     if (!banner) return;
 
+    const bz = Number.isFinite(Number(blochCoords.z)) ? Number(blochCoords.z) : 1;
+
     if (this.isEntangled) {
       banner.style.display = 'flex';
+      banner.style.borderColor = 'rgba(236, 72, 153, 0.5)';
+      const isPair = (qubitIndex === 0 || qubitIndex === 1);
       banner.innerHTML = `
-        <div class="bloch-entangle-badge">
-          <span>⚡ Bell State Entangled Subsystem</span>
+        <div class="bloch-entangle-top">
+          <div class="bloch-entangle-badge">
+            <span>⚡ Entangled Subsystem — Selected: <strong>q[${qubitIndex}]</strong></span>
+          </div>
+          <div class="bloch-entangle-sub">
+            Vector: |r| = 0.00 (Sphere Origin Center) | Maximally Mixed State (Purity Tr(ρ²)=0.50, Entropy S=1.0 bit)
+          </div>
         </div>
-        <div class="bloch-entangle-sub">
-          Vector: |r| = 0.00 (Origin Center) | Maximally Mixed Subsystem (Purity Tr(ρ²)=0.50, Entropy S=1.0 bit)
+        <div class="bloch-entangle-insight">
+          💡 <strong>Why are q[0] and q[1] identical?</strong> ${isPair ? 'In this Bell pair (|00⟩+|11⟩)/√2, qubits <strong>q[0]</strong> and <strong>q[1]</strong> form the entangled pair. In quantum mechanics, each partner qubit individually has an identical maximally mixed density matrix (reduced trace ρ = ½I) at the origin center.' : 'This qubit participates in an entangled quantum state with its reduced Bloch vector collapsed to the center.'} <br>
+          👉 <em>Tip:</em> Click <strong>q[2]</strong> to inspect an unentangled pure state (|0⟩ pointing straight up to the North Pole with |r| = 1.00)!
         </div>
       `;
     } else if (r < 0.92) {
       banner.style.display = 'flex';
+      banner.style.borderColor = 'rgba(251, 191, 36, 0.5)';
       banner.innerHTML = `
-        <div class="bloch-entangle-badge" style="color: #fbbf24;">
-          <span>⚠️ Partially Decohered State</span>
-        </div>
-        <div class="bloch-entangle-sub">
-          Vector: |r| = ${r.toFixed(2)} (Inside Sphere Volume) | Mixed State (Tr(ρ²) = ${(0.5 * (1 + r * r)).toFixed(2)})
+        <div class="bloch-entangle-top">
+          <div class="bloch-entangle-badge" style="color: #fbbf24;">
+            <span>⚠️ Partially Decohered State — Selected: <strong>q[${qubitIndex}]</strong></span>
+          </div>
+          <div class="bloch-entangle-sub">
+            Vector: |r| = ${r.toFixed(2)} (Inside Sphere Volume) | Mixed State (Tr(ρ²) = ${(0.5 * (1 + r * r)).toFixed(2)})
+          </div>
         </div>
       `;
     } else {
-      banner.style.display = 'none';
+      banner.style.display = 'flex';
+      banner.style.borderColor = 'rgba(52, 211, 153, 0.4)';
+      const orientation = bz > 0.85 ? 'North Pole |0⟩' : (bz < -0.85 ? 'South Pole |1⟩' : 'Superposition State');
+      banner.innerHTML = `
+        <div class="bloch-entangle-top">
+          <div class="bloch-entangle-badge" style="color: #34d399;">
+            <span>✨ Pure Quantum State — Selected: <strong>q[${qubitIndex}]</strong></span>
+          </div>
+          <div class="bloch-entangle-sub" style="color: #a7f3d0;">
+            Vector: |r| = ${r.toFixed(2)} (Surface) | Pure State (Tr(ρ²)=1.00) | ${orientation}
+          </div>
+        </div>
+      `;
     }
   }
 
@@ -337,23 +364,6 @@ class BlochSphereVisualizer {
     let isDragging = false;
     let prevMousePos = { x: 0, y: 0 };
     const dom = this.renderer.domElement;
-
-    // Direct binding for control buttons
-    const btnReset = document.getElementById('btn-bloch-reset-cam');
-    if (btnReset) {
-      btnReset.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.resetOrientation();
-      });
-    }
-
-    const btnAuto = document.getElementById('btn-bloch-autorotate');
-    if (btnAuto) {
-      btnAuto.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.toggleAutoRotation();
-      });
-    }
 
     dom.addEventListener('mousedown', (e) => {
       isDragging = true;
@@ -422,9 +432,9 @@ class BlochSphereVisualizer {
 
     const time = performance.now() * 0.002;
 
-    // Optional gentle auto-rotation
+    // Optional gentle auto-rotation (smooth 3D spin)
     if (this.autoRotate) {
-      this.blochGroup.rotation.y += 0.005;
+      this.blochGroup.rotation.y += 0.015;
     }
 
     // Vector lerping towards target
@@ -476,3 +486,17 @@ class BlochSphereVisualizer {
 }
 
 window.BlochSphereVisualizer = BlochSphereVisualizer;
+
+// Reliable single-dispatch global control wrappers
+window.toggleBlochAutoRotation = function() {
+  if (window.blochVisualizer && typeof window.blochVisualizer.toggleAutoRotation === 'function') {
+    return window.blochVisualizer.toggleAutoRotation();
+  }
+  return false;
+};
+
+window.resetBlochOrientation = function() {
+  if (window.blochVisualizer && typeof window.blochVisualizer.resetOrientation === 'function') {
+    window.blochVisualizer.resetOrientation();
+  }
+};

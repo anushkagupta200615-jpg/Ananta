@@ -634,11 +634,12 @@ class CircuitUI {
     // Update Bloch Sphere for chosen qubit
     const blochCoords = this.engine.getBlochCoordinates(this.selectedQubitForBloch);
     if (this.bloch) {
-      this.bloch.updateCoordinates(blochCoords);
+      this.bloch.updateCoordinates(blochCoords, this.selectedQubitForBloch);
     }
 
     // Update Coordinate Badges
     if (this.coordsBadge) {
+      const qIdx = this.selectedQubitForBloch ?? 0;
       const r = blochCoords.r !== undefined ? blochCoords.r : Math.sqrt(blochCoords.x * blochCoords.x + blochCoords.y * blochCoords.y + blochCoords.z * blochCoords.z);
       const isMixed = r < 0.95;
       const stateBadge = r < 0.15 
@@ -646,6 +647,7 @@ class CircuitUI {
         : (isMixed ? `<span style="color:#fbbf24; font-weight:600;">Mixed Subsystem (|r| = ${r.toFixed(2)})</span>` : '<span style="color:#34d399; font-weight:600;">Pure State (|r| = 1.00)</span>');
 
       this.coordsBadge.innerHTML = `
+        <span class="badge-item" style="background: rgba(56, 189, 248, 0.22); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 700; padding: 2px 8px; border-radius: 4px;">🎯 Target: q[${qIdx}]</span>
         <span class="badge-item"><strong>State:</strong> ${stateBadge}</span>
         <span class="badge-item"><strong>X:</strong> ${blochCoords.x.toFixed(2)}</span>
         <span class="badge-item"><strong>Y:</strong> ${blochCoords.y.toFixed(2)}</span>
@@ -654,6 +656,15 @@ class CircuitUI {
         <span class="badge-item state-amp"><strong>P(|0⟩):</strong> ${(blochCoords.p0 !== undefined ? blochCoords.p0 : 1).toFixed(2)}</span>
         <span class="badge-item state-amp"><strong>P(|1⟩):</strong> ${(blochCoords.p1 !== undefined ? blochCoords.p1 : 0).toFixed(2)}</span>
       `;
+    }
+
+    // Keep quick pill buttons visually active in sync with selectedQubitForBloch
+    const pillContainer = document.getElementById('bloch-quick-pills');
+    if (pillContainer) {
+      pillContainer.querySelectorAll('.bloch-pill-btn').forEach(p => {
+        const qVal = parseInt(p.getAttribute('data-qubit'), 10);
+        p.classList.toggle('active', qVal === this.selectedQubitForBloch);
+      });
     }
 
     // Check for Multi-Qubit Entanglement in Circuit
@@ -1430,7 +1441,7 @@ class CircuitUI {
             if (this.bloch.resize) this.bloch.resize();
             window.dispatchEvent(new Event('resize'));
             const coords = this.engine.getBlochCoordinates(this.selectedQubitForBloch);
-            this.bloch.updateCoordinates(coords);
+            this.bloch.updateCoordinates(coords, this.selectedQubitForBloch);
           }, 35);
         }
       });

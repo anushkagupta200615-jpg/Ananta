@@ -1266,8 +1266,8 @@
                 </div>
                 <div class="bloch-control-actions">
                   <div class="bloch-view-controls">
-                    <button type="button" class="btn-bloch-control" id="btn-bloch-reset-cam" onclick="if(window.blochVisualizer) window.blochVisualizer.resetOrientation()" title="Reset 3D Sphere Camera Orientation">⟲ Reset View</button>
-                    <button type="button" class="btn-bloch-control" id="btn-bloch-autorotate" onclick="if(window.blochVisualizer) { const on = window.blochVisualizer.toggleAutoRotation(); this.classList.toggle('active', on); this.textContent = on ? '⏸ Pause Spin' : '⟳ Auto-Rotate'; }" title="Toggle Gentle 3D Auto-Rotation">⟳ Auto-Rotate</button>
+                    <button type="button" class="btn-bloch-control" id="btn-bloch-reset-cam" onclick="window.resetBlochOrientation()" title="Reset 3D Sphere Camera Orientation">⟲ Reset View</button>
+                    <button type="button" class="btn-bloch-control" id="btn-bloch-autorotate" onclick="window.toggleBlochAutoRotation()" title="Toggle Gentle 3D Auto-Rotation">⟳ Auto-Rotate</button>
                   </div>
                   <div class="bloch-quick-pills" id="bloch-quick-pills">
                     <button class="bloch-pill-btn active" data-qubit="0">q[0]</button>
