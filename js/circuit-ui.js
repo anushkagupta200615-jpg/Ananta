@@ -1416,28 +1416,24 @@ class CircuitUI {
     if (btnBeg) btnBeg.addEventListener('click', () => this.setPedagogyMode('beginner'));
     if (btnAdv) btnAdv.addEventListener('click', () => this.setPedagogyMode('advanced'));
 
-    // Interactive 3D mouse parallax tilt on circuit canvas
+    // Interactive ambient cryogenic lighting on circuit canvas
     const canvas = document.querySelector('.circuit-canvas-white');
     if (canvas) {
       canvas.addEventListener('mousemove', (e) => {
         if (this.dimensionMode !== '3d') return;
         const rect = canvas.getBoundingClientRect();
-        const normX = (e.clientX - rect.left) / rect.width - 0.5;
-        const normY = (e.clientY - rect.top) / rect.height - 0.5;
-        const grid = canvas.querySelector('.circuit-grid');
-        const ruler = canvas.querySelector('.step-ruler');
-        const rotX = 24 - normY * 18;
-        const rotZ = -4 + normX * 14;
-        if (grid) grid.style.transform = `rotateX(${rotX.toFixed(1)}deg) rotateZ(${rotZ.toFixed(1)}deg)`;
-        if (ruler) ruler.style.transform = `rotateX(${rotX.toFixed(1)}deg) rotateZ(${rotZ.toFixed(1)}deg)`;
+        const normX = ((e.clientX - rect.left) / rect.width) * 100;
+        const normY = ((e.clientY - rect.top) / rect.height) * 100;
+        canvas.style.backgroundImage = `
+          radial-gradient(circle 320px at ${normX.toFixed(1)}% ${normY.toFixed(1)}%, rgba(56, 189, 248, 0.16) 0%, transparent 70%),
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
+        `;
       });
 
       canvas.addEventListener('mouseleave', () => {
         if (this.dimensionMode !== '3d') return;
-        const grid = canvas.querySelector('.circuit-grid');
-        const ruler = canvas.querySelector('.step-ruler');
-        if (grid) grid.style.transform = 'rotateX(24deg) rotateZ(-4deg)';
-        if (ruler) ruler.style.transform = 'rotateX(24deg) rotateZ(-4deg)';
+        canvas.style.backgroundImage = '';
       });
     }
   }
@@ -1449,12 +1445,19 @@ class CircuitUI {
     const btn3d = document.getElementById('btn-view-3d');
 
     if (mode === '3d') {
-      if (canvas) canvas.classList.add('mode-3d-hologram');
+      if (canvas) {
+        canvas.classList.add('mode-3d-hologram');
+        const grid = canvas.querySelector('.circuit-grid');
+        const ruler = canvas.querySelector('.step-ruler');
+        if (grid) grid.style.transform = 'none';
+        if (ruler) ruler.style.transform = 'none';
+      }
       if (btn2d) btn2d.classList.remove('active');
       if (btn3d) btn3d.classList.add('active');
     } else {
       if (canvas) {
         canvas.classList.remove('mode-3d-hologram');
+        canvas.style.backgroundImage = '';
         const grid = canvas.querySelector('.circuit-grid');
         const ruler = canvas.querySelector('.step-ruler');
         if (grid) grid.style.transform = '';
@@ -1463,7 +1466,8 @@ class CircuitUI {
       if (btn3d) btn3d.classList.remove('active');
       if (btn2d) btn2d.classList.add('active');
     }
-    setTimeout(() => this.renderCnotConnectors(), 50);
+    this.renderCnotConnectors();
+    setTimeout(() => this.renderCnotConnectors(), 40);
   }
 
   setPedagogyMode(mode) {

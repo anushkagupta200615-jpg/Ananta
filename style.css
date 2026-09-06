@@ -3386,25 +3386,18 @@ button.nav-dropdown-trigger.active {
 }
 
 .cnot-vertical-connector::after {
-  content: '⚡ ENTANGLED';
+  content: '';
   position: absolute;
   top: 50%;
-  left: 10px;
-  transform: translateY(-50%);
-  font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.9px;
-  color: #00f0ff;
-  background: rgba(8, 14, 28, 0.92);
-  border: 1px solid rgba(0, 240, 255, 0.5);
-  padding: 2px 6px;
-  border-radius: 4px;
-  white-space: nowrap;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
-  pointer-events: auto;
-  cursor: help;
-  animation: badgeBreathe 2.4s ease-in-out infinite alternate;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: #00f0ff;
+  border: 1.5px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00f0ff, 0 0 16px rgba(0, 240, 255, 0.8);
+  pointer-events: none;
 }
 
 @keyframes cnotPlasmaPulse {
@@ -3665,75 +3658,146 @@ button.nav-dropdown-trigger.active {
   box-shadow: 0 2px 8px rgba(66, 133, 244, 0.4);
 }
 
-/* 3D Holographic Perspective Circuit Mode */
+/* =========================================================================
+   PHYSICAL 3D QPU ARCHITECTURE VIEW (Superconducting Transmon Substrate)
+   ========================================================================= */
 .circuit-canvas-white.mode-3d-hologram {
-  perspective: 1200px;
-  perspective-origin: 50% 30%;
-  background: radial-gradient(ellipse at 50% 15%, rgba(66, 133, 244, 0.12) 0%, rgba(15, 23, 42, 0.95) 70%), var(--bg-card);
-  border: 1px solid rgba(66, 133, 244, 0.4);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 0 50px rgba(66, 133, 244, 0.06);
+  background: #090d16;
+  background-image: 
+    radial-gradient(ellipse at 50% -10%, rgba(56, 189, 248, 0.12) 0%, transparent 65%),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 
+    0 20px 45px rgba(0, 0, 0, 0.65), 
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 40px rgba(56, 189, 248, 0.04);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 16px 20px 22px;
+  position: relative;
   overflow: visible;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  padding-bottom: 28px;
 }
 
+/* Substrate Status Header Tag */
+.circuit-canvas-white.mode-3d-hologram::before {
+  content: 'QPU ARCHITECTURE // 3-QUBIT TRANSMON SUBSTRATE // 15 mK CRYOSTAT';
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Strictly level horizontal orientation: crisp, clean, zero tilt distortion */
 .circuit-canvas-white.mode-3d-hologram .circuit-grid {
-  transform-style: preserve-3d;
-  transform: rotateX(24deg) rotateZ(-4deg);
+  transform: none !important;
   transition: transform 0.25s ease-out;
-  transform-origin: center center;
 }
 
 .circuit-canvas-white.mode-3d-hologram .step-ruler {
-  transform-style: preserve-3d;
-  transform: rotateX(24deg) rotateZ(-4deg);
-  transform-origin: center center;
-  transition: transform 0.25s ease-out;
-  opacity: 0.85;
+  transform: none !important;
+  opacity: 0.92;
 }
 
-/* 3D Holographic Qubit Waveguides */
+.circuit-canvas-white.mode-3d-hologram .step-ruler span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: #7dd3fc;
+  letter-spacing: 0.5px;
+}
+
+/* Coplanar Waveguides (CPW) */
 .circuit-canvas-white.mode-3d-hologram .wire-track {
-  background: linear-gradient(90deg, rgba(66, 133, 244, 0.25) 0%, rgba(168, 85, 247, 0.25) 100%);
-  box-shadow: 0 6px 18px rgba(66, 133, 244, 0.35), 0 0 24px rgba(66, 133, 244, 0.2);
-  border: 1px solid rgba(138, 180, 248, 0.4);
+  background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 
+    inset 0 2px 6px rgba(0, 0, 0, 0.7),
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.06);
   border-radius: 8px;
-  transform: translateZ(10px);
+  position: relative;
 }
 
+.circuit-canvas-white.mode-3d-hologram .wire-track::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.2) 0%, rgba(56, 189, 248, 0.6) 50%, rgba(56, 189, 248, 0.2) 100%);
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Micro-Fabricated Mounting Gate Slots */
 .circuit-canvas-white.mode-3d-hologram .gate-slot {
-  background: rgba(10, 15, 30, 0.7);
-  border: 1px dashed rgba(138, 180, 248, 0.4);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.4);
-  transform: translateZ(8px);
+  background: rgba(11, 17, 32, 0.75);
+  border: 1px dashed rgba(56, 189, 248, 0.25);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  z-index: 1;
 }
 
-/* 3D Volumetric Gate Blocks */
+.circuit-canvas-white.mode-3d-hologram .gate-slot:hover {
+  border-color: rgba(56, 189, 248, 0.6);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+/* Volumetric 3D Transmon Gate Packages */
 .circuit-canvas-white.mode-3d-hologram .placed-gate {
-  transform: translateZ(24px);
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.55), 0 0 20px rgba(66, 133, 244, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 8px;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+  border-radius: 6px;
+  box-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 -3px 0 rgba(0, 0, 0, 0.45) inset,
+    0 6px 14px rgba(0, 0, 0, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  transform: translateY(-2px);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  z-index: 3;
 }
 
 .circuit-canvas-white.mode-3d-hologram .placed-gate:hover {
-  transform: translateZ(40px) scale(1.1);
-  box-shadow: 0 24px 40px rgba(0, 0, 0, 0.75), 0 0 32px rgba(66, 133, 244, 0.85);
+  transform: translateY(-5px) scale(1.04);
+  box-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 -3px 0 rgba(0, 0, 0, 0.45) inset,
+    0 14px 26px rgba(0, 0, 0, 0.75),
+    0 0 20px rgba(56, 189, 248, 0.55);
 }
 
-/* 3D Entanglement Energy Beam */
+/* Precision Superconducting Resonator Coupler Bus */
 .circuit-canvas-white.mode-3d-hologram .cnot-vertical-connector {
-  width: 5px;
-  background: linear-gradient(180deg, #8ab4f8 0%, #c084fc 50%, #81c995 100%);
-  box-shadow: 0 0 18px #8ab4f8, 0 0 32px rgba(168, 85, 247, 0.7);
-  transform: translateX(-50%) translateZ(28px);
-  animation: cnotHoloPlasma 1.8s ease-in-out infinite alternate;
+  width: 3px;
+  background: linear-gradient(180deg, #38bdf8 0%, #818cf8 50%, #34d399 100%);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8), 0 0 20px rgba(99, 102, 241, 0.4);
+  transform: translateX(-50%);
+  z-index: 2;
 }
 
-@keyframes cnotHoloPlasma {
-  0% { box-shadow: 0 0 14px rgba(0, 240, 255, 0.7), 0 0 24px rgba(99, 102, 241, 0.5); }
-  100% { box-shadow: 0 0 28px rgba(0, 240, 255, 1.0), 0 0 45px rgba(168, 85, 247, 0.9); }
+/* Qubit Labels */
+.circuit-canvas-white.mode-3d-hologram .wire-label {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+}
+
+.circuit-canvas-white.mode-3d-hologram .wire-name {
+  color: #7dd3fc;
+  font-weight: 700;
 }
 
 /* Quantum Intelligence & Stateflow Deck */
