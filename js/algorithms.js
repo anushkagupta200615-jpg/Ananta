@@ -2171,8 +2171,13 @@ class AlgorithmLibrary {
 // ============================================================
 class MissionManager {
   constructor() {
-    // Load solved mission IDs from localStorage
-    const savedCompleted = JSON.parse(localStorage.getItem('ananta_completed_missions') || '[]');
+    // Load solved mission IDs from localStorage (v2 clean storage)
+    if (!localStorage.getItem('ananta_completed_missions_v2')) {
+      localStorage.removeItem('ananta_completed_missions');
+      localStorage.setItem('ananta_completed_missions_v2', '[]');
+      localStorage.setItem('ananta_xp', '0');
+    }
+    const savedCompleted = JSON.parse(localStorage.getItem('ananta_completed_missions_v2') || '[]');
 
     this.missions = [
       {
@@ -2423,38 +2428,22 @@ class MissionManager {
 
   evaluate(grid, probs) {
     if (!grid || !probs) return;
-
-    // Check active mission first
-    const cur = this.missions[this.activeMission];
-    if (cur && !cur.completed && cur.check(grid, probs)) {
-      this.markMissionSolved(cur);
-      return;
-    }
-
-    // Also check any other uncompleted missions in background
-    for (let i = 0; i < this.missions.length; i++) {
-      const m = this.missions[i];
-      if (!m.completed && m.check(grid, probs)) {
-        this.markMissionSolved(m);
-        break;
-      }
-    }
-
+    // Passive update only refreshes HUD banner state without auto-completing missions
     this.updateInSimChallengeBanner();
   }
 
   markMissionSolved(m) {
     m.completed = true;
 
-    // Persist solved IDs
-    const saved = JSON.parse(localStorage.getItem('ananta_completed_missions') || '[]');
+    // Persist solved IDs in clean v2 storage
+    const saved = JSON.parse(localStorage.getItem('ananta_completed_missions_v2') || '[]');
     if (!saved.includes(m.id)) {
       saved.push(m.id);
-      localStorage.setItem('ananta_completed_missions', JSON.stringify(saved));
+      localStorage.setItem('ananta_completed_missions_v2', JSON.stringify(saved));
     }
 
     // Award XP
-    let currentXp = parseInt(localStorage.getItem('ananta_xp') || '150', 10);
+    let currentXp = parseInt(localStorage.getItem('ananta_xp') || '0', 10);
     currentXp += m.xp;
     localStorage.setItem('ananta_xp', currentXp.toString());
 
@@ -2583,9 +2572,13 @@ class MissionManager {
   }
 
   resetProgress() {
-    if (!confirm('Are you sure you want to reset all puzzle progress?')) return;
+    if (!confirm('Are you sure you want to reset all puzzle progress to 0 / 8?')) return;
     localStorage.removeItem('ananta_completed_missions');
+    localStorage.setItem('ananta_completed_missions_v2', '[]');
+    localStorage.setItem('ananta_xp', '0');
     this.missions.forEach(m => m.completed = false);
+    const xpCounter = document.getElementById('player-xp-counter');
+    if (xpCounter) xpCounter.textContent = '0 XP';
     this.renderMissions();
     this.updateInSimChallengeBanner();
   }
