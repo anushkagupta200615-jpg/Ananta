@@ -3614,6 +3614,391 @@ button.nav-dropdown-trigger.active {
 }
 
 
+/* =========================================================================
+   3D HOLOGRAPHIC CIRCUIT ENGINE & DUAL-MODE PEDAGOGY DECK
+   ========================================================================= */
+
+/* Circuit Mode Pill Switches (2D/3D & Beginner/Advanced Research) */
+.circuit-mode-toggles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mode-pill-group {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.mode-pill-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mode-pill-btn:hover {
+  color: var(--text-white);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mode-pill-btn.active {
+  background: var(--google-blue);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.4);
+}
+
+/* 3D Holographic Perspective Circuit Mode */
+.circuit-canvas-white.mode-3d-hologram {
+  perspective: 1200px;
+  perspective-origin: 50% 30%;
+  background: radial-gradient(ellipse at 50% 15%, rgba(66, 133, 244, 0.12) 0%, rgba(15, 23, 42, 0.95) 70%), var(--bg-card);
+  border: 1px solid rgba(66, 133, 244, 0.4);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 0 50px rgba(66, 133, 244, 0.06);
+  overflow: visible;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-bottom: 28px;
+}
+
+.circuit-canvas-white.mode-3d-hologram .circuit-grid {
+  transform-style: preserve-3d;
+  transform: rotateX(24deg) rotateZ(-4deg);
+  transition: transform 0.25s ease-out;
+  transform-origin: center center;
+}
+
+.circuit-canvas-white.mode-3d-hologram .step-ruler {
+  transform-style: preserve-3d;
+  transform: rotateX(24deg) rotateZ(-4deg);
+  transform-origin: center center;
+  transition: transform 0.25s ease-out;
+  opacity: 0.85;
+}
+
+/* 3D Holographic Qubit Waveguides */
+.circuit-canvas-white.mode-3d-hologram .wire-track {
+  background: linear-gradient(90deg, rgba(66, 133, 244, 0.25) 0%, rgba(168, 85, 247, 0.25) 100%);
+  box-shadow: 0 6px 18px rgba(66, 133, 244, 0.35), 0 0 24px rgba(66, 133, 244, 0.2);
+  border: 1px solid rgba(138, 180, 248, 0.4);
+  border-radius: 8px;
+  transform: translateZ(10px);
+}
+
+.circuit-canvas-white.mode-3d-hologram .gate-slot {
+  background: rgba(10, 15, 30, 0.7);
+  border: 1px dashed rgba(138, 180, 248, 0.4);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.4);
+  transform: translateZ(8px);
+}
+
+/* 3D Volumetric Gate Blocks */
+.circuit-canvas-white.mode-3d-hologram .placed-gate {
+  transform: translateZ(24px);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.55), 0 0 20px rgba(66, 133, 244, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+}
+
+.circuit-canvas-white.mode-3d-hologram .placed-gate:hover {
+  transform: translateZ(40px) scale(1.1);
+  box-shadow: 0 24px 40px rgba(0, 0, 0, 0.75), 0 0 32px rgba(66, 133, 244, 0.85);
+}
+
+/* 3D Entanglement Energy Beam */
+.circuit-canvas-white.mode-3d-hologram .cnot-vertical-connector {
+  width: 5px;
+  background: linear-gradient(180deg, #8ab4f8 0%, #c084fc 50%, #81c995 100%);
+  box-shadow: 0 0 18px #8ab4f8, 0 0 32px rgba(168, 85, 247, 0.7);
+  transform: translateX(-50%) translateZ(28px);
+  animation: cnotHoloPlasma 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes cnotHoloPlasma {
+  0% { box-shadow: 0 0 14px rgba(0, 240, 255, 0.7), 0 0 24px rgba(99, 102, 241, 0.5); }
+  100% { box-shadow: 0 0 28px rgba(0, 240, 255, 1.0), 0 0 45px rgba(168, 85, 247, 0.9); }
+}
+
+/* Quantum Intelligence & Stateflow Deck */
+.quantum-intelligence-deck {
+  margin-top: 14px;
+  width: 100%;
+}
+
+.intel-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: all 0.25s ease;
+}
+
+.intel-card:hover {
+  border-color: rgba(66, 133, 244, 0.4);
+}
+
+.intel-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.intel-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.intel-mode-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(66, 133, 244, 0.15);
+  color: #8ab4f8;
+  border: 1px solid rgba(66, 133, 244, 0.35);
+}
+
+.intel-mode-tag.tag-advanced {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.intel-step-pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--bg-subtle);
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.intel-concept-tag {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-white);
+}
+
+.intel-action-badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #81c995;
+  background: rgba(52, 168, 83, 0.12);
+  border: 1px solid rgba(52, 168, 83, 0.3);
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.advanced-purity-pill {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #fdd663;
+  background: rgba(251, 188, 4, 0.12);
+  border: 1px solid rgba(251, 188, 4, 0.3);
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+/* Beginner Story Body */
+.intel-story-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.intel-story-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(66, 133, 244, 0.12);
+  border: 1px solid rgba(66, 133, 244, 0.3);
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.2);
+}
+
+.intel-story-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.intel-story-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-white);
+  margin: 0;
+}
+
+.intel-story-desc {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.intel-takeaway-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.takeaway-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.takeaway-label {
+  color: var(--text-dim);
+}
+
+.takeaway-val {
+  color: var(--google-blue);
+  font-weight: 600;
+}
+
+/* Advanced Research Metrics Grid */
+.advanced-metrics-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .advanced-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.advanced-metric-col {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.advanced-subhead {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 4px;
+}
+
+.advanced-math-box, .advanced-state-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: #8ab4f8;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.advanced-explain-note {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.quantum-gauges-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qgauge-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.qgauge-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  display: flex;
+  justify-content: space-between;
+}
+
+.qgauge-val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.val-cyan { color: #00f0ff; }
+.val-purple { color: #c084fc; }
+.val-coral { color: #f28b82; }
+
+.qgauge-bar-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.qgauge-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fill-cyan { background: #00f0ff; box-shadow: 0 0 8px #00f0ff; }
+.fill-purple { background: #c084fc; box-shadow: 0 0 8px #c084fc; }
+.fill-coral { background: #f28b82; box-shadow: 0 0 8px #f28b82; }
+
 /* Academic Analytics Studio Deck */
 .composer-analytics-deck {
   background: var(--bg-card);

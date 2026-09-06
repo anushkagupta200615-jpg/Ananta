@@ -35,9 +35,15 @@ class CircuitUI {
     // Quantum Audio Synthesizer
     this.audio = window.QuantumAudioSynthesizer ? new window.QuantumAudioSynthesizer() : null;
 
+    // View & Pedagogy Modes (2D Planar vs 3D Isometric Hologram, Beginner Intuition vs Advanced Research)
+    this.dimensionMode = '2d';
+    this.pedagogyMode = 'beginner';
+    window.circuitUI = this;
+
     this.initDOM();
     this.bindEvents();
     this.bindStepperEvents();
+    this.bindModeEvents();
     this.bindMeasurementEvents();
     this.bindTourEvents();
     this.bindAudioEvents();
@@ -509,6 +515,7 @@ class CircuitUI {
     }
 
     this.updateStepperDisplay();
+    this.updateQuantumIntelligenceDeck();
   }
 
   updateEntanglementBadge(probs) {
@@ -1393,6 +1400,327 @@ class CircuitUI {
 
     this.eduCard.style.left = `${Math.max(10, x)}px`;
     this.eduCard.style.top = `${Math.max(10, y)}px`;
+  }
+
+  // =========================================================================
+  // VIEW MODES (2D vs 3D Hologram) & DUAL-PEDAGOGY (Beginner vs Advanced Research)
+  // =========================================================================
+  bindModeEvents() {
+    const btn2d = document.getElementById('btn-view-2d');
+    const btn3d = document.getElementById('btn-view-3d');
+    const btnBeg = document.getElementById('btn-pedagogy-beginner');
+    const btnAdv = document.getElementById('btn-pedagogy-advanced');
+
+    if (btn2d) btn2d.addEventListener('click', () => this.setDimensionMode('2d'));
+    if (btn3d) btn3d.addEventListener('click', () => this.setDimensionMode('3d'));
+    if (btnBeg) btnBeg.addEventListener('click', () => this.setPedagogyMode('beginner'));
+    if (btnAdv) btnAdv.addEventListener('click', () => this.setPedagogyMode('advanced'));
+
+    // Interactive 3D mouse parallax tilt on circuit canvas
+    const canvas = document.querySelector('.circuit-canvas-white');
+    if (canvas) {
+      canvas.addEventListener('mousemove', (e) => {
+        if (this.dimensionMode !== '3d') return;
+        const rect = canvas.getBoundingClientRect();
+        const normX = (e.clientX - rect.left) / rect.width - 0.5;
+        const normY = (e.clientY - rect.top) / rect.height - 0.5;
+        const grid = canvas.querySelector('.circuit-grid');
+        const ruler = canvas.querySelector('.step-ruler');
+        const rotX = 24 - normY * 18;
+        const rotZ = -4 + normX * 14;
+        if (grid) grid.style.transform = `rotateX(${rotX.toFixed(1)}deg) rotateZ(${rotZ.toFixed(1)}deg)`;
+        if (ruler) ruler.style.transform = `rotateX(${rotX.toFixed(1)}deg) rotateZ(${rotZ.toFixed(1)}deg)`;
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        if (this.dimensionMode !== '3d') return;
+        const grid = canvas.querySelector('.circuit-grid');
+        const ruler = canvas.querySelector('.step-ruler');
+        if (grid) grid.style.transform = 'rotateX(24deg) rotateZ(-4deg)';
+        if (ruler) ruler.style.transform = 'rotateX(24deg) rotateZ(-4deg)';
+      });
+    }
+  }
+
+  setDimensionMode(mode) {
+    this.dimensionMode = mode;
+    const canvas = document.querySelector('.circuit-canvas-white');
+    const btn2d = document.getElementById('btn-view-2d');
+    const btn3d = document.getElementById('btn-view-3d');
+
+    if (mode === '3d') {
+      if (canvas) canvas.classList.add('mode-3d-hologram');
+      if (btn2d) btn2d.classList.remove('active');
+      if (btn3d) btn3d.classList.add('active');
+    } else {
+      if (canvas) {
+        canvas.classList.remove('mode-3d-hologram');
+        const grid = canvas.querySelector('.circuit-grid');
+        const ruler = canvas.querySelector('.step-ruler');
+        if (grid) grid.style.transform = '';
+        if (ruler) ruler.style.transform = '';
+      }
+      if (btn3d) btn3d.classList.remove('active');
+      if (btn2d) btn2d.classList.add('active');
+    }
+    setTimeout(() => this.renderCnotConnectors(), 50);
+  }
+
+  setPedagogyMode(mode) {
+    this.pedagogyMode = mode;
+    const begPanel = document.getElementById('intel-beginner-panel');
+    const advPanel = document.getElementById('intel-advanced-panel');
+    const btnBeg = document.getElementById('btn-pedagogy-beginner');
+    const btnAdv = document.getElementById('btn-pedagogy-advanced');
+
+    if (mode === 'advanced') {
+      if (begPanel) begPanel.style.display = 'none';
+      if (advPanel) advPanel.style.display = 'block';
+      if (btnBeg) btnBeg.classList.remove('active');
+      if (btnAdv) btnAdv.classList.add('active');
+    } else {
+      if (advPanel) advPanel.style.display = 'none';
+      if (begPanel) begPanel.style.display = 'block';
+      if (btnAdv) btnAdv.classList.remove('active');
+      if (btnBeg) btnBeg.classList.add('active');
+    }
+    this.updateQuantumIntelligenceDeck();
+  }
+
+  renderMathBox(elementId, latexStr) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    if (window.katex && typeof window.katex.render === 'function') {
+      try {
+        window.katex.render(latexStr, el, { displayMode: true, throwOnError: false });
+        return;
+      } catch (err) {
+        // Fallback to innerHTML below
+      }
+    }
+    el.innerHTML = `$$${latexStr}$$`;
+    if (window.renderMathInElement) {
+      try {
+        window.renderMathInElement(el, {
+          delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],
+          throwOnError: false
+        });
+      } catch (e) {}
+    }
+  }
+
+  updateQuantumIntelligenceDeck() {
+    const deck = document.getElementById('quantum-intelligence-deck');
+    if (!deck) return;
+
+    const probs = this.engine.getProbabilities();
+    const activeStates = probs.filter(p => p.probability > 0.035).sort((a, b) => b.probability - a.probability);
+    const m = this.engine.getAdvancedEntanglementMetrics ? this.engine.getAdvancedEntanglementMetrics() : {
+      purity: 1.0,
+      vonNeumannEntropy: 0,
+      concurrence: 0,
+      schmidtRank: 1,
+      entanglementClass: 'Product State'
+    };
+
+    // State signatures
+    const isBell = activeStates.length === 2 && Math.abs(activeStates[0].probability - 0.5) < 0.12 && Math.abs(activeStates[1].probability - 0.5) < 0.12;
+    const isGHZ = activeStates.length === 2 && ((activeStates[0].state === '|000⟩' && activeStates[1].state === '|111⟩') || (activeStates[0].state === '|111⟩' && activeStates[1].state === '|000⟩')) && Math.abs(activeStates[0].probability - 0.5) < 0.12;
+    const isSuperpos = activeStates.length > 1;
+    const isGround = activeStates.length === 1 && activeStates[0].state === '|000⟩';
+
+    // Step operator & column inspection
+    let stepOperatorLabel = 'Operator: I₈ (Ground State)';
+    let stepUnitaryLatex = '\\hat{U}_{\\text{step}} = \\hat{I}_8';
+    let stepPillText = 'Step: Full Output';
+
+    if (this.playbackStep === 0) {
+      stepPillText = 'Step 0: Initial Ground State';
+      stepOperatorLabel = 'Operator: I₈';
+      stepUnitaryLatex = '\\hat{U}_{\\text{step}} = \\hat{I}_2 \\otimes \\hat{I}_2 \\otimes \\hat{I}_2';
+    } else if (this.playbackStep === -1 || this.playbackStep >= this.numCols) {
+      stepPillText = `Step: Full Circuit Output (t=${this.numCols})`;
+      stepOperatorLabel = 'Operator: U_total ∈ SU(8)';
+      stepUnitaryLatex = '\\hat{U}_{\\text{total}} = \\prod_{t=' + this.numCols + '}^{1} \\hat{U}_t \\in \\mathbb{SU}(8)';
+    } else {
+      const col = this.playbackStep - 1;
+      stepPillText = `Step ${this.playbackStep} of ${this.numCols} (Column t=${this.playbackStep})`;
+      const g0 = this.grid[0][col];
+      const g1 = this.grid[1][col];
+      const g2 = this.grid[2][col];
+
+      if (g0 === 'CX_CTRL' && g1 === 'CX_TGT') {
+        stepOperatorLabel = 'Operator: CNOT₀₁ ⊗ I₂';
+        stepUnitaryLatex = '\\hat{U}_{\\text{step}} = \\text{CNOT}_{01} \\otimes \\hat{I}_2';
+      } else if (g1 === 'CX_CTRL' && g2 === 'CX_TGT') {
+        stepOperatorLabel = 'Operator: I₂ ⊗ CNOT₁₂';
+        stepUnitaryLatex = '\\hat{U}_{\\text{step}} = \\hat{I}_2 \\otimes \\text{CNOT}_{12}';
+      } else if (g0 === 'CX_CTRL' && g2 === 'CX_TGT') {
+        stepOperatorLabel = 'Operator: CNOT₀₂ (Long-Range)';
+        stepUnitaryLatex = '\\hat{U}_{\\text{step}} = \\text{CNOT}_{02}';
+      } else if (g1 === 'CX_CTRL' && g0 === 'CX_TGT') {
+        stepOperatorLabel = 'Operator: CNOT₁₀ ⊗ I₂';
+        stepUnitaryLatex = '\\hat{U}_{\\text{step}} = \\text{CNOT}_{10} \\otimes \\hat{I}_2';
+      } else if (g2 === 'CX_CTRL' && g1 === 'CX_TGT') {
+        stepOperatorLabel = 'Operator: I₂ ⊗ CNOT₂₁';
+        stepUnitaryLatex = '\\hat{U}_{\\text{step}} = \\hat{I}_2 \\otimes \\text{CNOT}_{21}';
+      } else if (g0 === 'SWAP' && g1 === 'SWAP') {
+        stepOperatorLabel = 'Operator: SWAP₀₁ ⊗ I₂';
+        stepUnitaryLatex = '\\hat{U}_{\\text{step}} = \\text{SWAP}_{01} \\otimes \\hat{I}_2';
+      } else {
+        const u0 = g0 || 'I';
+        const u1 = g1 || 'I';
+        const u2 = g2 || 'I';
+        stepOperatorLabel = `Operator: ${u0} ⊗ ${u1} ⊗ ${u2}`;
+        stepUnitaryLatex = `\\hat{U}_{\\text{step}} = \\hat{U}_{q_0}(${u0}) \\otimes \\hat{U}_{q_1}(${u1}) \\otimes \\hat{U}_{q_2}(${u2})`;
+      }
+    }
+
+    // Reduced density matrix for Qubit 0 (partial trace over q1, q2)
+    let rho00 = 0, rho01_re = 0, rho01_im = 0, rho11 = 0;
+    const numStates = this.engine.numStates || 8;
+    const st = this.engine.state;
+    for (let i = 0; i < numStates; i++) {
+      const bit0 = (i >> (this.numQubits - 1)) & 1;
+      const magSq = st[i].absSq();
+      if (bit0 === 0) {
+        rho00 += magSq;
+        const j = i ^ (1 << (this.numQubits - 1));
+        const ai = st[i];
+        const aj = st[j];
+        rho01_re += (ai.re * aj.re + ai.im * aj.im);
+        rho01_im += (ai.im * aj.re - ai.re * aj.im);
+      } else {
+        rho11 += magSq;
+      }
+    }
+    const subPurity = Math.min(1.0, Math.max(0.5, (rho00 * rho00) + (rho11 * rho11) + 2 * (rho01_re * rho01_re + rho01_im * rho01_im)));
+
+    // -------------------------------------------------------------
+    // 1. UPDATE BEGINNER INTUITION PANEL
+    // -------------------------------------------------------------
+    const begPill = document.getElementById('beginner-step-pill');
+    const begConcept = document.getElementById('beginner-concept-tag');
+    const begAction = document.getElementById('beginner-action-badge');
+    const begIcon = document.getElementById('beginner-story-icon');
+    const begTitle = document.getElementById('beginner-story-title');
+    const begDesc = document.getElementById('beginner-story-desc');
+    const begChance = document.getElementById('beginner-chance-val');
+    const begApp = document.getElementById('beginner-app-val');
+
+    if (begPill) begPill.textContent = stepPillText;
+
+    if (isBell) {
+      if (begConcept) begConcept.textContent = 'Quantum Entanglement & Non-Locality';
+      if (begAction) begAction.textContent = '⚡ Bell State Active';
+      if (begIcon) begIcon.textContent = '⚡';
+      if (begTitle) begTitle.textContent = 'The Quantum Entanglement Link';
+      if (begDesc) begDesc.textContent = 'Qubit 0 was put into an equal coin-spin with the Hadamard gate, and CNOT tied Qubit 0 and Qubit 1 together with an invisible quantum link. Now they act as one: observing Qubit 0 as |0⟩ guarantees Qubit 1 is instantly |0⟩ too — even across light-years!';
+      if (begApp) begApp.textContent = 'Quantum Cryptography (QKD) & Teleportation';
+    } else if (isGHZ) {
+      if (begConcept) begConcept.textContent = 'Tripartite Entangled Superposition';
+      if (begAction) begAction.textContent = '🌐 Tripartite GHZ Active';
+      if (begIcon) begIcon.textContent = '🌐';
+      if (begTitle) begTitle.textContent = 'The 3-Qubit Collective Web';
+      if (begDesc) begDesc.textContent = 'All three qubits are locked into a single shared quantum wave. Checking any single qubit forces the entire register to snap together into either |000⟩ or |111⟩ with zero delay.';
+      if (begApp) begApp.textContent = 'Quantum Secret Sharing & Atomic Magnetometry';
+    } else if (isSuperpos) {
+      if (begConcept) begConcept.textContent = 'Quantum Superposition (Spinning Coin)';
+      if (begAction) begAction.textContent = '🪙 50/50 Quantum Coin Flip';
+      if (begIcon) begIcon.textContent = '🪙';
+      if (begTitle) begTitle.textContent = 'Flipping the Quantum Coin in Mid-Air';
+      if (begDesc) begDesc.textContent = 'The qubits are spinning in mid-air like flipped coins. Until measured, they exist in both Heads (|0⟩) and Tails (|1⟩) simultaneously, allowing the computer to explore multiple answers in parallel!';
+      if (begApp) begApp.textContent = 'Grover Database Search & Quantum Random Numbers';
+    } else if (isGround) {
+      if (begConcept) begConcept.textContent = 'Ground State Baseline';
+      if (begAction) begAction.textContent = '🎯 Ground State |000⟩';
+      if (begIcon) begIcon.textContent = '🎯';
+      if (begTitle) begTitle.textContent = 'Resting in the Dilution Refrigerator';
+      if (begDesc) begDesc.textContent = 'All three qubits are sitting still in their lowest possible energy state |000⟩. In actual quantum hardware, microwave tones and cryogenic cooling down to 15 millikelvin calibrate this pure starting line.';
+      if (begApp) begApp.textContent = 'Quantum Register Pre-Flight Calibration';
+    } else {
+      if (begConcept) begConcept.textContent = 'Deterministic Pure State';
+      if (begAction) begAction.textContent = '🔒 Deterministic State';
+      if (begIcon) begIcon.textContent = '💎';
+      if (begTitle) begTitle.textContent = 'Definite Quantum Direction';
+      if (begDesc) begDesc.textContent = 'The quantum register is currently aligned with a definite computational outcome. Measurement will produce a reliable, deterministic readout.';
+      if (begApp) begApp.textContent = 'Fault-Tolerant Logic Execution';
+    }
+
+    if (begChance) {
+      const topStates = activeStates.slice(0, 3).map(s => `${(s.probability * 100).toFixed(0)}% ${s.state}`);
+      begChance.textContent = topStates.length > 0 ? topStates.join(', ') : '100% |000⟩';
+    }
+
+    // -------------------------------------------------------------
+    // 2. UPDATE ADVANCED RESEARCH PANEL (Rigorous Graduate Physics)
+    // -------------------------------------------------------------
+    const advPill = document.getElementById('advanced-step-pill');
+    const advConcept = document.getElementById('advanced-concept-tag');
+    const advPurity = document.getElementById('advanced-purity-badge');
+    const advConcurrenceVal = document.getElementById('advanced-concurrence-val');
+    const gaugeBarConcurrence = document.getElementById('gauge-bar-concurrence');
+    const advEntropyVal = document.getElementById('advanced-entropy-val');
+    const gaugeBarEntropy = document.getElementById('gauge-bar-entropy');
+    const advDensityNote = document.getElementById('advanced-density-note');
+
+    if (advPill) advPill.textContent = stepOperatorLabel;
+    if (advConcept) advConcept.textContent = m.entanglementClass;
+    if (advPurity) {
+      advPurity.textContent = `Purity γ = ${m.purity.toFixed(3)} (${m.purity >= 0.999 ? 'Pure State' : 'Subsystem Mixed'})`;
+    }
+
+    // Render Unitary Step Math
+    this.renderMathBox('advanced-tensor-math', stepUnitaryLatex);
+
+    // Render Dirac State Expansion
+    let stateLatex = '|\\psi\\rangle = ';
+    if (activeStates.length === 0) {
+      stateLatex += '|000\\rangle';
+    } else {
+      const terms = activeStates.map((s, idx) => {
+        const p = s.probability;
+        const ket = s.state.replace('|', '').replace('⟩', '');
+        let coeff = Math.sqrt(p).toFixed(2);
+        if (Math.abs(p - 0.5) < 0.02) coeff = '\\frac{1}{\\sqrt{2}}';
+        else if (Math.abs(p - 0.25) < 0.02) coeff = '\\frac{1}{2}';
+        else if (Math.abs(p - 0.333) < 0.03) coeff = '\\frac{1}{\\sqrt{3}}';
+        else if (Math.abs(p - 1.0) < 0.01) coeff = '';
+        return `${idx > 0 ? '+ ' : ''}${coeff}|${ket}\\rangle`;
+      });
+      stateLatex += terms.join(' ');
+    }
+    this.renderMathBox('advanced-state-decomp', stateLatex);
+
+    // Render Reduced Density Matrix for q0
+    const r00 = rho00.toFixed(2);
+    const r11 = rho11.toFixed(2);
+    let r01 = rho01_re.toFixed(2);
+    if (Math.abs(rho01_im) > 0.01) {
+      r01 = `${rho01_re.toFixed(2)}${rho01_im >= 0 ? '+' : '-'}${Math.abs(rho01_im).toFixed(2)}i`;
+    }
+    let r10 = rho01_re.toFixed(2);
+    if (Math.abs(rho01_im) > 0.01) {
+      r10 = `${rho01_re.toFixed(2)}${-rho01_im >= 0 ? '+' : '-'}${Math.abs(rho01_im).toFixed(2)}i`;
+    }
+
+    const densityLatex = `\\rho_{q_0} = \\begin{bmatrix} ${r00} & ${r01} \\\\ ${r10} & ${r11} \\end{bmatrix} \\implies \\text{Tr}(\\rho_{q_0}^2) = ${subPurity.toFixed(3)}`;
+    this.renderMathBox('advanced-reduced-density', densityLatex);
+
+    if (advDensityNote) {
+      if (subPurity < 0.96) {
+        advDensityNote.innerHTML = `Subsystem purity <strong>γ = ${subPurity.toFixed(3)} &lt; 1.000</strong> (maximally mixed reduced state) confirms bipartite entanglement between <em>q₀</em> and register <em>(q₁, q₂)</em>.`;
+      } else {
+        advDensityNote.innerHTML = `Subsystem purity <strong>γ = ${subPurity.toFixed(3)} ≈ 1.000</strong> confirms <em>q₀</em> is separable and unentangled with register <em>(q₁, q₂)</em>.`;
+      }
+    }
+
+    // Gauges
+    if (advConcurrenceVal) advConcurrenceVal.textContent = m.concurrence.toFixed(3);
+    if (gaugeBarConcurrence) gaugeBarConcurrence.style.width = `${Math.min(100, Math.round(m.concurrence * 100))}%`;
+
+    if (advEntropyVal) advEntropyVal.textContent = `${m.vonNeumannEntropy.toFixed(3)} bit`;
+    if (gaugeBarEntropy) gaugeBarEntropy.style.width = `${Math.min(100, Math.round(m.vonNeumannEntropy * 100))}%`;
   }
 }
 

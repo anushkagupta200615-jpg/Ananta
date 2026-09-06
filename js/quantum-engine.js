@@ -1384,7 +1384,7 @@ class QuantumKnowledgeEngine {
         </div>
 
         <div class="ke-section">
-          <div class="ke-section-label">\ud83d\udd2c Research Applications (IIT / IISc context)</div>
+          <div class="ke-section-label">🔬 Research Applications (Graduate & Industrial Context)</div>
           <ul class="ke-app-list">${appsList}</ul>
         </div>
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ananta - Quantum Circuit Composer & Knowledge Engine</title>
-  <meta name="description" content="Ananta is a research-grade in-browser quantum computing platform for circuit composition, statevector analysis, algorithm design, and IIT/IISc-level quantum education.">
+  <meta name="description" content="Ananta is a research-grade in-browser quantum computing platform for circuit composition, statevector analysis, algorithm design, and Advanced Research quantum education.">
   
   <!-- Google Quantum AI Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -770,7 +770,7 @@
           </div>
 
           <div class="ribbon-actions">
-            <button class="tool-drawer-btn" id="btn-toggle-ke-drawer" onclick="window.toggleKnowledgeEngineDrawer()" title="Toggle IIT/IISc Research Knowledge Assistant (Press /)">
+            <button class="tool-drawer-btn" id="btn-toggle-ke-drawer" onclick="window.toggleKnowledgeEngineDrawer()" title="Toggle Advanced Research Knowledge Assistant (Press /)">
               🔬 Knowledge Engine ▾
             </button>
             <button class="tool-drawer-btn" id="btn-toggle-hw-drawer" onclick="window.toggleHardwareLabDrawer()" title="Toggle Physical QPU Noise and Microwave Pulse Lab">
@@ -815,7 +815,7 @@
               <div class="ke-title-group">
                 <span class="ke-icon">🔬</span>
                 <div>
-                  <h3 class="ke-title">Quantum Knowledge Engine (IIT & IISc Curriculum)</h3>
+                  <h3 class="ke-title">Quantum Knowledge Engine (Advanced Research & Graduate Curriculum)</h3>
                   <p class="ke-subtitle">Formal mathematical definitions, physical intuition, and research applications for advanced learners</p>
                 </div>
               </div>
@@ -1048,7 +1048,7 @@
               </p>
             </div>
 
-            <!-- Stepper Playback (Quantum Time Machine) -->
+            <!-- Stepper Playback & Dynamic Quantum View Modes -->
             <div class="circuit-stepper-bar">
               <div class="stepper-controls-group">
                 <button id="btn-step-start" class="step-btn" title="Reset to Initial Ground State |000⟩">⏮</button>
@@ -1057,6 +1057,28 @@
                 <button id="btn-step-next" class="step-btn" title="Propagate Forward One Gate">▶</button>
                 <button id="btn-step-end" class="step-btn" title="Jump to Full Circuit Output">⏭</button>
               </div>
+
+              <!-- View Modes: 2D vs 3D Hologram & Beginner vs Advanced Research -->
+              <div class="circuit-mode-toggles">
+                <div class="mode-pill-group" title="Toggle 2D Planar Schematic vs. 3D Isometric Hologram">
+                  <button type="button" class="mode-pill-btn active" id="btn-view-2d" onclick="window.circuitUI.setDimensionMode('2d')">
+                    📐 2D
+                  </button>
+                  <button type="button" class="mode-pill-btn" id="btn-view-3d" onclick="window.circuitUI.setDimensionMode('3d')">
+                    ⚡ 3D Hologram
+                  </button>
+                </div>
+
+                <div class="mode-pill-group" title="Switch between Beginner Intuition and Advanced Research depth">
+                  <button type="button" class="mode-pill-btn active" id="btn-pedagogy-beginner" onclick="window.circuitUI.setPedagogyMode('beginner')">
+                    🎓 Beginner Intuition
+                  </button>
+                  <button type="button" class="mode-pill-btn" id="btn-pedagogy-advanced" onclick="window.circuitUI.setPedagogyMode('advanced')">
+                    🔬 Advanced Research
+                  </button>
+                </div>
+              </div>
+
               <div class="stepper-info-group">
                 <span id="step-counter-display" class="step-counter-label"><strong>Full Circuit Output</strong> (Step 6 of 6)</span>
                 <span id="entanglement-status-indicator" class="entanglement-badge" style="display: none;">⚡ Entangled Bell State Detected</span>
@@ -1074,6 +1096,97 @@
 
             <div class="circuit-grid" id="circuit-grid">
               <!-- Rendered by CircuitUI -->
+            </div>
+
+            <!-- Interactive Quantum Intelligence & Stateflow Deck -->
+            <div class="quantum-intelligence-deck" id="quantum-intelligence-deck">
+              <!-- Beginner Intuition Story Mode Card -->
+              <div class="intel-card intel-beginner-card" id="intel-beginner-panel">
+                <div class="intel-card-header">
+                  <div class="intel-badge-row">
+                    <span class="intel-mode-tag">🎓 BEGINNER INTUITION</span>
+                    <span class="intel-step-pill" id="beginner-step-pill">Step: Full Circuit</span>
+                    <span class="intel-concept-tag" id="beginner-concept-tag">Quantum Entanglement</span>
+                  </div>
+                  <div class="intel-action-badge" id="beginner-action-badge">⚡ Bell State Active</div>
+                </div>
+                <div class="intel-story-body">
+                  <div class="intel-story-icon-box" id="beginner-story-icon">🪙</div>
+                  <div class="intel-story-content">
+                    <h4 class="intel-story-title" id="beginner-story-title">The Quantum Entanglement Link</h4>
+                    <p class="intel-story-desc" id="beginner-story-desc">
+                      Qubit 0 was put into a spin with the Hadamard gate. Then, the CNOT gate tied Qubit 0 and Qubit 1 together with an invisible quantum link. Now, they are permanently entangled: if you look at Qubit 0 and find Heads (0), Qubit 1 will instantly be Heads (0) too!
+                    </p>
+                    <div class="intel-takeaway-row">
+                      <div class="takeaway-item">
+                        <span class="takeaway-label">Measurement Chance:</span>
+                        <strong class="takeaway-val" id="beginner-chance-val">50% |000⟩, 50% |110⟩</strong>
+                      </div>
+                      <div class="takeaway-item">
+                        <span class="takeaway-label">Real-World Application:</span>
+                        <strong class="takeaway-val" id="beginner-app-val">Quantum Cryptography & Teleportation</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Advanced Research Mathematical Rigor Card -->
+              <div class="intel-card intel-advanced-card" id="intel-advanced-panel" style="display: none;">
+                <div class="intel-card-header">
+                  <div class="intel-badge-row">
+                    <span class="intel-mode-tag tag-advanced">🔬 ADVANCED RESEARCH</span>
+                    <span class="intel-step-pill" id="advanced-step-pill">Operator: CNOT₀₁ ⊗ I</span>
+                    <span class="intel-concept-tag" id="advanced-concept-tag">Maximally Entangled Pure State</span>
+                  </div>
+                  <div class="advanced-purity-pill" id="advanced-purity-badge">Purity γ = 1.000 (Pure State)</div>
+                </div>
+                <div class="advanced-metrics-grid">
+                  <!-- Col 1: Kronecker Tensor Decomposition & State -->
+                  <div class="advanced-metric-col">
+                    <div class="advanced-subhead">Step Unitary Decomposition & Statevector</div>
+                    <div class="advanced-math-box" id="advanced-tensor-math">
+                      $$\hat{U}_{\text{step}} = \text{CNOT}_{01} \otimes I_2$$
+                    </div>
+                    <div class="advanced-state-box" id="advanced-state-decomp">
+                      $$|\psi\rangle = \frac{1}{\sqrt{2}}|000\rangle + \frac{1}{\sqrt{2}}|110\rangle$$
+                    </div>
+                  </div>
+
+                  <!-- Col 2: Reduced Density Matrix & Partial Trace -->
+                  <div class="advanced-metric-col">
+                    <div class="advanced-subhead">Partial Trace & Reduced Density Subsystem $\rho_{q_0} = \text{Tr}_{1,2}(\rho)$</div>
+                    <div class="advanced-math-box" id="advanced-reduced-density">
+                      $$\rho_{q_0} = \begin{bmatrix} 0.5 & 0 \\ 0 & 0.5 \end{bmatrix} \implies \text{Tr}(\rho_{q_0}^2) = 0.500$$
+                    </div>
+                    <p class="advanced-explain-note" id="advanced-density-note">
+                      Subsystem purity $\gamma = 0.500 < 1.000$ proves maximum bipartite entanglement with the register.
+                    </p>
+                  </div>
+
+                  <!-- Col 3: Entanglement Quantification (Concurrence & Entropy) -->
+                  <div class="advanced-metric-col">
+                    <div class="advanced-subhead">Entanglement Quantification Metrics</div>
+                    <div class="quantum-gauges-row">
+                      <div class="qgauge-item">
+                        <span class="qgauge-label">Concurrence $C(|\psi\rangle)$:</span>
+                        <strong class="qgauge-val val-cyan" id="advanced-concurrence-val">1.000</strong>
+                        <div class="qgauge-bar-track"><div class="qgauge-bar-fill fill-cyan" id="gauge-bar-concurrence" style="width: 100%;"></div></div>
+                      </div>
+                      <div class="qgauge-item">
+                        <span class="qgauge-label">von Neumann Entropy $S(\rho_{q_0})$:</span>
+                        <strong class="qgauge-val val-purple" id="advanced-entropy-val">1.000 bit</strong>
+                        <div class="qgauge-bar-track"><div class="qgauge-bar-fill fill-purple" id="gauge-bar-entropy" style="width: 100%;"></div></div>
+                      </div>
+                      <div class="qgauge-item">
+                        <span class="qgauge-label">Bloch Radius $|\vec{r}_{q_0}|$:</span>
+                        <strong class="qgauge-val val-coral" id="advanced-bloch-radius-val">0.000 (Origin)</strong>
+                        <div class="qgauge-bar-track"><div class="qgauge-bar-fill fill-coral" id="gauge-bar-bloch-r" style="width: 0%;"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
