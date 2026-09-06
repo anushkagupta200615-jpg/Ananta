@@ -66,6 +66,7 @@ class CircuitUI {
     this.densityEntropyBadge = document.getElementById('density-entropy-badge');
     this.tourBar = document.getElementById('guided-algo-tour-bar');
 
+    this.updateQubitScaleBadge();
     this.renderGrid();
   }
 
@@ -340,6 +341,11 @@ class CircuitUI {
   loadPreset(gridData) {
     this.playbackStep = -1;
     this.stopPlayback();
+    if (gridData && gridData.length && gridData.length !== this.numQubits) {
+      this.numQubits = Math.max(2, Math.min(8, gridData.length));
+      this.engine.setNumQubits(this.numQubits);
+      this.updateQubitScaleBadge();
+    }
     this.grid = gridData.map(row => [...row]);
     this.renderGrid();
     this.updateSimulation();
@@ -347,6 +353,65 @@ class CircuitUI {
 
   loadCircuit(gridData) {
     this.loadPreset(gridData);
+  }
+
+  // =========================================================================
+  // DYNAMIC QUBIT REGISTER SCALING (3 to 8 Qubits Expandable Architecture)
+  // =========================================================================
+  addQubit() {
+    if (this.numQubits >= 8) {
+      alert('Maximum browser capacity reached (8 Qubits = 256 state amplitudes). For 100+ qubits, connect physical hardware using 🚀 Cloud QPU!');
+      return;
+    }
+    this.numQubits++;
+    this.grid.push(new Array(this.numCols).fill(null));
+    this.engine.setNumQubits(this.numQubits);
+    this.renderGrid();
+    this.updateQubitScaleBadge();
+    this.updateSimulation();
+  }
+
+  removeQubit() {
+    if (this.numQubits <= 2) {
+      alert('Minimum circuit size is 2 Qubits (for multi-qubit entanglement gates).');
+      return;
+    }
+    const lastRow = this.grid[this.numQubits - 1];
+    const hasGates = lastRow.some(cell => cell !== null);
+    if (hasGates) {
+      if (!confirm(`Qubit q${this.numQubits - 1} contains active gates. Are you sure you want to remove it?`)) {
+        return;
+      }
+    }
+    this.numQubits--;
+    this.grid.pop();
+    if (this.selectedQubitForBloch >= this.numQubits) {
+      this.selectedQubitForBloch = this.numQubits - 1;
+    }
+    this.engine.setNumQubits(this.numQubits);
+    this.renderGrid();
+    this.updateQubitScaleBadge();
+    this.updateSimulation();
+  }
+
+  updateQubitScaleBadge() {
+    const badge = document.getElementById('qubit-count-badge');
+    if (badge) {
+      const sups = { 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸' };
+      const sup = sups[this.numQubits] || `^${this.numQubits}`;
+      badge.textContent = `${this.numQubits} Qubits (2${sup} = ${Math.pow(2, this.numQubits)} States)`;
+    }
+    const select = document.getElementById('bloch-qubit-select');
+    if (select) {
+      select.innerHTML = '';
+      for (let q = 0; q < this.numQubits; q++) {
+        const opt = document.createElement('option');
+        opt.value = q;
+        opt.textContent = `Qubit ${q} (q[${q}])`;
+        if (q === this.selectedQubitForBloch) opt.selected = true;
+        select.appendChild(opt);
+      }
+    }
   }
 
   // =========================================================================

@@ -96,6 +96,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const algorithmLibrary = new AlgorithmLibrary();
   window.algorithmLibrary = algorithmLibrary;
 
+  let cloudQPUBridge = null;
+  if (window.CloudQPUBridge) {
+    cloudQPUBridge = new window.CloudQPUBridge(engine, circuitUI);
+    window.cloudQPUBridge = cloudQPUBridge;
+  }
+
   // 4 Killer Differentiating Studios
   let surfaceCodeStudio = null;
   if (window.SurfaceCodeStudio) {

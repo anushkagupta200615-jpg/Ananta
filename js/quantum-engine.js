@@ -68,6 +68,12 @@ class QuantumCircuitEngine {
     );
   }
 
+  setNumQubits(numQubits) {
+    this.numQubits = Math.max(2, Math.min(8, numQubits));
+    this.numStates = 1 << this.numQubits;
+    this.reset();
+  }
+
   // Common 1-Qubit matrices
   static get GATES() {
     const SQRT2_INV = 1 / Math.SQRT2;

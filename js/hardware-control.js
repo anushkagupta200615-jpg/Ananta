@@ -98,10 +98,44 @@ class HardwareControlStudio {
   // =========================================================================
   bindNoiseControls() {
     const toggleNoisy = document.getElementById('toggle-noise-mode');
+    const selectPreset = document.getElementById('select-hardware-preset');
     const sliderT1 = document.getElementById('slider-t1');
     const sliderT2 = document.getElementById('slider-t2');
     const sliderError = document.getElementById('slider-gate-error');
     const btnDecoupling = document.getElementById('btn-apply-decoupling');
+
+    if (selectPreset) {
+      selectPreset.addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val === 'ibm_heron') {
+          this.t1Relaxation = 180;
+          this.t2Dephasing = 140;
+          this.gateErrorRate = 0.4;
+        } else if (val === 'ibm_eagle') {
+          this.t1Relaxation = 50;
+          this.t2Dephasing = 30;
+          this.gateErrorRate = 0.8;
+        } else if (val === 'google_sycamore') {
+          this.t1Relaxation = 20;
+          this.t2Dephasing = 25;
+          this.gateErrorRate = 0.6;
+        } else if (val === 'ionq_trapped_ion') {
+          this.t1Relaxation = 10000;
+          this.t2Dephasing = 1000;
+          this.gateErrorRate = 0.15;
+        }
+        if (sliderT1) { sliderT1.value = Math.min(150, this.t1Relaxation); }
+        if (sliderT2) { sliderT2.value = Math.min(100, this.t2Dephasing); }
+        if (sliderError) { sliderError.value = this.gateErrorRate; }
+        const elT1 = document.getElementById('val-t1');
+        const elT2 = document.getElementById('val-t2');
+        const elErr = document.getElementById('val-gate-error');
+        if (elT1) elT1.textContent = `${this.t1Relaxation} µs`;
+        if (elT2) elT2.textContent = `${this.t2Dephasing} µs`;
+        if (elErr) elErr.textContent = `${this.gateErrorRate}%`;
+        this.updateNoiseDisplay();
+      });
+    }
 
     if (toggleNoisy) {
       toggleNoisy.addEventListener('change', (e) => {

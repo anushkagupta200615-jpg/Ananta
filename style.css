@@ -11787,3 +11787,559 @@ input:checked + .slider-round:before {
   }
 }
 
+/* =========================================================================
+   5. CLOUD QPU BRIDGE & DYNAMIC QUBIT SCALING STYLING
+   ========================================================================= */
+.btn-cloud-qpu {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border: 1px solid rgba(147, 197, 253, 0.4) !important;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.35) !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-cloud-qpu:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.5) !important;
+  border-color: #93c5fd !important;
+}
+
+/* Qubit Scale Group in Stepper Bar */
+.qubit-scale-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-subtle, #18191c);
+  border: 1px solid var(--border-color, #2d2f34);
+  padding: 3px 6px;
+  border-radius: 8px;
+}
+
+.qubit-scale-btn {
+  background: var(--bg-card, #202124);
+  border: 1px solid var(--border-color, #3c4043);
+  color: var(--text-white, #e8eaed);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.qubit-scale-btn:hover {
+  background: var(--google-blue, #1a73e8);
+  color: #ffffff;
+  border-color: #8ab4f8;
+}
+
+.qubit-count-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+/* Cloud QPU Modal Backdrop */
+.cloud-qpu-modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(4, 7, 15, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.cloud-qpu-modal-dialog {
+  background: #0d121f;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(56, 189, 248, 0.15);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPop {
+  0% { transform: scale(0.96); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.cloud-qpu-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #090e18;
+}
+
+.modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.qpu-chip-icon {
+  font-size: 24px;
+}
+
+.cloud-qpu-modal-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.modal-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 2px 0 0 0;
+}
+
+.cloud-qpu-modal-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.qpu-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qpu-section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: #e2e8f0;
+}
+
+.status-pill {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.status-ready {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.status-warn {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.token-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.token-input {
+  flex: 1;
+  background: #060911;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.token-input:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+.btn-token-action {
+  padding: 0 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-save {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.btn-save:hover {
+  background: #1d4ed8;
+}
+
+.btn-clear {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.token-hint-text {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.token-hint-text a {
+  color: #38bdf8;
+  text-decoration: none;
+}
+
+.token-hint-text a:hover {
+  text-decoration: underline;
+}
+
+.backend-select-dropdown {
+  background: #060911;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+/* Device Telemetry Card */
+.device-telemetry-card {
+  background: #080d1a;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.telemetry-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 10px;
+}
+
+.device-chip-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: #38bdf8;
+  letter-spacing: 0.8px;
+}
+
+.device-name {
+  font-size: 16px;
+  color: #ffffff;
+  margin: 2px 0 0 0;
+  font-family: var(--font-mono);
+}
+
+.device-arch {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+.device-status-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.device-status-badge.online {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.telemetry-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.spec-tile {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 8px 10px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.spec-label {
+  font-size: 10.5px;
+  color: #94a3b8;
+}
+
+.spec-val {
+  font-size: 13px;
+  color: #f1f5f9;
+  font-family: var(--font-mono);
+  margin: 2px 0;
+}
+
+.spec-note {
+  font-size: 9.5px;
+  color: #64748b;
+}
+
+/* Dispatch Actions Row */
+.qpu-dispatch-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-run-qpu-primary {
+  flex: 1;
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+  color: #ffffff;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+  transition: all 0.2s ease;
+}
+
+.btn-run-qpu-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.55);
+}
+
+.btn-run-qpu-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-colab-launch {
+  background: #f59e0b;
+  color: #0f172a;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-colab-launch:hover {
+  background: #fbbf24;
+}
+
+.btn-copy-qiskit {
+  background: var(--bg-card, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  color: #cbd5e1;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-copy-qiskit:hover {
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+/* Job Status Banner */
+.job-status-banner {
+  padding: 12px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+}
+
+.status-queued {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+.status-running {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+.status-completed {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+.status-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.status-check {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+/* Results & Histogram */
+.qpu-results-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.results-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 14px;
+}
+
+.results-header-row h4 {
+  margin: 0;
+  font-size: 13.5px;
+  color: #ffffff;
+}
+
+.results-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.fidelity-chip {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.histogram-bars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hist-state-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f5f9;
+  width: 48px;
+}
+
+.hist-double-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hist-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 14px;
+}
+
+.hist-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease-out;
+}
+
+.fill-ideal {
+  background: #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+}
+
+.fill-physical {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.bar-val {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #93c5fd;
+  white-space: nowrap;
+}
+
+.bar-val-phys {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #fde68a;
+  white-space: nowrap;
+}
+
+/* Hardware Preset Selector in Noise Lab */
+.hw-preset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.preset-label {
+  font-size: 12px;
+  color: var(--text-dim, #9aa0a6);
+}
+
+.hw-preset-select {
+  background: #111214;
+  border: 1px solid #3c4043;
+  color: #ffffff;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+

@@ -770,6 +770,9 @@
           </div>
 
           <div class="ribbon-actions">
+            <button class="tool-btn btn-cloud-qpu" id="btn-open-qpu-modal" onclick="if(window.cloudQPUBridge) window.cloudQPUBridge.openModal()" title="Execute on Real Physical IBM Quantum Cloud Processor">
+              🚀 Cloud QPU
+            </button>
             <button class="tool-drawer-btn" id="btn-toggle-ke-drawer" onclick="window.toggleKnowledgeEngineDrawer()" title="Toggle Advanced Research Knowledge Assistant (Press /)">
               🔬 Knowledge Engine ▾
             </button>
@@ -866,8 +869,17 @@
                   <h4>Decoherence & Noise Channel Modelling</h4>
                 </div>
                 <div class="noise-controls-list">
+                  <div class="hw-preset-row">
+                    <label for="select-hardware-preset" class="preset-label">Hardware Chip Preset:</label>
+                    <select id="select-hardware-preset" class="hw-preset-select">
+                      <option value="heron">IBM Heron (156Q, T₁=180µs, T₂=140µs)</option>
+                      <option value="eagle" selected>IBM Eagle r3 (127Q, T₁=50µs, T₂=30µs)</option>
+                      <option value="sycamore">Google Sycamore (53Q, T₁=20µs, T₂=25µs)</option>
+                      <option value="ionq">IonQ Forte (Trapped-Ion, T₁=10,000µs)</option>
+                    </select>
+                  </div>
                   <div class="noise-toggle-row">
-                    <span>Enable Eagle r3 QPU Noise Model</span>
+                    <span>Enable QPU Physical Noise Model</span>
                     <label class="switch-control">
                       <input type="checkbox" id="toggle-noise-mode" />
                       <span class="slider-round"></span>
@@ -1056,6 +1068,13 @@
                 <button id="btn-step-play" class="step-btn step-btn-play" title="Auto-Play Unitary Evolution">▶ Play</button>
                 <button id="btn-step-next" class="step-btn" title="Propagate Forward One Gate">▶</button>
                 <button id="btn-step-end" class="step-btn" title="Jump to Full Circuit Output">⏭</button>
+              </div>
+
+              <!-- Dynamic Qubit Register Scaling (2 to 8 Qubits) -->
+              <div class="qubit-scale-group" title="Scale Quantum Register Capacity (2 to 8 Qubits)">
+                <button type="button" class="qubit-scale-btn" id="btn-remove-qubit" onclick="if(window.circuitUI) window.circuitUI.removeQubit()" title="Remove Qubit Register Line">−</button>
+                <span class="qubit-count-badge" id="qubit-count-badge">3 Qubits (2³ = 8 States)</span>
+                <button type="button" class="qubit-scale-btn" id="btn-add-qubit" onclick="if(window.circuitUI) window.circuitUI.addQubit()" title="Add Qubit Register Line (Up to 8)">+</button>
               </div>
 
               <!-- View Modes: 2D vs 3D Hologram & Beginner vs Advanced Research -->
@@ -2825,6 +2844,82 @@ Key Advantage:
     <div class="gate-edu-wave-preview" id="edu-gate-wave"></div>
   </div>
 
+  <!-- IBM Quantum Hardware Bridge Modal -->
+  <div id="cloud-qpu-modal" class="cloud-qpu-modal-backdrop" style="display: none;">
+    <div class="cloud-qpu-modal-dialog">
+      <div class="cloud-qpu-modal-header">
+        <div class="modal-title-group">
+          <span class="qpu-chip-icon">⚛️</span>
+          <div>
+            <h3>IBM Quantum Physical QPU Bridge</h3>
+            <p class="modal-subtitle">Direct Cloud Execution on Superconducting Quantum Processors &amp; OpenQASM 3.0</p>
+          </div>
+        </div>
+        <button type="button" class="btn-step-modal-close" id="btn-close-qpu-modal" style="background:transparent; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">✕</button>
+      </div>
+
+      <div class="cloud-qpu-modal-body">
+        <!-- Section 1: IBM Quantum API Key -->
+        <div class="qpu-config-section">
+          <div class="qpu-section-title-row">
+            <strong>IBM Quantum API Token</strong>
+            <span id="ibm-token-status" class="status-pill status-ready">✓ Key Armed</span>
+          </div>
+          <div class="token-input-row">
+            <input type="password" id="ibm-api-token-input" class="token-input" placeholder="Paste your IBM Quantum API Token (Qp3Y...)" />
+            <button type="button" class="btn-token-action btn-save" id="btn-save-ibm-token">Save Key</button>
+            <button type="button" class="btn-token-action btn-clear" id="btn-clear-ibm-token">Clear</button>
+          </div>
+          <div class="token-hint-text">
+            <span>Stored securely in local browser storage.</span>
+            <a href="https://quantum.ibm.com/account" target="_blank" rel="noopener noreferrer">Get token from IBM Quantum Platform ↗</a>
+          </div>
+        </div>
+
+        <!-- Section 2: QPU Backend Selection -->
+        <div class="qpu-config-section">
+          <div class="qpu-section-title-row">
+            <strong>Target Quantum Processor / Backend</strong>
+            <span style="font-size:11px; color:#64748b;">Live calibrated physical telemetry</span>
+          </div>
+          <select id="ibm-backend-select" class="backend-select-dropdown">
+            <option value="ibm_brisbane">ibm_brisbane (127 Qubits | Eagle r3 | Median T₁=284µs, T₂=168µs)</option>
+            <option value="ibm_kyoto">ibm_kyoto (127 Qubits | Eagle r3 | Median T₁=242µs, T₂=134µs)</option>
+            <option value="ibm_sherbrooke">ibm_sherbrooke (127 Qubits | Eagle r3 | Median T₁=295µs, T₂=175µs)</option>
+            <option value="ibm_osaka">ibm_osaka (127 Qubits | Eagle r3 | Median T₁=260µs, T₂=145µs)</option>
+            <option value="simulator_mps">simulator_mps (100 Qubits | Matrix Product State Cloud Simulator)</option>
+          </select>
+        </div>
+
+        <!-- Section 3: Live Device Calibration Telemetry -->
+        <div class="device-telemetry-card" id="device-telemetry-card">
+          <!-- Populated dynamically by CloudQPUBridge.updateDeviceTelemetry() -->
+        </div>
+
+        <!-- Section 4: Execution Dispatch Actions -->
+        <div class="qpu-dispatch-row">
+          <button type="button" class="btn-run-qpu-primary" id="btn-dispatch-qpu-job">
+            ⚡ Run Physical Job (1,024 Shots)
+          </button>
+          <button type="button" class="btn-colab-launch" id="btn-open-in-colab" title="Download executable Jupyter notebook (.ipynb) with your token and circuit ready for Google Colab">
+            📙 Open in Google Colab
+          </button>
+          <button type="button" class="btn-copy-qiskit" id="btn-copy-qiskit-runtime-code" title="Copy standalone Qiskit Runtime Python script">
+            📋 Copy Python Script
+          </button>
+        </div>
+
+        <!-- Job Status Banner -->
+        <div id="qpu-job-status-banner" style="display: none;"></div>
+
+        <!-- Execution Results & Comparison Histogram -->
+        <div id="qpu-hardware-results-container" class="qpu-results-container" style="display: none;">
+          <!-- Populated dynamically with Ideal vs Physical measurement distributions -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Script Pipeline -->
   <script src="js/quantum-knowledge-data.js"></script>
   <script src="js/quantum-engine.js"></script>
@@ -2843,6 +2938,7 @@ Key Advantage:
   <script src="js/transpiler-doctor.js"></script>
   <script src="js/vqe-chemistry.js"></script>
   <script src="js/pulse-studio.js"></script>
+  <script src="js/cloud-qpu-bridge.js"></script>
   <script src="js/app.js"></script>
   <!-- KaTeX Auto-Render Engine -->
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
