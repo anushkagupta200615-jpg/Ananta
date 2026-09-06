@@ -2808,9 +2808,12 @@ button.nav-dropdown-trigger.active {
 }
 
 .tool-btn.active-preset {
-  background: rgba(138, 180, 248, 0.15);
-  border-color: var(--google-blue);
-  color: var(--google-blue);
+  background: rgba(56, 189, 248, 0.22) !important;
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.4) !important;
+  font-weight: 600 !important;
+  transform: translateY(-1px);
 }
 
 .tool-drawer-btn {

@@ -1113,8 +1113,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!circuitUI) return;
     let targetGrid = null;
     let targetAlgo = null;
+    let normalizedKey = presetKey;
 
     if (presetKey === 'bell' || presetKey === 'bell_phi_plus') {
+      normalizedKey = 'bell';
       targetGrid = [
         ['H', 'CX_CTRL', null, null, null, null],
         [null, 'CX_TGT', null, null, null, null],
@@ -1124,6 +1126,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (lbl) lbl.textContent = 'bell_state.qc';
       if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'bell_phi_plus');
     } else if (presetKey === 'ghz') {
+      normalizedKey = 'ghz';
       targetGrid = [
         ['H', 'CX_CTRL', null, null, null, null],
         [null, 'CX_TGT', 'CX_CTRL', null, null, null],
@@ -1132,6 +1135,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const lbl = document.getElementById('circuit-filename-label');
       if (lbl) lbl.textContent = 'ghz_state_tripartite.qc';
     } else if (presetKey === 'teleport') {
+      normalizedKey = 'teleport';
       targetGrid = [
         ['H', null, 'CX_CTRL', 'H', null, null],
         [null, 'H', 'CX_TGT', null, 'CX_CTRL', null],
@@ -1140,6 +1144,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const lbl = document.getElementById('circuit-filename-label');
       if (lbl) lbl.textContent = 'quantum_teleportation.qc';
     } else if (presetKey === 'grover' || presetKey === 'grover_2qubit') {
+      normalizedKey = 'grover';
       targetGrid = [
         ['H', 'Z', 'H', 'X', 'H', null],
         ['H', 'CX_TGT', 'H', 'X', 'H', null],
@@ -1149,6 +1154,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (lbl) lbl.textContent = 'grover_search.qc';
       if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'grover_2qubit');
     } else if (presetKey === 'vqe') {
+      normalizedKey = 'vqe';
       targetGrid = [
         ['X', 'H', 'CX_CTRL', 'H', null, null],
         [null, 'H', 'CX_TGT', 'S', null, null],
@@ -1157,6 +1163,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const lbl = document.getElementById('circuit-filename-label');
       if (lbl) lbl.textContent = 'vqe_molecular_h2.qc';
     } else if (presetKey === 'chsh') {
+      normalizedKey = 'chsh';
       targetGrid = [
         ['H', 'CX_CTRL', 'H', null, null, null],
         [null, 'CX_TGT', 'S', 'H', null, null],
@@ -1165,6 +1172,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const lbl = document.getElementById('circuit-filename-label');
       if (lbl) lbl.textContent = 'chsh_bell_inequality.qc';
     } else if (presetKey === 'superposition') {
+      normalizedKey = 'superposition';
       targetGrid = [
         ['H', null, null, null, null, null],
         ['H', null, null, null, null, null],
@@ -1174,6 +1182,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (lbl) lbl.textContent = 'uniform_superposition.qc';
       if (window.ALGORITHM_CATALOG) targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === 'superposition_3' || a.id === 'superposition');
     } else if (presetKey === 'qft') {
+      normalizedKey = 'qft';
       targetGrid = [
         ['H', 'S', 'T', null, null, null],
         [null, null, 'H', 'S', null, null],
@@ -1187,7 +1196,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (targetGrid) {
-      circuitUI.loadCircuit(targetGrid);
+      circuitUI.loadPreset(targetGrid, normalizedKey);
+      if (circuitUI.updatePresetHighlight) {
+        circuitUI.updatePresetHighlight(normalizedKey);
+      }
       if (targetAlgo && circuitUI.startAlgorithmTour) {
         circuitUI.startAlgorithmTour(targetAlgo);
       }

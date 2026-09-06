@@ -336,9 +336,12 @@ class CircuitUI {
     this.grid = Array.from({ length: this.numQubits }, () => Array(this.numCols).fill(null));
     this.renderGrid();
     this.updateSimulation();
+    const lbl = document.getElementById('circuit-filename-label');
+    if (lbl) lbl.textContent = 'untitled_circuit.qc';
+    this.updatePresetHighlight(null);
   }
 
-  loadPreset(gridData) {
+  loadPreset(gridData, presetKey = null) {
     this.playbackStep = -1;
     this.stopPlayback();
     if (gridData && gridData.length && gridData.length !== this.numQubits) {
@@ -349,10 +352,116 @@ class CircuitUI {
     this.grid = gridData.map(row => [...row]);
     this.renderGrid();
     this.updateSimulation();
+    this.updatePresetHighlight(presetKey);
   }
 
-  loadCircuit(gridData) {
-    this.loadPreset(gridData);
+  loadCircuit(gridData, presetKey = null) {
+    this.loadPreset(gridData, presetKey);
+  }
+
+  // =========================================================================
+  // DYNAMIC PRESET HIGHLIGHT & FILENAME TRACKER
+  // =========================================================================
+  detectMatchingPreset() {
+    if (!this.grid) return null;
+
+    const CANONICAL_PRESETS = {
+      bell: [
+        ['H', 'CX_CTRL', null, null, null, null],
+        [null, 'CX_TGT', null, null, null, null]
+      ],
+      ghz: [
+        ['H', 'CX_CTRL', null, null, null, null],
+        [null, 'CX_TGT', 'CX_CTRL', null, null, null],
+        [null, null, 'CX_TGT', null, null, null]
+      ],
+      teleport: [
+        ['H', null, 'CX_CTRL', 'H', null, null],
+        [null, 'H', 'CX_TGT', null, 'CX_CTRL', null],
+        [null, null, 'CX_TGT', null, 'CX_TGT', null]
+      ],
+      grover: [
+        ['H', 'Z', 'H', 'X', 'H', null],
+        ['H', 'CX_TGT', 'H', 'X', 'H', null]
+      ],
+      vqe: [
+        ['X', 'H', 'CX_CTRL', 'H', null, null],
+        [null, 'H', 'CX_TGT', 'S', null, null]
+      ],
+      chsh: [
+        ['H', 'CX_CTRL', 'H', null, null, null],
+        [null, 'CX_TGT', 'S', 'H', null, null]
+      ],
+      qft: [
+        ['H', 'S', 'T', null, null, null],
+        [null, null, 'H', 'S', null, null],
+        [null, null, null, null, 'H', null]
+      ]
+    };
+
+    for (const [key, pGrid] of Object.entries(CANONICAL_PRESETS)) {
+      let isMatch = true;
+      const numRows = Math.max(this.grid.length, pGrid.length);
+      for (let r = 0; r < numRows; r++) {
+        for (let c = 0; c < this.numCols; c++) {
+          const actual = (this.grid[r] && this.grid[r][c]) ? this.grid[r][c] : null;
+          const expected = (pGrid[r] && pGrid[r][c]) ? pGrid[r][c] : null;
+          if (actual !== expected) {
+            isMatch = false;
+            break;
+          }
+        }
+        if (!isMatch) break;
+      }
+      if (isMatch) return key;
+    }
+    return null;
+  }
+
+  updatePresetHighlight(explicitPreset = null) {
+    const activeKey = explicitPreset !== undefined && explicitPreset !== null 
+      ? explicitPreset 
+      : this.detectMatchingPreset();
+
+    const container = document.getElementById('composer-preset-bar') || document.querySelector('.quick-tools');
+    if (container) {
+      const buttons = container.querySelectorAll('.tool-btn');
+      buttons.forEach(btn => {
+        const pKey = btn.getAttribute('data-preset');
+        const oc = btn.getAttribute('onclick') || '';
+        const isMatch = activeKey && (
+          pKey === activeKey || 
+          oc.includes(`'${activeKey}'`) || 
+          oc.includes(`"${activeKey}"`)
+        );
+        if (isMatch) {
+          btn.classList.add('active-preset');
+        } else {
+          btn.classList.remove('active-preset');
+        }
+      });
+    }
+
+    const lbl = document.getElementById('circuit-filename-label');
+    if (lbl) {
+      const PRESET_FILENAMES = {
+        bell: 'bell_state.qc',
+        ghz: 'ghz_state_tripartite.qc',
+        teleport: 'quantum_teleportation.qc',
+        grover: 'grover_search.qc',
+        vqe: 'vqe_molecular_h2.qc',
+        chsh: 'chsh_bell_inequality.qc',
+        qft: 'quantum_fourier_transform.qc'
+      };
+      if (activeKey && PRESET_FILENAMES[activeKey]) {
+        lbl.textContent = PRESET_FILENAMES[activeKey];
+      } else if (!activeKey) {
+        const cur = lbl.textContent || '';
+        if (cur.endsWith('.qc') && cur !== 'untitled_circuit.qc') {
+          lbl.textContent = 'custom_circuit.qc';
+        }
+      }
+    }
   }
 
   // =========================================================================
@@ -590,6 +699,7 @@ class CircuitUI {
 
     this.updateStepperDisplay();
     this.updateQuantumIntelligenceDeck();
+    this.updatePresetHighlight();
   }
 
   updateEntanglementBadge(probs) {
