@@ -13315,6 +13315,52 @@ input:checked + .slider-round:before {
   text-decoration: underline;
 }
 
+/* Adaptive Rationale & Level Badges */
+.results-rationale-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(66, 133, 244, 0.08);
+  border: 1px solid rgba(66, 133, 244, 0.25);
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin: 14px 0 16px 0;
+  font-size: 13.5px;
+  color: #c4c7c5;
+}
+
+.results-rationale-box .rationale-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.results-level-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+.results-level-badge.level-beginner {
+  background: rgba(52, 168, 83, 0.15);
+  color: #81c995;
+  border: 1px solid rgba(52, 168, 83, 0.35);
+}
+
+.results-level-badge.level-intermediate {
+  background: rgba(66, 133, 244, 0.15);
+  color: #8ab4f8;
+  border: 1px solid rgba(66, 133, 244, 0.35);
+}
+
+.results-level-badge.level-advanced {
+  background: rgba(234, 67, 53, 0.15);
+  color: #f28b82;
+  border: 1px solid rgba(234, 67, 53, 0.35);
+}
+
 /* Fallback Card */
 .topic-fallback-card {
   background: rgba(22, 25, 36, 0.75);

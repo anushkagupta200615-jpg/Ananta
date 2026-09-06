@@ -414,46 +414,242 @@ class TopicRoadmapManager {
     resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Topic Matching Engine
+  // Intelligent Knowledge & Topic Matching Engine
   matchQueryToTopic(query) {
     const clean = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
-    const queryWords = clean.split(/\s+/).filter(w => w.length > 1);
+    const queryWords = clean.split(/\s+/).filter(w => w.length > 0);
 
-    let bestPattern = null;
-    let bestScore = 0;
+    // 1. Detect User's Prior Knowledge Level
+    const beginnerPhrases = [
+      '0 prior', 'zero prior', 'no prior', '0 knowledge', 'zero knowledge', 'no knowledge',
+      'no experience', 'from scratch', 'beginner', 'novice', 'new to', 'starter', 'basics',
+      'never studied', 'high school', '101', 'start from zero', 'freshman', 'absolute beginner',
+      '0 background', 'zero background', 'no background', 'start from scratch'
+    ];
+    const intermediatePhrases = [
+      'know basics', 'know basic', 'know linear algebra', 'know python', 'know coding',
+      'know gates', 'know hadamard', 'know cnot', 'know superposition', 'know math',
+      'intermediate', 'some knowledge', 'moderate', 'already know', 'familiar with',
+      'have experience', 'developer', 'undergraduate', 'learned basics', 'know single qubit',
+      'some prior', 'basic knowledge', 'basics known'
+    ];
+    const advancedPhrases = [
+      'advanced', 'expert', 'graduate', 'phd', 'researcher', 'know statevector',
+      'know entanglement', 'know density matrix', 'postgrad', 'mastery', 'know hamiltonian',
+      'know qft', 'know shor', 'advanced background', 'know algorithms'
+    ];
 
-    this.topicPatterns.forEach(pattern => {
+    let detectedLevel = 'BEGINNER'; // Default assumption
+    let levelRationale = 'Assembled full foundational scaffolding (Hilbert spaces to circuit synthesis)';
+
+    if (advancedPhrases.some(p => clean.includes(p))) {
+      detectedLevel = 'ADVANCED';
+      levelRationale = 'Accelerated track skipping foundational math; focused on advanced quantum protocols & NISQ algorithms';
+    } else if (intermediatePhrases.some(p => clean.includes(p))) {
+      detectedLevel = 'INTERMEDIATE';
+      levelRationale = 'Adapted for intermediate background (knows math/gates); accelerated past introductory 101 definitions';
+    } else if (beginnerPhrases.some(p => clean.includes(p))) {
+      detectedLevel = 'BEGINNER';
+      levelRationale = 'Zero-to-hero onboarding starting from fundamental complex statevectors & Dirac notation';
+    }
+
+    // 2. Define Concept & Topic Knowledge Domain Scaffoldings
+    const topicDomains = [
+      {
+        key: 'circuits',
+        name: 'Quantum Circuits & Gate Fundamentals',
+        keywords: ['circuit', 'circuits', 'gate', 'gates', 'hadamard', 'cnot', 'logic', 'unitary', 'composer', 'wire', 'qubit', 'qubits'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-06'],
+          INTERMEDIATE: ['module-02', 'module-04', 'module-06'],
+          ADVANCED: ['module-06', 'module-07']
+        },
+        description: 'Complete hands-on pathway to building, simulating, and transpiling multi-qubit quantum circuits.'
+      },
+      {
+        key: 'entanglement',
+        name: 'Quantum Entanglement & Bell Pairs',
+        keywords: ['entangle', 'entanglement', 'bell', 'bell state', 'bell states', 'epr', 'spooky', 'correlated', 'chsh'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-07'],
+          INTERMEDIATE: ['module-02', 'module-06', 'module-07'],
+          ADVANCED: ['module-04', 'module-07']
+        },
+        description: 'Master non-local correlations, Einstein-Podolsky-Rosen paradox, and creating maximally entangled states.'
+      },
+      {
+        key: 'teleportation',
+        name: 'Quantum Teleportation & State Transfer Protocol',
+        keywords: ['teleport', 'teleportation', 'transfer state', 'quantum internet', 'channel', 'state transfer'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-07', 'module-08'],
+          INTERMEDIATE: ['module-02', 'module-07', 'module-08'],
+          ADVANCED: ['module-07', 'module-08', 'module-09']
+        },
+        description: 'Understand how quantum statevectors are transmitted across distant nodes using shared entanglement & classical bits.'
+      },
+      {
+        key: 'grover',
+        name: 'Grover Search & Amplitude Amplification',
+        keywords: ['grover', 'search', 'oracle', 'diffusion', 'unstructured', 'amplitude amplification', 'database'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-07', 'module-09'],
+          INTERMEDIATE: ['module-02', 'module-07', 'module-09'],
+          ADVANCED: ['module-07', 'module-09']
+        },
+        description: 'Learn how quantum phase oracles and diffusion operators achieve quadratic speedup over classical search.'
+      },
+      {
+        key: 'vqe',
+        name: 'VQE & Molecular Quantum Chemistry',
+        keywords: ['vqe', 'chemistry', 'molecule', 'molecular', 'variational', 'eigensolver', 'hydrogen', 'hamiltonian', 'ground state', 'nisq', 'chemical'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-04', 'module-10'],
+          INTERMEDIATE: ['module-04', 'module-06', 'module-10'],
+          ADVANCED: ['module-03', 'module-05', 'module-10']
+        },
+        description: 'Explore variational hybrid algorithms, parameterized ansatz circuits, and estimating molecular ground state energies.'
+      },
+      {
+        key: 'noise',
+        name: 'Decoherence, Noise Channels & Lindblad Physics',
+        keywords: ['noise', 'decoherence', 'lindblad', 't1', 't2', 'relaxation', 'dephasing', 'open system', 'error', 'cryo', 'hardware', 'fidelity'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-03', 'module-05'],
+          INTERMEDIATE: ['module-03', 'module-04', 'module-05'],
+          ADVANCED: ['module-03', 'module-05']
+        },
+        description: 'Study open quantum systems, energy relaxation (T1), dephasing (T2), and density matrix master equations.'
+      },
+      {
+        key: 'density',
+        name: 'Density Matrix Formalism & Statistical States',
+        keywords: ['density', 'density matrix', 'mixed state', 'pure state', 'trace', 'entropy', 'von neumann', 'statistical'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-03'],
+          INTERMEDIATE: ['module-01', 'module-03', 'module-04'],
+          ADVANCED: ['module-03', 'module-05']
+        },
+        description: 'Explore pure vs mixed quantum states, partial trace over entangled subsystems, and von Neumann entropy.'
+      },
+      {
+        key: 'programming',
+        name: 'Quantum Programming with Cirq & OpenQASM 3.0',
+        keywords: ['program', 'programming', 'cirq', 'qasm', 'openqasm', 'python', 'code', 'transpile', 'compiler', 'sdk', 'software', 'assembly'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-06'],
+          INTERMEDIATE: ['module-02', 'module-06'],
+          ADVANCED: ['module-06', 'module-07']
+        },
+        description: 'Hands-on cross-framework compilation between Google Cirq, Python SDKs, and OpenQASM hardware assembly.'
+      },
+      {
+        key: 'observables',
+        name: 'Pauli Observables & Expectation Values',
+        keywords: ['pauli', 'observable', 'observables', 'expectation', 'measurement', 'measure', 'z axis', 'x axis', 'born'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-04'],
+          INTERMEDIATE: ['module-02', 'module-04'],
+          ADVANCED: ['module-03', 'module-04']
+        },
+        description: 'Calculate expectation values from projective measurements, density matrices, and Bloch coordinate projections.'
+      },
+      {
+        key: 'math',
+        name: 'Hilbert Space & Complex Statevector Mathematics',
+        keywords: ['hilbert', 'statevector', 'math', 'mathematics', 'dirac', 'bra', 'ket', 'complex', 'vector', 'linear algebra', 'amplitudes', 'superposition'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-03'],
+          INTERMEDIATE: ['module-01', 'module-03'],
+          ADVANCED: ['module-01', 'module-03', 'module-05']
+        },
+        description: 'Formal mathematical specifications in complex Hilbert spaces, probability amplitudes, and unitary transformations.'
+      },
+      {
+        key: 'algorithms',
+        name: 'Quantum Algorithms & Asymptotic Speedups',
+        keywords: ['algorithm', 'algorithms', 'speedup', 'advantage', 'complexity', 'polynomial', 'exponential', 'shor', 'qft', 'simon', 'deutsch'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-07', 'module-09', 'module-10'],
+          INTERMEDIATE: ['module-02', 'module-06', 'module-07', 'module-09', 'module-10'],
+          ADVANCED: ['module-07', 'module-09', 'module-10']
+        },
+        description: 'Understand how quantum parallelism, phase kickback, and constructive interference achieve computational advantage.'
+      }
+    ];
+
+    // Score topics across domains
+    let bestDomain = null;
+    let bestDomainScore = 0;
+
+    topicDomains.forEach(domain => {
       let score = 0;
-
-      pattern.keywords.forEach(kw => {
-        const kwLower = kw.toLowerCase();
-        // Exact substring match gives high confidence
-        if (clean.includes(kwLower)) {
-          score += kwLower.length > 5 ? 30 : 15;
+      domain.keywords.forEach(kw => {
+        if (clean.includes(kw)) {
+          score += kw.length > 5 ? 25 : 12;
         }
-
-        // Word overlap match
-        const kwParts = kwLower.split(/\s+/);
+        const kwParts = kw.split(/\s+/);
         kwParts.forEach(kp => {
-          if (queryWords.includes(kp)) {
-            score += 8;
-          }
+          if (queryWords.includes(kp)) score += 6;
         });
       });
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestPattern = pattern;
+      if (score > bestDomainScore) {
+        bestDomainScore = score;
+        bestDomain = domain;
       }
     });
 
-    // Score threshold
-    if (bestScore >= 8 && bestPattern) {
-      const matchedModules = bestPattern.moduleIds.map(id => this.modules.find(m => m.id === id)).filter(Boolean);
+    // Check if query was purely level-focused (e.g. "I have 0 prior knowledge", "I am a beginner", "advanced track")
+    if (bestDomainScore < 10) {
+      if (detectedLevel === 'BEGINNER') {
+        return {
+          pattern: {
+            displayName: 'Adaptive Beginner Roadmap: Foundations & Quantum Gates',
+            description: 'Customized for learners starting with zero prior background: master Hilbert space geometry, single-qubit rotations, and compiling your first circuits.'
+          },
+          modules: ['module-01', 'module-02', 'module-04', 'module-06'].map(id => this.modules.find(m => m.id === id)),
+          detectedLevel,
+          levelRationale,
+          score: 20
+        };
+      } else if (detectedLevel === 'ADVANCED') {
+        return {
+          pattern: {
+            displayName: 'Adaptive Advanced Roadmap: Multi-Qubit NISQ & Algorithms',
+            description: 'Customized for advanced learners: dives straight into density matrices, Lindblad noise, Bell entanglement, Grover search, and VQE chemistry.'
+          },
+          modules: ['module-03', 'module-05', 'module-07', 'module-08', 'module-09', 'module-10'].map(id => this.modules.find(m => m.id === id)),
+          detectedLevel,
+          levelRationale,
+          score: 20
+        };
+      } else if (detectedLevel === 'INTERMEDIATE') {
+        return {
+          pattern: {
+            displayName: 'Adaptive Intermediate Roadmap: Circuit Engineering & Entanglement',
+            description: 'Customized for intermediate learners: bypasses basic definitions and explores Pauli observables, OpenQASM coding, and Bell pair creation.'
+          },
+          modules: ['module-02', 'module-04', 'module-06', 'module-07', 'module-08'].map(id => this.modules.find(m => m.id === id)),
+          detectedLevel,
+          levelRationale,
+          score: 20
+        };
+      }
+    }
+
+    if (bestDomain && bestDomainScore >= 6) {
+      const moduleIds = bestDomain.modulesByLevel[detectedLevel] || bestDomain.modulesByLevel['BEGINNER'];
+      const matchedModules = moduleIds.map(id => this.modules.find(m => m.id === id)).filter(Boolean);
+
       return {
-        pattern: bestPattern,
+        pattern: {
+          displayName: `${bestDomain.name} (${detectedLevel === 'BEGINNER' ? 'Beginner Scaffolded Track' : (detectedLevel === 'INTERMEDIATE' ? 'Intermediate Accelerated Track' : 'Advanced Direct Track')})`,
+          description: bestDomain.description
+        },
         modules: matchedModules,
-        score: bestScore
+        detectedLevel,
+        levelRationale,
+        score: bestDomainScore
       };
     }
 
@@ -462,7 +658,7 @@ class TopicRoadmapManager {
 
   // Render Curated Ordered Module Sequence with Waterfall Staggered Animation
   renderCuratedRoadmap(matchResult, query) {
-    const { pattern, modules } = matchResult;
+    const { pattern, modules, detectedLevel = 'BEGINNER', levelRationale = '' } = matchResult;
     this.currentCuratedModules = modules;
     const resultsContainer = document.getElementById('topic-roadmap-results');
     if (!resultsContainer) return;
@@ -528,14 +724,22 @@ class TopicRoadmapManager {
     resultsContainer.innerHTML = `
       <div class="curated-results-header">
         <div class="curated-header-top">
-          <span class="results-tag">✅ PATHWAY ASSEMBLED</span>
+          <span class="results-tag">✅ ADAPTIVE PATHWAY ASSEMBLED</span>
+          <span class="results-level-badge level-${detectedLevel.toLowerCase()}">🎯 ${detectedLevel} TRACK</span>
           <span class="results-step-count">${modules.length} Ordered Steps to Mastery</span>
         </div>
         <h2 class="results-topic-title">${pattern.displayName}</h2>
         <p class="results-topic-desc">${pattern.description}</p>
         
+        ${levelRationale ? `
+          <div class="results-rationale-box">
+            <span class="rationale-icon">💡</span>
+            <span class="rationale-text"><strong>Adaptive Reasoning:</strong> ${levelRationale}</span>
+          </div>
+        ` : ''}
+
         <div class="results-query-echo">
-          <span class="echo-label">Matched Intent:</span>
+          <span class="echo-label">Matched Query:</span>
           <span class="echo-text">"${query}"</span>
         </div>
       </div>
