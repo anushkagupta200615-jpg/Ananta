@@ -2,17 +2,20 @@
  * Ananta Quantum Studio — Universal AI Voice & Video Camera Quantum Copilot
  * 
  * Features:
- *  - Non-blocking concurrent startup: SpeechRecognition + SpeechSynthesis + Webcam.
- *  - Universal Generative Quantum Circuit AI: Not hardcoded! Synthesizes arbitrary
- *    circuits, multi-step sequential instructions, gates, CNOTs, and 25+ canonical
- *    quantum algorithms and protocols.
- *  - Supports compound phrases: "Put H on 0, then X on 1, then CNOT from 0 to 1, then measure all".
- *  - Flexible natural language cleaning: handles "i said to make diagram of ...",
- *    "draw ...", "can you create ...", "make ...", "generate ...".
- *  - Robust Web Speech Recognition with auto-restart on pauses.
- *  - High-quality Web Speech Synthesis (TTS) audible confirmation.
- *  - Futuristic picture-in-picture video stream with real-time waveform fallback.
- *  - Direct typing fallback and 1-click test chips.
+ *  - Immediate zero-latency startup on user click gesture.
+ *  - Automatic switch to Composer tab (window.switchTab('simulator')) so the circuit
+ *    diagram is always directly visible when asked to build.
+ *  - Web Audio API instant audio feedback chimes (ascending dual-sine synth).
+ *  - Intelligent interim speech debounce (650ms silence timeout) so Chrome doesn't
+ *    hang waiting for isFinal flags.
+ *  - Universal Generative Quantum Circuit AI: Synthesizes arbitrary circuits,
+ *    multi-step compound instructions ("H on 0, then X on 1, then CNOT 0 to 1"),
+ *    and over 25+ quantum algorithms and error-correction protocols.
+ *  - Natural language cleaning: handles "i said to make diagram of ...", "draw ...",
+ *    "can you create ...", "make ...", "generate ...".
+ *  - Chrome-safe TTS speech synthesis with window.speechSynthesis.resume().
+ *  - Real-time webcam PIP video with animated audio waveform fallback.
+ *  - Text command fallback input and 1-click test chips.
  */
 
 class QuantumVoiceCopilot {
@@ -25,7 +28,8 @@ class QuantumVoiceCopilot {
     this.recognition = null;
     this.waveAnimId = null;
     this.wavePhase = 0;
-    this.recentActions = [];
+    this.speechDebounceTimer = null;
+    this.audioCtx = null;
 
     this._bindEvents();
   }
@@ -43,6 +47,11 @@ class QuantumVoiceCopilot {
   }
 
   open() {
+    // 1. Switch to Composer tab so circuit canvas is visible immediately!
+    if (window.switchTab) {
+      window.switchTab('simulator');
+    }
+
     const hud = document.getElementById('quantum-copilot-hud');
     if (!hud) return;
 
@@ -54,14 +63,17 @@ class QuantumVoiceCopilot {
     const btn = document.getElementById('btn-voice-camera');
     if (btn) btn.classList.add('active');
 
-    // 1. Immediately start Speech Recognition synchronously within the user click gesture!
+    // Play pleasant startup tone
+    this._playChime('start');
+
+    // 2. Immediately start Speech Recognition synchronously within the user click gesture!
     this.startListening();
 
-    // 2. Speak greeting immediately
-    this._setSubtitle('Listening! Say e.g. "Make diagram of Bell state", "Make GHZ", or "Put H on 0"');
-    this._speak('Quantum Voice Copilot ready. What circuit would you like to build?');
+    // 3. Speak greeting immediately
+    this._setSubtitle('Listening! Say e.g. "Make diagram of Bell state" or click a chip below');
+    this._speak('Quantum Voice Copilot ready. What circuit shall I build?');
 
-    // 3. Start Camera asynchronously in background (never blocks voice/mic)
+    // 4. Start Camera asynchronously in background (never blocks voice/mic)
     this.startCamera().catch(err => {
       console.warn('[QuantumVoiceCopilot] Camera background init:', err);
     });
@@ -80,6 +92,41 @@ class QuantumVoiceCopilot {
 
     this.stopCamera();
     this.stopListening();
+  }
+
+  _playChime(type = 'success') {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      if (!this.audioCtx) this.audioCtx = new AudioContext();
+      if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
+      const now = this.audioCtx.currentTime;
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+
+      if (type === 'success') {
+        // Sci-Fi ascending 2-tone chime: E5 (659Hz) -> A5 (880Hz)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(659.25, now);
+        osc.frequency.exponentialRampToValueAtTime(880.0, now + 0.14);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      } else if (type === 'start') {
+        // Welcome chime: C5 (523Hz) -> G5 (784Hz)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.12);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+    } catch (e) {}
   }
 
   async startCamera() {
@@ -163,14 +210,12 @@ class QuantumVoiceCopilot {
       this.wavePhase += 0.05;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Dark futuristic background
       const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
       grad.addColorStop(0, '#090d16');
       grad.addColorStop(1, '#0f172a');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Multi-sine audio visualizer waves
       const waves = [
         { color: 'rgba(59, 130, 246, 0.5)', freq: 0.02, speed: 1.2, amp: 22 },
         { color: 'rgba(168, 85, 247, 0.6)', freq: 0.03, speed: 1.8, amp: 18 },
@@ -244,17 +289,36 @@ class QuantumVoiceCopilot {
       };
 
       this.recognition.onresult = (event) => {
-        let interim = '';
+        let fullTranscript = '';
+        let hasFinal = false;
+
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const text = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            this._processTranscript(text);
-          } else {
-            interim += text;
+          const res = event.results[i];
+          const text = res[0].transcript;
+          fullTranscript += text;
+          if (res.isFinal) {
+            hasFinal = true;
           }
         }
-        if (interim) {
-          this._setSubtitle(`Hearing: "${interim.trim()}..."`);
+
+        const trimmed = fullTranscript.trim();
+        if (!trimmed) return;
+
+        // Visual feedback: show what is being heard immediately
+        this._setSubtitle(`Hearing: "${trimmed}..."`);
+        this._updateStatus('🔊 HEARING YOU', 'listening');
+
+        // If marked final by browser, process immediately!
+        if (hasFinal) {
+          clearTimeout(this.speechDebounceTimer);
+          this._processTranscript(trimmed);
+        } else {
+          // If interim, don't wait indefinitely for Chrome! Debounce 650ms after speech pause!
+          clearTimeout(this.speechDebounceTimer);
+          this.speechDebounceTimer = setTimeout(() => {
+            console.log('[QuantumVoiceCopilot] Executing interim speech on pause:', trimmed);
+            this._processTranscript(trimmed);
+          }, 650);
         }
       };
 
@@ -296,6 +360,7 @@ class QuantumVoiceCopilot {
 
   stopListening() {
     this.isListening = false;
+    clearTimeout(this.speechDebounceTimer);
     if (this.recognition) {
       try { this.recognition.stop(); } catch (e) {}
     }
@@ -335,6 +400,9 @@ class QuantumVoiceCopilot {
     if (!this.speechSynthesisEnabled || !window.speechSynthesis) return;
     try {
       window.speechSynthesis.cancel();
+      // Resume to fix Chrome stuck speech engine bug
+      window.speechSynthesis.resume();
+
       setTimeout(() => {
         try {
           const utterance = new SpeechSynthesisUtterance(text);
@@ -342,13 +410,16 @@ class QuantumVoiceCopilot {
           utterance.pitch = 1.0;
           utterance.volume = 1.0;
           const voices = window.speechSynthesis.getVoices();
-          const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('David') || v.name.includes('Zira')));
-          if (preferredVoice) utterance.voice = preferredVoice;
+          if (voices && voices.length) {
+            const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('David') || v.name.includes('Zira')));
+            if (preferredVoice) utterance.voice = preferredVoice;
+          }
+          window.speechSynthesis.resume();
           window.speechSynthesis.speak(utterance);
         } catch (e) {
           console.warn('[QuantumVoiceCopilot] TTS speak error:', e);
         }
-      }, 50);
+      }, 60);
     } catch (e) {}
   }
 
@@ -401,6 +472,11 @@ class QuantumVoiceCopilot {
     let text = rawText.toLowerCase().trim();
     console.log('[QuantumVoiceCopilot] Ingested raw voice:', text);
 
+    // Make sure we are viewing Composer!
+    if (window.switchTab) {
+      window.switchTab('simulator');
+    }
+
     const ui = window.circuitUI;
     if (!ui) {
       this._setActionFeedback('Circuit UI not loaded yet.', false);
@@ -420,6 +496,7 @@ class QuantumVoiceCopilot {
       }
       if (actionSummaries.length > 0) {
         this._setActionFeedback(`⚡ Sequenced: ${actionSummaries.join(' ➔ ')}`);
+        this._playChime('success');
         this._speak(`Executed compound quantum circuit sequence with ${actionSummaries.length} steps.`);
         return;
       }
@@ -440,7 +517,6 @@ class QuantumVoiceCopilot {
       .replace(/^(?:a\s+|an\s+|the\s+)?(?:diagram\s+of\s+|circuit\s+of\s+|circuit\s+for\s+|diagram\s+for\s+|state\s+of\s+)?/i, '')
       .trim();
 
-    // Also normalize spaces
     clean = clean.replace(/\s+/g, ' ');
     console.log('[QuantumVoiceCopilot] Clean intent:', clean);
 
@@ -597,6 +673,7 @@ class QuantumVoiceCopilot {
     if (/\b(clear\s*all|clear\s*circuit|clear|reset|wipe|clean|start\s*over)\b/.test(clean)) {
       ui.clearCircuit();
       this._setActionFeedback('Cleared entire quantum circuit.');
+      this._playChime('success');
       if (shouldSpeak) this._speak('Circuit reset to ground state.');
       return 'Clear Circuit';
     }
@@ -604,6 +681,7 @@ class QuantumVoiceCopilot {
     if (/\b(run\s*simulation|run|simulate|execute|calculate|fire)\b/.test(clean)) {
       ui.runInteractiveSimulation();
       this._setActionFeedback('Executed quantum statevector simulation.');
+      this._playChime('success');
       if (shouldSpeak) this._speak('Running simulation.');
       return 'Run Simulation';
     }
@@ -611,6 +689,7 @@ class QuantumVoiceCopilot {
     if (/\b(add\s*qubit|new\s*qubit|more\s*qubit)\b/.test(clean)) {
       ui.addQubit();
       this._setActionFeedback(`Added qubit. Register is now ${ui.numQubits} qubits.`);
+      this._playChime('success');
       if (shouldSpeak) this._speak(`Added qubit. Total is now ${ui.numQubits}.`);
       return 'Add Qubit';
     }
@@ -618,6 +697,7 @@ class QuantumVoiceCopilot {
     if (/\b(remove\s*qubit|delete\s*qubit|less\s*qubit)\b/.test(clean)) {
       ui.removeQubit();
       this._setActionFeedback(`Removed qubit. Register is now ${ui.numQubits} qubits.`);
+      this._playChime('success');
       if (shouldSpeak) this._speak(`Removed qubit. Total is now ${ui.numQubits}.`);
       return 'Remove Qubit';
     }
@@ -630,6 +710,7 @@ class QuantumVoiceCopilot {
         ui.placeGate('H', q, 0);
       }
       this._setActionFeedback(`Applied Hadamard transform to all ${ui.numQubits} qubits.`);
+      this._playChime('success');
       if (shouldSpeak) this._speak(`Applied Hadamard to all ${ui.numQubits} qubits.`);
       return 'Hadamard on All';
     }
@@ -639,6 +720,7 @@ class QuantumVoiceCopilot {
         ui.placeGate('X', q, 0);
       }
       this._setActionFeedback(`Applied Pauli-X bit-flip to all ${ui.numQubits} qubits.`);
+      this._playChime('success');
       if (shouldSpeak) this._speak('Inverted all qubits.');
       return 'X on All';
     }
@@ -649,6 +731,7 @@ class QuantumVoiceCopilot {
         ui.placeGate('M', q, col);
       }
       this._setActionFeedback(`Added measurements across all ${ui.numQubits} qubits.`);
+      this._playChime('success');
       if (shouldSpeak) this._speak('Added measurement to all qubits.');
       return 'Measure All';
     }
@@ -691,6 +774,7 @@ class QuantumVoiceCopilot {
       if (col !== -1) {
         ui.removeGate(q, col);
         this._setActionFeedback(`Removed gate at Qubit ${q}, Column ${col + 1}.`);
+        this._playChime('success');
         if (shouldSpeak) this._speak(`Removed gate on qubit ${q}.`);
         return `Remove(q${q}, c${col+1})`;
       }
@@ -706,32 +790,31 @@ class QuantumVoiceCopilot {
   // -------------------------------------------------------------
 
   _buildBellVariant(variant = 'phi_plus') {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
-    ui.clearCircuit();
 
-    if (variant === 'phi_plus') {
-      // (|00⟩ + |11⟩)/√2: H on 0, CX(0->1)
-      ui.placeGate('H', 0, 0);
-      ui.grid[0][1] = 'CX_CTRL';
-      ui.grid[1][1] = 'CX_TGT';
+    if (variant === 'phi_plus' && window.loadPresetSafe) {
+      window.loadPresetSafe('bell');
       this._setActionFeedback('Synthesized Bell State |Φ⁺⟩ = (|00⟩ + |11⟩)/√2.');
-    } else if (variant === 'phi_minus') {
-      // (|00⟩ - |11⟩)/√2: X on 0, H on 0, CX(0->1)
+      this._playChime('success');
+      return;
+    }
+
+    ui.clearCircuit();
+    if (variant === 'phi_minus') {
       ui.placeGate('X', 0, 0);
       ui.placeGate('H', 0, 1);
       ui.grid[0][2] = 'CX_CTRL';
       ui.grid[1][2] = 'CX_TGT';
       this._setActionFeedback('Synthesized Bell State |Φ⁻⟩ = (|00⟩ - |11⟩)/√2.');
     } else if (variant === 'psi_plus') {
-      // (|01⟩ + |10⟩)/√2: X on 1, H on 0, CX(0->1)
       ui.placeGate('X', 1, 0);
       ui.placeGate('H', 0, 0);
       ui.grid[0][1] = 'CX_CTRL';
       ui.grid[1][1] = 'CX_TGT';
       this._setActionFeedback('Synthesized Bell State |Ψ⁺⟩ = (|01⟩ + |10⟩)/√2.');
     } else {
-      // (|01⟩ - |10⟩)/√2: Singlet State: X on 0, X on 1, H on 0, CX(0->1)
       ui.placeGate('X', 0, 0);
       ui.placeGate('X', 1, 0);
       ui.placeGate('H', 0, 1);
@@ -742,11 +825,20 @@ class QuantumVoiceCopilot {
 
     ui.renderGrid();
     ui.updateSimulation();
+    this._playChime('success');
   }
 
   _buildDynamicGHZ(nQubits = 3) {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
+
+    if (nQubits === 3 && window.loadPresetSafe) {
+      window.loadPresetSafe('ghz');
+      this._setActionFeedback('Synthesized 3-Qubit GHZ State (|000⟩ + |111⟩)/√2.');
+      this._playChime('success');
+      return;
+    }
 
     nQubits = Math.max(2, Math.min(8, nQubits));
     while (ui.numQubits < nQubits) ui.addQubit();
@@ -764,15 +856,16 @@ class QuantumVoiceCopilot {
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback(`Synthesized ${nQubits}-Qubit GHZ State (|00...0⟩ + |11...1⟩)/√2.`);
+    this._playChime('success');
   }
 
   _buildWState() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     while (ui.numQubits < 3) ui.addQubit();
     ui.clearCircuit();
 
-    // W state preparation using Ry rotations and CNOTs
     ui.placeGate('H', 0, 0);
     ui.grid[0][1] = 'CX_CTRL';
     ui.grid[1][1] = 'CX_TGT';
@@ -784,9 +877,17 @@ class QuantumVoiceCopilot {
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback('Synthesized 3-Qubit W-State (|001⟩ + |010⟩ + |100⟩)/√3.');
+    this._playChime('success');
   }
 
   _buildTeleportation() {
+    if (window.switchTab) window.switchTab('simulator');
+    if (window.loadPresetSafe) {
+      window.loadPresetSafe('teleport');
+      this._setActionFeedback('Loaded Quantum Teleportation Protocol with EPR channel and Bell measurement.');
+      this._playChime('success');
+      return;
+    }
     const ui = window.circuitUI;
     if (!ui) return;
     while (ui.numQubits < 3) ui.addQubit();
@@ -797,20 +898,20 @@ class QuantumVoiceCopilot {
     ];
     ui.loadPreset(teleportGrid, 'teleport');
     this._setActionFeedback('Loaded Quantum Teleportation Protocol with EPR pair and measurement.');
+    this._playChime('success');
   }
 
   _buildSuperdenseCoding() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     ui.clearCircuit();
-    // 1. Prepare Bell pair on q0, q1
+
     ui.placeGate('H', 0, 0);
     ui.grid[0][1] = 'CX_CTRL';
     ui.grid[1][1] = 'CX_TGT';
-    // 2. Alice encodes 2 classical bits (e.g. '11' -> X + Z)
     ui.placeGate('X', 0, 2);
     ui.placeGate('Z', 0, 3);
-    // 3. Bob decodes
     ui.grid[0][4] = 'CX_CTRL';
     ui.grid[1][4] = 'CX_TGT';
     ui.placeGate('H', 0, 5);
@@ -820,25 +921,24 @@ class QuantumVoiceCopilot {
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback('Synthesized Superdense Coding Protocol (2 classical bits per 1 qubit).');
+    this._playChime('success');
   }
 
   _buildEntanglementSwapping() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     while (ui.numQubits < 4) ui.addQubit();
     ui.clearCircuit();
 
-    // Bell pair 1: q0 and q1
     ui.placeGate('H', 0, 0);
     ui.grid[0][1] = 'CX_CTRL';
     ui.grid[1][1] = 'CX_TGT';
 
-    // Bell pair 2: q2 and q3
     ui.placeGate('H', 2, 0);
     ui.grid[2][1] = 'CX_CTRL';
     ui.grid[3][1] = 'CX_TGT';
 
-    // Bell state measurement on q1 and q2 (swaps entanglement to q0 and q3!)
     ui.grid[1][2] = 'CX_CTRL';
     ui.grid[2][2] = 'CX_TGT';
     ui.placeGate('H', 1, 3);
@@ -848,29 +948,26 @@ class QuantumVoiceCopilot {
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback('Synthesized 4-Qubit Entanglement Swapping (entangles Q0 and Q3 without direct interaction).');
+    this._playChime('success');
   }
 
   _buildDeutschJozsa() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     while (ui.numQubits < 3) ui.addQubit();
     ui.clearCircuit();
 
-    // Ancilla in |->
     ui.placeGate('X', 2, 0);
     ui.placeGate('H', 2, 1);
-
-    // Inputs in |+>
     ui.placeGate('H', 0, 1);
     ui.placeGate('H', 1, 1);
 
-    // Balanced Oracle: CNOT from q0 and q1 into ancilla
     ui.grid[0][2] = 'CX_CTRL';
     ui.grid[2][2] = 'CX_TGT';
     ui.grid[1][3] = 'CX_CTRL';
     ui.grid[2][3] = 'CX_TGT';
 
-    // Interference Hadamards
     ui.placeGate('H', 0, 4);
     ui.placeGate('H', 1, 4);
     ui.placeGate('M', 0, 5);
@@ -879,29 +976,26 @@ class QuantumVoiceCopilot {
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback('Synthesized Deutsch-Jozsa Algorithm with balanced oracle.');
+    this._playChime('success');
   }
 
   _buildBernsteinVazirani() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     while (ui.numQubits < 3) ui.addQubit();
     ui.clearCircuit();
 
-    // Ancilla in |->
     ui.placeGate('X', 2, 0);
     ui.placeGate('H', 2, 1);
-
-    // Inputs in |+>
     ui.placeGate('H', 0, 1);
     ui.placeGate('H', 1, 1);
 
-    // Oracle for secret string s = '11'
     ui.grid[0][2] = 'CX_CTRL';
     ui.grid[2][2] = 'CX_TGT';
     ui.grid[1][3] = 'CX_CTRL';
     ui.grid[2][3] = 'CX_TGT';
 
-    // Decode Hadamards
     ui.placeGate('H', 0, 4);
     ui.placeGate('H', 1, 4);
     ui.placeGate('M', 0, 5);
@@ -910,19 +1004,19 @@ class QuantumVoiceCopilot {
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback('Synthesized Bernstein-Vazirani single-query hidden bit string algorithm.');
+    this._playChime('success');
   }
 
   _buildSimon() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     while (ui.numQubits < 4) ui.addQubit();
     ui.clearCircuit();
 
-    // Hadamards on register 1 (q0, q1)
     ui.placeGate('H', 0, 0);
     ui.placeGate('H', 1, 0);
 
-    // 2-to-1 function Oracle with period s = 11
     ui.grid[0][1] = 'CX_CTRL';
     ui.grid[2][1] = 'CX_TGT';
     ui.grid[1][2] = 'CX_CTRL';
@@ -930,16 +1024,23 @@ class QuantumVoiceCopilot {
     ui.grid[0][3] = 'CX_CTRL';
     ui.grid[3][3] = 'CX_TGT';
 
-    // Final Hadamards on register 1
     ui.placeGate('H', 0, 4);
     ui.placeGate('H', 1, 4);
 
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback('Synthesized Simon\'s exponential speedup period-finding circuit.');
+    this._playChime('success');
   }
 
   _buildGrover() {
+    if (window.switchTab) window.switchTab('simulator');
+    if (window.loadPresetSafe) {
+      window.loadPresetSafe('grover');
+      this._setActionFeedback('Loaded Grover Quantum Search Algorithm.');
+      this._playChime('success');
+      return;
+    }
     const ui = window.circuitUI;
     if (!ui) return;
     const groverGrid = [
@@ -948,11 +1049,20 @@ class QuantumVoiceCopilot {
     ];
     ui.loadPreset(groverGrid, 'grover');
     this._setActionFeedback('Loaded Grover Quantum Search Algorithm.');
+    this._playChime('success');
   }
 
   _buildDynamicQFT(nQubits = 3, isInverse = false) {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
+
+    if (nQubits === 3 && !isInverse && window.loadPresetSafe) {
+      window.loadPresetSafe('qft');
+      this._setActionFeedback('Loaded Quantum Fourier Transform (QFT).');
+      this._playChime('success');
+      return;
+    }
 
     nQubits = Math.max(2, Math.min(6, nQubits));
     while (ui.numQubits < nQubits) ui.addQubit();
@@ -960,7 +1070,6 @@ class QuantumVoiceCopilot {
     ui.clearCircuit();
     let col = 0;
 
-    // Build QFT gate sequence dynamically
     for (let i = 0; i < nQubits; i++) {
       ui.placeGate('H', i, col++);
       for (let j = i + 1; j < nQubits; j++) {
@@ -969,7 +1078,6 @@ class QuantumVoiceCopilot {
       }
     }
 
-    // SWAP reversal at the end
     for (let i = 0; i < Math.floor(nQubits / 2); i++) {
       const top = i;
       const bot = nQubits - 1 - i;
@@ -981,24 +1089,21 @@ class QuantumVoiceCopilot {
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback(`Dynamically synthesized ${nQubits}-Qubit Quantum Fourier Transform.`);
+    this._playChime('success');
   }
 
   _buildQPE() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     while (ui.numQubits < 3) ui.addQubit();
     ui.clearCircuit();
 
-    // Counting qubits q0, q1; eigenstate on q2
     ui.placeGate('H', 0, 0);
     ui.placeGate('H', 1, 0);
-    ui.placeGate('X', 2, 0); // Prepare |1> eigenstate of T gate
-
-    // Controlled U operations
+    ui.placeGate('X', 2, 0);
     ui.placeGate('T', 2, 1);
     ui.placeGate('S', 2, 2);
-
-    // Inverse QFT on counting register
     ui.placeGate('H', 0, 3);
     ui.placeGate('S', 1, 4);
     ui.placeGate('H', 1, 5);
@@ -1006,62 +1111,59 @@ class QuantumVoiceCopilot {
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback('Synthesized Quantum Phase Estimation (QPE) circuit.');
+    this._playChime('success');
   }
 
   _buildQuantumAdder() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     while (ui.numQubits < 3) ui.addQubit();
     ui.clearCircuit();
 
-    // Input states A=1, B=1
     ui.placeGate('X', 0, 0);
     ui.placeGate('X', 1, 0);
 
-    // Toffoli (CCX) for Carry bit into q2
     ui.grid[0][1] = 'CX_CTRL';
     ui.grid[1][1] = 'CX_CTRL';
     ui.grid[2][1] = 'CX_TGT';
 
-    // CNOT for Sum bit into q1
     ui.grid[0][2] = 'CX_CTRL';
     ui.grid[1][2] = 'CX_TGT';
 
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback('Constructed Quantum Half-Adder (Sum on Q1, Carry on Q2).');
+    this._playChime('success');
   }
 
   _buildBitFlipCode() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     while (ui.numQubits < 3) ui.addQubit();
     ui.clearCircuit();
 
-    // Input state in superposition
     ui.placeGate('H', 0, 0);
-
-    // Encode logical qubit into 3 physical qubits: |ψ⟩ -> α|000⟩ + β|111⟩
     ui.grid[0][1] = 'CX_CTRL';
     ui.grid[1][1] = 'CX_TGT';
     ui.grid[0][2] = 'CX_CTRL';
     ui.grid[2][2] = 'CX_TGT';
-
-    // Simulated bit-flip error on physical qubit 1
     ui.placeGate('X', 1, 3);
 
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback('Synthesized 3-Qubit Bit-Flip Repetition Error Correction Code.');
+    this._playChime('success');
   }
 
   _buildPhaseFlipCode() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     while (ui.numQubits < 3) ui.addQubit();
     ui.clearCircuit();
 
-    // Encode into Hadamard basis
     ui.placeGate('H', 0, 0);
     ui.grid[0][1] = 'CX_CTRL';
     ui.grid[1][1] = 'CX_TGT';
@@ -1070,43 +1172,40 @@ class QuantumVoiceCopilot {
     ui.placeGate('H', 0, 3);
     ui.placeGate('H', 1, 3);
     ui.placeGate('H', 2, 3);
-
-    // Phase flip error channel
     ui.placeGate('Z', 1, 4);
 
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback('Synthesized 3-Qubit Phase-Flip Error Correction Code.');
+    this._playChime('success');
   }
 
   _buildSwapTest() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     while (ui.numQubits < 3) ui.addQubit();
     ui.clearCircuit();
 
-    // Ancilla on q0 into |+>
     ui.placeGate('H', 0, 0);
-
-    // States to compare on q1 and q2
     ui.placeGate('X', 1, 0);
     ui.placeGate('H', 2, 0);
 
-    // Controlled-SWAP (Fredkin)
     ui.grid[0][1] = 'CX_CTRL';
     ui.grid[1][1] = 'SWAP';
     ui.grid[2][1] = 'SWAP';
 
-    // Ancilla interference
     ui.placeGate('H', 0, 2);
     ui.placeGate('M', 0, 3);
 
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback('Synthesized Quantum SWAP Test for quantum state overlap measurement.');
+    this._playChime('success');
   }
 
   _buildQRNG() {
+    if (window.switchTab) window.switchTab('simulator');
     const ui = window.circuitUI;
     if (!ui) return;
     ui.clearCircuit();
@@ -1119,9 +1218,17 @@ class QuantumVoiceCopilot {
     ui.renderGrid();
     ui.updateSimulation();
     this._setActionFeedback(`Synthesized ${ui.numQubits}-Qubit True Quantum Random Number Generator (QRNG).`);
+    this._playChime('success');
   }
 
   _buildVQE() {
+    if (window.switchTab) window.switchTab('simulator');
+    if (window.loadPresetSafe) {
+      window.loadPresetSafe('vqe');
+      this._setActionFeedback('Loaded VQE Hardware-Efficient Ansatz.');
+      this._playChime('success');
+      return;
+    }
     const ui = window.circuitUI;
     if (!ui) return;
     const vqeGrid = [
@@ -1130,9 +1237,17 @@ class QuantumVoiceCopilot {
     ];
     ui.loadPreset(vqeGrid, 'vqe');
     this._setActionFeedback('Loaded VQE Hardware-Efficient Ansatz.');
+    this._playChime('success');
   }
 
   _buildCHSH() {
+    if (window.switchTab) window.switchTab('simulator');
+    if (window.loadPresetSafe) {
+      window.loadPresetSafe('chsh');
+      this._setActionFeedback('Loaded CHSH Bell Inequality Violation Test.');
+      this._playChime('success');
+      return;
+    }
     const ui = window.circuitUI;
     if (!ui) return;
     const chshGrid = [
@@ -1141,6 +1256,7 @@ class QuantumVoiceCopilot {
     ];
     ui.loadPreset(chshGrid, 'chsh');
     this._setActionFeedback('Loaded CHSH Bell Inequality Violation Test.');
+    this._playChime('success');
   }
 
   // -------------------------------------------------------------
@@ -1220,6 +1336,7 @@ class QuantumVoiceCopilot {
 
     const name = gateFullNames[gateName] || gateName;
     this._setActionFeedback(`Placed ${name} on Qubit ${qubit} (Col ${col + 1}).`);
+    this._playChime('success');
     if (shouldSpeak) this._speak(`Placed ${name} on qubit ${qubit}.`);
   }
 
@@ -1271,6 +1388,7 @@ class QuantumVoiceCopilot {
     }, 600);
 
     this._setActionFeedback(`Wired CNOT: Control Q${ctrlQ} ➔ Target Q${tgtQ} (Col ${col + 1}).`);
+    this._playChime('success');
     if (shouldSpeak) this._speak(`Added CNOT from qubit ${ctrlQ} to qubit ${tgtQ}.`);
     return `CNOT(q${ctrlQ}➔q${tgtQ})`;
   }
@@ -1302,6 +1420,7 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
 
     this._setActionFeedback(`Placed SWAP between Qubit ${q1} and Qubit ${q2}.`);
+    this._playChime('success');
     if (shouldSpeak) this._speak(`Placed SWAP between qubit ${q1} and qubit ${q2}.`);
     return `SWAP(q${q1}, q${q2})`;
   }
@@ -1327,12 +1446,17 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
 
     this._setActionFeedback('Constructed 3-Qubit Toffoli (CCX) gate on Q0, Q1, Q2.');
+    this._playChime('success');
     if (shouldSpeak) this._speak('Added Toffoli gate.');
     return 'Toffoli(CCX)';
   }
 }
 
-// Instantiate on DOM ready
+// Immediately instantiate and attach globally
+window.QuantumVoiceCopilot = QuantumVoiceCopilot;
+if (!window.quantumVoiceCopilot) {
+  window.quantumVoiceCopilot = new QuantumVoiceCopilot();
+}
 document.addEventListener('DOMContentLoaded', () => {
   if (!window.quantumVoiceCopilot) {
     window.quantumVoiceCopilot = new QuantumVoiceCopilot();
