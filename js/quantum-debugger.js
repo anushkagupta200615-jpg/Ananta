@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Quantum Time-Travel Debugger — Ananta (SIH Feature #1)
  */
 class QuantumTimeDebugger {
@@ -83,10 +83,30 @@ class QuantumTimeDebugger {
 
   captureAndOpen() {
     if (!this.circuitUI || !this.engine) return;
-    this.snapshots = this._captureSnapshots(this.circuitUI.grid);
-    if (this.snapshots.length === 0) return;
+    const grid = this.circuitUI.grid;
+
+    // Check if circuit has at least one gate placed
+    const hasGates = grid && grid.some(row => row.some(cell => cell && cell !== ''));
+    if (!hasGates) {
+      alert('⚠️ Your circuit is empty!\n\nPlease add at least one gate in the Composer tab first, then click "Debug Current Circuit".');
+      return;
+    }
+
+    // Sync engine qubit count to match the circuit grid
+    if (grid.length !== this.engine.numQubits) {
+      this.engine.setNumQubits(grid.length);
+    }
+
+    this.snapshots = this._captureSnapshots(grid);
+    if (this.snapshots.length < 2) return; // need at least initial + 1 gate step
+
     const wrap = document.getElementById('debugger-panel-wrapper');
     if (wrap) { wrap.classList.remove('qtd-hidden'); wrap.classList.add('qtd-visible'); }
+
+    // Hide the empty-state placeholder
+    const emptyState = document.getElementById('qtd-empty-state');
+    if (emptyState) emptyState.style.display = 'none';
+
     this.renderScrubber();
     this.stepTo(0);
   }
@@ -96,8 +116,11 @@ class QuantumTimeDebugger {
     const numCols = grid[0].length;
     const snaps = [];
     this.engine.reset();
-    snaps.push(this._snapNow(grid, -1));
+    snaps.push(this._snapNow(grid, -1)); // initial state
     for (let col = 0; col < numCols; col++) {
+      // Skip columns that have no gates placed
+      const hasGateInCol = grid.some(row => row[col] && row[col] !== '');
+      if (!hasGateInCol) continue;
       this.engine.runCircuitUpToCol(grid, col);
       if (this.noiseEnabled) this._injectNoise();
       snaps.push(this._snapNow(grid, col));
