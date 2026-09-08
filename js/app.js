@@ -134,6 +134,31 @@ document.addEventListener('DOMContentLoaded', () => {
     window.topicRoadmapManager = topicRoadmapManager;
   }
 
+  // ── SIH India-First Feature Studios ──────────────────────────
+  let quantumDebugger = null;
+  if (window.QuantumTimeDebugger) {
+    try {
+      quantumDebugger = new window.QuantumTimeDebugger(engine, circuitUI);
+      window.quantumDebugger = quantumDebugger;
+    } catch (err) { console.warn('QuantumTimeDebugger init:', err); }
+  }
+
+  let cryoTwin = null;
+  if (window.CryostatTwin) {
+    try {
+      cryoTwin = new window.CryostatTwin(engine, circuitUI);
+      window.cryoTwin = cryoTwin;
+    } catch (err) { console.warn('CryostatTwin init:', err); }
+  }
+
+  let pqcAuditor = null;
+  if (window.PQCSecurityAuditor) {
+    try {
+      pqcAuditor = new window.PQCSecurityAuditor();
+      window.pqcAuditor = pqcAuditor;
+    } catch (err) { console.warn('PQCSecurityAuditor init:', err); }
+  }
+
   // Initialize Living Rishi Quantum Canvas
   if (window.RishiQuantumCanvas) {
     try {
@@ -162,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Groups for dropdown highlights
-    const studioTabs = ['surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry'];
+    const studioTabs = ['surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry', 'debugger', 'cryo-twin', 'pqc-auditor'];
     const algorithmTabs = ['algorithms', 'research'];
     const learnTabs = ['intuition', 'challenges', 'docs', 'topic-roadmap'];
 

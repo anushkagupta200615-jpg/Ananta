@@ -93,6 +93,38 @@
                 <span class="dropdown-rich-desc">Jordan-Wigner Pauli terms & ground state energy landscapes</span>
               </div>
             </a>
+            <div class="dropdown-menu-divider"></div>
+            <div class="nav-dropdown-header">SIH India-First Features</div>
+            <a href="#debugger" class="dropdown-rich-item" data-tab="debugger">
+              <span class="dropdown-rich-icon">⏱️</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Quantum Time-Travel Debugger</span>
+                  <span class="dropdown-badge" style="background:#7c3aed;color:#fff">NEW</span>
+                </div>
+                <span class="dropdown-rich-desc">Step-by-step statevector inspection, entropy arc & AI diagnostics</span>
+              </div>
+            </a>
+            <a href="#cryo-twin" class="dropdown-rich-item" data-tab="cryo-twin">
+              <span class="dropdown-rich-icon">🧊</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">NQM Cryostat Digital Twin</span>
+                  <span class="dropdown-badge" style="background:#ff9933;color:#fff">NQM</span>
+                </div>
+                <span class="dropdown-rich-desc">Dilution refrigerator physics, thermal noise & India sovereign QPU</span>
+              </div>
+            </a>
+            <a href="#pqc-auditor" class="dropdown-rich-item" data-tab="pqc-auditor">
+              <span class="dropdown-rich-icon">🔐</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">PQC Security Auditor</span>
+                  <span class="dropdown-badge" style="background:#dc2626;color:#fff">SECURITY</span>
+                </div>
+                <span class="dropdown-rich-desc">Shor resource calculator, threat timeline & NIST PQC standards</span>
+              </div>
+            </a>
           </div>
         </div>
 
@@ -270,6 +302,10 @@
     <a href="#pulse-studio" class="mobile-nav-item" data-tab="pulse-studio" onclick="window.closeMobileNav()">🎛️ Microwave Pulse Studio</a>
     <a href="#transpiler" class="mobile-nav-item" data-tab="transpiler" onclick="window.closeMobileNav()">⚡ Multi-Transpiler & Doctor</a>
     <a href="#vqe-chemistry" class="mobile-nav-item" data-tab="vqe-chemistry" onclick="window.closeMobileNav()">🧪 VQE Molecular Chemistry</a>
+    <div class="mobile-nav-section-title" style="color:#ff9933">SIH INDIA-FIRST</div>
+    <a href="#debugger" class="mobile-nav-item" data-tab="debugger" onclick="window.closeMobileNav()">⏱️ Time-Travel Debugger</a>
+    <a href="#cryo-twin" class="mobile-nav-item" data-tab="cryo-twin" onclick="window.closeMobileNav()">🧊 NQM Cryostat Twin</a>
+    <a href="#pqc-auditor" class="mobile-nav-item" data-tab="pqc-auditor" onclick="window.closeMobileNav()">🔐 PQC Security Auditor</a>
 
     <!-- Category: Algorithms & Research -->
     <div class="mobile-nav-section-title">ALGORITHMS & RESEARCH</div>
@@ -2987,6 +3023,291 @@ Key Advantage:
     </div>
   </div>
 
+  <!-- ================= VIEW: QUANTUM TIME-TRAVEL DEBUGGER ================= -->
+  <section class="viewport-section" id="view-debugger" style="display:none">
+    <div class="qtd-page-container">
+      <div class="qtd-page-header">
+        <div class="qtd-header-badge">SIH EXCLUSIVE</div>
+        <h1 class="qtd-page-title">⏱️ Quantum Time-Travel Debugger</h1>
+        <p class="qtd-page-subtitle">Step gate-by-gate through your circuit. Watch the statevector, entanglement entropy, and state purity evolve in real time. No other platform in the world offers this.</p>
+        <div class="qtd-header-actions">
+          <button id="btn-qtd-capture" class="qtd-btn-capture">▶ Debug Current Circuit</button>
+          <label class="qtd-noise-label">
+            <input type="checkbox" id="qtd-noise-toggle"> Inject T1/T2 Noise
+          </label>
+        </div>
+      </div>
+
+      <!-- Main debugger panel -->
+      <div id="debugger-panel-wrapper" class="qtd-hidden">
+        <!-- Scrubber Timeline -->
+        <div class="qtd-scrubber-section">
+          <div class="qtd-scrubber-controls">
+            <button id="btn-qtd-first" class="qtd-ctrl-btn" title="Jump to start">⏮</button>
+            <button id="btn-qtd-prev"  class="qtd-ctrl-btn" title="Previous step">◀</button>
+            <button id="btn-qtd-play"  class="qtd-ctrl-btn qtd-play-btn">▶ Play</button>
+            <button id="btn-qtd-next"  class="qtd-ctrl-btn" title="Next step">▶</button>
+            <button id="btn-qtd-last"  class="qtd-ctrl-btn" title="Jump to end">⏭</button>
+            <div class="qtd-step-info">
+              <span id="qtd-step-label" class="qtd-step-label">Step 0 — Initial State</span>
+              <span id="qtd-gate-label" class="qtd-gate-label">Initial state |0...0&gt;</span>
+            </div>
+          </div>
+          <div class="qtd-scrubber-track" id="qtd-scrubber-track">
+            <div class="qtd-scrubber-markers" id="qtd-scrubber-markers"></div>
+            <div class="qtd-scrubber-thumb" id="qtd-scrubber-thumb"></div>
+          </div>
+        </div>
+
+        <!-- Three-column layout -->
+        <div class="qtd-three-col">
+          <!-- LEFT: Statevector Table -->
+          <div class="qtd-panel qtd-panel-state">
+            <div class="qtd-panel-title">Statevector Amplitudes</div>
+            <table class="qtd-state-table-container">
+              <thead>
+                <tr>
+                  <th>State</th><th>Amplitude</th><th>Phase</th><th>Probability</th>
+                </tr>
+              </thead>
+              <tbody id="qtd-state-table"></tbody>
+            </table>
+            <!-- Decoherence particle canvas -->
+            <div class="qtd-particle-wrapper">
+              <canvas id="qtd-particle-canvas" class="qtd-particle-canvas"></canvas>
+            </div>
+          </div>
+
+          <!-- CENTRE: Entropy + Purity Gauges -->
+          <div class="qtd-panel qtd-panel-gauges">
+            <div class="qtd-panel-title">Quantum Health Metrics</div>
+
+            <!-- Entropy Arc Gauge -->
+            <div class="qtd-gauge-block">
+              <div class="qtd-gauge-label">Von Neumann Entropy</div>
+              <div class="qtd-arc-container">
+                <svg viewBox="0 0 120 120" width="120" height="120">
+                  <!-- Background arc -->
+                  <path d="M 14 90 A 52 52 0 1 1 106 90" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10" stroke-linecap="round"/>
+                  <!-- Entropy arc -->
+                  <path id="qtd-entropy-arc-path"
+                    d="M 14 90 A 52 52 0 1 1 106 90"
+                    fill="none" stroke="#34d399" stroke-width="10" stroke-linecap="round"
+                    style="stroke-dasharray:0 246;transition:stroke-dasharray 0.5s ease,stroke 0.5s ease"/>
+                  <text x="60" y="58" text-anchor="middle" fill="var(--text-primary)" font-size="14" font-weight="700" id="qtd-entropy-pct">0%</text>
+                  <text x="60" y="76" text-anchor="middle" fill="var(--text-dim)" font-size="9">ENTANGLEMENT</text>
+                </svg>
+              </div>
+              <div class="qtd-gauge-val" id="qtd-entropy-val">0.000 ebits</div>
+            </div>
+
+            <!-- Purity Bar -->
+            <div class="qtd-gauge-block">
+              <div class="qtd-gauge-label">State Purity Tr(&#x03C1;&#xB2;)</div>
+              <div class="qtd-purity-track">
+                <div id="qtd-purity-bar" class="qtd-purity-fill" style="width:100%;background:#34d399;transition:width 0.5s ease,background 0.5s ease"></div>
+              </div>
+              <div class="qtd-gauge-val" id="qtd-purity-val">100.0%</div>
+            </div>
+
+            <!-- Fidelity -->
+            <div class="qtd-gauge-block">
+              <div class="qtd-gauge-label">Hardware Fidelity Est.</div>
+              <div class="qtd-fidelity-num fid-good" id="qtd-fidelity-val">100.0%</div>
+            </div>
+
+            <!-- Noise Budget (hidden unless noise on) -->
+            <div id="qtd-noise-section" style="display:none">
+              <div class="qtd-panel-title" style="margin-top:12px">Noise Budget</div>
+              <div class="qtd-noise-sliders">
+                <label class="qtd-slider-label">T1: <span id="qtd-t1-val">50 us</span></label>
+                <input type="range" id="qtd-t1-slider" min="10" max="300" value="50" class="qtd-slider">
+              </div>
+              <div id="qtd-noise-budget" class="qtd-noise-budget"></div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Entanglement Map + Diagnostics -->
+          <div class="qtd-panel qtd-panel-entanglement">
+            <div class="qtd-panel-title">Entanglement Map</div>
+            <div id="qtd-concurrence-map" class="qtd-concurrence-map"></div>
+
+            <div class="qtd-panel-title" style="margin-top:16px">AI Circuit Diagnostics</div>
+            <button id="btn-qtd-diagnose" class="qtd-btn-diagnose">Run Diagnostics</button>
+            <div id="qtd-diagnostic-box" class="qtd-diagnostic-box" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state: no circuit captured yet -->
+      <div id="qtd-empty-state" class="qtd-empty-state">
+        <div class="qtd-empty-icon">⏱️</div>
+        <div class="qtd-empty-title">No Circuit Captured</div>
+        <div class="qtd-empty-desc">Build a circuit in the Composer tab, then click <strong>Debug Current Circuit</strong> to inspect it gate-by-gate.</div>
+        <button onclick="window.switchTab('simulator')" class="qtd-btn-goto">Go to Composer &rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VIEW: NQM CRYOSTAT DIGITAL TWIN ================= -->
+  <section class="viewport-section" id="view-cryo-twin" style="display:none">
+    <div class="cryo-page-container">
+      <div class="cryo-page-header">
+        <div class="cryo-header-flag">&#x1F1EE;&#x1F1F3; INDIA — NATIONAL QUANTUM MISSION</div>
+        <h1 class="cryo-page-title">🧊 NQM Cryostat Hardware Digital Twin</h1>
+        <p class="cryo-page-subtitle">Simulate indigenous Indian quantum hardware physics. Adjust temperature to inject real Boltzmann thermal noise into your quantum circuit. Aligned with India's &#x20B9;6,003 Crore NQM initiative.</p>
+      </div>
+
+      <div class="cryo-main-layout">
+        <!-- LEFT: Animated Cryostat SVG -->
+        <div class="cryo-viz-panel">
+          <div class="cryo-viz-title">Dilution Refrigerator Cross-Section</div>
+          <div id="cryo-svg-container" class="cryo-svg-container"></div>
+          <div class="cryo-temp-control">
+            <div class="cryo-temp-header">
+              <span class="cryo-temp-icon">🌡️</span>
+              <span>Base Temperature</span>
+              <span id="cryo-temp-display" class="cryo-temp-display">15 mK</span>
+              <span id="cryo-status-pill" class="cryo-status-pill status-operational">OPERATIONAL</span>
+            </div>
+            <input type="range" id="cryo-temp-slider" min="15" max="500" value="15" step="1" class="cryo-temp-slider">
+            <div class="cryo-temp-scale">
+              <span>15 mK<br><small>Base</small></span>
+              <span>80 mK<br><small>Degraded</small></span>
+              <span>200 mK<br><small>Noisy</small></span>
+              <span>500 mK<br><small>Critical</small></span>
+            </div>
+          </div>
+          <div class="cryo-actions">
+            <button id="btn-cryo-inject" class="cryo-btn-inject">⚡ Inject Thermal Noise into Circuit</button>
+            <button id="btn-cryo-reset" class="cryo-btn-reset">↺ Reset to 15 mK</button>
+          </div>
+          <div id="cryo-noise-hint" class="cryo-noise-hint" style="display:none"></div>
+        </div>
+
+        <!-- CENTRE: Physics Readouts -->
+        <div class="cryo-physics-panel">
+          <div class="cryo-physics-title">Live Physics Readouts</div>
+          <div class="cryo-physics-grid">
+            <div class="cryo-metric-card">
+              <div class="cryo-metric-label">Thermal Photon Number n_th</div>
+              <div class="cryo-metric-val" id="cryo-nth-display">&lt; 10^-6</div>
+              <div class="cryo-metric-formula">n_th = 1/(e^(hf/kT) - 1)</div>
+            </div>
+            <div class="cryo-metric-card">
+              <div class="cryo-metric-label">Bit-Flip Rate</div>
+              <div class="cryo-metric-val" id="cryo-bitflip-display">0.000%</div>
+              <div class="cryo-metric-formula">P(|0&gt; -> |1&gt;) per gate</div>
+            </div>
+            <div class="cryo-metric-card">
+              <div class="cryo-metric-label">Phase-Flip Rate</div>
+              <div class="cryo-metric-val" id="cryo-phaseflip-display">0.000%</div>
+              <div class="cryo-metric-formula">T2* dephasing contribution</div>
+            </div>
+            <div class="cryo-metric-card">
+              <div class="cryo-metric-label">Effective T1 (thermal degraded)</div>
+              <div class="cryo-metric-val" id="cryo-t1eff-display">48.0 us</div>
+              <div class="cryo-metric-formula">T1_eff = T1_base / (1 + 2*n_th)</div>
+            </div>
+            <div class="cryo-metric-card cryo-metric-fidelity">
+              <div class="cryo-metric-label">Estimated Circuit Fidelity</div>
+              <div class="cryo-metric-val" id="cryo-fidelity-display" style="color:#34d399">100.0%</div>
+              <div class="cryo-metric-formula">Degraded by thermal excitations</div>
+            </div>
+          </div>
+
+          <!-- Histogram noise overlay demo -->
+          <div class="cryo-histogram-demo">
+            <div class="cryo-hist-title">Probability Histogram (with thermal noise)</div>
+            <div class="cryo-hist-bars">
+              <div class="cryo-hist-bar" style="height:80%"><span>|000&gt;</span></div>
+              <div class="cryo-hist-bar" style="height:5%"><span>|001&gt;</span></div>
+              <div class="cryo-hist-bar" style="height:5%"><span>|010&gt;</span></div>
+              <div class="cryo-hist-bar" style="height:5%"><span>|011&gt;</span></div>
+              <div class="cryo-hist-bar" style="height:80%"><span>|100&gt;</span></div>
+              <div class="cryo-hist-bar" style="height:5%"><span>|101&gt;</span></div>
+              <div class="cryo-hist-bar" style="height:5%"><span>|110&gt;</span></div>
+              <div class="cryo-hist-bar" style="height:5%"><span>|111&gt;</span></div>
+              <div id="cryo-histogram-noise-overlay" class="cryo-hist-noise-overlay" style="opacity:0"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Topology Selector -->
+        <div class="cryo-topo-panel">
+          <div class="cryo-topo-title">QPU Topology Selector</div>
+          <select id="cryo-topology-select" class="cryo-topo-select">
+            <option value="nqm8">NQM-8 Star (IISc / RRI)</option>
+            <option value="ibmheavyhex">IBM Heavy-Hex 7 (Eagle)</option>
+            <option value="sycamore">Google Sycamore 5x5</option>
+          </select>
+          <div id="cryo-topo-cards" class="cryo-topo-cards"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VIEW: PQC SECURITY AUDITOR ================= -->
+  <section class="viewport-section" id="view-pqc-auditor" style="display:none">
+    <div class="pqc-page-container">
+      <div class="pqc-page-header">
+        <div class="pqc-header-badge">NATIONAL SECURITY</div>
+        <h1 class="pqc-page-title">🔐 Post-Quantum Cryptography Security Auditor</h1>
+        <p class="pqc-page-subtitle">Calculates exact qubit requirements to break classical encryption using Shor's algorithm. Identifies quantum-vulnerable systems in banking, DRDO, ISRO, and government infrastructure. Recommends NIST 2024 PQC replacements.</p>
+      </div>
+
+      <!-- Scheme Selector + Analyze -->
+      <div class="pqc-control-bar">
+        <div class="pqc-control-group">
+          <label class="pqc-control-label">Cryptographic Scheme</label>
+          <select id="pqc-scheme-select" class="pqc-scheme-select">
+            <optgroup label="RSA">
+              <option value="RSA-1024">RSA-1024 (legacy)</option>
+              <option value="RSA-2048" selected>RSA-2048 (TLS / Banking)</option>
+              <option value="RSA-4096">RSA-4096 (High Security)</option>
+            </optgroup>
+            <optgroup label="Elliptic Curve">
+              <option value="ECC-256">ECC P-256 (ECDSA / Bitcoin)</option>
+              <option value="ECC-384">ECC P-384 (NSA Suite B)</option>
+              <option value="ECC-521">ECC P-521 (Top Secret)</option>
+            </optgroup>
+            <optgroup label="DH / Symmetric">
+              <option value="DH-2048">Diffie-Hellman 2048-bit</option>
+              <option value="AES-128">AES-128</option>
+              <option value="AES-256">AES-256</option>
+            </optgroup>
+          </select>
+        </div>
+        <button id="btn-pqc-analyze" class="pqc-btn-analyze">⚡ Analyze Quantum Threat</button>
+      </div>
+
+      <!-- Quick-select scheme cards -->
+      <div id="pqc-scheme-cards" class="pqc-scheme-cards"></div>
+
+      <!-- Main Results -->
+      <div class="pqc-results-layout">
+        <!-- Threat Summary banner -->
+        <div id="pqc-threat-summary" class="pqc-threat-summary"></div>
+
+        <!-- Two-column: resource table + timeline -->
+        <div class="pqc-two-col">
+          <div class="pqc-panel pqc-panel-resources">
+            <div class="pqc-panel-title">Quantum Resource Requirements</div>
+            <div id="pqc-resource-table" class="pqc-resource-table"></div>
+          </div>
+          <div class="pqc-panel pqc-panel-timeline">
+            <div id="pqc-timeline" class="pqc-timeline"></div>
+          </div>
+        </div>
+
+        <!-- PQC Recommendations -->
+        <div class="pqc-panel pqc-panel-recommendations">
+          <div id="pqc-recommendations"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Script Pipeline -->
   <script src="js/quantum-knowledge-data.js"></script>
   <script src="js/quantum-engine.js"></script>
@@ -3007,6 +3328,9 @@ Key Advantage:
   <script src="js/pulse-studio.js"></script>
   <script src="js/cloud-qpu-bridge.js"></script>
   <script src="js/topic-roadmap.js"></script>
+  <script src="js/quantum-debugger.js"></script>
+  <script src="js/cryo-twin.js"></script>
+  <script src="js/pqc-auditor.js"></script>
   <script src="js/app.js"></script>
   <!-- KaTeX Auto-Render Engine -->
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
