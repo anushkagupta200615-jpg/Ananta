@@ -126,6 +126,32 @@ class QuantumVoiceCopilot {
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
         osc.start(now);
         osc.stop(now + 0.35);
+      } else if (type === 'prompt') {
+        // "Your turn" prompt ping: F5 (698Hz) -> C6 (1046Hz)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(698.46, now);
+        osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.09);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'heard') {
+        // Subtle acknowledgment blip: G5 (784Hz)
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(783.99, now);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      } else if (type === 'warn') {
+        // Polite descending double tone: D5 (587Hz) -> G4 (392Hz)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now);
+        osc.frequency.exponentialRampToValueAtTime(392.0, now + 0.18);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc.start(now);
+        osc.stop(now + 0.38);
       }
     } catch (e) {}
   }
@@ -290,6 +316,11 @@ class QuantumVoiceCopilot {
       };
 
       this.recognition.onresult = (event) => {
+        // Echo prevention: Ignore incoming microphone audio if Copilot is currently speaking aloud!
+        if (this.isSpeaking) {
+          return;
+        }
+
         let fullTranscript = '';
         let hasFinal = false;
 
@@ -305,9 +336,10 @@ class QuantumVoiceCopilot {
         const trimmed = fullTranscript.trim();
         if (!trimmed) return;
 
-        // Visual feedback: show what is being heard immediately
-        this._setSubtitle(`Hearing: "${trimmed}..."`);
-        this._updateStatus('🔊 HEARING YOU', 'listening');
+        // Immediate visual feedback of heard speech in both dialogue bubble & subtitle
+        this._setDialogueUser(trimmed);
+        this._setSubtitle(`Heard: "${trimmed}"`);
+        this._updateStatus('🔊 HEARING YOU...', 'listening');
 
         // If marked final by browser, process immediately!
         if (hasFinal) {
@@ -392,34 +424,90 @@ class QuantumVoiceCopilot {
       btn.style.opacity = this.speechSynthesisEnabled ? '1' : '0.5';
     }
     if (this.speechSynthesisEnabled) {
-      this._speak('Voice confirmation enabled.');
+      this._speak('Voice confirmation enabled. What circuit shall we build?');
     }
   }
 
-  _speak(text) {
-    if (!this.speechSynthesisEnabled || !window.speechSynthesis) return;
+  _speak(text, onComplete = null) {
+    console.log('[QuantumVoiceCopilot] Speaking:', text);
+    this._setDialogueAI(text);
+
+    if (!this.speechSynthesisEnabled || !window.speechSynthesis) {
+      if (onComplete) onComplete();
+      return;
+    }
+
     try {
+      this.isSpeaking = true;
+      this._updateStatus('🗣️ COPILOT SPEAKING...', 'speaking');
+
+      // Clear any pending queue
       window.speechSynthesis.cancel();
       window.speechSynthesis.resume();
 
       setTimeout(() => {
         try {
           const utterance = new SpeechSynthesisUtterance(text);
-          utterance.rate = 1.0;
+          // CRITICAL: Bind to window and instance to prevent V8 premature garbage collection
+          window._activeCopilotUtterance = utterance;
+          this.activeUtterance = utterance;
+
+          utterance.rate = 1.02;
           utterance.pitch = 1.0;
           utterance.volume = 1.0;
+
           const voices = window.speechSynthesis.getVoices();
           if (voices && voices.length) {
-            const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('David') || v.name.includes('Zira')));
+            const preferredVoice = voices.find(v => 
+              v.lang.startsWith('en') && 
+              (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Jenny') || v.name.includes('Guy'))
+            ) || voices.find(v => v.lang.startsWith('en'));
             if (preferredVoice) utterance.voice = preferredVoice;
           }
+
+          utterance.onstart = () => {
+            this.isSpeaking = true;
+            this._updateStatus('🗣️ COPILOT SPEAKING...', 'speaking');
+          };
+
+          utterance.onend = () => {
+            window._activeCopilotUtterance = null;
+            this.activeUtterance = null;
+            // Short delay so speaker echo dissipates before mic unfreezes
+            setTimeout(() => {
+              this.isSpeaking = false;
+              if (this.isListening) {
+                this._updateStatus('🟢 LISTENING — WHAT NEXT?', 'listening');
+                this._playChime('prompt');
+              }
+              if (onComplete) onComplete();
+            }, 350);
+          };
+
+          utterance.onerror = (e) => {
+            console.warn('[QuantumVoiceCopilot] Speech error:', e);
+            window._activeCopilotUtterance = null;
+            this.activeUtterance = null;
+            this.isSpeaking = false;
+            if (this.isListening) {
+              this._updateStatus('🟢 LISTENING', 'listening');
+            }
+            if (onComplete) onComplete();
+          };
+
           window.speechSynthesis.resume();
           window.speechSynthesis.speak(utterance);
-        } catch (e) {
-          console.warn('[QuantumVoiceCopilot] TTS speak error:', e);
+        } catch (err) {
+          console.warn('[QuantumVoiceCopilot] Speak invocation error:', err);
+          this.isSpeaking = false;
+          if (onComplete) onComplete();
         }
-      }, 60);
-    } catch (e) {}
+      }, 70);
+    } catch (e) {
+      console.warn('[QuantumVoiceCopilot] TTS top error:', e);
+      this.isSpeaking = false;
+      if (onComplete) onComplete();
+    }
   }
 
   _updateStatus(text, type) {
@@ -431,6 +519,16 @@ class QuantumVoiceCopilot {
 
   _setSubtitle(text) {
     const el = document.getElementById('copilot-sub-text');
+    if (el) el.textContent = text;
+  }
+
+  _setDialogueUser(text) {
+    const el = document.getElementById('copilot-user-text');
+    if (el) el.textContent = `"${text}"`;
+  }
+
+  _setDialogueAI(text) {
+    const el = document.getElementById('copilot-ai-text');
     if (el) el.textContent = text;
   }
 
@@ -554,7 +652,7 @@ class QuantumVoiceCopilot {
       else if (/\b(psi\s*minus|singlet)\b/.test(clean)) variant = 'psi_minus';
 
       this._buildBellVariant(variant);
-      if (shouldSpeak) this._speak('Created Bell state maximally entangled pair.');
+      if (shouldSpeak) this._speak('Synthesized Bell state maximally entangled pair. What would you like to build or do next?');
       return 'Bell State';
     }
 
@@ -563,63 +661,63 @@ class QuantumVoiceCopilot {
       const qMatch = clean.match(/(\d+)\s*(?:qubit|q)/);
       const nQubits = qMatch ? parseInt(qMatch[1], 10) : 3;
       this._buildDynamicGHZ(nQubits);
-      if (shouldSpeak) this._speak(`Created ${nQubits}-qubit GHZ state.`);
+      if (shouldSpeak) this._speak(`Created ${nQubits}-qubit GHZ entangled state. What gate should we add next?`);
       return `${nQubits}-Qubit GHZ`;
     }
 
     // 1.3 W-State
     if (/\b(w\s*state|w\s*superposition)\b/.test(clean)) {
       this._buildWState();
-      if (shouldSpeak) this._speak('Created three-qubit W state.');
+      if (shouldSpeak) this._speak('Created three-qubit W state. What would you like to add next?');
       return 'W State';
     }
 
     // 1.4 Quantum Teleportation Protocol
     if (/\b(teleport|teleportation|epr\s*channel)\b/.test(clean)) {
       this._buildTeleportation();
-      if (shouldSpeak) this._speak('Loaded quantum teleportation protocol.');
+      if (shouldSpeak) this._speak('Loaded quantum teleportation protocol. Would you like to run simulation, or inspect gates?');
       return 'Teleportation Protocol';
     }
 
     // 1.5 Superdense Coding
     if (/\b(superdense|dense\s*coding)\b/.test(clean)) {
       this._buildSuperdenseCoding();
-      if (shouldSpeak) this._speak('Loaded superdense coding protocol.');
+      if (shouldSpeak) this._speak('Loaded superdense coding protocol. What is our next step?');
       return 'Superdense Coding';
     }
 
     // 1.6 Entanglement Swapping
     if (/\b(entanglement\s*swapping|swapping\s*protocol)\b/.test(clean)) {
       this._buildEntanglementSwapping();
-      if (shouldSpeak) this._speak('Constructed entanglement swapping circuit across 4 qubits.');
+      if (shouldSpeak) this._speak('Constructed entanglement swapping circuit across 4 qubits. What is next?');
       return 'Entanglement Swapping';
     }
 
     // 1.7 Deutsch-Jozsa Algorithm
     if (/\b(deutsch|deutsch\s*jozsa)\b/.test(clean)) {
       this._buildDeutschJozsa();
-      if (shouldSpeak) this._speak('Constructed Deutsch-Jozsa quantum advantage circuit.');
+      if (shouldSpeak) this._speak('Constructed Deutsch-Jozsa quantum advantage circuit. Shall we run the simulation?');
       return 'Deutsch-Jozsa';
     }
 
     // 1.8 Bernstein-Vazirani Algorithm
     if (/\b(bernstein|vazirani|hidden\s*string)\b/.test(clean)) {
       this._buildBernsteinVazirani();
-      if (shouldSpeak) this._speak('Constructed Bernstein-Vazirani single-query search algorithm.');
+      if (shouldSpeak) this._speak('Constructed Bernstein-Vazirani single-query search algorithm. What is our next step?');
       return 'Bernstein-Vazirani';
     }
 
     // 1.9 Simon's Algorithm
     if (/\b(simon|simon's|period\s*finding)\b/.test(clean)) {
       this._buildSimon();
-      if (shouldSpeak) this._speak('Constructed Simon\'s exponential speedup period finding circuit.');
+      if (shouldSpeak) this._speak('Constructed Simon\'s exponential speedup circuit. What is next?');
       return 'Simon\'s Algorithm';
     }
 
     // 1.10 Grover's Search Algorithm
     if (/\b(grover|grover's|quantum\s*search|database\s*search)\b/.test(clean)) {
       this._buildGrover();
-      if (shouldSpeak) this._speak('Loaded Grover quantum search algorithm.');
+      if (shouldSpeak) this._speak('Loaded Grover quantum search algorithm. Shall we run simulation, or add more gates?');
       return 'Grover Search';
     }
 
@@ -629,63 +727,63 @@ class QuantumVoiceCopilot {
       const qMatch = clean.match(/(\d+)\s*(?:qubit|q)/);
       const nQubits = qMatch ? parseInt(qMatch[1], 10) : (ui.numQubits || 3);
       this._buildDynamicQFT(nQubits, isInverse);
-      if (shouldSpeak) this._speak(`Generated ${nQubits}-qubit Quantum Fourier Transform.`);
+      if (shouldSpeak) this._speak(`Generated ${nQubits}-qubit Quantum Fourier Transform. What should we do next?`);
       return `QFT (${nQubits}q)`;
     }
 
     // 1.12 Quantum Phase Estimation (QPE)
     if (/\b(qpe|phase\s*estimation)\b/.test(clean)) {
       this._buildQPE();
-      if (shouldSpeak) this._speak('Loaded Quantum Phase Estimation circuit.');
+      if (shouldSpeak) this._speak('Loaded Quantum Phase Estimation circuit. What would you like to do next?');
       return 'Quantum Phase Estimation';
     }
 
     // 1.13 Quantum Arithmetic & Adders
     if (/\b(adder|half\s*adder|quantum\s*adder|arithmetic)\b/.test(clean)) {
       this._buildQuantumAdder();
-      if (shouldSpeak) this._speak('Constructed quantum adder circuit using Toffoli and CNOT gates.');
+      if (shouldSpeak) this._speak('Constructed quantum adder circuit using Toffoli and CNOT gates. What gate shall we add next?');
       return 'Quantum Half-Adder';
     }
 
     // 1.14 Quantum Error Correction: Bit-Flip Code
     if (/\b(bit\s*flip\s*code|repetition\s*code|error\s*correction|qec)\b/.test(clean)) {
       this._buildBitFlipCode();
-      if (shouldSpeak) this._speak('Constructed 3-qubit bit-flip error correction code.');
+      if (shouldSpeak) this._speak('Constructed 3-qubit bit-flip error correction code. What is next?');
       return '3-Qubit Bit-Flip QEC';
     }
 
     // 1.15 Quantum Error Correction: Phase-Flip Code
     if (/\b(phase\s*flip\s*code)\b/.test(clean)) {
       this._buildPhaseFlipCode();
-      if (shouldSpeak) this._speak('Constructed 3-qubit phase-flip error correction code.');
+      if (shouldSpeak) this._speak('Constructed 3-qubit phase-flip error correction code. What is next?');
       return '3-Qubit Phase-Flip QEC';
     }
 
     // 1.16 SWAP Test (Fidelity & State Overlap)
     if (/\b(swap\s*test|state\s*overlap|fidelity\s*test)\b/.test(clean)) {
       this._buildSwapTest();
-      if (shouldSpeak) this._speak('Constructed quantum SWAP test for state overlap measurement.');
+      if (shouldSpeak) this._speak('Constructed quantum SWAP test for state overlap measurement. What is next?');
       return 'SWAP Test';
     }
 
     // 1.17 Quantum Random Number Generator (QRNG)
     if (/\b(qrng|random\s*number|random\s*generator|coin\s*flip)\b/.test(clean)) {
       this._buildQRNG();
-      if (shouldSpeak) this._speak('Constructed Quantum Random Number Generator.');
+      if (shouldSpeak) this._speak('Constructed Quantum Random Number Generator. Shall we run simulation?');
       return 'QRNG';
     }
 
     // 1.18 VQE Ansatz
     if (/\b(vqe|variational|ansatz)\b/.test(clean)) {
       this._buildVQE();
-      if (shouldSpeak) this._speak('Loaded Variational Quantum Eigensolver ansatz.');
+      if (shouldSpeak) this._speak('Loaded Variational Quantum Eigensolver ansatz. What is next?');
       return 'VQE Ansatz';
     }
 
     // 1.19 CHSH Bell Test
     if (/\b(chsh|inequality|bell\s*test)\b/.test(clean)) {
       this._buildCHSH();
-      if (shouldSpeak) this._speak('Loaded CHSH Bell inequality violation test.');
+      if (shouldSpeak) this._speak('Loaded CHSH Bell inequality violation test. Ready to run simulation?');
       return 'CHSH Test';
     }
 
@@ -696,7 +794,7 @@ class QuantumVoiceCopilot {
       ui.clearCircuit();
       this._setActionFeedback('Cleared entire quantum circuit.');
       this._playChime('success');
-      if (shouldSpeak) this._speak('Circuit reset to ground state.');
+      if (shouldSpeak) this._speak('Circuit reset to ground state. Which gate shall we start with?');
       return 'Clear Circuit';
     }
 
@@ -704,15 +802,27 @@ class QuantumVoiceCopilot {
       ui.runInteractiveSimulation();
       this._setActionFeedback('Executed quantum statevector simulation.');
       this._playChime('success');
-      if (shouldSpeak) this._speak('Running simulation.');
+      if (shouldSpeak) this._speak('Simulation executed. Statevector and measurement probabilities updated. What is next?');
       return 'Run Simulation';
+    }
+
+    // Configure register qubit count ("4 qubits", "set to 3 qubits", "make 4 qubits")
+    const setQubitMatch = clean.match(/\b(?:set|make|use|have|with)?\s*([2-8])\s*qubits?\b/i);
+    if (setQubitMatch) {
+      const targetQ = parseInt(setQubitMatch[1], 10);
+      while (ui.numQubits < targetQ) ui.addQubit();
+      while (ui.numQubits > targetQ) ui.removeQubit();
+      this._setActionFeedback(`Configured register with ${targetQ} qubits.`);
+      this._playChime('success');
+      if (shouldSpeak) this._speak(`Configured circuit with ${targetQ} qubits. What gate should we add first?`);
+      return `SetQubits(${targetQ})`;
     }
 
     if (/\b(add\s*qubit|new\s*qubit|more\s*qubit)\b/.test(clean)) {
       ui.addQubit();
       this._setActionFeedback(`Added qubit. Register is now ${ui.numQubits} qubits.`);
       this._playChime('success');
-      if (shouldSpeak) this._speak(`Added qubit. Total is now ${ui.numQubits}.`);
+      if (shouldSpeak) this._speak(`Added qubit. Total is now ${ui.numQubits}. What gate shall we place?`);
       return 'Add Qubit';
     }
 
@@ -720,7 +830,7 @@ class QuantumVoiceCopilot {
       ui.removeQubit();
       this._setActionFeedback(`Removed qubit. Register is now ${ui.numQubits} qubits.`);
       this._playChime('success');
-      if (shouldSpeak) this._speak(`Removed qubit. Total is now ${ui.numQubits}.`);
+      if (shouldSpeak) this._speak(`Removed qubit. Total is now ${ui.numQubits}. What is our next step?`);
       return 'Remove Qubit';
     }
 
@@ -733,7 +843,7 @@ class QuantumVoiceCopilot {
       }
       this._setActionFeedback(`Applied Hadamard transform to all ${ui.numQubits} qubits.`);
       this._playChime('success');
-      if (shouldSpeak) this._speak(`Applied Hadamard to all ${ui.numQubits} qubits.`);
+      if (shouldSpeak) this._speak(`Applied Hadamard to all ${ui.numQubits} qubits. What is our next gate?`);
       return 'Hadamard on All';
     }
 
@@ -743,7 +853,7 @@ class QuantumVoiceCopilot {
       }
       this._setActionFeedback(`Applied Pauli-X bit-flip to all ${ui.numQubits} qubits.`);
       this._playChime('success');
-      if (shouldSpeak) this._speak('Inverted all qubits.');
+      if (shouldSpeak) this._speak('Inverted all qubits. What gate should I add next?');
       return 'X on All';
     }
 
@@ -754,7 +864,7 @@ class QuantumVoiceCopilot {
       }
       this._setActionFeedback(`Added measurements across all ${ui.numQubits} qubits.`);
       this._playChime('success');
-      if (shouldSpeak) this._speak('Added measurement to all qubits.');
+      if (shouldSpeak) this._speak('Added measurement to all qubits. Ready to run simulation, or add more gates?');
       return 'Measure All';
     }
 
@@ -797,13 +907,15 @@ class QuantumVoiceCopilot {
         ui.removeGate(q, col);
         this._setActionFeedback(`Removed gate at Qubit ${q}, Column ${col + 1}.`);
         this._playChime('success');
-        if (shouldSpeak) this._speak(`Removed gate on qubit ${q}.`);
+        if (shouldSpeak) this._speak(`Removed gate on qubit ${q}. What would you like to do next?`);
         return `Remove(q${q}, c${col+1})`;
       }
     }
 
-    // Fallback
+    // Fallback: Never leave user in silence! Acknowledge what was heard and invite valid next command.
     this._setActionFeedback(`Unrecognized: "${rawClause}". Try: "Add H on 0", "Make GHZ", "CNOT 0 to 1"`, false);
+    this._playChime('warn');
+    if (shouldSpeak) this._speak(`I heard: ${rawClause}. What gate shall I place next? You can say: Add H on 0, or CNOT 0 to 1.`);
     return null;
   }
 
@@ -1436,7 +1548,13 @@ class QuantumVoiceCopilot {
     const name = gateFullNames[gateName] || gateName;
     this._setActionFeedback(`Placed ${name} on Qubit ${qubit} (Col ${col + 1}).`);
     this._playChime('success');
-    if (shouldSpeak) this._speak(`Placed ${name} on qubit ${qubit}.`);
+    if (shouldSpeak) {
+      if (gateName === 'M') {
+        this._speak(`Placed measurement on qubit ${qubit}. Should we run simulation, or add more gates?`);
+      } else {
+        this._speak(`Placed ${name} on qubit ${qubit}. What gate should I add next?`);
+      }
+    }
   }
 
   _parseAndPlaceCNOT(text, shouldSpeak = true) {
@@ -1510,7 +1628,7 @@ class QuantumVoiceCopilot {
 
     this._setActionFeedback(`Wired CNOT: Control Q${ctrlQ} ➔ Target Q${tgtQ} (Col ${col + 1}).`);
     this._playChime('success');
-    if (shouldSpeak) this._speak(`Added CNOT from qubit ${ctrlQ} to qubit ${tgtQ}.`);
+    if (shouldSpeak) this._speak(`Wired CNOT from control qubit ${ctrlQ} to target qubit ${tgtQ}. What gate should I add next?`);
     return `CNOT(q${ctrlQ}➔q${tgtQ})`;
   }
 
@@ -1542,7 +1660,7 @@ class QuantumVoiceCopilot {
 
     this._setActionFeedback(`Placed SWAP between Qubit ${q1} and Qubit ${q2}.`);
     this._playChime('success');
-    if (shouldSpeak) this._speak(`Placed SWAP between qubit ${q1} and qubit ${q2}.`);
+    if (shouldSpeak) this._speak(`Placed SWAP between qubit ${q1} and qubit ${q2}. What is our next step?`);
     return `SWAP(q${q1}, q${q2})`;
   }
 
@@ -1568,7 +1686,7 @@ class QuantumVoiceCopilot {
 
     this._setActionFeedback('Constructed 3-Qubit Toffoli (CCX) gate on Q0, Q1, Q2.');
     this._playChime('success');
-    if (shouldSpeak) this._speak('Added Toffoli gate.');
+    if (shouldSpeak) this._speak('Added Toffoli gate on qubits 0, 1, and 2. What would you like to build next?');
     return 'Toffoli(CCX)';
   }
 }

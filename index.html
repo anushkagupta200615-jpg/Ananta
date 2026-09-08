@@ -1513,11 +1513,26 @@
             </div>
           </div>
 
-          <!-- Live Subtitle / Hearing Bar -->
-          <div class="copilot-subtitle-bar" id="copilot-subtitle-bar">
-            <span class="copilot-sub-icon">🗣️</span>
-            <span class="copilot-sub-text" id="copilot-sub-text">Listening... Speak: "Make Bell state" or "Add H on 0"</span>
+          <!-- Live Interactive Voice Dialogue Exchange Card -->
+          <div class="copilot-dialogue-card" id="copilot-dialogue-card">
+            <div class="copilot-msg copilot-msg-user">
+              <div class="copilot-avatar">👤</div>
+              <div class="copilot-bubble">
+                <span class="copilot-speaker-lbl">YOU</span>
+                <p id="copilot-user-text">Ready... say e.g. "Put H on 0" or "Make Bell state"</p>
+              </div>
+            </div>
+            <div class="copilot-msg copilot-msg-ai">
+              <div class="copilot-avatar">🤖</div>
+              <div class="copilot-bubble">
+                <span class="copilot-speaker-lbl">COPILOT</span>
+                <p id="copilot-ai-text">Quantum Copilot online. What circuit shall we build?</p>
+              </div>
+            </div>
           </div>
+
+          <!-- Hidden legacy subtitle anchor for backward compatibility -->
+          <span class="copilot-sub-text" id="copilot-sub-text" style="display:none;"></span>
 
           <!-- Action Feedback Box -->
           <div class="copilot-action-box" id="copilot-action-box" style="display:none;">
