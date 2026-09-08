@@ -837,6 +837,9 @@
           </div>
 
           <div class="ribbon-actions">
+            <button class="tool-btn btn-voice-camera" id="btn-voice-camera" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggle()" title="Live AI Voice & Video Camera Copilot (Speak to place gates and build circuits hands-free)">
+              🎙️ Voice & Camera AI
+            </button>
             <button class="tool-btn btn-cloud-qpu" id="btn-open-qpu-modal" onclick="if(window.cloudQPUBridge) window.cloudQPUBridge.openModal()" title="Execute on Real Physical IBM Quantum Cloud Processor">
               🚀 Cloud QPU
             </button>
@@ -1484,6 +1487,59 @@
                 <pre><code id="qiskit-code"># Initializing circuit code...</code><code id="qasm-code" style="display:none;"></code></pre>
               </div>
             </div>
+        <!-- Floating Live AI Voice & Video Camera Copilot HUD -->
+        <div id="quantum-copilot-hud" class="quantum-copilot-hud" style="display:none;">
+          <!-- Header Bar -->
+          <div class="copilot-hud-header">
+            <div class="copilot-hud-title">
+              <span class="copilot-hud-dot live"></span>
+              <span class="copilot-hud-heading">AI Voice & Camera Copilot</span>
+            </div>
+            <div class="copilot-hud-actions">
+              <button class="copilot-hud-btn" id="copilot-btn-cam" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleCamera()" title="Toggle Camera">📷</button>
+              <button class="copilot-hud-btn" id="copilot-btn-mic" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleMic()" title="Toggle Mic">🎙️</button>
+              <button class="copilot-hud-btn" id="copilot-btn-tts" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleSpeechFeedback()" title="Toggle Voice Feedback">🔊</button>
+              <button class="copilot-hud-btn copilot-btn-close" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.close()" title="Close Copilot">✕</button>
+            </div>
+          </div>
+
+          <!-- Video / Audio Waveform Canvas -->
+          <div class="copilot-video-wrap">
+            <video id="copilot-video-feed" autoplay playsinline muted></video>
+            <canvas id="copilot-wave-canvas" width="300" height="170" style="display:none;"></canvas>
+            <div class="copilot-feed-overlay">
+              <span class="copilot-live-pill" id="copilot-live-pill">🟢 LISTENING</span>
+              <span class="copilot-qpu-brand">ANANTA COPILOT</span>
+            </div>
+          </div>
+
+          <!-- Live Subtitle / Hearing Bar -->
+          <div class="copilot-subtitle-bar" id="copilot-subtitle-bar">
+            <span class="copilot-sub-icon">🗣️</span>
+            <span class="copilot-sub-text" id="copilot-sub-text">Listening... Speak: "Make Bell state" or "Add H on 0"</span>
+          </div>
+
+          <!-- Action Feedback Box -->
+          <div class="copilot-action-box" id="copilot-action-box" style="display:none;">
+            <span class="copilot-act-icon">⚡</span>
+            <span class="copilot-act-text" id="copilot-act-text"></span>
+          </div>
+
+          <!-- Command Input Fallback (for typing or quiet environments) -->
+          <form class="copilot-text-row" onsubmit="event.preventDefault(); window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeTextCommand();">
+            <input type="text" id="copilot-text-input" placeholder="Or type voice command (e.g. 'make bell state')..." autocomplete="off" />
+            <button type="submit">Send</button>
+          </form>
+
+          <!-- Quick Voice Command Chips -->
+          <div class="copilot-chips-row">
+            <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('make bell state')">✨ Bell State</button>
+            <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('make ghz state')">✨ GHZ State</button>
+            <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('add hadamard on qubit 0')">⚡ H on Q0</button>
+            <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('add cnot from 0 to 1')">⚡ CNOT 0→1</button>
+            <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('add pauli x on qubit 1')">⚡ X on Q1</button>
+            <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('run simulation')">▶️ Simulate</button>
+            <button class="copilot-chip chip-danger" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('clear circuit')">🗑️ Clear</button>
           </div>
         </div>
 
@@ -3337,6 +3393,7 @@ Key Advantage:
   <script src="js/quantum-debugger.js"></script>
   <script src="js/cryo-twin.js"></script>
   <script src="js/pqc-auditor.js"></script>
+  <script src="js/quantum-voice-copilot.js"></script>
   <script src="js/app.js"></script>
   <!-- KaTeX Auto-Render Engine -->
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
