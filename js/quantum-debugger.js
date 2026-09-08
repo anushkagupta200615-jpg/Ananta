@@ -109,6 +109,7 @@ class QuantumTimeDebugger {
 
     this.renderScrubber();
     this.stepTo(0);
+    this.renderDebugReview();
     this.runDiagnostics();
   }
 
@@ -543,6 +544,244 @@ class QuantumTimeDebugger {
         '<strong style="color:' + (colorMap[iss.s] || '#94a3b8') + ';margin-right:6px;">' + iss.icon + '</strong> <span>' + iss.text + '</span>' +
         '</div>'
       ).join('');
+  }
+
+  renderDebugReview() {
+    const container = document.getElementById('qtd-debug-review-panel');
+    if (!container || !this.snapshots.length) return;
+
+    const grid = this.circuitUI && this.circuitUI.grid;
+    if (!grid) return;
+
+    const numQubits = grid.length;
+    const numCols = grid[0].length;
+    const final = this.snapshots[this.snapshots.length - 1];
+
+    // Collect all gates placed in circuit
+    const allGates = [];
+    for (let q = 0; q < numQubits; q++) {
+      for (let col = 0; col < numCols; col++) {
+        const cell = grid[q][col];
+        if (cell && cell !== '') {
+          allGates.push({ qubit: q, col, gate: cell });
+        }
+      }
+    }
+
+    // Identify mistakes & compiler anomalies
+    const findings = [];
+
+    // 1. Premature Measurement
+    for (let q = 0; q < numQubits; q++) {
+      let mCol = -1;
+      for (let col = 0; col < numCols; col++) {
+        const cell = grid[q][col];
+        if (cell === 'M') {
+          mCol = col;
+        } else if (mCol !== -1 && cell && cell !== '') {
+          findings.push({
+            type: 'error',
+            title: `Premature Wavefunction Collapse on Wire q[${q}]`,
+            location: `Step at column t=${col + 1}`,
+            desc: `Qubit q[${q}] was measured at column t=${mCol + 1}, but gate '${cell}' was placed afterward at t=${col + 1}. Projective Born measurement collapses superposition into a classical bit, destroying quantum advantage.`,
+            fix: `Move the Measure gate to the very end of wire q[${q}] or remove intermediate measurements.`
+          });
+        }
+      }
+    }
+
+    // 2. Self-Inverse Gate Redundancy (U² = I)
+    const selfInv = ['H', 'X', 'Y', 'Z'];
+    for (let q = 0; q < numQubits; q++) {
+      let lastG = null, lastC = -1;
+      for (let col = 0; col < numCols; col++) {
+        const cell = grid[q][col];
+        if (!cell || cell === '') continue;
+        if (cell === 'CX_CTRL' || cell === 'CX_TGT') {
+          lastG = null;
+          continue;
+        }
+        if (selfInv.includes(cell)) {
+          if (lastG === cell) {
+            findings.push({
+              type: 'warning',
+              title: `Self-Cancelling Gate Redundancy (${cell}² = I) on Wire q[${q}]`,
+              location: `Columns t=${lastC + 1} and t=${col + 1}`,
+              desc: `Consecutive '${cell}' gates cancel each other out identically to the Identity gate. This increases circuit depth without modifying the unitary operator.`,
+              fix: `Delete both duplicate '${cell}' gates to save ~40 ns of physical decoherence time.`
+            });
+            lastG = null;
+            continue;
+          }
+          lastG = cell;
+          lastC = col;
+        } else {
+          lastG = null;
+        }
+      }
+    }
+
+    // 3. Pauli-Y or X on Entangled Bell State
+    const hasCX = allGates.some(g => g.gate === 'CX_CTRL');
+    const hasY = allGates.some(g => g.gate === 'Y');
+    if (hasCX && hasY) {
+      findings.push({
+        type: 'info',
+        title: `Pauli-Y Basis Rotation Detected`,
+        location: `Targeted on entangled register`,
+        desc: `Pauli-Y gate applied to the entangled register applies a bit-flip (|0⟩↔|1⟩) combined with a 90° phase shift (+i). The state was rotated away from the standard Bell basis into an orthogonal basis.`,
+        fix: `If your goal was standard Bell state (|00⟩+|11⟩)/√2, remove the Pauli-Y gate.`
+      });
+    }
+
+    // 4. Missing Entanglement (CNOT on computational basis)
+    if (hasCX && final.entropy < 0.05 && final.concurrence < 0.05) {
+      findings.push({
+        type: 'warning',
+        title: `CNOT Applied on Unsuperposed State (No Entanglement Created)`,
+        location: `Control wire in classical basis`,
+        desc: `CNOT was applied, but the control qubit was in a deterministic computational state (|0⟩ or |1⟩) rather than a superposition. The wavefunction remains a separable product state with zero entanglement.`,
+        fix: `Add a Hadamard (H) gate before CNOT on the control qubit to generate entanglement.`
+      });
+    }
+
+    // 5. Idle Qubits
+    for (let q = 0; q < numQubits; q++) {
+      const qGates = allGates.filter(g => g.qubit === q);
+      if (qGates.length === 0) {
+        findings.push({
+          type: 'info',
+          title: `Idle Register Wire q[${q}]`,
+          location: `Wire q[${q}]`,
+          desc: `No quantum operations are placed on wire q[${q}]. It remains in ground state |0⟩.`,
+          fix: `Use qubit-scaling buttons (-/+) in Composer to reduce register size if unneeded.`
+        });
+      }
+    }
+
+    // Calculate Circuit Health Score (0-100)
+    let score = 100;
+    findings.forEach(f => {
+      if (f.type === 'error') score -= 25;
+      else if (f.type === 'warning') score -= 12;
+      else if (f.type === 'info') score -= 4;
+    });
+    score = Math.max(10, Math.min(100, score));
+
+    // Execution time
+    let num1Q = 0, num2Q = 0;
+    allGates.forEach(g => {
+      if (g.gate === 'CX_CTRL') num2Q++;
+      else if (g.gate !== 'CX_TGT' && g.gate !== 'M') num1Q++;
+    });
+    const tNs = (num1Q * 20) + (num2Q * 200);
+    const tUs = tNs / 1000;
+    const t2 = this.t2Us || 30;
+    const cohRatio = ((tUs / t2) * 100).toFixed(1);
+
+    // Entanglement classification
+    let entDesc = 'Separable Product State';
+    if (final.concurrence > 0.85) entDesc = 'Maximally Entangled (EPR)';
+    else if (final.concurrence > 0.2) entDesc = 'Partially Entangled';
+
+    // Step-by-step evolution trace
+    const stepLogs = this.snapshots.map((s, idx) => {
+      const topStateStr = (s.probs || []).filter(p => p.probability > 0.05)
+        .map(p => `${(p.probability * 100).toFixed(0)}% |${p.state.replace(/[|⟩]/g, '')}⟩`).join(' + ') || '|000⟩';
+      return `
+        <div class="qtd-step-trace-row" onclick="if(window.quantumDebugger) window.quantumDebugger.stepTo(${idx})">
+          <span class="step-trace-num">Step ${idx}</span>
+          <strong class="step-trace-gate">${s.gateDesc}</strong>
+          <span class="step-trace-state">${topStateStr}</span>
+          <span class="step-trace-entropy">Entropy S = ${s.entropy.toFixed(3)} ebits</span>
+          <span class="step-trace-purity">Purity ${(s.purity * 100).toFixed(0)}%</span>
+        </div>
+      `;
+    }).join('');
+
+    const findingsHtml = findings.length > 0 ? findings.map(f => {
+      const badgeCls = f.type === 'error' ? 'finding-badge-error' : f.type === 'warning' ? 'finding-badge-warn' : 'finding-badge-info';
+      const icon = f.type === 'error' ? '🚨 ERROR' : f.type === 'warning' ? '⚠️ MISTAKE' : '💡 NOTE';
+      return `
+        <div class="qtd-finding-card ${f.type}">
+          <div class="finding-header">
+            <span class="finding-badge ${badgeCls}">${icon}</span>
+            <strong class="finding-title">${f.title}</strong>
+            <span class="finding-loc">${f.location}</span>
+          </div>
+          <p class="finding-desc">${f.desc}</p>
+          <div class="finding-fix"><strong>💡 Suggested Fix:</strong> ${f.fix}</div>
+        </div>
+      `;
+    }).join('') : `
+      <div class="qtd-finding-clean">
+        <span class="clean-icon">✅</span>
+        <div>
+          <strong>No Mistakes or Circuit Defects Detected!</strong>
+          <p>Unitary propagation is physically optimal with clean state evolution, high coherence margin, and valid gate ordering.</p>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = `
+      <div class="qtd-review-box">
+        <div class="qtd-review-top-bar">
+          <div class="review-title-group">
+            <span class="review-icon">📋</span>
+            <div>
+              <h3 class="review-heading">Quantum Circuit Debug & Verification Audit</h3>
+              <p class="review-subheading">Comprehensive diagnostic review of what the debugger analyzed, verified, and identified.</p>
+            </div>
+          </div>
+          <div class="review-score-badge ${score >= 90 ? 'score-good' : score >= 70 ? 'score-warn' : 'score-bad'}">
+            <span class="score-number">${score}/100</span>
+            <span class="score-label">${score >= 90 ? 'Healthy' : score >= 70 ? 'Warnings' : 'Defects Found'}</span>
+          </div>
+        </div>
+
+        <!-- 4 Stat Metric Badges -->
+        <div class="qtd-review-stats-row">
+          <div class="rstat-item">
+            <span class="rstat-label">Quantum Register:</span>
+            <strong class="rstat-val">${numQubits} Qubits (2ⁿ=${1 << numQubits} States)</strong>
+          </div>
+          <div class="rstat-item">
+            <span class="rstat-label">Total Gates Traced:</span>
+            <strong class="rstat-val">${allGates.length} Gates (${this.snapshots.length - 1} Steps)</strong>
+          </div>
+          <div class="rstat-item">
+            <span class="rstat-label">Entanglement Status:</span>
+            <strong class="rstat-val">${entDesc} (C=${final.concurrence.toFixed(2)})</strong>
+          </div>
+          <div class="rstat-item">
+            <span class="rstat-label">Coherence Budget:</span>
+            <strong class="rstat-val">~${tUs.toFixed(2)} µs used (${cohRatio}% of T₂)</strong>
+          </div>
+        </div>
+
+        <!-- Detected Mistakes & Actionable Review -->
+        <div class="qtd-review-section">
+          <div class="qtd-review-section-title">
+            <span>🔬 Detected Circuit Anomalies & Mistakes (${findings.length})</span>
+            <button class="btn-goto-composer-fix" onclick="window.switchTab('simulator')">✏️ Edit in Composer</button>
+          </div>
+          <div class="qtd-findings-list">
+            ${findingsHtml}
+          </div>
+        </div>
+
+        <!-- Collapsible What It Debugged Step Trace -->
+        <details class="qtd-trace-dropdown" open>
+          <summary class="qtd-trace-summary">
+            <span>🔍 What Was Debugged: Step-by-Step State Evolution Trace (${this.snapshots.length} Snapshots)</span>
+            <span class="trace-hint">Click any step to scrub timeline</span>
+          </summary>
+          <div class="qtd-trace-table">
+            ${stepLogs}
+          </div>
+        </details>
+      </div>
+    `;
   }
 
   openDebugger() {

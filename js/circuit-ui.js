@@ -711,19 +711,38 @@ class CircuitUI {
     this.updateStepperDisplay();
     this.updateQuantumIntelligenceDeck();
     this.updatePresetHighlight();
+
+    // Dynamically update Pauli Observables on left sidebar
+    if (window._renderPauliGauges) {
+      window._renderPauliGauges();
+    }
   }
 
   updateEntanglementBadge(probs) {
     const badge = document.getElementById('entanglement-status-indicator');
     if (!badge) return;
 
-    // Check if state is in Bell or GHZ pattern (e.g. 000 and 110 or 00 and 11)
-    const activeStates = probs.filter(p => p.probability > 0.05);
-    const isBell = activeStates.length === 2 && Math.abs(activeStates[0].probability - 0.5) < 0.1 && Math.abs(activeStates[1].probability - 0.5) < 0.1;
+    const activeStates = (probs || []).filter(p => p.probability > 0.05);
+    const m = this.engine && this.engine.getAdvancedEntanglementMetrics ? this.engine.getAdvancedEntanglementMetrics() : null;
+    const isEntangled = m ? (m.concurrence > 0.15 || m.vonNeumannEntropy > 0.15) : false;
+    const states = activeStates.map(s => s.state);
 
-    if (isBell) {
+    const hasY = this.grid && this.grid.some(row => row.some(c => c === 'Y'));
+    const isStdBell = states.length === 2 && states.includes('|000⟩') && states.includes('|110⟩') && !hasY && isEntangled;
+    const isGHZ = states.length === 2 && states.includes('|000⟩') && states.includes('|111⟩') && isEntangled;
+
+    if (isStdBell) {
       badge.style.display = 'inline-flex';
-      badge.innerHTML = `⚡ Entangled Bell State Detected`;
+      badge.innerHTML = `⚡ Entangled Bell State |Φ⁺⟩ Active`;
+    } else if (isGHZ) {
+      badge.style.display = 'inline-flex';
+      badge.innerHTML = `🌐 Tripartite GHZ State Active`;
+    } else if (isEntangled) {
+      badge.style.display = 'inline-flex';
+      badge.innerHTML = `🔗 Entangled Subsystem (C=${(m ? m.concurrence : 1).toFixed(2)})`;
+    } else if (activeStates.length > 1) {
+      badge.style.display = 'inline-flex';
+      badge.innerHTML = `🪙 Superposition (${activeStates.length} States)`;
     } else {
       badge.style.display = 'none';
     }
@@ -1859,11 +1878,20 @@ class CircuitUI {
       entanglementClass: 'Product State'
     };
 
-    // State signatures
-    const isBell = activeStates.length === 2 && Math.abs(activeStates[0].probability - 0.5) < 0.12 && Math.abs(activeStates[1].probability - 0.5) < 0.12;
-    const isGHZ = activeStates.length === 2 && ((activeStates[0].state === '|000⟩' && activeStates[1].state === '|111⟩') || (activeStates[0].state === '|111⟩' && activeStates[1].state === '|000⟩')) && Math.abs(activeStates[0].probability - 0.5) < 0.12;
+    // State signatures & Gate analysis
+    const stateNames = activeStates.map(s => s.state);
+    const hasCX = this.grid && this.grid.some(row => row.some(c => c === 'CX_CTRL' || c === 'CX_TGT'));
+    const hasY = this.grid && this.grid.some(row => row.some(c => c === 'Y'));
+    const hasX = this.grid && this.grid.some(row => row.some(c => c === 'X'));
+    const hasZ = this.grid && this.grid.some(row => row.some(c => c === 'Z'));
+    const hasM = this.grid && this.grid.some(row => row.some(c => c === 'M'));
+    const isEntangled = m.concurrence > 0.15 || m.vonNeumannEntropy > 0.15;
+
+    const isStdBell = activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|110⟩') && !hasY && Math.abs(activeStates[0].probability - 0.5) < 0.15;
+    const isStdGHZ = activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|111⟩') && !hasY && Math.abs(activeStates[0].probability - 0.5) < 0.15;
+    const isRotatedEntangled = isEntangled && (hasY || hasX || hasZ);
     const isSuperpos = activeStates.length > 1;
-    const isGround = activeStates.length === 1 && activeStates[0].state === '|000⟩';
+    const isGround = activeStates.length === 1 && (activeStates[0].state === '|000⟩' || activeStates[0].state === '|00⟩');
 
     // Step operator & column inspection
     let stepOperatorLabel = 'Operator: I₈ (Ground State)';
@@ -1883,7 +1911,7 @@ class CircuitUI {
       stepPillText = `Step ${this.playbackStep} of ${this.numCols} (Column t=${this.playbackStep})`;
       const g0 = this.grid[0][col];
       const g1 = this.grid[1][col];
-      const g2 = this.grid[2][col];
+      const g2 = this.grid[2] ? this.grid[2][col] : null;
 
       if (g0 === 'CX_CTRL' && g1 === 'CX_TGT') {
         stepOperatorLabel = 'Operator: CNOT₀₁ ⊗ I₂';
@@ -1946,45 +1974,65 @@ class CircuitUI {
 
     if (begPill) begPill.textContent = stepPillText;
 
-    if (isBell) {
+    if (isStdBell) {
       if (begConcept) begConcept.textContent = 'Quantum Entanglement & Non-Locality';
-      if (begAction) begAction.textContent = '⚡ Bell State Active';
+      if (begAction) begAction.textContent = '⚡ Bell State |Φ⁺⟩ Active';
       if (begIcon) begIcon.textContent = '⚡';
       if (begTitle) begTitle.textContent = 'The Quantum Entanglement Link';
-      if (begDesc) begDesc.textContent = 'Qubit 0 was put into an equal coin-spin with the Hadamard gate, and CNOT tied Qubit 0 and Qubit 1 together with an invisible quantum link. Now they act as one: observing Qubit 0 as |0⟩ guarantees Qubit 1 is instantly |0⟩ too — even across light-years!';
+      if (begDesc) begDesc.textContent = 'Qubit 0 was put into equal superposition with the Hadamard gate, and CNOT entangled Qubit 0 with Qubit 1. Now they act as a single unit: measuring Qubit 0 as |0⟩ instantly guarantees Qubit 1 is |0⟩ too!';
       if (begApp) begApp.textContent = 'Quantum Cryptography (QKD) & Teleportation';
-    } else if (isGHZ) {
+    } else if (isStdGHZ) {
       if (begConcept) begConcept.textContent = 'Tripartite Entangled Superposition';
       if (begAction) begAction.textContent = '🌐 Tripartite GHZ Active';
       if (begIcon) begIcon.textContent = '🌐';
-      if (begTitle) begTitle.textContent = 'The 3-Qubit Collective Web';
+      if (begTitle) begTitle.textContent = 'The 3-Qubit Collective Web (|000⟩ + |111⟩)';
       if (begDesc) begDesc.textContent = 'All three qubits are locked into a single shared quantum wave. Checking any single qubit forces the entire register to snap together into either |000⟩ or |111⟩ with zero delay.';
       if (begApp) begApp.textContent = 'Quantum Secret Sharing & Atomic Magnetometry';
+    } else if (isRotatedEntangled) {
+      const gateNames = [];
+      if (hasY) gateNames.push('Pauli-Y (Bit+Phase Flip)');
+      if (hasX) gateNames.push('Pauli-X (Bit Flip)');
+      if (hasZ) gateNames.push('Pauli-Z (Phase Flip)');
+      const statesStr = stateNames.join(' and ');
+      if (begConcept) begConcept.textContent = 'Rotated Entangled Basis';
+      if (begAction) begAction.textContent = '🔄 Transformed Entanglement';
+      if (begIcon) begIcon.textContent = '🔀';
+      if (begTitle) begTitle.textContent = `Rotated Entangled State: ${stateNames.join(' ↔ ')}`;
+      if (begDesc) begDesc.textContent = `The quantum entanglement was rotated by the ${gateNames.join(' & ')} gates! While quantum correlations remain active (Concurrence C = ${m.concurrence.toFixed(2)}), the computational basis was inverted into ${statesStr}. Observing one qubit still perfectly predicts the others in this new basis.`;
+      if (begApp) begApp.textContent = 'Quantum Dense Coding & Error Mitigation';
+    } else if (isEntangled) {
+      if (begConcept) begConcept.textContent = 'Multi-Qubit Entangled Subsystem';
+      if (begAction) begAction.textContent = `🔗 Entangled (C = ${m.concurrence.toFixed(2)})`;
+      if (begIcon) begIcon.textContent = '🔗';
+      if (begTitle) begTitle.textContent = `Coupled Quantum State: ${stateNames.slice(0, 3).join(' + ')}`;
+      if (begDesc) begDesc.textContent = `CNOT entangling operations have coupled the qubits together. Subsystem purity is ${(m.purity * 100).toFixed(0)}% with Von Neumann entropy ${m.vonNeumannEntropy.toFixed(2)} ebits. Outcomes are correlated across ${stateNames.join(', ')}.`;
+      if (begApp) begApp.textContent = 'Quantum Phase Estimation & VQE Chemistry';
     } else if (isSuperpos) {
       if (begConcept) begConcept.textContent = 'Quantum Superposition (Spinning Coin)';
-      if (begAction) begAction.textContent = '🪙 50/50 Quantum Coin Flip';
+      if (begAction) begAction.textContent = `🪙 ${activeStates.length}-State Superposition`;
       if (begIcon) begIcon.textContent = '🪙';
-      if (begTitle) begTitle.textContent = 'Flipping the Quantum Coin in Mid-Air';
-      if (begDesc) begDesc.textContent = 'The qubits are spinning in mid-air like flipped coins. Until measured, they exist in both Heads (|0⟩) and Tails (|1⟩) simultaneously, allowing the computer to explore multiple answers in parallel!';
+      if (begTitle) begTitle.textContent = `Superposition Across ${stateNames.length} States: ${stateNames.join(' + ')}`;
+      if (begDesc) begDesc.textContent = `The qubits are in mid-air superposition across ${stateNames.join(', ')}. Until measured, each outcome has a probability weight, allowing quantum parallel exploration!`;
       if (begApp) begApp.textContent = 'Grover Database Search & Quantum Random Numbers';
     } else if (isGround) {
       if (begConcept) begConcept.textContent = 'Ground State Baseline';
       if (begAction) begAction.textContent = '🎯 Ground State |000⟩';
       if (begIcon) begIcon.textContent = '🎯';
       if (begTitle) begTitle.textContent = 'Resting in the Dilution Refrigerator';
-      if (begDesc) begDesc.textContent = 'All three qubits are sitting still in their lowest possible energy state |000⟩. In actual quantum hardware, microwave tones and cryogenic cooling down to 15 millikelvin calibrate this pure starting line.';
+      if (begDesc) begDesc.textContent = 'All qubits are resting in their lowest possible energy state |000⟩ at 15 millikelvin. Microwave calibration tone ensures a pure zero-noise baseline.';
       if (begApp) begApp.textContent = 'Quantum Register Pre-Flight Calibration';
     } else {
-      if (begConcept) begConcept.textContent = 'Deterministic Pure State';
-      if (begAction) begAction.textContent = '🔒 Deterministic State';
+      const defState = activeStates[0] ? activeStates[0].state : '|000⟩';
+      if (begConcept) begConcept.textContent = `Deterministic Pure State (${defState})`;
+      if (begAction) begAction.textContent = `🔒 Deterministic State`;
       if (begIcon) begIcon.textContent = '💎';
-      if (begTitle) begTitle.textContent = 'Definite Quantum Direction';
-      if (begDesc) begDesc.textContent = 'The quantum register is currently aligned with a definite computational outcome. Measurement will produce a reliable, deterministic readout.';
+      if (begTitle) begTitle.textContent = `Definite Quantum Direction: ${defState}`;
+      if (begDesc) begDesc.textContent = `The quantum register is currently aligned with a definite computational outcome (${defState}). Measurement will produce a reliable, deterministic readout with zero uncertainty.`;
       if (begApp) begApp.textContent = 'Fault-Tolerant Logic Execution';
     }
 
     if (begChance) {
-      const topStates = activeStates.slice(0, 3).map(s => `${(s.probability * 100).toFixed(0)}% ${s.state}`);
+      const topStates = activeStates.slice(0, 4).map(s => `${(s.probability * 100).toFixed(1)}% ${s.state}`);
       begChance.textContent = topStates.length > 0 ? topStates.join(', ') : '100% |000⟩';
     }
 
