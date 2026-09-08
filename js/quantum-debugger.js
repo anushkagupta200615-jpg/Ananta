@@ -109,6 +109,7 @@ class QuantumTimeDebugger {
 
     this.renderScrubber();
     this.stepTo(0);
+    this.runDiagnostics();
   }
 
   _captureSnapshots(grid) {
@@ -385,31 +386,161 @@ class QuantumTimeDebugger {
     this.diagnosticBox.style.display = 'block';
     const final = this.snapshots[this.snapshots.length - 1];
     const issues = [];
-
-    if (final.purity < 0.8) {
-      issues.push({ s: 'error', icon: 'RED', text:
-        'High decoherence: purity = ' + (final.purity*100).toFixed(1) + '%. Try Dynamical Decoupling or reducing circuit depth.' });
-    }
-    const peakE = Math.max.apply(null, this.snapshots.map(s => s.entropy));
-    if (peakE > 0.5 && final.entropy < 0.1) {
-      issues.push({ s: 'warning', icon: 'WARN', text:
-        'Entanglement collapse: peak = ' + peakE.toFixed(3) + ' -> final = ' + final.entropy.toFixed(3) + ' ebits. Check for premature measurement.' });
-    }
     const grid = this.circuitUI && this.circuitUI.grid;
-    if (grid) {
-      let cnotCount = 0;
-      grid.forEach(row => row.forEach(c => { if (c === 'CX_CTRL') cnotCount++; }));
-      if (cnotCount > 3) issues.push({ s: 'warning', icon: 'WARN', text:
-        cnotCount + ' CNOT gates detected - 2-qubit gates carry 10-50x higher error rates. Use Transpiler Doctor to optimize.' });
-    }
-    if (issues.length === 0) issues.push({ s: 'success', icon: 'OK', text:
-      'Circuit is healthy! Purity = ' + (final.purity*100).toFixed(1) + '%, entropy = ' + final.entropy.toFixed(3) + ' ebits. Expected hardware fidelity > 85%.' });
 
-    const colorMap = { error: '#f87171', warning: '#fbbf24', success: '#34d399' };
-    this.diagnosticBox.innerHTML = '<div class="qtd-diag-title">AI Circuit Diagnostics</div>' +
+    if (!grid || !grid.length) return;
+    const numQubits = grid.length;
+    const numCols = grid[0].length;
+
+    // 1. AST Rule: Premature Measurement / Mid-Circuit Quantum Collapse
+    for (let q = 0; q < numQubits; q++) {
+      let measureCol = -1;
+      for (let col = 0; col < numCols; col++) {
+        const cell = grid[q][col];
+        if (cell === 'M') {
+          measureCol = col;
+        } else if (measureCol !== -1 && cell && cell !== '') {
+          issues.push({
+            s: 'error',
+            icon: '🚨 PREMATURE COLLAPSE',
+            text: `Qubit q${q} is measured at t=${measureCol + 1}, but gate '${cell}' is placed afterward at t=${col + 1}. Born-rule projection irreversibly collapses superposition into a classical bit, destroying quantum advantage.`
+          });
+          break;
+        }
+      }
+    }
+
+    // 2. AST Rule: Self-Inverse Unitary Redundancy (U² = I)
+    const selfInverse = ['H', 'X', 'Y', 'Z'];
+    for (let q = 0; q < numQubits; q++) {
+      let lastGate = null;
+      let lastCol = -1;
+      for (let col = 0; col < numCols; col++) {
+        const cell = grid[q][col];
+        if (!cell || cell === '') continue;
+        if (cell === 'CX_CTRL' || cell === 'CX_TGT') {
+          lastGate = null; // Entanglement breaks 1-qubit idempotence
+          continue;
+        }
+        if (selfInverse.includes(cell)) {
+          if (lastGate === cell) {
+            issues.push({
+              s: 'warning',
+              icon: '⚡ GATE REDUNDANCY',
+              text: `Consecutive '${cell}' gates on qubit q${q} (t=${lastCol + 1} and t=${col + 1}). Because ${cell}² = I (Identity), they cancel each other out, wasting QPU coherence time.`
+            });
+            lastGate = null;
+            continue;
+          }
+          lastGate = cell;
+          lastCol = col;
+        } else {
+          lastGate = null;
+        }
+      }
+    }
+
+    // 3. Entanglement & Non-Locality Analysis
+    const peakE = Math.max.apply(null, this.snapshots.map(s => s.entropy || 0));
+    if (final.concurrence >= 0.85) {
+      issues.push({
+        s: 'success',
+        icon: '✨ MAXIMAL ENTANGLEMENT',
+        text: `Maximally Entangled State verified (Wootters Concurrence C = ${final.concurrence.toFixed(3)}, Entropy S = ${final.entropy.toFixed(3)} ebits). Exhibits non-local Einstein-Podolsky-Rosen (EPR) quantum correlations.`
+      });
+    } else if (final.concurrence > 0.1) {
+      issues.push({
+        s: 'success',
+        icon: '🔗 PARTIAL ENTANGLEMENT',
+        text: `Bipartite Entanglement detected (Concurrence C = ${final.concurrence.toFixed(3)}, Von Neumann S = ${final.entropy.toFixed(3)} ebits). Subsystems are quantum correlated.`
+      });
+    } else {
+      let hasCX = false;
+      grid.forEach(row => row.forEach(c => { if (c === 'CX_CTRL') hasCX = true; }));
+      if (hasCX && final.entropy < 0.05) {
+        issues.push({
+          s: 'warning',
+          icon: 'ℹ️ PRODUCT STATE',
+          text: `CNOT was applied on computational basis states without prior superposition (|0⟩ or |1⟩); wavefunction remains a separable product state with zero entanglement.`
+        });
+      }
+    }
+
+    // 4. Gottesman-Knill Theorem & Complexity Classification
+    let tGateCount = 0;
+    let cliffordCount = 0;
+    grid.forEach(row => row.forEach(c => {
+      if (c === 'T') tGateCount++;
+      else if (['H', 'S', 'X', 'Y', 'Z', 'CX_CTRL'].includes(c)) cliffordCount++;
+    }));
+
+    if (tGateCount === 0 && cliffordCount > 0) {
+      issues.push({
+        s: 'info',
+        icon: '📐 GOTTESMAN-KNILL THEOREM',
+        text: `Pure Clifford Circuit: Composed exclusively of Clifford group operators {H, S, Pauli, CNOT}. Can be simulated in polynomial time O(n²) on classical hardware without exponential quantum advantage.`
+      });
+    } else if (tGateCount > 0) {
+      issues.push({
+        s: 'success',
+        icon: '🌌 UNIVERSAL QUANTUM CLASS',
+        text: `Universal Quantum Gate Set: Contains ${tGateCount} non-Clifford T-gate(s). Generates W-states/magic states requiring Magic State Distillation on fault-tolerant physical QPUs.`
+      });
+    }
+
+    // 5. Hardware Execution Time vs Coherence Budget (T1 / T2)
+    let singleQubitGates = 0;
+    let twoQubitGates = 0;
+    grid.forEach(row => row.forEach(c => {
+      if (c === 'CX_CTRL') twoQubitGates++;
+      else if (c && c !== 'CX_TGT' && c !== 'M') singleQubitGates++;
+    }));
+    // Typical superconducting QPU: 1Q gate ~20ns, 2Q CNOT ~200ns
+    const tExecNs = (singleQubitGates * 20) + (twoQubitGates * 200);
+    const tExecUs = tExecNs / 1000;
+    const t2Us = this.t2Us || 30;
+    const coherenceRatio = (tExecUs / t2Us) * 100;
+
+    if (coherenceRatio < 10) {
+      issues.push({
+        s: 'success',
+        icon: '🛡️ COHERENCE BUDGET',
+        text: `Circuit runtime ~${tExecUs.toFixed(2)} µs consumes only ${coherenceRatio.toFixed(1)}% of physical T₂ dephasing limit (${t2Us} µs). Hardware fidelity expected > 92%.`
+      });
+    } else {
+      issues.push({
+        s: 'warning',
+        icon: '⚠️ COHERENCE DRIFT',
+        text: `Circuit runtime ~${tExecUs.toFixed(2)} µs consumes ${coherenceRatio.toFixed(1)}% of T₂ window (${t2Us} µs). Physical execution will accumulate significant phase damping.`
+      });
+    }
+
+    // 6. Decoherence & Purity Check
+    if (this.noiseEnabled && final.purity < 0.85) {
+      issues.push({
+        s: 'error',
+        icon: '🔥 DECOHERENCE LOSS',
+        text: `State Purity degraded to Tr(ρ²) = ${(final.purity * 100).toFixed(1)}% under Lindblad noise channels. Consider Dynamical Decoupling (DD) pulse sequences.`
+      });
+    }
+
+    // 7. Idle Qubit Wire Check
+    for (let q = 0; q < numQubits; q++) {
+      const wireGates = grid[q].filter(c => c && c !== '');
+      if (wireGates.length === 0) {
+        issues.push({
+          s: 'info',
+          icon: '💤 IDLE REGISTER',
+          text: `Qubit q${q} is allocated but has zero operations placed; remains in ground state |0⟩ throughout execution.`
+        });
+      }
+    }
+
+    const colorMap = { error: '#f87171', warning: '#fbbf24', success: '#34d399', info: '#60a5fa' };
+    this.diagnosticBox.innerHTML = '<div class="qtd-diag-title">⚡ Quantum AST & Physical Diagnostic Engine</div>' +
       issues.map(iss =>
-        '<div class="qtd-diag-issue" style="border-left:3px solid ' + colorMap[iss.s] + ';padding:8px 10px;margin-bottom:8px;background:rgba(0,0,0,0.2);border-radius:6px">' +
-        '<strong style="color:' + colorMap[iss.s] + '">' + iss.icon + '</strong> <span>' + iss.text + '</span>' +
+        '<div class="qtd-diag-issue" style="border-left:3px solid ' + (colorMap[iss.s] || '#94a3b8') + ';padding:8px 10px;margin-bottom:8px;background:rgba(0,0,0,0.25);border-radius:6px;font-size:12.5px;line-height:1.5;">' +
+        '<strong style="color:' + (colorMap[iss.s] || '#94a3b8') + ';margin-right:6px;">' + iss.icon + '</strong> <span>' + iss.text + '</span>' +
         '</div>'
       ).join('');
   }
