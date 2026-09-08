@@ -840,6 +840,9 @@
             <button class="tool-btn btn-cloud-qpu" id="btn-open-qpu-modal" onclick="if(window.cloudQPUBridge) window.cloudQPUBridge.openModal()" title="Execute on Real Physical IBM Quantum Cloud Processor">
               🚀 Cloud QPU
             </button>
+            <button class="tool-btn btn-composer-debugger" id="btn-composer-debugger" onclick="window.openDebuggerFromComposer()" title="Jump straight into Time-Travel Debugger with this circuit (Step-by-step Unitary Inspection & Entropy Analysis)">
+              ⏱️ Time-Travel Debugger
+            </button>
             <button class="tool-drawer-btn" id="btn-toggle-ke-drawer" onclick="window.toggleKnowledgeEngineDrawer()" title="Toggle Advanced Research Knowledge Assistant (Press /)">
               🔬 Knowledge Engine ▾
             </button>
@@ -1112,6 +1115,7 @@
                 <button id="btn-step-play" class="step-btn step-btn-play" title="Auto-Play Unitary Evolution">▶ Play</button>
                 <button id="btn-step-next" class="step-btn" title="Propagate Forward One Gate">▶</button>
                 <button id="btn-step-end" class="step-btn" title="Jump to Full Circuit Output">⏭</button>
+                <button type="button" class="step-btn btn-step-to-debugger" onclick="window.openDebuggerFromComposer()" title="Switch directly to Time-Travel Debugger for deep statevector, entropy arc, and density matrix analysis">⏱️ Time-Travel</button>
               </div>
 
               <!-- Dynamic Qubit Register Scaling (2 to 8 Qubits) -->
@@ -3032,6 +3036,7 @@ Key Advantage:
         <p class="qtd-page-subtitle">Step gate-by-gate through your circuit. Watch the statevector, entanglement entropy, and state purity evolve in real time. No other platform in the world offers this.</p>
         <div class="qtd-header-actions">
           <button id="btn-qtd-capture" class="qtd-btn-capture">▶ Debug Current Circuit</button>
+          <button class="qtd-btn-back-composer" onclick="window.switchTab('simulator')" title="Return to Composer to modify gates or try presets">✏️ Edit in Composer</button>
           <label class="qtd-noise-label">
             <input type="checkbox" id="qtd-noise-toggle"> Inject T1/T2 Noise
           </label>

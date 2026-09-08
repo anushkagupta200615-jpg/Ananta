@@ -415,9 +415,27 @@ class QuantumTimeDebugger {
   }
 
   openDebugger() {
-    this.captureAndOpen();
-    if (window.switchTab) window.switchTab('debugger');
+    if (window.switchTab) {
+      window.switchTab('debugger');
+    } else if (window.switchView) {
+      window.switchView('debugger');
+    }
+    const grid = this.circuitUI && this.circuitUI.grid;
+    const hasGates = grid && grid.some(row => row.some(cell => cell && cell !== ''));
+    if (hasGates) {
+      setTimeout(() => this.captureAndOpen(), 50);
+    }
   }
 }
 
 window.QuantumTimeDebugger = QuantumTimeDebugger;
+
+window.openDebuggerFromComposer = function() {
+  if (window.quantumDebugger) {
+    window.quantumDebugger.openDebugger();
+  } else if (window.switchTab) {
+    window.switchTab('debugger');
+  } else if (window.switchView) {
+    window.switchView('debugger');
+  }
+};
