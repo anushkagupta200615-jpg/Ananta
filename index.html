@@ -94,7 +94,7 @@
               </div>
             </a>
             <div class="dropdown-menu-divider"></div>
-            <div class="nav-dropdown-header">SIH India-First Features</div>
+            <div class="nav-dropdown-header">Hardware & Security Studios</div>
             <a href="#debugger" class="dropdown-rich-item" data-tab="debugger">
               <span class="dropdown-rich-icon">⏱️</span>
               <div class="dropdown-rich-info">
@@ -302,7 +302,7 @@
     <a href="#pulse-studio" class="mobile-nav-item" data-tab="pulse-studio" onclick="window.closeMobileNav()">🎛️ Microwave Pulse Studio</a>
     <a href="#transpiler" class="mobile-nav-item" data-tab="transpiler" onclick="window.closeMobileNav()">⚡ Multi-Transpiler & Doctor</a>
     <a href="#vqe-chemistry" class="mobile-nav-item" data-tab="vqe-chemistry" onclick="window.closeMobileNav()">🧪 VQE Molecular Chemistry</a>
-    <div class="mobile-nav-section-title" style="color:#ff9933">SIH INDIA-FIRST</div>
+    <div class="mobile-nav-section-title" style="color:#8ab4f8">HARDWARE & SECURITY</div>
     <a href="#debugger" class="mobile-nav-item" data-tab="debugger" onclick="window.closeMobileNav()">⏱️ Time-Travel Debugger</a>
     <a href="#cryo-twin" class="mobile-nav-item" data-tab="cryo-twin" onclick="window.closeMobileNav()">🧊 NQM Cryostat Twin</a>
     <a href="#pqc-auditor" class="mobile-nav-item" data-tab="pqc-auditor" onclick="window.closeMobileNav()">🔐 PQC Security Auditor</a>
@@ -3031,7 +3031,7 @@ Key Advantage:
   <section class="viewport-section" id="view-debugger" style="display:none">
     <div class="qtd-page-container">
       <div class="qtd-page-header">
-        <div class="qtd-header-badge">SIH EXCLUSIVE</div>
+        <div class="qtd-header-badge">RESEARCH CO-DESIGN</div>
         <h1 class="qtd-page-title">⏱️ Quantum Time-Travel Debugger</h1>
         <p class="qtd-page-subtitle">Step gate-by-gate through your circuit. Watch the statevector, entanglement entropy, and state purity evolve in real time. No other platform in the world offers this.</p>
         <div class="qtd-header-actions">
@@ -3178,6 +3178,12 @@ Key Advantage:
               <span id="cryo-temp-display" class="cryo-temp-display">15 mK</span>
               <span id="cryo-status-pill" class="cryo-status-pill status-operational">OPERATIONAL</span>
             </div>
+            <div class="cryo-preset-chips">
+              <button type="button" class="cryo-preset-btn active" id="cpreset-15" onclick="if(window.cryoTwin) window.cryoTwin.setTemp(15)">❄️ 15 mK</button>
+              <button type="button" class="cryo-preset-btn" id="cpreset-45" onclick="if(window.cryoTwin) window.cryoTwin.setTemp(45)">⚠️ 45 mK</button>
+              <button type="button" class="cryo-preset-btn" id="cpreset-120" onclick="if(window.cryoTwin) window.cryoTwin.setTemp(120)">🔥 120 mK</button>
+              <button type="button" class="cryo-preset-btn" id="cpreset-300" onclick="if(window.cryoTwin) window.cryoTwin.setTemp(300)">💥 300 mK</button>
+            </div>
             <input type="range" id="cryo-temp-slider" min="15" max="500" value="15" step="1" class="cryo-temp-slider">
             <div class="cryo-temp-scale">
               <span>15 mK<br><small>Base</small></span>
@@ -3189,6 +3195,7 @@ Key Advantage:
           <div class="cryo-actions">
             <button id="btn-cryo-inject" class="cryo-btn-inject">⚡ Inject Thermal Noise into Circuit</button>
             <button id="btn-cryo-reset" class="cryo-btn-reset">↺ Reset to 15 mK</button>
+            <button class="cryo-btn-edit-composer" onclick="window.switchTab('simulator')">✏️ Edit in Composer</button>
           </div>
           <div id="cryo-noise-hint" class="cryo-noise-hint" style="display:none"></div>
         </div>
@@ -3224,20 +3231,10 @@ Key Advantage:
             </div>
           </div>
 
-          <!-- Histogram noise overlay demo -->
+          <!-- Dynamic Dual-Comparison Histogram -->
           <div class="cryo-histogram-demo">
-            <div class="cryo-hist-title">Probability Histogram (with thermal noise)</div>
-            <div class="cryo-hist-bars">
-              <div class="cryo-hist-bar" style="height:80%"><span>|000&gt;</span></div>
-              <div class="cryo-hist-bar" style="height:5%"><span>|001&gt;</span></div>
-              <div class="cryo-hist-bar" style="height:5%"><span>|010&gt;</span></div>
-              <div class="cryo-hist-bar" style="height:5%"><span>|011&gt;</span></div>
-              <div class="cryo-hist-bar" style="height:80%"><span>|100&gt;</span></div>
-              <div class="cryo-hist-bar" style="height:5%"><span>|101&gt;</span></div>
-              <div class="cryo-hist-bar" style="height:5%"><span>|110&gt;</span></div>
-              <div class="cryo-hist-bar" style="height:5%"><span>|111&gt;</span></div>
-              <div id="cryo-histogram-noise-overlay" class="cryo-hist-noise-overlay" style="opacity:0"></div>
-            </div>
+            <div class="cryo-hist-title">Live Statevector Histogram (Ideal vs Thermal Noise)</div>
+            <div id="cryo-hist-container" class="cryo-hist-container"></div>
           </div>
         </div>
 
@@ -3250,6 +3247,7 @@ Key Advantage:
             <option value="sycamore">Google Sycamore 5x5</option>
           </select>
           <div id="cryo-topo-cards" class="cryo-topo-cards"></div>
+          <div id="cryo-chip-diagram" class="cryo-chip-diagram"></div>
         </div>
       </div>
     </div>

@@ -14234,7 +14234,7 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================================
-   SIH FEATURE #1 — Quantum Time-Travel Debugger
+   STUDIO 1 — Quantum Time-Travel Debugger
    ========================================================================== */
 
 .qtd-page-container { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
@@ -14725,7 +14725,7 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================================
-   SIH FEATURE #2 — NQM Cryostat Hardware Digital Twin
+   STUDIO 2 — NQM Cryostat Hardware Digital Twin
    ========================================================================== */
 
 .cryo-page-container { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
@@ -14817,22 +14817,146 @@ input:checked + .slider-round:before {
 .cryo-metric-val { font-size: 22px; font-weight: 800; font-family: monospace; color: var(--text-primary); margin-bottom: 4px; transition: color 0.3s; }
 .cryo-metric-formula { font-size: 9.5px; font-family: monospace; color: var(--text-dim); }
 
-/* Histogram demo */
+/* Temperature Presets */
+.cryo-preset-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.cryo-preset-btn {
+  background: var(--bg-subtle, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  color: var(--text-secondary, #94a3b8);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.cryo-preset-btn:hover {
+  border-color: #3b82f6;
+  color: #fff;
+}
+.cryo-preset-btn.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+  color: #60a5fa;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+}
+
+/* Edit in Composer CTA button */
+.cryo-btn-edit-composer {
+  background: transparent;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.15));
+  color: var(--text-primary, #e2e8f0);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+.cryo-btn-edit-composer:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+  color: #93c5fd;
+}
+
+/* Histogram Container & Dynamic Dual Bars */
 .cryo-histogram-demo { position: relative; }
-.cryo-hist-title { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
-.cryo-hist-bars {
-  position: relative; display: flex; align-items: flex-end; gap: 4px;
-  height: 100px; background: var(--bg-subtle); border-radius: 8px;
-  padding: 8px 8px 28px; overflow: hidden;
+.cryo-hist-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-subtle, rgba(15,23,42,0.6));
+  border-radius: 12px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  padding: 14px 16px 12px;
+  position: relative;
+  overflow: hidden;
 }
-.cryo-hist-bar {
-  flex: 1; background: linear-gradient(to top, #4f46e5, #7c3aed);
-  border-radius: 4px 4px 0 0; min-height: 4px; position: relative;
-  transition: height 0.4s ease;
+.cryo-hist-legend {
+  display: flex;
+  gap: 18px;
+  font-size: 11px;
+  color: var(--text-dim, #94a3b8);
+  font-weight: 500;
+  align-items: center;
+  flex-wrap: wrap;
 }
-.cryo-hist-bar span {
-  position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%);
-  font-size: 8px; color: var(--text-dim); white-space: nowrap; font-family: monospace;
+.hist-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hleg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.hleg-ideal {
+  background: #10b981;
+}
+.hleg-thermal {
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+}
+.cryo-hist-bars-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 120px;
+  padding-bottom: 24px;
+  position: relative;
+}
+.cryo-hist-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+}
+.cryo-dual-bars {
+  width: 100%;
+  height: calc(100% - 24px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+}
+.cbar {
+  width: 44%;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cbar-ideal {
+  background: #10b981;
+  opacity: 0.85;
+}
+.cbar-thermal {
+  background: linear-gradient(180deg, #ec4899 0%, #6366f1 100%);
+}
+.cryo-cbar-label {
+  position: absolute;
+  bottom: 8px;
+  font-size: 9px;
+  font-family: monospace;
+  color: var(--text-dim, #94a3b8);
+  white-space: nowrap;
+}
+.cryo-cbar-pct {
+  position: absolute;
+  bottom: -4px;
+  font-size: 8px;
+  font-family: monospace;
+  color: var(--text-primary, #cbd5e1);
+  font-weight: 600;
 }
 .cryo-hist-noise-overlay {
   position: absolute; inset: 0; pointer-events: none; border-radius: 8px;
@@ -14869,8 +14993,36 @@ input:checked + .slider-round:before {
 .cryo-spec-row span:last-child { color: var(--text-primary); font-family: monospace; font-weight: 600; }
 .cryo-topo-source { font-size: 9.5px; color: var(--text-dim); margin-top: 8px; font-style: italic; }
 
+/* Chip Visualizer in Right Column */
+.cryo-chip-diagram {
+  margin-top: 14px;
+  padding: 12px;
+  background: var(--bg-subtle, rgba(15,23,42,0.6));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cryo-chip-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim, #94a3b8);
+  margin-bottom: 8px;
+  text-align: center;
+}
+.cryo-chip-desc {
+  font-size: 10px;
+  color: var(--text-secondary, #94a3b8);
+  text-align: center;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
 /* ==========================================================================
-   SIH FEATURE #3 — Post-Quantum Cryptography Security Auditor
+   STUDIO 3 — Post-Quantum Cryptography Security Auditor
    ========================================================================== */
 
 .pqc-page-container { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }

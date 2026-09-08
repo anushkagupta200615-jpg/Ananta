@@ -1,11 +1,11 @@
-﻿/**
- * NQM Cryostat Hardware Digital Twin — Ananta (SIH Feature #2)
+/**
+ * NQM Cryostat Hardware Digital Twin — Ananta
  * =============================================================
  * Animated dilution refrigerator cross-section with 5 thermal stages.
  * Interactive temperature slider injects real Boltzmann thermal photon
  * noise into the statevector. Supports NQM-8 Star, IBM Heavy-Hex 7,
  * and Google Sycamore 5x5 topologies.
- * National Quantum Mission alignment for SIH judges.
+ * National Quantum Mission hardware co-design suite.
  */
 
 class CryostatTwin {
@@ -188,8 +188,14 @@ class CryostatTwin {
     // Update cryostat thermal gradient visualization
     this._updateCryostatStages(T);
 
-    // Update histogram noise overlay
-    this._updateHistogramOverlay(bf);
+    // Update dynamic live histogram (ideal vs thermal)
+    this._renderHistogram();
+
+    // Update QPU architecture chip visualizer
+    this._renderChipVisualizer();
+
+    // Sync preset chip active states
+    this._syncPresetChips();
   }
 
   _updateCryostatStages(T) {
@@ -374,6 +380,126 @@ class CryostatTwin {
     if (sel) sel.value = key;
     this._renderTopologyCards();
     this._updateDisplay();
+  }
+
+  setTemp(mK) {
+    this.temperatureMK = mK;
+    const sl = document.getElementById('cryo-temp-slider');
+    if (sl) sl.value = mK;
+    this._updateDisplay();
+    this._renderThermalNoise();
+  }
+
+  _syncPresetChips() {
+    const T = this.temperatureMK;
+    const presets = [15, 45, 120, 300];
+    presets.forEach(p => {
+      const btn = document.getElementById('cpreset-' + p);
+      if (btn) {
+        btn.classList.toggle('active', Math.abs(T - p) < 5);
+      }
+    });
+  }
+
+  _renderHistogram() {
+    const container = document.getElementById('cryo-hist-container');
+    if (!container || !this.engine) return;
+
+    const probs = this.engine.getProbabilities();
+    const nth = this._thermalPhotons();
+    // Thermal leakage factor (0 at 15mK, up to 0.75 at 300mK)
+    const thermalEpsilon = Math.min(0.85, nth * 3.5);
+
+    const N = probs.length || 8;
+    const uniformThermal = 1 / N;
+
+    // Build thermal noisy distribution
+    const noisyProbs = probs.map(p => {
+      const noisyP = (1 - thermalEpsilon) * p.probability + thermalEpsilon * uniformThermal;
+      return {
+        state: p.state,
+        idealProb: p.probability,
+        noisyProb: noisyP
+      };
+    });
+
+    container.innerHTML = `
+      <div class="cryo-hist-legend">
+        <span class="hist-legend-item"><span class="hleg-dot hleg-ideal"></span>Ideal Pure |ψ⟩ (0 mK)</span>
+        <span class="hist-legend-item"><span class="hleg-dot hleg-thermal"></span>Thermal Noisy (${this.temperatureMK} mK)</span>
+      </div>
+      <div class="cryo-hist-bars-wrapper">
+        ${noisyProbs.map(item => {
+          const idealH = Math.round(item.idealProb * 100);
+          const noisyH = Math.round(item.noisyProb * 100);
+          const stateLabel = item.state.replace(/[|⟩]/g, '');
+          return `
+            <div class="cryo-hist-col" title="|${stateLabel}⟩: Ideal ${(item.idealProb*100).toFixed(1)}% | Thermal ${(item.noisyProb*100).toFixed(1)}%">
+              <div class="cryo-dual-bars">
+                <div class="cbar cbar-ideal" style="height:${Math.max(4, idealH)}%"></div>
+                <div class="cbar cbar-thermal" style="height:${Math.max(4, noisyH)}%"></div>
+              </div>
+              <span class="cryo-cbar-label">|${stateLabel}⟩</span>
+              <span class="cryo-cbar-pct">${(item.noisyProb * 100).toFixed(0)}%</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  _renderChipVisualizer() {
+    const container = document.getElementById('cryo-chip-diagram');
+    if (!container) return;
+
+    const T = this.temperatureMK;
+    const heatColor = T < 30 ? '#34d399' : T < 100 ? '#fbbf24' : '#f87171';
+
+    if (this.selectedTopology === 'nqm8') {
+      container.innerHTML = `
+        <div class="cryo-chip-title">Topology Architecture: NQM 8-Qubit Star</div>
+        <svg viewBox="0 0 240 180" width="100%" height="150">
+          <circle cx="120" cy="90" r="18" fill="rgba(255,153,51,0.18)" stroke="#ff9933" stroke-width="2"/>
+          <text x="120" y="94" text-anchor="middle" fill="#ff9933" font-size="9" font-weight="700">RESONATOR</text>
+          ${[0,1,2,3,4,5,6].map(i => {
+            const angle = (i / 7) * Math.PI * 2 - Math.PI / 2;
+            const x = 120 + 72 * Math.cos(angle);
+            const y = 90 + 62 * Math.sin(angle);
+            return `
+              <line x1="120" y1="90" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#475569" stroke-width="1.8" stroke-dasharray="3 2"/>
+              <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="11" fill="rgba(15,23,42,0.95)" stroke="${heatColor}" stroke-width="2"/>
+              <text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" fill="${heatColor}" font-size="8.5" font-weight="700">q${i+1}</text>
+            `;
+          }).join('')}
+        </svg>
+        <div class="cryo-chip-desc">7 satellite transmons coupled via central niobium bus (RRI / IISc 2024).</div>
+      `;
+    } else if (this.selectedTopology === 'ibmheavyhex') {
+      container.innerHTML = `
+        <div class="cryo-chip-title">Topology Architecture: IBM Heavy-Hex Lattice</div>
+        <svg viewBox="0 0 240 150" width="100%" height="150">
+          <polygon points="120,20 185,55 185,115 120,140 55,115 55,55" fill="none" stroke="#0f62fe" stroke-width="2"/>
+          <circle cx="120" cy="80" r="10" fill="rgba(15,98,254,0.2)" stroke="${heatColor}" stroke-width="2"/>
+          <circle cx="120" cy="20" r="8" fill="#0f172a" stroke="${heatColor}" stroke-width="2"/>
+          <circle cx="185" cy="55" r="8" fill="#0f172a" stroke="${heatColor}" stroke-width="2"/>
+          <circle cx="185" cy="115" r="8" fill="#0f172a" stroke="${heatColor}" stroke-width="2"/>
+          <circle cx="120" cy="140" r="8" fill="#0f172a" stroke="${heatColor}" stroke-width="2"/>
+          <circle cx="55" cy="115" r="8" fill="#0f172a" stroke="${heatColor}" stroke-width="2"/>
+          <circle cx="55" cy="55" r="8" fill="#0f172a" stroke="${heatColor}" stroke-width="2"/>
+        </svg>
+        <div class="cryo-chip-desc">Heavy-hexagonal sparsity suppresses frequency collision and crosstalk.</div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="cryo-chip-title">Topology Architecture: Google Sycamore 5x5 Grid</div>
+        <svg viewBox="0 0 240 150" width="100%" height="150">
+          ${[0,1,2,3,4].map(r => [0,1,2,3,4].map(c => `
+            <circle cx="${32 + c*44}" cy="${18 + r*28}" r="6" fill="#0f172a" stroke="${heatColor}" stroke-width="1.5"/>
+          `).join('')).join('')}
+        </svg>
+        <div class="cryo-chip-desc">Planar 2D square lattice with tunable capacitive transmon couplers.</div>
+      `;
+    }
   }
 
   _startThermalAnimation() {

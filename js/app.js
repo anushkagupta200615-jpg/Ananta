@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.topicRoadmapManager = topicRoadmapManager;
   }
 
-  // ── SIH India-First Feature Studios ──────────────────────────
+  // ── Quantum Hardware & Security Studios ─────────────────────
   let quantumDebugger = null;
   if (window.QuantumTimeDebugger) {
     try {

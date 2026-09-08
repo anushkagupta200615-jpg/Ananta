@@ -1,5 +1,5 @@
-﻿/**
- * Post-Quantum Cryptography Security Auditor — Ananta (SIH Feature #3)
+/**
+ * Post-Quantum Cryptography Security Auditor — Ananta
  * =====================================================================
  * Calculates the quantum resource requirements to break common classical
  * cryptographic schemes using Shor's algorithm, and recommends NIST-approved

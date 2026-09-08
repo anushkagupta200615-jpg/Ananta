@@ -1,5 +1,5 @@
 /**
- * Quantum Time-Travel Debugger — Ananta (SIH Feature #1)
+ * Quantum Time-Travel Debugger — Ananta
  */
 class QuantumTimeDebugger {
   constructor(engine, circuitUI) {
