@@ -11,8 +11,9 @@
  *  - Universal Generative Quantum Circuit AI: Synthesizes arbitrary circuits,
  *    multi-step compound instructions ("H on 0, then X on 1, then CNOT 0 to 1"),
  *    and over 25+ quantum algorithms and error-correction protocols.
- *  - Natural language cleaning: handles "i said to make diagram of ...", "draw ...",
- *    "can you create ...", "make ...", "generate ...".
+ *  - Single-letter gate matching: handles "h on 0", "x on 1", "z on 2", "cnot 0 to 1".
+ *  - Automatic fresh start when user asks to "make a circuit with...".
+ *  - CNOT connector redraw to ensure the vertical lines (• <--> ⊕) render with proper layout.
  *  - Chrome-safe TTS speech synthesis with window.speechSynthesis.resume().
  *  - Real-time webcam PIP video with animated audio waveform fallback.
  *  - Text command fallback input and 1-click test chips.
@@ -70,7 +71,7 @@ class QuantumVoiceCopilot {
     this.startListening();
 
     // 3. Speak greeting immediately
-    this._setSubtitle('Listening! Say e.g. "Make diagram of Bell state" or click a chip below');
+    this._setSubtitle('Listening! Say e.g. "Add H on 0", "Make GHZ", "CNOT 0 to 1", or "Make Bell state"');
     this._speak('Quantum Voice Copilot ready. What circuit shall I build?');
 
     // 4. Start Camera asynchronously in background (never blocks voice/mic)
@@ -140,7 +141,7 @@ class QuantumVoiceCopilot {
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: 'user' },
-        audio: false // audio is handled by Web Speech API
+        audio: false
       });
 
       this.mediaStream = stream;
@@ -337,7 +338,6 @@ class QuantumVoiceCopilot {
 
       this.recognition.onend = () => {
         if (this.isActive && this.isListening) {
-          // Restart immediately to keep continuous listening alive
           setTimeout(() => {
             if (this.isActive && this.isListening && this.recognition) {
               try { this.recognition.start(); } catch (e) {}
@@ -400,7 +400,6 @@ class QuantumVoiceCopilot {
     if (!this.speechSynthesisEnabled || !window.speechSynthesis) return;
     try {
       window.speechSynthesis.cancel();
-      // Resume to fix Chrome stuck speech engine bug
       window.speechSynthesis.resume();
 
       setTimeout(() => {
@@ -443,7 +442,6 @@ class QuantumVoiceCopilot {
     box.className = 'copilot-action-box ' + (isSuccess ? 'act-success' : 'act-warn');
     textEl.textContent = text;
 
-    // Flash glow on HUD frame
     const hud = document.getElementById('quantum-copilot-hud');
     if (hud) {
       hud.classList.add('copilot-hud-pulse');
@@ -483,21 +481,45 @@ class QuantumVoiceCopilot {
       return;
     }
 
-    // Step 1: Check for compound sentences with clauses e.g. "H on 0 then X on 1 then CNOT 0 to 1"
-    const clauses = text.split(/\s*(?:,\s*then\s*|\s+then\s+|,\s*and\s+then\s+|\s+and\s+then\s+|\s+after\s+that\s+|\s+next\s+|;\s*)\s*/i);
+    // If user says "make a circuit with..." or "create a circuit with..." or "draw circuit with...":
+    const isNewCircuit = /^(?:make|create|draw|generate|build|construct)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)\s+(?:with|having|of|for|that\s+has)?\s+/i.test(text);
+    if (isNewCircuit) {
+      ui.clearCircuit();
+      text = text.replace(/^(?:make|create|draw|generate|build|construct)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)\s+(?:with|having|of|for|that\s+has)?\s+/i, '');
+    }
+
+    // Step 1: Intelligent clause splitting on:
+    // - "then", "and then", "after that", "next"
+    // - "and" followed by an action/gate (with optional articles like a, an, the)
+    // - commas followed by an action/gate
+    const gateLookahead = '(?:a\\s+|an\\s+|the\\s+|another\\s+)?(?:add|put|place|insert|apply|set|wire|cnot|cx|hadamard|\\bh\\b|pauli|not|\\bx\\b|\\by\\b|\\bz\\b|\\bs\\b|\\bt\\b|\\bm\\b|swap|toffoli|ccx|measure|measurement|run|clear)\\b';
+    const splitRegex = new RegExp('\\s+and\\s+(?=' + gateLookahead + ')', 'gi');
+    const commaRegex = new RegExp(',\\s*(?=' + gateLookahead + ')', 'gi');
+
+    let normalized = text
+      .replace(/\s*(?:,\s*then\s*|\s+then\s+|,\s*and\s+then\s+|\s+and\s+then\s+|\s+after\s+that\s+|\s+next\s+|;\s*)\s*/gi, ' | ')
+      .replace(splitRegex, ' | ')
+      .replace(commaRegex, ' | ');
+
+    const clauses = normalized.split(/\s*\|\s*/).map(c => c.trim()).filter(Boolean);
+
     if (clauses.length > 1) {
-      console.log('[QuantumVoiceCopilot] Executing multi-step sequence of', clauses.length, 'clauses');
+      console.log('[QuantumVoiceCopilot] Executing multi-step sequence of', clauses.length, 'clauses:', clauses);
       const actionSummaries = [];
       for (const clause of clauses) {
-        if (clause.trim()) {
-          const res = this._executeSingleIntent(clause.trim(), false);
+        if (clause) {
+          const res = this._executeSingleIntent(clause, false);
           if (res) actionSummaries.push(res);
         }
       }
       if (actionSummaries.length > 0) {
-        this._setActionFeedback(`⚡ Sequenced: ${actionSummaries.join(' ➔ ')}`);
+        this._setActionFeedback(`⚡ Built Sequence: ${actionSummaries.join(' ➔ ')}`);
         this._playChime('success');
-        this._speak(`Executed compound quantum circuit sequence with ${actionSummaries.length} steps.`);
+        this._speak(`Synthesized circuit sequence with ${actionSummaries.length} operations.`);
+        setTimeout(() => {
+          if (ui.renderGrid) ui.renderGrid();
+          if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+        }, 60);
         return;
       }
     }
@@ -510,11 +532,11 @@ class QuantumVoiceCopilot {
     const ui = window.circuitUI;
     if (!ui) return null;
 
-    // Clean conversational fluff from start:
-    // "i said to make diagram of ...", "can you please draw ...", "make ...", "create ...", "diagram of ..."
+    // Clean conversational fluff and leading articles from start:
     let clean = rawClause
-      .replace(/^(?:can\s+you\s+|could\s+you\s+|please\s+|i\s+said\s+to\s+|i\s+want\s+to\s+|i\s+need\s+to\s+|show\s+me\s+|create\s+|make\s+|draw\s+|generate\s+|build\s+|construct\s+|assemble\s+)+/i, '')
-      .replace(/^(?:a\s+|an\s+|the\s+)?(?:diagram\s+of\s+|circuit\s+of\s+|circuit\s+for\s+|diagram\s+for\s+|state\s+of\s+)?/i, '')
+      .replace(/^(?:can\s+you\s+|could\s+you\s+|please\s+|i\s+said\s+to\s+|i\s+want\s+to\s+|i\s+need\s+to\s+|show\s+me\s+|create\s+|make\s+|draw\s+|generate\s+|build\s+|construct\s+|assemble\s+|add\s+|put\s+|place\s+|insert\s+|apply\s+|set\s+|wire\s+|a\s+|an\s+|the\s+|another\s+)+/i, '')
+      .replace(/^(?:diagram\s+of\s+|circuit\s+of\s+|circuit\s+for\s+|diagram\s+for\s+|state\s+of\s+)?/i, '')
+      .replace(/^(?:a\s+|an\s+|the\s+|another\s+)+/i, '')
       .trim();
 
     clean = clean.replace(/\s+/g, ' ');
@@ -780,13 +802,13 @@ class QuantumVoiceCopilot {
       }
     }
 
-    // Fallback: If no match was found, give helpful suggestion
-    this._setActionFeedback(`Unrecognized: "${rawClause}". Try: "Make Bell state", "Make GHZ", "Add H on 0"`, false);
+    // Fallback
+    this._setActionFeedback(`Unrecognized: "${rawClause}". Try: "Add H on 0", "Make GHZ", "CNOT 0 to 1"`, false);
     return null;
   }
 
   // -------------------------------------------------------------
-  // Dynamic Circuit Generators (Non-Hardcoded)
+  // Dynamic Circuit Generators
   // -------------------------------------------------------------
 
   _buildBellVariant(variant = 'phi_plus') {
@@ -798,6 +820,10 @@ class QuantumVoiceCopilot {
       window.loadPresetSafe('bell');
       this._setActionFeedback('Synthesized Bell State |Φ⁺⟩ = (|00⟩ + |11⟩)/√2.');
       this._playChime('success');
+      setTimeout(() => {
+        if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+        if (ui.bindGateTooltips) ui.bindGateTooltips();
+      }, 60);
       return;
     }
 
@@ -826,6 +852,10 @@ class QuantumVoiceCopilot {
     ui.renderGrid();
     ui.updateSimulation();
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+      if (ui.bindGateTooltips) ui.bindGateTooltips();
+    }, 60);
   }
 
   _buildDynamicGHZ(nQubits = 3) {
@@ -837,6 +867,10 @@ class QuantumVoiceCopilot {
       window.loadPresetSafe('ghz');
       this._setActionFeedback('Synthesized 3-Qubit GHZ State (|000⟩ + |111⟩)/√2.');
       this._playChime('success');
+      setTimeout(() => {
+        if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+        if (ui.bindGateTooltips) ui.bindGateTooltips();
+      }, 60);
       return;
     }
 
@@ -857,6 +891,10 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
     this._setActionFeedback(`Synthesized ${nQubits}-Qubit GHZ State (|00...0⟩ + |11...1⟩)/√2.`);
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+      if (ui.bindGateTooltips) ui.bindGateTooltips();
+    }, 60);
   }
 
   _buildWState() {
@@ -878,6 +916,9 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
     this._setActionFeedback('Synthesized 3-Qubit W-State (|001⟩ + |010⟩ + |100⟩)/√3.');
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildTeleportation() {
@@ -886,6 +927,9 @@ class QuantumVoiceCopilot {
       window.loadPresetSafe('teleport');
       this._setActionFeedback('Loaded Quantum Teleportation Protocol with EPR channel and Bell measurement.');
       this._playChime('success');
+      setTimeout(() => {
+        if (window.circuitUI?.renderCnotConnectors) window.circuitUI.renderCnotConnectors();
+      }, 60);
       return;
     }
     const ui = window.circuitUI;
@@ -899,6 +943,9 @@ class QuantumVoiceCopilot {
     ui.loadPreset(teleportGrid, 'teleport');
     this._setActionFeedback('Loaded Quantum Teleportation Protocol with EPR pair and measurement.');
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildSuperdenseCoding() {
@@ -922,6 +969,9 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
     this._setActionFeedback('Synthesized Superdense Coding Protocol (2 classical bits per 1 qubit).');
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildEntanglementSwapping() {
@@ -949,6 +999,9 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
     this._setActionFeedback('Synthesized 4-Qubit Entanglement Swapping (entangles Q0 and Q3 without direct interaction).');
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildDeutschJozsa() {
@@ -977,6 +1030,9 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
     this._setActionFeedback('Synthesized Deutsch-Jozsa Algorithm with balanced oracle.');
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildBernsteinVazirani() {
@@ -1005,6 +1061,9 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
     this._setActionFeedback('Synthesized Bernstein-Vazirani single-query hidden bit string algorithm.');
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildSimon() {
@@ -1031,6 +1090,9 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
     this._setActionFeedback('Synthesized Simon\'s exponential speedup period-finding circuit.');
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildGrover() {
@@ -1039,6 +1101,9 @@ class QuantumVoiceCopilot {
       window.loadPresetSafe('grover');
       this._setActionFeedback('Loaded Grover Quantum Search Algorithm.');
       this._playChime('success');
+      setTimeout(() => {
+        if (window.circuitUI?.renderCnotConnectors) window.circuitUI.renderCnotConnectors();
+      }, 60);
       return;
     }
     const ui = window.circuitUI;
@@ -1050,6 +1115,9 @@ class QuantumVoiceCopilot {
     ui.loadPreset(groverGrid, 'grover');
     this._setActionFeedback('Loaded Grover Quantum Search Algorithm.');
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildDynamicQFT(nQubits = 3, isInverse = false) {
@@ -1090,6 +1158,9 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
     this._setActionFeedback(`Dynamically synthesized ${nQubits}-Qubit Quantum Fourier Transform.`);
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildQPE() {
@@ -1135,6 +1206,9 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
     this._setActionFeedback('Constructed Quantum Half-Adder (Sum on Q1, Carry on Q2).');
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildBitFlipCode() {
@@ -1155,6 +1229,9 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
     this._setActionFeedback('Synthesized 3-Qubit Bit-Flip Repetition Error Correction Code.');
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildPhaseFlipCode() {
@@ -1178,6 +1255,9 @@ class QuantumVoiceCopilot {
     ui.updateSimulation();
     this._setActionFeedback('Synthesized 3-Qubit Phase-Flip Error Correction Code.');
     this._playChime('success');
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
   }
 
   _buildSwapTest() {
@@ -1263,40 +1343,45 @@ class QuantumVoiceCopilot {
   // Freeform Gate Placement & Helper Parsers
   // -------------------------------------------------------------
   _matchSingleGate(text) {
-    if (/\b(hadamard|h\s*gate|letter\s*h)\b/.test(text)) return 'H';
-    if (/\b(pauli\s*x|not\s*gate|bit\s*flip|x\s*gate)\b/.test(text)) return 'X';
-    if (/\b(pauli\s*y|y\s*gate)\b/.test(text)) return 'Y';
-    if (/\b(pauli\s*z|phase\s*flip|z\s*gate)\b/.test(text)) return 'Z';
-    if (/\b(s\s*gate|phase\s*gate)\b/.test(text)) return 'S';
-    if (/\b(t\s*gate|pi\s*over\s*8)\b/.test(text)) return 'T';
-    if (/\b(measure|measurement|meter)\b/.test(text)) return 'M';
+    if (/\b(hadamard|h\s*gate|letter\s*h|\bh\b)\b/i.test(text)) return 'H';
+    if (/\b(pauli\s*x|not\s*gate|bit\s*flip|x\s*gate|\bnot\b|\bx\b)\b/i.test(text)) return 'X';
+    if (/\b(pauli\s*y|y\s*gate|\by\b)\b/i.test(text)) return 'Y';
+    if (/\b(pauli\s*z|phase\s*flip|z\s*gate|\bz\b)\b/i.test(text)) return 'Z';
+    if (/\b(phase\s*gate|phase|\bs\s*gate\b|\bs\b)\b/i.test(text)) return 'S';
+    if (/\b(pi\s*over\s*8|t\s*gate|\bt\b)\b/i.test(text)) return 'T';
+    if (/\b(measure|measurement|meter|\bm\b)\b/i.test(text)) return 'M';
     return null;
   }
 
   _extractQubit(text) {
     const patterns = [
-      { regex: /\b(?:qubit|q|line|wire|register)\s*([0-7])\b/, parse: m => parseInt(m[1], 10) },
-      { regex: /\b(?:qubit|q|line|wire|register)\s*(zero|one|two|three|four|five|six|seven)\b/, parse: m => this._wordToNum(m[1]) },
-      { regex: /\b(first|1st)\s*(?:qubit|line|wire)?\b/, parse: () => 0 },
-      { regex: /\b(second|2nd)\s*(?:qubit|line|wire)?\b/, parse: () => 1 },
-      { regex: /\b(third|3rd)\s*(?:qubit|line|wire)?\b/, parse: () => 2 },
-      { regex: /\b(fourth|4th)\s*(?:qubit|line|wire)?\b/, parse: () => 3 },
-      { regex: /\bon\s*([0-7])\b/, parse: m => parseInt(m[1], 10) },
-      { regex: /\bon\s*(zero|one|two|three|four|five|six|seven)\b/, parse: m => this._wordToNum(m[1]) }
+      { regex: /\b(?:qubit|q|line|wire|register)\s*([0-7])\b/i, parse: m => parseInt(m[1], 10) },
+      { regex: /\b(?:qubit|q|line|wire|register)\s*(zero|one|two|three|four|five|six|seven)\b/i, parse: m => this._extractQubitNum(m[1]) },
+      { regex: /\b(first|1st)\s*(?:qubit|line|wire)?\b/i, parse: () => 0 },
+      { regex: /\b(second|2nd)\s*(?:qubit|line|wire)?\b/i, parse: () => 1 },
+      { regex: /\b(third|3rd)\s*(?:qubit|line|wire)?\b/i, parse: () => 2 },
+      { regex: /\b(fourth|4th)\s*(?:qubit|line|wire)?\b/i, parse: () => 3 },
+      { regex: /\b(?:on|at|to|in)\s*([0-7])\b/i, parse: m => parseInt(m[1], 10) },
+      { regex: /\b(?:on|at|to|in)\s*(zero|one|two|three|four|five|six|seven)\b/i, parse: m => this._extractQubitNum(m[1]) },
+      { regex: /\bq([0-7])\b/i, parse: m => parseInt(m[1], 10) },
+      { regex: /\b(?:h|hadamard|x|y|z|s|t|m|not|measure|gate)\s*([0-7])\b/i, parse: m => parseInt(m[1], 10) },
+      { regex: /\b(?:h|hadamard|x|y|z|s|t|m|not|measure|gate)\s*(zero|one|two|three|four|five|six|seven)\b/i, parse: m => this._extractQubitNum(m[1]) },
+      { regex: /\b([0-7])\b/, parse: m => parseInt(m[1], 10) },
+      { regex: /\b(zero|one|two|three|four|five|six|seven)\b/i, parse: m => this._extractQubitNum(m[1]) }
     ];
 
     for (const p of patterns) {
       const match = text.match(p.regex);
       if (match) {
         const val = p.parse(match);
-        if (val >= 0 && val < (window.circuitUI?.numQubits || 3)) return val;
+        if (val >= 0 && val < (window.circuitUI?.numQubits || 8)) return val;
       }
     }
     return 0;
   }
 
   _extractColumn(text, qubit, findEmptyIfMissing = true) {
-    const colMatch = text.match(/\b(?:column|col|slot|step)\s*(\d+)\b/);
+    const colMatch = text.match(/\b(?:column|col|slot|step)\s*(\d+)\b/i);
     if (colMatch) {
       return Math.max(0, parseInt(colMatch[1], 10) - 1);
     }
@@ -1314,9 +1399,19 @@ class QuantumVoiceCopilot {
     return 0;
   }
 
-  _wordToNum(word) {
-    const map = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7 };
-    return map[word] !== undefined ? map[word] : 0;
+  _extractQubitNum(word) {
+    if (!word) return 0;
+    const w = word.toLowerCase();
+    if (/\b(zero|0|first|1st|q0)\b/.test(w)) return 0;
+    if (/\b(one|1|second|2nd|q1)\b/.test(w)) return 1;
+    if (/\b(two|2|third|3rd|q2)\b/.test(w)) return 2;
+    if (/\b(three|3|fourth|4th|q3)\b/.test(w)) return 3;
+    if (/\b(four|4|fifth|5th|q4)\b/.test(w)) return 4;
+    if (/\b(five|5|sixth|6th|q5)\b/.test(w)) return 5;
+    if (/\b(six|6|seventh|7th|q6)\b/.test(w)) return 6;
+    if (/\b(seven|7|eighth|8th|q7)\b/.test(w)) return 7;
+    const m = w.match(/\d+/);
+    return m ? parseInt(m[0], 10) : 0;
   }
 
   _placeSingleGate(gateName, qubit, col, shouldSpeak = true) {
@@ -1324,6 +1419,10 @@ class QuantumVoiceCopilot {
     if (!ui) return;
 
     ui.placeGate(gateName, qubit, col);
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
+
     const gateFullNames = {
       H: 'Hadamard (H)',
       X: 'Pauli-X (Bit-flip)',
@@ -1344,30 +1443,49 @@ class QuantumVoiceCopilot {
     const ui = window.circuitUI;
     if (!ui) return null;
 
-    const nums = [];
-    const numMatches = text.matchAll(/\b([0-7]|zero|one|two|three|four|five|six|seven)\b/g);
-    for (const m of numMatches) {
-      const n = isNaN(m[1]) ? this._wordToNum(m[1]) : parseInt(m[1], 10);
-      if (n >= 0 && n < ui.numQubits) {
-        nums.push(n);
+    let ctrlQ = 0;
+    let tgtQ = 1;
+
+    // Check explicit control and target words if present
+    const ctrlMatch = text.match(/(?:control|ctrl|from)\s*(?:qubit|q|line|wire)?\s*([0-7]|zero|one|two|three|four|five|six|seven)\b/i);
+    const tgtMatch = text.match(/(?:target|tgt|to)\s*(?:qubit|q|line|wire)?\s*([0-7]|zero|one|two|three|four|five|six|seven)\b/i);
+
+    if (ctrlMatch && tgtMatch) {
+      ctrlQ = this._extractQubitNum(ctrlMatch[1]);
+      tgtQ = this._extractQubitNum(tgtMatch[1]);
+    } else {
+      const nums = [];
+      const numMatches = text.matchAll(/\b([0-7]|zero|one|two|three|four|five|six|seven|first|second|third|fourth|fifth|sixth|seventh)\b/gi);
+      for (const m of numMatches) {
+        const val = this._extractQubitNum(m[1]);
+        if (val >= 0 && val < ui.numQubits) {
+          nums.push(val);
+        }
+      }
+      if (nums.length >= 2) {
+        ctrlQ = nums[0];
+        tgtQ = nums[1];
+      } else if (nums.length === 1) {
+        ctrlQ = nums[0];
+        tgtQ = (ctrlQ + 1) % ui.numQubits;
       }
     }
 
-    let ctrlQ = 0;
-    let tgtQ = 1;
-    if (nums.length >= 2) {
-      ctrlQ = nums[0];
-      tgtQ = nums[1];
-    } else if (nums.length === 1) {
-      ctrlQ = nums[0];
+    // Guard against self-targeting CNOT
+    if (ctrlQ === tgtQ) {
       tgtQ = (ctrlQ + 1) % ui.numQubits;
     }
 
     let col = -1;
-    for (let c = 0; c < ui.numCols; c++) {
-      if (!ui.grid[ctrlQ][c] && !ui.grid[tgtQ][c]) {
-        col = c;
-        break;
+    const explicitCol = this._extractColumn(text, ctrlQ, false);
+    if (explicitCol !== -1) {
+      col = explicitCol;
+    } else {
+      for (let c = 0; c < ui.numCols; c++) {
+        if (!ui.grid[ctrlQ][c] && !ui.grid[tgtQ][c]) {
+          col = c;
+          break;
+        }
       }
     }
     if (col === -1) col = 0;
@@ -1377,7 +1495,10 @@ class QuantumVoiceCopilot {
     ui.renderGrid();
     ui.updateSimulation();
 
-    // Trigger visual shockwave
+    setTimeout(() => {
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
+
     const slot1 = document.getElementById(`slot-${ctrlQ}-${col}`);
     const slot2 = document.getElementById(`slot-${tgtQ}-${col}`);
     if (slot1) slot1.classList.add('gate-shockwave');
@@ -1397,10 +1518,10 @@ class QuantumVoiceCopilot {
     const ui = window.circuitUI;
     if (!ui) return null;
     const nums = [];
-    const numMatches = text.matchAll(/\b([0-7]|zero|one|two|three|four|five|six|seven)\b/g);
+    const numMatches = text.matchAll(/\b([0-7]|zero|one|two|three|four|five|six|seven|first|second|third|fourth|fifth|sixth|seventh)\b/gi);
     for (const m of numMatches) {
-      const n = isNaN(m[1]) ? this._wordToNum(m[1]) : parseInt(m[1], 10);
-      if (n >= 0 && n < ui.numQubits) nums.push(n);
+      const val = this._extractQubitNum(m[1]);
+      if (val >= 0 && val < ui.numQubits) nums.push(val);
     }
     const q1 = nums[0] !== undefined ? nums[0] : 0;
     const q2 = nums[1] !== undefined ? nums[1] : 1;
