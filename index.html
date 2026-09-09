@@ -666,6 +666,193 @@
           </div>
         </div>
 
+        <!-- ================= SECTION: ACCELERATED QUANTUM TRAINING & CURRICULUM SHOWCASE ================= -->
+        <div class="qsite-training-showcase-section">
+          <!-- Ambient Curved Quantum Wave Mesh -->
+          <svg class="training-bg-mesh" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <g fill="none" stroke-linecap="round">
+              <path d="M -100,100 Q 350,300 700,150 T 1500,200" stroke="rgba(120, 217, 236, 0.14)" stroke-width="1.5" />
+              <path d="M -100,200 Q 400,450 750,250 T 1500,350" stroke="rgba(120, 217, 236, 0.09)" stroke-width="1.2" />
+              <path d="M -100,400 Q 300,200 800,550 T 1500,450" stroke="rgba(255, 153, 51, 0.16)" stroke-width="1.5" />
+              <path d="M -100,500 Q 450,350 850,650 T 1500,550" stroke="rgba(255, 153, 51, 0.1)" stroke-width="1.2" />
+            </g>
+          </svg>
+
+          <!-- SHOWCASE BLOCK 1: What to Expect (Cyan Orb on Left, Text & Bullets on Right) -->
+          <div class="training-showcase-block">
+            <!-- Left Circular Glowing 3D Moving Orb -->
+            <div class="showcase-orb-col">
+              <div class="quantum-quote-orb cyan-orb" id="quote-orb-cyan">
+                <!-- 3D Moving Gyroscope Ring System -->
+                <div class="orb-3d-gyro-rig">
+                  <div class="gyro-ring gyro-ring-1"></div>
+                  <div class="gyro-ring gyro-ring-2"></div>
+                  <div class="gyro-ring gyro-ring-3"></div>
+                  <div class="gyro-core-glow"></div>
+                  <div class="quantum-orbit-bead b1"></div>
+                  <div class="quantum-orbit-bead b2"></div>
+                  <div class="quantum-orbit-bead b3"></div>
+                </div>
+
+                <svg class="orb-bg-svg" viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="cyan-orb-grad" cx="35%" cy="30%" r="70%">
+                      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.95"/>
+                      <stop offset="35%" stop-color="#0091ea" stop-opacity="0.75"/>
+                      <stop offset="70%" stop-color="#01579b" stop-opacity="0.45"/>
+                      <stop offset="100%" stop-color="#060c14" stop-opacity="0.98"/>
+                    </radialGradient>
+                    <filter id="cyan-glow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="4" result="blur"/>
+                      <feMerge>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <circle cx="190" cy="190" r="190" fill="#060c14"/>
+                  <circle cx="190" cy="190" r="190" fill="url(#cyan-orb-grad)"/>
+                  <g fill="none" stroke="rgba(120, 217, 236, 0.4)" stroke-width="1.2">
+                    <ellipse cx="190" cy="190" rx="140" ry="70" transform="rotate(25 190 190)" />
+                    <ellipse cx="190" cy="190" rx="140" ry="70" transform="rotate(-35 190 190)" stroke="rgba(120, 217, 236, 0.5)" />
+                    <ellipse cx="190" cy="190" rx="160" ry="45" transform="rotate(70 190 190)" stroke="rgba(120, 217, 236, 0.35)" />
+                  </g>
+                  <circle cx="190" cy="190" r="6" fill="#ffffff" filter="url(#cyan-glow)" />
+                  <circle cx="120" cy="140" r="3.5" fill="#78d9ec" filter="url(#cyan-glow)" />
+                  <circle cx="260" cy="230" r="4" fill="#78d9ec" filter="url(#cyan-glow)" />
+                  <circle cx="240" cy="130" r="3" fill="#ffffff" filter="url(#cyan-glow)" />
+                  <circle cx="130" cy="240" r="3" fill="#80d8ff" filter="url(#cyan-glow)" />
+                </svg>
+
+                <!-- 3D Specular Glass Dome Layer -->
+                <div class="orb-glass-specular"></div>
+
+                <div class="orb-quote-content">
+                  <p class="orb-quote-text">“A great balance between quantum linear algebra, hardware simulation and coding practice... Ananta turns abstract bra-ket math into pure visual intuition!”</p>
+                  <div class="orb-quote-author">Quantum Research Fellow</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Text & Checklist -->
+            <div class="showcase-text-col">
+              <h2 class="showcase-heading">What to Expect: Accelerated Learning and Time-to-Value</h2>
+              <p class="showcase-lead-p">
+                Not only will you quickly accelerate quantum application development with expert interactive training, but you'll also gain fresh physical insights while building marketable skillsets.
+              </p>
+              <p class="showcase-lead-p" style="color: var(--text-white, #ffffff); font-weight: 500;">
+                Ananta Quantum Workbench enables you to 'think quantumly' across the full stack:
+              </p>
+              <ul class="showcase-feature-list">
+                <li class="showcase-feature-item cyan-bullet">
+                  <span class="showcase-feature-bullet">✦</span>
+                  <span><strong>Formulate Quantum Circuits:</strong> Compose multi-qubit registers with IBM/Cirq standard gates ($H, CX, X, Y, Z$) and observe live statevector transitions in $\mathbb{C}^{2^n}$ Hilbert space.</span>
+                </li>
+                <li class="showcase-feature-item cyan-bullet">
+                  <span class="showcase-feature-bullet">✦</span>
+                  <span><strong>Explore 3D Bloch Dynamics:</strong> Inspect single-qubit spherical coordinates $(\theta, \phi)$ with real-time partial trace density matrix extraction.</span>
+                </li>
+                <li class="showcase-feature-item cyan-bullet">
+                  <span class="showcase-feature-bullet">✦</span>
+                  <span><strong>Universal Multi-SDK Code Gen:</strong> Instantly export graphical circuits into production-grade Cirq, Qiskit, OpenQASM 3.0, Braket, and PennyLane.</span>
+                </li>
+                <li class="showcase-feature-item cyan-bullet">
+                  <span class="showcase-feature-bullet">✦</span>
+                  <span><strong>Master Fault-Tolerant QEC:</strong> Experiment with rotated planar surface codes ($d=3, d=5$), $X/Z$ stabilizers, and live MWPM error decoders.</span>
+                </li>
+                <li class="showcase-feature-item cyan-bullet">
+                  <span class="showcase-feature-bullet">✦</span>
+                  <span><strong>Benchmark Quantum Advantage:</strong> Run interactive speedup races for Grover, Shor, Simon's, and VQE against classical baselines.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- SHOWCASE BLOCK 2: Core Training & Skill Up (Text on Left, Orchid/Gold Chip Orb on Right) -->
+          <div class="training-showcase-block reverse-layout">
+            <!-- Right Circular Glowing 3D Moving Orb -->
+            <div class="showcase-orb-col">
+              <div class="quantum-quote-orb orchid-orb" id="quote-orb-orchid">
+                <!-- 3D Moving Gyroscope Ring System -->
+                <div class="orb-3d-gyro-rig">
+                  <div class="gyro-ring gyro-ring-1"></div>
+                  <div class="gyro-ring gyro-ring-2"></div>
+                  <div class="gyro-ring gyro-ring-3"></div>
+                  <div class="gyro-core-glow"></div>
+                  <div class="quantum-orbit-bead b1"></div>
+                  <div class="quantum-orbit-bead b2"></div>
+                  <div class="quantum-orbit-bead b3"></div>
+                </div>
+
+                <svg class="orb-bg-svg" viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="orchid-orb-grad" cx="35%" cy="30%" r="70%">
+                      <stop offset="0%" stop-color="#f094e0" stop-opacity="0.95"/>
+                      <stop offset="25%" stop-color="#d367c4" stop-opacity="0.85"/>
+                      <stop offset="55%" stop-color="#7c3aed" stop-opacity="0.55"/>
+                      <stop offset="85%" stop-color="#3b0764" stop-opacity="0.35"/>
+                      <stop offset="100%" stop-color="#0e0414" stop-opacity="0.98"/>
+                    </radialGradient>
+                    <filter id="orchid-glow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="4.5" result="blur"/>
+                      <feMerge>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <circle cx="190" cy="190" r="190" fill="#0e0414"/>
+                  <circle cx="190" cy="190" r="190" fill="url(#orchid-orb-grad)"/>
+                  <g stroke="rgba(253, 214, 99, 0.45)" stroke-width="1.6" fill="none">
+                    <path d="M 40,190 L 120,190 L 160,150 L 220,150 L 260,190 L 340,190" />
+                    <path d="M 70,120 L 130,120 L 170,80 L 250,80 L 290,120 L 320,120" stroke="rgba(211, 103, 196, 0.4)" />
+                    <path d="M 60,260 L 140,260 L 180,300 L 240,300 L 280,260 L 330,260" stroke="rgba(211, 103, 196, 0.4)" />
+                    <path d="M 120,190 L 120,260" stroke="rgba(253, 214, 99, 0.35)" />
+                    <path d="M 260,120 L 260,190" stroke="rgba(253, 214, 99, 0.35)" />
+                    <path d="M 190,40 L 190,110 L 220,150 L 220,230 L 190,270 L 190,340" stroke="rgba(254, 240, 138, 0.7)" filter="url(#orchid-glow)" />
+                  </g>
+                  <circle cx="190" cy="190" r="7" fill="#ffffff" filter="url(#orchid-glow)" />
+                  <circle cx="160" cy="150" r="4.5" fill="#ffffff" filter="url(#orchid-glow)" />
+                  <circle cx="220" cy="150" r="4.5" fill="#fdd663" filter="url(#orchid-glow)" />
+                  <circle cx="120" cy="190" r="4" fill="#f094e0" filter="url(#orchid-glow)" />
+                  <circle cx="260" cy="190" r="4" fill="#ffffff" filter="url(#orchid-glow)" />
+                  <circle cx="170" cy="80" r="3.5" fill="#fdd663" />
+                  <circle cx="220" cy="230" r="4" fill="#ffffff" filter="url(#orchid-glow)" />
+                </svg>
+
+                <!-- 3D Specular Glass Dome Layer -->
+                <div class="orb-glass-specular"></div>
+
+                <div class="orb-quote-content">
+                  <p class="orb-quote-text">“[This workbench] really was amazing. The instant statevector evolution and visual exercises gave the right balance from theory to application.”</p>
+                  <div class="orb-quote-author">Quantum Algorithms Engineer</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Left Text & Call to Action -->
+            <div class="showcase-text-col">
+              <h2 class="showcase-heading">Quantum Programming "Core" Training: Skill Up for the Future Today</h2>
+              <p class="showcase-lead-p">
+                With this comprehensive, hands-on training, you can quickly put theory into practice with real-world quantum applications. This self-paced curriculum is designed for anyone who wants to learn the foundations of quantum programming and circuit composition.
+              </p>
+              <p class="showcase-lead-p">
+                The journey spans 10 interactive modules supported by live statevector inspectors and automated concept diagnostics. Course materials include visual demonstrations, challenge quests, and transpile benchmarks which you can complete on your own schedule.
+              </p>
+              <div class="showcase-cta-row">
+                <button class="showcase-primary-btn" onclick="window.switchTab('docs')">
+                  <span>Sign up for Quantum Core Training</span>
+                  <div class="showcase-btn-circle">➔</div>
+                </button>
+                <button class="showcase-primary-btn" style="color: #78d9ec;" onclick="window.switchTab('intuition')">
+                  <span>Open Quantum Intuition Lab</span>
+                  <div class="showcase-btn-circle" style="border-color: #78d9ec; color: #78d9ec;">➔</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- SECTION 5: Ananta Killer Differentiating Innovations -->
         <div class="killer-spotlight-section" style="margin-top: 60px;">
           <div class="gqai-section-heading">
@@ -675,40 +862,221 @@
           </div>
 
           <div class="killer-spotlight-grid">
-            <!-- Killer 1: Surface Code -->
-            <div class="killer-spotlight-card" onclick="window.switchTab('surface-code')">
-              <div class="card-icon-halo">🛡️</div>
-              <span class="spotlight-tag">FTQC Frontier</span>
-              <h3>Surface Code & QEC Studio</h3>
-              <p>Rotated planar surface codes ($d=3, d=5$), stabilizer parity syndromes ($X/Z$), real-time Pauli error injection, and visual Minimum-Weight Perfect Matching (MWPM) decoders.</p>
-              <span class="card-action-btn">Launch Surface Code Studio →</span>
+            <!-- Killer 1: Surface Code (Google Electric Blue & Cyan) -->
+            <div class="killer-spotlight-card" data-studio="surface-code" onclick="window.switchTab('surface-code')">
+              <div class="spotlight-card-banner">
+                <svg class="spotlight-banner-svg" viewBox="0 0 340 160" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="sc-grad-blue" cx="65%" cy="35%" r="75%">
+                      <stop offset="0%" stop-color="#8ab4f8" stop-opacity="0.85"/>
+                      <stop offset="30%" stop-color="#1a73e8" stop-opacity="0.55"/>
+                      <stop offset="65%" stop-color="#0d3570" stop-opacity="0.3"/>
+                      <stop offset="100%" stop-color="#0b101b" stop-opacity="0.95"/>
+                    </radialGradient>
+                    <filter id="sc-glow-blue" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="3" result="blur"/>
+                      <feMerge>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                    <linearGradient id="sc-line-blue" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stop-color="#78d9ec" stop-opacity="0.1"/>
+                      <stop offset="50%" stop-color="#8ab4f8" stop-opacity="0.9"/>
+                      <stop offset="100%" stop-color="#78d9ec" stop-opacity="0.1"/>
+                    </linearGradient>
+                  </defs>
+                  <rect width="340" height="160" fill="#0b101b"/>
+                  <rect width="340" height="160" fill="url(#sc-grad-blue)"/>
+                  <g stroke="rgba(138, 180, 248, 0.22)" stroke-width="0.8">
+                    <line x1="-30" y1="30" x2="370" y2="150" />
+                    <line x1="-30" y1="65" x2="370" y2="185" />
+                    <line x1="-30" y1="-5" x2="370" y2="115" />
+                    <line x1="370" y1="30" x2="-30" y2="150" />
+                    <line x1="370" y1="65" x2="-30" y2="185" />
+                    <line x1="370" y1="-5" x2="-30" y2="115" />
+                  </g>
+                  <line x1="30" y1="40" x2="310" y2="130" stroke="url(#sc-line-blue)" stroke-width="1.8" filter="url(#sc-glow-blue)" />
+                  <line x1="120" y1="20" x2="280" y2="150" stroke="rgba(120, 217, 236, 0.7)" stroke-width="1.2" />
+                  <line x1="50" y1="120" x2="220" y2="30" stroke="rgba(174, 203, 250, 0.6)" stroke-width="1.2" />
+                  <polygon points="170,55 205,70 170,85 135,70" fill="rgba(120, 217, 236, 0.22)" stroke="#78d9ec" stroke-width="1.2" />
+                  <polygon points="240,85 275,100 240,115 205,100" fill="rgba(26, 115, 232, 0.22)" stroke="#8ab4f8" stroke-width="1" />
+                  <circle cx="170" cy="55" r="3.5" fill="#ffffff" filter="url(#sc-glow-blue)" />
+                  <circle cx="205" cy="70" r="3" fill="#78d9ec" filter="url(#sc-glow-blue)" />
+                  <circle cx="170" cy="85" r="3" fill="#78d9ec" filter="url(#sc-glow-blue)" />
+                  <circle cx="135" cy="70" r="3" fill="#8ab4f8" filter="url(#sc-glow-blue)" />
+                  <circle cx="240" cy="85" r="4" fill="#ffffff" filter="url(#sc-glow-blue)" />
+                  <circle cx="275" cy="100" r="2.5" fill="#8ab4f8" />
+                  <circle cx="80" cy="58" r="3" fill="#78d9ec" filter="url(#sc-glow-blue)" />
+                  <circle cx="290" cy="40" r="2" fill="#aecbfa" opacity="0.8" />
+                  <circle cx="50" cy="120" r="2.5" fill="#8ab4f8" />
+                </svg>
+                <div class="banner-badge-overlay">
+                  <span class="banner-badge-icon">🛡️</span>
+                  <span class="banner-badge-text">FTQC FRONTIER</span>
+                </div>
+              </div>
+              <div class="spotlight-card-body">
+                <h3 class="spotlight-card-title">Surface Code & QEC Studio</h3>
+                <p class="spotlight-card-desc">Rotated planar surface codes ($d=3, d=5$), stabilizer parity syndromes ($X/Z$), real-time Pauli error injection, and visual Minimum-Weight Perfect Matching (MWPM) decoders.</p>
+                <div class="card-action-btn-row">
+                  <span class="card-action-btn">Launch Surface Code Studio →</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Killer 2: Universal Transpiler -->
-            <div class="killer-spotlight-card" onclick="window.switchTab('transpiler')">
-              <div class="card-icon-halo">⚡</div>
-              <span class="spotlight-tag">AI-Native Optimizer</span>
-              <h3>Universal Transpiler & AI Doctor</h3>
-              <p>6-way cross-framework bridge across Cirq, Qiskit, Braket, PennyLane, OpenQASM 3.0 & PyQuil with live peephole gate cancellation and KAK Cartan analysis.</p>
-              <span class="card-action-btn">Launch Transpiler & Doctor →</span>
+            <!-- Killer 2: Universal Transpiler (Quantum Orchid & Violet) -->
+            <div class="killer-spotlight-card" data-studio="transpiler" onclick="window.switchTab('transpiler')">
+              <div class="spotlight-card-banner">
+                <svg class="spotlight-banner-svg" viewBox="0 0 340 160" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="trans-grad-orchid" cx="20%" cy="40%" r="80%">
+                      <stop offset="0%" stop-color="#d367c4" stop-opacity="0.85"/>
+                      <stop offset="30%" stop-color="#9334e6" stop-opacity="0.55"/>
+                      <stop offset="65%" stop-color="#3b0764" stop-opacity="0.3"/>
+                      <stop offset="100%" stop-color="#12091c" stop-opacity="0.95"/>
+                    </radialGradient>
+                    <filter id="trans-glow-orchid" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                      <feMerge>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <rect width="340" height="160" fill="#12091c"/>
+                  <rect width="340" height="160" fill="url(#trans-grad-orchid)"/>
+                  <g fill="none" stroke-linecap="round">
+                    <path d="M -20,130 Q 110,120 180,70 T 360,20" stroke="rgba(245, 185, 237, 0.9)" stroke-width="2.2" filter="url(#trans-glow-orchid)" />
+                    <path d="M -20,145 Q 120,135 200,80 T 360,35" stroke="rgba(211, 103, 196, 0.75)" stroke-width="1.8" />
+                    <path d="M -20,160 Q 130,150 220,90 T 360,50" stroke="rgba(197, 138, 249, 0.6)" stroke-width="1.5" />
+                    <path d="M -20,115 Q 100,105 160,60 T 360,10" stroke="rgba(255, 220, 250, 0.85)" stroke-width="1.5" />
+                    <path d="M 0,160 Q 140,160 240,100 T 360,65" stroke="rgba(168, 85, 247, 0.4)" stroke-width="1.2" />
+                    <path d="M -20,95 Q 90,85 150,45 T 360,-5" stroke="rgba(211, 103, 196, 0.5)" stroke-width="1.2" />
+                    <path d="M 20,160 Q 160,165 260,115 T 360,80" stroke="rgba(147, 51, 234, 0.3)" stroke-width="1" />
+                  </g>
+                  <circle cx="180" cy="70" r="3.5" fill="#ffffff" filter="url(#trans-glow-orchid)" />
+                  <circle cx="200" cy="80" r="3" fill="#f094e0" filter="url(#trans-glow-orchid)" />
+                  <circle cx="120" cy="100" r="2.5" fill="#ffffff" filter="url(#trans-glow-orchid)" />
+                  <circle cx="270" cy="45" r="3" fill="#e9d5ff" filter="url(#trans-glow-orchid)" />
+                </svg>
+                <div class="banner-badge-overlay">
+                  <span class="banner-badge-icon">⚡</span>
+                  <span class="banner-badge-text">AI-NATIVE OPTIMIZER</span>
+                </div>
+              </div>
+              <div class="spotlight-card-body">
+                <h3 class="spotlight-card-title">Universal Transpiler & AI Doctor</h3>
+                <p class="spotlight-card-desc">6-way cross-framework bridge across Cirq, Qiskit, Braket, PennyLane, OpenQASM 3.0 & PyQuil with live peephole gate cancellation and KAK Cartan analysis.</p>
+                <div class="card-action-btn-row">
+                  <span class="card-action-btn">Launch Transpiler & Doctor →</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Killer 3: VQE Chemistry -->
-            <div class="killer-spotlight-card" onclick="window.switchTab('vqe-chemistry')">
-              <div class="card-icon-halo">🧪</div>
-              <span class="spotlight-tag">Materials Science</span>
-              <h3>VQE Molecular Chemistry Sandbox</h3>
-              <p>Ground-state potential energy surfaces (PES) for $H_2, HeH^+, LiH, BeH_2$, second-quantized Pauli terms, and animated variational gradient descent convergence.</p>
-              <span class="card-action-btn">Launch Chemistry Sandbox →</span>
+            <!-- Killer 3: VQE Chemistry (Quantum Aurora Emerald & Cyan) -->
+            <div class="killer-spotlight-card" data-studio="vqe-chemistry" onclick="window.switchTab('vqe-chemistry')">
+              <div class="spotlight-card-banner">
+                <svg class="spotlight-banner-svg" viewBox="0 0 340 160" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="vqe-grad-green" cx="65%" cy="50%" r="75%">
+                      <stop offset="0%" stop-color="#81c995" stop-opacity="0.85"/>
+                      <stop offset="35%" stop-color="#188038" stop-opacity="0.55"/>
+                      <stop offset="70%" stop-color="#083818" stop-opacity="0.3"/>
+                      <stop offset="100%" stop-color="#08140f" stop-opacity="0.95"/>
+                    </radialGradient>
+                    <radialGradient id="vqe-lens-green" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#e6f4ea" stop-opacity="0.95"/>
+                      <stop offset="40%" stop-color="#81c995" stop-opacity="0.6"/>
+                      <stop offset="75%" stop-color="#188038" stop-opacity="0.25"/>
+                      <stop offset="100%" stop-color="#083818" stop-opacity="0"/>
+                    </radialGradient>
+                    <filter id="vqe-glow-green" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                      <feMerge>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <rect width="340" height="160" fill="#08140f"/>
+                  <rect width="340" height="160" fill="url(#vqe-grad-green)"/>
+                  <g fill="none" stroke="rgba(129, 201, 149, 0.32)" stroke-width="1">
+                    <ellipse cx="220" cy="80" rx="90" ry="50" />
+                    <ellipse cx="220" cy="80" rx="70" ry="38" stroke="rgba(129, 201, 149, 0.45)" />
+                    <ellipse cx="220" cy="80" rx="50" ry="26" stroke="rgba(120, 217, 236, 0.6)" />
+                    <ellipse cx="220" cy="80" rx="30" ry="15" stroke="rgba(230, 244, 234, 0.75)" />
+                  </g>
+                  <line x1="50" y1="140" x2="220" y2="80" stroke="rgba(230, 244, 234, 0.85)" stroke-width="2.5" filter="url(#vqe-glow-green)" />
+                  <line x1="40" y1="130" x2="215" y2="76" stroke="rgba(120, 217, 236, 0.5)" stroke-width="1.2" />
+                  <circle cx="220" cy="80" r="42" fill="url(#vqe-lens-green)" />
+                  <circle cx="220" cy="80" r="42" fill="none" stroke="rgba(129, 201, 149, 0.8)" stroke-width="1.5" filter="url(#vqe-glow-green)" />
+                  <circle cx="200" cy="74" r="5" fill="#ffffff" filter="url(#vqe-glow-green)" />
+                  <circle cx="240" cy="86" r="4" fill="#a8dab5" filter="url(#vqe-glow-green)" />
+                  <line x1="200" y1="74" x2="240" y2="86" stroke="#ffffff" stroke-width="2" filter="url(#vqe-glow-green)" />
+                </svg>
+                <div class="banner-badge-overlay">
+                  <span class="banner-badge-icon">🧪</span>
+                  <span class="banner-badge-text">MATERIALS SCIENCE</span>
+                </div>
+              </div>
+              <div class="spotlight-card-body">
+                <h3 class="spotlight-card-title">VQE Molecular Chemistry Sandbox</h3>
+                <p class="spotlight-card-desc">Ground-state potential energy surfaces (PES) for $H_2, HeH^+, LiH, BeH_2$, second-quantized Pauli terms, and animated variational gradient descent convergence.</p>
+                <div class="card-action-btn-row">
+                  <span class="card-action-btn">Launch Chemistry Sandbox →</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Killer 4: Pulse Physics -->
-            <div class="killer-spotlight-card" onclick="window.switchTab('pulse-studio')">
-              <div class="card-icon-halo">🎛️</div>
-              <span class="spotlight-tag">Superconducting Physics</span>
-              <h3>Microwave Pulse Physics Studio</h3>
-              <p>Superconducting transmon Hamiltonian dynamics, DRAG leakage suppression pulse shaping, and live 60-FPS Rabi oscillations, Ramsey fringes & Hahn echo.</p>
-              <span class="card-action-btn">Launch Microwave Studio →</span>
+            <!-- Killer 4: Pulse Physics (Superconducting Gold & Amber) -->
+            <div class="killer-spotlight-card" data-studio="pulse-studio" onclick="window.switchTab('pulse-studio')">
+              <div class="spotlight-card-banner">
+                <svg class="spotlight-banner-svg" viewBox="0 0 340 160" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="pulse-grad-gold" cx="50%" cy="40%" r="75%">
+                      <stop offset="0%" stop-color="#fdd663" stop-opacity="0.85"/>
+                      <stop offset="35%" stop-color="#f59e0b" stop-opacity="0.55"/>
+                      <stop offset="70%" stop-color="#7c2d12" stop-opacity="0.3"/>
+                      <stop offset="100%" stop-color="#140c06" stop-opacity="0.95"/>
+                    </radialGradient>
+                    <filter id="pulse-glow-gold" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="3" result="blur"/>
+                      <feMerge>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <rect width="340" height="160" fill="#140c06"/>
+                  <rect width="340" height="160" fill="url(#pulse-grad-gold)"/>
+                  <g font-family="monospace" font-size="9" fill="rgba(253, 214, 99, 0.28)" font-weight="bold" letter-spacing="3">
+                    <text x="15" y="25" opacity="0.4">01001100 11000001 0101</text>
+                    <text x="35" y="45" opacity="0.6">11100000 01010100 1010</text>
+                    <text x="20" y="65" opacity="0.75" fill="rgba(253, 214, 99, 0.45)">01110000 11110000 0110</text>
+                    <text x="50" y="85" opacity="0.9" fill="rgba(254, 240, 138, 0.6)">10000001 11011000 0011</text>
+                    <text x="25" y="105" opacity="0.7">01010100 00010000 1101</text>
+                    <text x="40" y="125" opacity="0.5">10100100 00011110 1000</text>
+                    <text x="15" y="145" opacity="0.35">00100101 11001010 0101</text>
+                  </g>
+                  <path d="M 0,130 Q 80,130 130,90 T 200,30 T 270,90 T 340,130" fill="none" stroke="rgba(254, 243, 199, 0.9)" stroke-width="2.2" filter="url(#pulse-glow-gold)" />
+                  <path d="M 0,130 Q 80,130 130,105 T 200,60 T 270,105 T 340,130" fill="none" stroke="rgba(245, 158, 11, 0.55)" stroke-width="1.5" />
+                  <circle cx="200" cy="30" r="3.5" fill="#ffffff" filter="url(#pulse-glow-gold)" />
+                  <circle cx="165" cy="60" r="2.5" fill="#fde68a" />
+                  <circle cx="235" cy="60" r="2.5" fill="#fde68a" />
+                </svg>
+                <div class="banner-badge-overlay">
+                  <span class="banner-badge-icon">🎛️</span>
+                  <span class="banner-badge-text">SUPERCONDUCTING PHYSICS</span>
+                </div>
+              </div>
+              <div class="spotlight-card-body">
+                <h3 class="spotlight-card-title">Microwave Pulse Physics Studio</h3>
+                <p class="spotlight-card-desc">Superconducting transmon Hamiltonian dynamics, DRAG leakage suppression pulse shaping, and live 60-FPS Rabi oscillations, Ramsey fringes & Hahn echo.</p>
+                <div class="card-action-btn-row">
+                  <span class="card-action-btn">Launch Microwave Studio →</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

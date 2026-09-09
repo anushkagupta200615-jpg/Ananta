@@ -2188,6 +2188,58 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Interactive 3D Mouse Parallax & Dynamic Motion for Quantum Quote Orbs & Studio Cards
+  const setupOrb3DParallax = () => {
+    document.querySelectorAll('.quantum-quote-orb').forEach(orb => {
+      const specular = orb.querySelector('.orb-glass-specular');
+      const gyroRig = orb.querySelector('.orb-3d-gyro-rig');
+      const quoteContent = orb.querySelector('.orb-quote-content');
+
+      orb.addEventListener('mousemove', (e) => {
+        const rect = orb.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+        orb.style.animation = 'none';
+        const tiltX = -y * 26;
+        const tiltY = x * 26;
+        orb.style.transform = `perspective(1000px) rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg) scale(1.04)`;
+
+        if (gyroRig) {
+          gyroRig.style.transform = `translateZ(25px) rotateX(${(tiltX * 0.5).toFixed(2)}deg) rotateY(${(tiltY * 0.5).toFixed(2)}deg)`;
+        }
+        if (specular) {
+          specular.style.transform = `translate(${-x * 35}px, ${-y * 35}px) scale(1.05)`;
+        }
+        if (quoteContent) {
+          quoteContent.style.transform = `translateZ(45px) translate(${x * 14}px, ${y * 14}px)`;
+        }
+      });
+
+      orb.addEventListener('mouseleave', () => {
+        orb.style.animation = orb.classList.contains('cyan-orb') ? 'floatOrb 7s ease-in-out infinite alternate -3.5s' : 'floatOrb 7s ease-in-out infinite alternate';
+        orb.style.transform = '';
+        if (gyroRig) gyroRig.style.transform = '';
+        if (specular) specular.style.transform = '';
+        if (quoteContent) quoteContent.style.transform = '';
+      });
+    });
+
+    // 3D Interactive Tilt on Hover for 4 Studio Cards
+    document.querySelectorAll('.killer-spotlight-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        card.style.transform = `perspective(1000px) translateY(-8px) rotateX(${-y * 12}deg) rotateY(${x * 12}deg) scale(1.02)`;
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = '';
+      });
+    });
+  };
+  setupOrb3DParallax();
+
   // =========================================================================
   // DOCUMENTATION SEARCH, SMOOTH SCROLL & SNIPPET COPY HELPERS
   // =========================================================================
