@@ -165,44 +165,24 @@
           </button>
           <div class="nav-dropdown-menu nav-dropdown-learn">
             <div class="nav-dropdown-header">Curriculum & Learning Journeys</div>
-            <a href="#docs" class="dropdown-rich-item" data-tab="docs">
-              <span class="dropdown-rich-icon">🗺️</span>
-              <div class="dropdown-rich-info">
-                <div class="dropdown-rich-title-line">
-                  <span class="dropdown-rich-title">Full Learning Roadmap</span>
-                  <span class="dropdown-badge badge-learn">ALL 10 MODULES</span>
-                </div>
-                <span class="dropdown-rich-desc">Complete end-to-end curriculum from Hilbert space to VQE & FTQC</span>
-              </div>
-            </a>
-            <a href="#topic-roadmap" class="dropdown-rich-item" data-tab="topic-roadmap" onclick="if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('beginner-track'), 60)">
-              <span class="dropdown-rich-icon">🌱</span>
-              <div class="dropdown-rich-info">
-                <div class="dropdown-rich-title-line">
-                  <span class="dropdown-rich-title">Roadmap for Basics</span>
-                  <span class="dropdown-badge badge-speedup">BEGINNER TRACK</span>
-                </div>
-                <span class="dropdown-rich-desc">Hilbert spaces, Pauli rotations, single-qubit gates & first circuits</span>
-              </div>
-            </a>
-            <a href="#topic-roadmap" class="dropdown-rich-item" data-tab="topic-roadmap" onclick="if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('advanced-track'), 60)">
-              <span class="dropdown-rich-icon">🚀</span>
-              <div class="dropdown-rich-info">
-                <div class="dropdown-rich-title-line">
-                  <span class="dropdown-rich-title">Roadmap for Advanced</span>
-                  <span class="dropdown-badge badge-catalog">ADVANCED TRACK</span>
-                </div>
-                <span class="dropdown-rich-desc">Lindblad noise, Bell entanglement, Grover search & VQE chemistry</span>
-              </div>
-            </a>
             <a href="#topic-roadmap" class="dropdown-rich-item" data-tab="topic-roadmap">
               <span class="dropdown-rich-icon">🎯</span>
               <div class="dropdown-rich-info">
                 <div class="dropdown-rich-title-line">
-                  <span class="dropdown-rich-title">Custom Topic Roadmap</span>
-                  <span class="dropdown-badge badge-sdk">ADAPTIVE AI</span>
+                  <span class="dropdown-rich-title">Roadmap Studio</span>
+                  <span class="dropdown-badge badge-sdk">BASIC · ADVANCED · CUSTOM AI</span>
                 </div>
-                <span class="dropdown-rich-desc">Generate an assembled prerequisite pathway for any specific topic</span>
+                <span class="dropdown-rich-desc">Interactive flowchart diagrams, voice-activated pathways & guided tracks</span>
+              </div>
+            </a>
+            <a href="#docs" class="dropdown-rich-item" data-tab="docs">
+              <span class="dropdown-rich-icon">🗺️</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Full Curriculum & Docs</span>
+                  <span class="dropdown-badge badge-learn">ALL 10 MODULES</span>
+                </div>
+                <span class="dropdown-rich-desc">Complete end-to-end curriculum from Hilbert space to VQE & FTQC</span>
               </div>
             </a>
             <div class="dropdown-menu-divider"></div>
@@ -227,17 +207,6 @@
                 <span class="dropdown-rich-desc">Gamified circuit puzzles, skill tree & quantum achievement badges</span>
               </div>
             </a>
-            <div class="dropdown-menu-divider"></div>
-            <div class="dropdown-quick-links">
-              <a href="#overview" class="dropdown-quick-link" onclick="window.scrollToSection('mission-section')">
-                <span>❄️ Cryo-Array Hardware</span>
-                <span class="quick-link-arrow">→</span>
-              </a>
-              <a href="#overview" class="dropdown-quick-link" onclick="window.scrollToSection('roadmap-section')">
-                <span>🗺️ Engineering Roadmap (6 Milestones)</span>
-                <span class="quick-link-arrow">→</span>
-              </a>
-            </div>
           </div>
         </div>
       </nav>
@@ -314,10 +283,8 @@
 
     <!-- Category: Learn & Reference -->
     <div class="mobile-nav-section-title">LEARN & REFERENCE</div>
-    <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">🗺️ Full Learning Roadmap</a>
-    <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav(); if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('beginner-track'), 60)">🌱 Roadmap for Basics</a>
-    <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav(); if(window.topicRoadmapManager) setTimeout(()=>window.topicRoadmapManager.loadTopicById('advanced-track'), 60)">🚀 Roadmap for Advanced</a>
-    <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav()">🎯 Custom Topic Roadmap</a>
+    <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav()">🎯 Roadmap Studio (Basic · Advanced · Custom)</a>
+    <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">🗺️ Full Curriculum & Docs (All 10 Modules)</a>
     <a href="#intuition" class="mobile-nav-item" data-tab="intuition" onclick="window.closeMobileNav()">🔬 Intuition Lab</a>
     <a href="#challenges" class="mobile-nav-item" data-tab="challenges" onclick="window.closeMobileNav()">🏆 Challenges & Quests</a>
     <div class="mobile-nav-divider"></div>

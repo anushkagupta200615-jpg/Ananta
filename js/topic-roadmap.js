@@ -166,6 +166,15 @@ class TopicRoadmapManager {
         moduleIds: ['module-01', 'module-02', 'module-04', 'module-06']
       },
       {
+        topicId: 'intermediate-track',
+        displayName: 'Intermediate Feature Roadmap: Circuit Engineering & Entanglement',
+        description: 'Accelerated track for learners with linear algebra/coding basics: covers Pauli observables, OpenQASM coding, Bell pairs, and teleportation.',
+        keywords: [
+          'intermediate', 'intermediate track', 'know basics', 'moderate', 'some knowledge', 'intermediate roadmap'
+        ],
+        moduleIds: ['module-02', 'module-04', 'module-06', 'module-07', 'module-08']
+      },
+      {
         topicId: 'advanced-track',
         displayName: 'Advanced Feature Roadmap: Entanglement, NISQ & VQE Chemistry',
         description: 'Advanced graduate-level pathway covering density matrices, Lindblad noise, Bell entanglement, Grover search, and VQE molecular chemistry.',
@@ -174,6 +183,16 @@ class TopicRoadmapManager {
           'entanglement', 'teleportation', 'grover', 'expert', 'graduate', 'ftqc'
         ],
         moduleIds: ['module-03', 'module-05', 'module-07', 'module-08', 'module-09', 'module-10']
+      },
+      {
+        topicId: 'full-curriculum',
+        displayName: 'Full Master Learning Roadmap: 10-Module Quantum Mastery',
+        description: 'Complete end-to-end curriculum from Hilbert space foundations to VQE molecular algorithms and fault-tolerant quantum computing.',
+        keywords: [
+          'full', 'complete', 'all modules', 'master', 'everything', 'entire', '10 modules', 'full roadmap',
+          'full curriculum', 'full learning roadmap', 'complete roadmap', 'all topics'
+        ],
+        moduleIds: ['module-01', 'module-02', 'module-03', 'module-04', 'module-05', 'module-06', 'module-07', 'module-08', 'module-09', 'module-10']
       },
       {
         topicId: 'circuits-basics',
@@ -265,9 +284,16 @@ class TopicRoadmapManager {
     const pattern = this.topicPatterns.find(p => p.topicId === topicId);
     if (pattern) {
       const matchedModules = pattern.moduleIds.map(id => this.modules.find(m => m.id === id)).filter(Boolean);
+      let detectedLevel = 'BEGINNER';
+      if (topicId === 'advanced-track') detectedLevel = 'ADVANCED';
+      else if (topicId === 'intermediate-track') detectedLevel = 'INTERMEDIATE';
+      else if (topicId === 'full-curriculum') detectedLevel = 'MASTER';
+
       const matchResult = {
         pattern,
         modules: matchedModules,
+        detectedLevel,
+        levelRationale: pattern.description,
         score: 100
       };
       const inputEl = document.getElementById('topic-user-query');
@@ -277,7 +303,9 @@ class TopicRoadmapManager {
       if (resultsContainer) {
         resultsContainer.style.display = 'block';
         this.renderRoadmapDiagram(matchResult, pattern.displayName);
-        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => {
+          resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 60);
       }
     }
   }
@@ -305,7 +333,7 @@ class TopicRoadmapManager {
             <div class="rmp-hero-text">
               <div class="topic-pill-badge">
                 <span class="topic-badge-dot"></span>
-                <span>Quantum Learning Roadmap</span>
+                <span>Quantum Learning Roadmap Studio</span>
               </div>
 
               <h1 class="topic-entry-heading">
@@ -314,9 +342,8 @@ class TopicRoadmapManager {
               </h1>
 
               <p class="topic-entry-subtext">
-                Choose a curated track or describe any topic — our adaptive engine
-                will assemble an ordered prerequisite pathway and render a full
-                interactive flow diagram.
+                Choose a curated track, speak via the mic, or type any quantum concept — our adaptive engine
+                will assemble an ordered prerequisite pathway with interactive flowcharts and complete step breakdowns.
               </p>
             </div>
 
@@ -398,6 +425,24 @@ class TopicRoadmapManager {
 
         </div>
 
+        <!-- Master Curriculum Full Strip -->
+        <div class="rmp-full-strip" onclick="window.topicRoadmapManager.loadTopicById('full-curriculum')">
+          <div class="rmp-strip-icon-box">🗺️</div>
+          <div class="rmp-strip-details">
+            <div class="rmp-strip-title-row">
+              <span class="rmp-strip-title">Full Master Learning Roadmap</span>
+              <span class="rmp-strip-badge">ALL 10 MODULES · ZERO TO FTQC</span>
+            </div>
+            <p class="rmp-strip-desc">
+              Hilbert space geometry, unitaries, density matrices, Pauli observables, Lindblad noise, OpenQASM, Bell entanglement, teleportation, Grover search & VQE chemistry.
+            </p>
+          </div>
+          <div class="rmp-strip-action">
+            <span class="rmp-strip-cta">Explore All 10 Modules</span>
+            <span class="rmp-strip-arrow">→</span>
+          </div>
+        </div>
+
         <!-- Search Bar (always visible) -->
         <div class="rmp-search-section">
           <form id="topic-roadmap-form" onsubmit="event.preventDefault(); window.topicRoadmapManager.handleSearch();">
@@ -412,7 +457,7 @@ class TopicRoadmapManager {
                 type="text"
                 id="topic-user-query"
                 class="topic-search-field"
-                placeholder="e.g. quantum entanglement, VQE chemistry, Grover search, teleportation..."
+                placeholder="e.g. I know basics, quantum entanglement, VQE chemistry, Grover search..."
                 autocomplete="off"
                 spellcheck="false"
               />
@@ -432,6 +477,7 @@ class TopicRoadmapManager {
           <!-- Quick topic chips -->
           <div class="topic-suggested-row">
             <span class="suggested-label">Quick topics:</span>
+            <button class="topic-chip topic-chip-highlight" onclick="window.topicRoadmapManager.loadTopicById('full-curriculum')">🌟 All 10 Modules</button>
             <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('quantum circuits for beginners')">Circuits</button>
             <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('entanglement and Bell states')">Entanglement</button>
             <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('quantum teleportation protocol')">Teleportation</button>
@@ -441,7 +487,7 @@ class TopicRoadmapManager {
           </div>
         </div>
 
-        <!-- Dynamic Results Stage (SVG Diagram renders here) -->
+        <!-- Dynamic Results Stage (SVG Diagram + Module List render here) -->
         <div id="topic-roadmap-results" class="topic-results-stage" style="display: none;"></div>
 
         <!-- Dynamic Module Detail Split Stage -->
@@ -589,14 +635,35 @@ class TopicRoadmapManager {
       this.renderFallbackView(query);
     }
 
-    // Smooth scroll down to results
-    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Smooth scroll down to results with comfortable margin
+    setTimeout(() => {
+      resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
   }
 
   // Intelligent Knowledge & Topic Matching Engine
   matchQueryToTopic(query) {
     const clean = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
     const queryWords = clean.split(/\s+/).filter(w => w.length > 0);
+
+    // Check for full/complete/master requests
+    const fullTrackPhrases = [
+      'full', 'complete', 'all modules', 'master', 'whole', 'entire', '10 modules',
+      'full roadmap', 'complete roadmap', 'everything', 'end to end', 'comprehensive',
+      'all topics', 'curriculum', 'whole diagram'
+    ];
+    if (fullTrackPhrases.some(p => clean.includes(p))) {
+      return {
+        pattern: {
+          displayName: 'Full Master Learning Roadmap: 10-Module Quantum Mastery',
+          description: 'Comprehensive end-to-end curriculum from Hilbert space foundations to VQE molecular algorithms and fault-tolerant quantum computing.'
+        },
+        modules: this.modules,
+        detectedLevel: 'MASTER',
+        levelRationale: 'Assembled complete 10-module master progression covering all foundational, intermediate, and advanced quantum domains.',
+        score: 100
+      };
+    }
 
     // 1. Detect User's Prior Knowledge Level
     const beginnerPhrases = [
@@ -1210,37 +1277,56 @@ class TopicRoadmapManager {
     }
   }
 
+  backToLanding() {
+    this.closeModuleReader();
+    const resultsContainer = document.getElementById('topic-roadmap-results');
+    if (resultsContainer) resultsContainer.style.display = 'none';
+    const inputEl = document.getElementById('topic-user-query');
+    if (inputEl) inputEl.value = '';
+    const landingHero = document.querySelector('.topic-entry-hero');
+    if (landingHero) {
+      landingHero.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   // -------------------------------------------------------------------
-  // Toggle between Card and Diagram views
+  // Toggle between Combined, Diagram, and Card views
   // -------------------------------------------------------------------
   toggleRoadmapView(mode) {
     const cardBtn = document.getElementById('rmv-btn-cards');
     const diagBtn = document.getElementById('rmv-btn-diagram');
+    const combBtn = document.getElementById('rmv-btn-combined');
     const cardView = document.getElementById('rmv-card-view');
     const diagView = document.getElementById('rmv-diagram-view');
 
     if (!cardView || !diagView) return;
 
+    if (cardBtn) cardBtn.classList.remove('rmv-toggle-active');
+    if (diagBtn) diagBtn.classList.remove('rmv-toggle-active');
+    if (combBtn) combBtn.classList.remove('rmv-toggle-active');
+
     if (mode === 'diagram') {
       cardView.style.display = 'none';
       diagView.style.display = 'block';
-      if (cardBtn) { cardBtn.classList.remove('rmv-toggle-active'); }
-      if (diagBtn) { diagBtn.classList.add('rmv-toggle-active'); }
-    } else {
+      if (diagBtn) diagBtn.classList.add('rmv-toggle-active');
+    } else if (mode === 'cards') {
       diagView.style.display = 'none';
       cardView.style.display = 'block';
-      if (cardBtn) { cardBtn.classList.add('rmv-toggle-active'); }
-      if (diagBtn) { diagBtn.classList.remove('rmv-toggle-active'); }
+      if (cardBtn) cardBtn.classList.add('rmv-toggle-active');
+    } else { // 'combined'
+      diagView.style.display = 'block';
+      cardView.style.display = 'block';
+      if (combBtn) combBtn.classList.add('rmv-toggle-active');
     }
   }
 
   // -------------------------------------------------------------------
-  // Visual Flow-Diagram Renderer
+  // Visual Flow-Diagram & Complete Curriculum Renderer
   // -------------------------------------------------------------------
 
   /**
-   * Renders the visual SVG flow-diagram roadmap alongside the regular
-   * waterfall card list. Defaults to diagram view when called from voice.
+   * Renders both the visual SVG flow-diagram roadmap AND the complete
+   * step-by-step module breakdown list with rich theory, formulas, and labs.
    */
   renderRoadmapDiagram(matchResult, query) {
     const { pattern, modules, detectedLevel = 'BEGINNER', levelRationale = '' } = matchResult;
@@ -1250,17 +1336,25 @@ class TopicRoadmapManager {
 
     // ── Level colors ──────────────────────────────────────────
     const levelColors = {
-      Beginner:     { node: '#0d9488', glow: 'rgba(13,148,136,0.55)', badge: '#14b8a6', text: '#ccfbf1' },
-      Intermediate: { node: '#7c3aed', glow: 'rgba(124,58,237,0.55)', badge: '#8b5cf6', text: '#ede9fe' },
-      Advanced:     { node: '#c2410c', glow: 'rgba(194,65,12,0.55)',  badge: '#f97316', text: '#ffedd5' },
+      Beginner:     { node: '#0d9488', glow: 'rgba(13,148,136,0.5)', badge: '#14b8a6', text: '#ccfbf1' },
+      Intermediate: { node: '#7c3aed', glow: 'rgba(124,58,237,0.5)', badge: '#8b5cf6', text: '#ede9fe' },
+      Advanced:     { node: '#ea580c', glow: 'rgba(234,88,12,0.5)',  badge: '#f97316', text: '#ffedd5' },
+      Master:       { node: '#2563eb', glow: 'rgba(37,99,235,0.5)',  badge: '#3b82f6', text: '#dbeafe' },
     };
 
-    // ── Build card HTML (same as renderCuratedRoadmap) ────────
+    // Calculate total duration
+    const totalMins = modules.reduce((sum, m) => {
+      const match = m.timeEst.match(/\d+/);
+      return sum + (match ? parseInt(match[0], 10) : 20);
+    }, 0);
+
+    // ── Build comprehensive module cards (Listing Completely) ─
     let cardsHtml = '';
     modules.forEach((mod, idx) => {
       const stepNum = idx + 1;
       const isPrereq = idx === 0 && modules.length > 1;
-      const stepType = isPrereq ? 'Prerequisite Foundation' : (idx === modules.length - 1 ? 'Target Mastery Goal' : 'Core Concept');
+      const isTarget = idx === modules.length - 1;
+      const stepType = isPrereq ? 'Prerequisite Foundation' : (isTarget ? 'Target Mastery Goal' : 'Core Concept Progression');
       const hasLab = Boolean(mod.circuitPreset);
 
       cardsHtml += `
@@ -1277,11 +1371,24 @@ class TopicRoadmapManager {
                   <span class="curated-module-badge">${mod.number}</span>
                   <span class="curated-level-badge level-${mod.level.toLowerCase()}">${mod.level}</span>
                 </div>
-                <span class="curated-time-badge">${mod.timeEst}</span>
+                <span class="curated-time-badge">⏱ ${mod.timeEst}</span>
               </div>
+
               <h3 class="curated-card-title">${mod.title}</h3>
               <p class="curated-card-summary">${mod.summary}</p>
-              <div class="curated-math-preview"><code>${mod.mathFormula}</code></div>
+
+              <div class="curated-math-preview">
+                <div class="math-preview-label">MATHEMATICAL FORMULATION</div>
+                <code>${mod.mathFormula}</code>
+              </div>
+
+              ${mod.intuition ? `
+                <div class="curated-intuition-callout">
+                  <span class="intuition-icon">💡</span>
+                  <span class="intuition-text"><strong>Physical Intuition:</strong> ${mod.intuition}</span>
+                </div>
+              ` : ''}
+
               <div class="curated-card-footer">
                 ${hasLab ? `
                   <div class="curated-lab-pill">
@@ -1291,13 +1398,22 @@ class TopicRoadmapManager {
                 ` : `
                   <div class="curated-theory-pill">
                     <span class="theory-pill-dot"></span>
-                    <span>Theoretical Foundations</span>
+                    <span>Foundational Theory</span>
                   </div>
                 `}
-                <button class="btn-open-curated-module">
-                  <span>Start ${mod.number}</span>
-                  <span class="open-arrow">→</span>
-                </button>
+
+                <div class="curated-action-buttons">
+                  ${hasLab ? `
+                    <button class="btn-open-lab-direct" type="button"
+                      onclick="event.stopPropagation(); window.topicRoadmapManager.openModuleReader('${mod.id}')">
+                      ⚡ Open Lab
+                    </button>
+                  ` : ''}
+                  <button class="btn-open-curated-module" type="button">
+                    <span>Study Module</span>
+                    <span class="open-arrow">→</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1311,11 +1427,18 @@ class TopicRoadmapManager {
     // ── Assemble full HTML ─────────────────────────────────────
     resultsContainer.innerHTML = `
       <div class="curated-results-header">
-        <div class="curated-header-top">
-          <span class="results-tag">ADAPTIVE PATHWAY ASSEMBLED</span>
-          <span class="results-level-badge level-${detectedLevel.toLowerCase()}">${detectedLevel} TRACK</span>
-          <span class="results-step-count">${modules.length} Ordered Steps to Mastery</span>
+        <div class="results-header-nav-row">
+          <button class="btn-rmp-back-landing" type="button" onclick="window.topicRoadmapManager.backToLanding()">
+            ← Back to Track Selection
+          </button>
+          <div class="results-badges-cluster">
+            <span class="results-tag">ADAPTIVE PATHWAY ASSEMBLED</span>
+            <span class="results-level-badge level-${detectedLevel.toLowerCase()}">${detectedLevel} TRACK</span>
+            <span class="results-step-count">${modules.length} Ordered Steps</span>
+            <span class="results-time-count">⏱ ~${totalMins} min total</span>
+          </div>
         </div>
+
         <h2 class="results-topic-title">${pattern.displayName}</h2>
         <p class="results-topic-desc">${pattern.description}</p>
 
@@ -1326,38 +1449,58 @@ class TopicRoadmapManager {
           </div>
         ` : ''}
 
-        <div class="results-query-echo">
-          <span class="echo-label">Matched Query:</span>
-          <span class="echo-text">"${query}"</span>
-        </div>
+        ${query && query !== pattern.displayName ? `
+          <div class="results-query-echo">
+            <span class="echo-label">Matched Query:</span>
+            <span class="echo-text">"${query}"</span>
+          </div>
+        ` : ''}
 
-        <!-- View Toggle -->
-        <div class="rmv-toggle-group" role="group" aria-label="Switch roadmap view">
-          <button id="rmv-btn-cards" class="rmv-toggle-btn"
-            onclick="window.topicRoadmapManager.toggleRoadmapView('cards')">
-            📋 Module Cards
+        <!-- 3-Way View Switcher -->
+        <div class="rmv-toggle-group" role="group" aria-label="Switch roadmap display view">
+          <button id="rmv-btn-combined" class="rmv-toggle-btn rmv-toggle-active" type="button"
+            onclick="window.topicRoadmapManager.toggleRoadmapView('combined')">
+            ⚡ Combined (Diagram + Full List)
           </button>
-          <button id="rmv-btn-diagram" class="rmv-toggle-btn rmv-toggle-active"
+          <button id="rmv-btn-diagram" class="rmv-toggle-btn" type="button"
             onclick="window.topicRoadmapManager.toggleRoadmapView('diagram')">
-            🗺 Flow Diagram
+            🗺️ Flow Diagram
+          </button>
+          <button id="rmv-btn-cards" class="rmv-toggle-btn" type="button"
+            onclick="window.topicRoadmapManager.toggleRoadmapView('cards')">
+            📋 Detailed Module List (${modules.length})
           </button>
         </div>
       </div>
 
-      <!-- Diagram View (default when voice-activated) -->
+      <!-- Diagram View (Visible in combined & diagram modes) -->
       <div id="rmv-diagram-view" class="rmv-diagram-view">
+        <div class="rmv-section-heading">
+          <div class="rmv-heading-left">
+            <span class="rmv-section-badge">INTERACTIVE ARCHITECTURE</span>
+            <h3 class="rmv-section-title">Visual Quantum Prerequisite Pipeline</h3>
+          </div>
+          <span class="rmv-heading-hint">Click any node to open its lesson reader & circuit designer</span>
+        </div>
         ${svgDiagram}
       </div>
 
-      <!-- Card View (hidden by default when coming from voice) -->
-      <div id="rmv-card-view" class="rmv-card-view" style="display:none;">
+      <!-- Card View (Visible in combined & cards modes) -->
+      <div id="rmv-card-view" class="rmv-card-view">
+        <div class="rmv-section-heading">
+          <div class="rmv-heading-left">
+            <span class="rmv-section-badge">COMPREHENSIVE SYLLABUS</span>
+            <h3 class="rmv-section-title">Complete Ordered Module Breakdown</h3>
+          </div>
+          <span class="rmv-heading-hint">${modules.length} lessons in logical sequence</span>
+        </div>
         <div class="waterfall-module-list">${cardsHtml}</div>
       </div>
 
       <div class="curated-bottom-actions">
-        <p>Want to explore the entire curriculum without topic filtering?</p>
-        <button class="btn-view-full-roadmap" onclick="window.switchView('docs')">
-          Browse Full Learning Roadmap (All 10 Modules) →
+        <p>Want to explore all 10 core modules in a single comprehensive syllabus?</p>
+        <button class="btn-view-full-roadmap" type="button" onclick="window.topicRoadmapManager.loadTopicById('full-curriculum')">
+          Browse Full Master Learning Roadmap (All 10 Modules) →
         </button>
       </div>
     `;
@@ -1366,51 +1509,54 @@ class TopicRoadmapManager {
     setTimeout(() => {
       const nodes = resultsContainer.querySelectorAll('.rdg-node');
       nodes.forEach((node, i) => {
-        node.style.animationDelay = `${i * 120}ms`;
+        node.style.animationDelay = `${i * 100}ms`;
         node.classList.add('rdg-node-animate');
       });
-    }, 80);
+    }, 60);
   }
 
   /**
    * Builds the SVG roadmap flow diagram.
-   * Layout: left-to-right row of 3, then wraps to new row.
+   * Uses a true serpentine zigzag layout with responsive SVG viewBox.
    */
   _buildRoadmapSVG(modules, levelColors) {
-    const COLS = 3;          // max nodes per row
-    const NODE_W = 220;      // node width
-    const NODE_H = 130;      // node height
-    const COL_GAP = 80;      // horizontal gap between nodes
-    const ROW_GAP = 90;      // vertical gap between rows
-    const PAD = 30;          // canvas padding
+    const COLS = 3;
+    const NODE_W = 260;
+    const NODE_H = 155;
+    const COL_GAP = 70;
+    const ROW_GAP = 90;
+    const PAD = 40;
 
     const rows = Math.ceil(modules.length / COLS);
     const cols = Math.min(modules.length, COLS);
-    const svgW = cols * (NODE_W + COL_GAP) - COL_GAP + PAD * 2;
+    const svgW = COLS * (NODE_W + COL_GAP) - COL_GAP + PAD * 2;
     const svgH = rows * (NODE_H + ROW_GAP) - ROW_GAP + PAD * 2;
 
-    // Node positions
+    // Serpentine Zigzag:
+    // Even rows (0, 2...) go Left -> Right (col 0, 1, 2)
+    // Odd rows (1, 3...) go Right -> Left (col 2, 1, 0)
     const positions = modules.map((_, i) => {
       const row = Math.floor(i / COLS);
       const col = i % COLS;
-      // Zigzag: even rows go left→right, odd rows right→left
-      const actualCol = (row % 2 === 0) ? col : (Math.min(modules.length - row * COLS, COLS) - 1 - col);
+      const actualCol = (row % 2 === 0) ? col : (COLS - 1 - col);
       return {
         x: PAD + actualCol * (NODE_W + COL_GAP),
         y: PAD + row * (NODE_H + ROW_GAP),
+        row,
+        col: actualCol
       };
     });
 
-    // Build arrow paths between consecutive nodes
+    // Arrow definitions with glowing markers
     let arrowDefs = `
       <defs>
         <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1" opacity="0.85"/>
+          <polygon points="0 0, 10 3.5, 0 7" fill="#818cf8"/>
         </marker>
-        <filter id="node-glow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="6" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
+        <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#6366f1" />
+          <stop offset="100%" stop-color="#a855f7" />
+        </linearGradient>
       </defs>
     `;
 
@@ -1419,46 +1565,41 @@ class TopicRoadmapManager {
       const from = positions[i];
       const to   = positions[i + 1];
 
-      const fromRow = Math.floor(i / COLS);
-      const toRow   = Math.floor((i + 1) / COLS);
-
-      let x1, y1, x2, y2, pathD;
-
-      if (fromRow === toRow) {
-        // Same row → horizontal arrow
-        const fromDir = (fromRow % 2 === 0) ? 1 : -1;
-        x1 = from.x + (fromDir > 0 ? NODE_W : 0);
-        y1 = from.y + NODE_H / 2;
-        x2 = to.x + (fromDir > 0 ? 0 : NODE_W);
-        y2 = to.y + NODE_H / 2;
-        // Bezier for smooth curve
-        const cx1 = x1 + fromDir * 30, cy1 = y1, cx2 = x2 - fromDir * 30, cy2 = y2;
-        pathD = `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
+      let pathD;
+      if (from.row === to.row) {
+        const isLeftToRight = (from.row % 2 === 0);
+        const x1 = isLeftToRight ? from.x + NODE_W : from.x;
+        const y1 = from.y + NODE_H / 2;
+        const x2 = isLeftToRight ? to.x : to.x + NODE_W;
+        const y2 = to.y + NODE_H / 2;
+        const dir = isLeftToRight ? 1 : -1;
+        const cx1 = x1 + dir * 32;
+        const cx2 = x2 - dir * 32;
+        pathD = `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`;
       } else {
-        // Row transition → vertical arrow from bottom of from-node to top of to-node
-        x1 = from.x + NODE_W / 2;
-        y1 = from.y + NODE_H;
-        x2 = to.x + NODE_W / 2;
-        y2 = to.y;
+        const x1 = from.x + NODE_W / 2;
+        const y1 = from.y + NODE_H;
+        const x2 = to.x + NODE_W / 2;
+        const y2 = to.y;
         const midY = (y1 + y2) / 2;
         pathD = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
       }
 
       arrows += `
         <path class="rdg-arrow" d="${pathD}"
-          fill="none" stroke="#6366f1" stroke-width="2.5"
-          stroke-dasharray="7 5" marker-end="url(#arrowhead)" opacity="0.78"/>
+          fill="none" stroke="url(#arrowGrad)" stroke-width="2.6"
+          stroke-dasharray="7 5" marker-end="url(#arrowhead)" opacity="0.88"/>
       `;
     }
 
-    // Build nodes
     let nodesSVG = '';
     modules.forEach((mod, i) => {
       const pos  = positions[i];
       const lc   = levelColors[mod.level] || levelColors['Beginner'];
-      const cx   = pos.x + NODE_W / 2;
-      const cy   = pos.y + NODE_H / 2;
       const step = i + 1;
+      const isPrereq = i === 0 && modules.length > 1;
+      const isTarget = i === modules.length - 1;
+      const stepRole = isPrereq ? 'FOUNDATION' : (isTarget ? 'MASTERY' : 'PROGRESSION');
 
       nodesSVG += `
         <g class="rdg-node" data-module-id="${mod.id}"
@@ -1467,55 +1608,69 @@ class TopicRoadmapManager {
           role="button" tabindex="0" aria-label="Open ${mod.number}: ${mod.title}">
 
           <!-- Glow backing -->
-          <rect x="${pos.x - 6}" y="${pos.y - 6}"
-            width="${NODE_W + 12}" height="${NODE_H + 12}"
+          <rect x="${pos.x - 4}" y="${pos.y - 4}"
+            width="${NODE_W + 8}" height="${NODE_H + 8}"
             rx="18" fill="${lc.glow}" class="rdg-node-glow"/>
 
           <!-- Node body -->
           <rect x="${pos.x}" y="${pos.y}"
             width="${NODE_W}" height="${NODE_H}"
-            rx="14"
-            fill="#0d1225"
+            rx="15"
+            fill="#0b1021"
             stroke="${lc.node}"
             stroke-width="1.8"
             class="rdg-node-rect"/>
 
-          <!-- Step number circle -->
-          <circle cx="${pos.x + 24}" cy="${pos.y + 22}" r="13"
-            fill="${lc.badge}" opacity="0.9"/>
-          <text x="${pos.x + 24}" y="${pos.y + 27}"
+          <!-- Step Number Circle -->
+          <circle cx="${pos.x + 22}" cy="${pos.y + 22}" r="12"
+            fill="${lc.badge}" opacity="0.95"/>
+          <text x="${pos.x + 22}" y="${pos.y + 26}"
             text-anchor="middle" font-size="11" font-weight="700"
-            fill="#fff" font-family="Inter,sans-serif">${step}</text>
+            fill="#ffffff" font-family="Inter,sans-serif">${step}</text>
 
-          <!-- Level badge pill -->
-          <rect x="${pos.x + 42}" y="${pos.y + 11}"
-            width="${mod.level.length * 7 + 14}" height="22"
+          <!-- Step Role Pill -->
+          <rect x="${pos.x + 40}" y="${pos.y + 11}"
+            width="${stepRole.length * 6 + 16}" height="22"
             rx="11" fill="${lc.badge}" opacity="0.18"/>
-          <text x="${pos.x + 49 + mod.level.length * 3.5}" y="${pos.y + 26}"
-            text-anchor="middle" font-size="10" font-weight="600"
-            fill="${lc.text}" font-family="Inter,sans-serif">${mod.level.toUpperCase()}</text>
+          <text x="${pos.x + 48 + stepRole.length * 3}" y="${pos.y + 25}"
+            text-anchor="middle" font-size="9" font-weight="700"
+            fill="${lc.text}" font-family="Inter,sans-serif" letter-spacing="0.5">${stepRole}</text>
 
-          <!-- Module number label -->
-          <text x="${pos.x + 12}" y="${pos.y + 56}"
-            font-size="10" fill="#64748b" font-family="Inter,sans-serif"
-            font-weight="500">${mod.number}</text>
+          <!-- Module ID label -->
+          <text x="${pos.x + NODE_W - 14}" y="${pos.y + 26}"
+            text-anchor="end" font-size="10" fill="#64748b" font-family="Inter,sans-serif"
+            font-weight="600">${mod.number}</text>
 
-          <!-- Title (word-wrap via 2 tspans) -->
-          ${this._svgWordWrap(mod.title, pos.x + 12, pos.y + 71, NODE_W - 20, 13, '#e2e8f0')}
+          <!-- Title -->
+          ${this._svgWordWrap(mod.title, pos.x + 14, pos.y + 58, NODE_W - 28, 12, '#f8fafc')}
 
-          <!-- Time estimate -->
-          <text x="${pos.x + NODE_W - 10}" y="${pos.y + NODE_H - 10}"
-            text-anchor="end" font-size="10" fill="#475569"
-            font-family="Inter,sans-serif">⏱ ${mod.timeEst}</text>
+          <!-- Category / Summary snippet -->
+          <text x="${pos.x + 14}" y="${pos.y + 98}"
+            font-size="10" fill="#94a3b8" font-family="Inter,sans-serif">
+            ${this._truncateSummary(mod.summary, 38)}
+          </text>
 
-          <!-- Circuit lab indicator dot -->
+          <!-- Divider line -->
+          <line x1="${pos.x + 12}" y1="${pos.y + 114}" x2="${pos.x + NODE_W - 12}" y2="${pos.y + 114}"
+            stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+
+          <!-- Time Estimate -->
+          <text x="${pos.x + 14}" y="${pos.y + 136}"
+            font-size="10" fill="#64748b" font-family="Inter,sans-serif">⏱ ${mod.timeEst}</text>
+
+          <!-- Circuit Lab Pill -->
           ${mod.circuitPreset ? `
-            <circle cx="${pos.x + 12}" cy="${pos.y + NODE_H - 12}" r="4"
-              fill="#10b981" opacity="0.9"/>
-            <text x="${pos.x + 20}" y="${pos.y + NODE_H - 9}"
-              font-size="9" fill="#10b981"
-              font-family="Inter,sans-serif">Circuit Lab</text>
-          ` : ''}
+            <rect x="${pos.x + NODE_W - 84}" y="${pos.y + 122}"
+              width="72" height="20" rx="10"
+              fill="rgba(16, 185, 129, 0.16)" stroke="#10b981" stroke-width="1"/>
+            <text x="${pos.x + NODE_W - 48}" y="${pos.y + 136}"
+              text-anchor="middle" font-size="9" font-weight="600" fill="#34d399"
+              font-family="Inter,sans-serif">⚡ Live Lab</text>
+          ` : `
+            <text x="${pos.x + NODE_W - 14}" y="${pos.y + 136}"
+              text-anchor="end" font-size="9.5" fill="#475569"
+              font-family="Inter,sans-serif">Theoretical</text>
+          `}
         </g>
       `;
     });
@@ -1524,7 +1679,8 @@ class TopicRoadmapManager {
       <div class="rdg-scroll-wrapper">
         <svg class="rdg-svg"
           viewBox="0 0 ${svgW} ${svgH}"
-          width="${svgW}" height="${svgH}"
+          width="100%"
+          style="max-width: ${svgW}px;"
           xmlns="http://www.w3.org/2000/svg"
           role="img" aria-label="Roadmap flow diagram">
           ${arrowDefs}
@@ -1532,11 +1688,20 @@ class TopicRoadmapManager {
           ${nodesSVG}
         </svg>
 
-        <p class="rdg-click-hint">
-          Click any node to open its full module reader with theory, math, and hands-on circuit lab.
-        </p>
+        <div class="rdg-legend-bar">
+          <span class="rdg-legend-item"><span class="rdg-legend-dot" style="background:#0d9488"></span> Beginner</span>
+          <span class="rdg-legend-item"><span class="rdg-legend-dot" style="background:#7c3aed"></span> Intermediate</span>
+          <span class="rdg-legend-item"><span class="rdg-legend-dot" style="background:#ea580c"></span> Advanced</span>
+          <span class="rdg-legend-item"><span class="rdg-legend-dot" style="background:#10b981"></span> ⚡ Circuit Lab</span>
+          <span class="rdg-legend-hint">👆 Click any node to open full lesson & interactive circuit composer</span>
+        </div>
       </div>
     `;
+  }
+
+  _truncateSummary(text, maxLen) {
+    if (!text) return '';
+    return text.length > maxLen ? text.slice(0, maxLen - 1) + '…' : text;
   }
 
   /**
@@ -1551,7 +1716,6 @@ class TopicRoadmapManager {
         font-family="Inter,sans-serif" font-weight="600">${text}</text>`;
     }
 
-    // Find best split point near the middle
     const mid = Math.floor(text.length / 2);
     let splitAt = text.lastIndexOf(' ', mid + 10);
     if (splitAt < 1) splitAt = text.indexOf(' ', mid);
@@ -1563,7 +1727,7 @@ class TopicRoadmapManager {
     return `<text x="${x}" y="${y}" font-size="${fontSize}" fill="${fill}"
       font-family="Inter,sans-serif" font-weight="600">
       <tspan x="${x}" dy="0">${line1}</tspan>
-      <tspan x="${x}" dy="${fontSize + 2}">${line2}</tspan>
+      <tspan x="${x}" dy="${fontSize + 3}">${line2}</tspan>
     </text>`;
   }
 }

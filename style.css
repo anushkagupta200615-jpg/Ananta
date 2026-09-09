@@ -16617,4 +16617,301 @@ input:checked + .slider-round:before {
   }
 }
 
+/* =========================================================
+   Roadmap Studio — Enhanced Results & Complete Listing Styles
+   ========================================================= */
+
+#topic-roadmap-results {
+  scroll-margin-top: 85px;
+  margin-top: 36px;
+}
+
+/* Master Curriculum Strip on Landing */
+.rmp-full-strip {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 20px;
+  max-width: 1100px;
+  padding: 18px 24px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(15, 23, 42, 0.85));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.rmp-full-strip:hover {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(20, 30, 55, 0.95));
+  border-color: rgba(59, 130, 246, 0.55);
+  box-shadow: 0 8px 28px rgba(37, 99, 235, 0.25);
+  transform: translateY(-2px);
+}
+
+.rmp-strip-icon-box {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.rmp-strip-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.rmp-strip-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.rmp-strip-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.rmp-strip-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.rmp-strip-desc {
+  font-size: 12.5px;
+  color: #94a3b8;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.rmp-strip-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  color: #60a5fa;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rmp-strip-arrow {
+  font-size: 18px;
+  transition: transform 0.2s ease;
+}
+
+.rmp-full-strip:hover .rmp-strip-arrow {
+  transform: translateX(4px);
+}
+
+/* Quick Topic Highlight Chip */
+.topic-chip-highlight {
+  background: rgba(99, 102, 241, 0.2) !important;
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  color: #c7d2fe !important;
+  font-weight: 600 !important;
+}
+
+.topic-chip-highlight:hover {
+  background: rgba(99, 102, 241, 0.35) !important;
+  border-color: #818cf8 !important;
+  color: #ffffff !important;
+}
+
+/* ── Results Header Navigation Row ──────────────────────── */
+.results-header-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.btn-rmp-back-landing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-rmp-back-landing:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  transform: translateX(-2px);
+}
+
+.results-badges-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.results-time-count {
+  font-size: 11.5px;
+  color: #94a3b8;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.results-level-badge.level-master {
+  background: rgba(37, 99, 235, 0.2);
+  color: #93c5fd;
+  border: 1px solid rgba(37, 99, 235, 0.4);
+}
+
+/* ── Section Headings inside results ─────────────────────── */
+.rmv-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+
+.rmv-heading-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rmv-section-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #818cf8;
+}
+
+.rmv-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.rmv-heading-hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ── SVG Legend Bar ──────────────────────────────────────── */
+.rdg-legend-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  margin-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.rdg-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rdg-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.rdg-legend-hint {
+  color: #64748b;
+  font-style: italic;
+}
+
+/* ── Rich Module Breakdown Cards ─────────────────────────── */
+.curated-math-preview {
+  margin: 12px 0 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(10, 14, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.math-preview-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.curated-math-preview code {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  color: #a5b4fc;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.curated-intuition-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 0 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  font-size: 12.5px;
+  color: #fde68a;
+  line-height: 1.45;
+}
+
+.curated-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-open-lab-direct {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-open-lab-direct:hover {
+  background: rgba(16, 185, 129, 0.28);
+  border-color: #10b981;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 
