@@ -276,7 +276,7 @@ class TopicRoadmapManager {
       const resultsContainer = document.getElementById('topic-roadmap-results');
       if (resultsContainer) {
         resultsContainer.style.display = 'block';
-        this.renderCuratedRoadmap(matchResult, pattern.displayName);
+        this.renderRoadmapDiagram(matchResult, pattern.displayName);
         resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
@@ -292,95 +292,169 @@ class TopicRoadmapManager {
     }
   }
 
-  // Initial clean, minimal landing layout
+  // Dedicated Roadmap Landing Page with 3 Options + Mic
   renderLandingView() {
     this.container.innerHTML = `
       <div class="topic-roadmap-container">
-        
-        <!-- Minimal Centered Hero -->
+
+        <!-- Hero Header with Mic Button -->
         <div class="topic-entry-hero">
           <div class="topic-sparkle-halo"></div>
-          <div class="topic-pill-badge">
-            <span class="topic-badge-dot"></span>
-            <span>Adaptive Quantum Learning Path</span>
+
+          <div class="rmp-hero-row">
+            <div class="rmp-hero-text">
+              <div class="topic-pill-badge">
+                <span class="topic-badge-dot"></span>
+                <span>Quantum Learning Roadmap</span>
+              </div>
+
+              <h1 class="topic-entry-heading">
+                Your Personalized<br />
+                <span class="heading-gradient">Quantum Learning Path</span>
+              </h1>
+
+              <p class="topic-entry-subtext">
+                Choose a curated track or describe any topic — our adaptive engine
+                will assemble an ordered prerequisite pathway and render a full
+                interactive flow diagram.
+              </p>
+            </div>
+
+            <!-- Floating Mic Button -->
+            <button class="rmp-mic-btn" id="rmp-mic-btn"
+              onclick="window.topicRoadmapManager._startRoadmapVoiceSearch()"
+              title="Speak a topic to generate a roadmap">
+              <span class="rmp-mic-icon">🎙️</span>
+              <span class="rmp-mic-ring"></span>
+            </button>
           </div>
 
-          <h1 class="topic-entry-heading">
-            Already have a topic in mind?<br />
-            <span class="heading-gradient">Let's kickstart your quantum journey</span>
-          </h1>
-
-          <p class="topic-entry-subtext">
-            Enter any concept, curiosity, or learning goal. Our adaptive engine will assemble an ordered prerequisite pathway from foundational state vectors to live hands-on circuit labs.
-          </p>
-
-          <!-- Single Centered Text Input Form -->
-          <div class="topic-input-container">
-            <form id="topic-roadmap-form" onsubmit="event.preventDefault(); window.topicRoadmapManager.handleSearch();">
-              <div class="topic-input-wrapper">
-                <span class="topic-search-icon">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  id="topic-user-query"
-                  class="topic-search-field"
-                  placeholder="e.g., I want to learn how to make quantum circuits, I have 0 prior knowledge"
-                  autocomplete="off"
-                  spellcheck="false"
-                />
-                <button type="submit" class="btn-topic-generate" id="btn-generate-roadmap">
-                  <span>Generate Roadmap</span>
-                  <span class="btn-arrow">→</span>
-                </button>
-              </div>
-            </form>
-
-            <!-- Quick Suggested Topic Chips -->
-            <div class="topic-suggested-row">
-              <span class="suggested-label">Featured tracks & topics:</span>
-              <button class="topic-chip highlight-chip chip-beginner" onclick="window.topicRoadmapManager.loadTopicById('beginner-track')">
-                Beginner Roadmap Track
-              </button>
-              <button class="topic-chip highlight-chip chip-advanced" onclick="window.topicRoadmapManager.loadTopicById('advanced-track')">
-                Advanced Roadmap Track
-              </button>
-              <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('I want to learn how to make quantum circuits, I have 0 prior knowledge')">
-                Circuit Fundamentals
-              </button>
-              <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('I want to understand quantum entanglement and Bell states')">
-                Entanglement & Bell States
-              </button>
-              <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('Explain quantum teleportation protocol')">
-                Quantum Teleportation
-              </button>
-              <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('How does Grover search algorithm work?')">
-                Grover Search
-              </button>
-              <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('Quantum chemistry and VQE molecular simulation')">
-                VQE Molecular Chemistry
-              </button>
-            </div>
+          <!-- Voice status label (hidden until mic is active) -->
+          <div class="rmp-voice-status" id="rmp-voice-status" style="display:none;">
+            <span class="rmp-voice-dot"></span>
+            <span id="rmp-voice-label">Listening... say a topic</span>
           </div>
         </div>
 
-        <!-- Dynamic Results Stage (Populated after search) -->
+        <!-- 3 Primary Roadmap Option Cards -->
+        <div class="rmp-options-grid">
+
+          <!-- Basic Roadmap -->
+          <div class="rmp-option-card rmp-card-beginner" onclick="window.topicRoadmapManager.loadTopicById('beginner-track')">
+            <div class="rmp-card-glow rmp-glow-beginner"></div>
+            <div class="rmp-card-icon">🌱</div>
+            <div class="rmp-card-content">
+              <span class="rmp-card-badge rmp-badge-beginner">BEGINNER TRACK</span>
+              <h3 class="rmp-card-title">Basic Roadmap</h3>
+              <p class="rmp-card-desc">
+                Zero-to-hero foundations: Hilbert spaces, single-qubit gates,
+                Pauli observables, and your first circuit synthesis.
+              </p>
+              <div class="rmp-card-meta">
+                <span class="rmp-meta-modules">4 Modules</span>
+                <span class="rmp-meta-time">~70 min</span>
+              </div>
+            </div>
+            <div class="rmp-card-arrow">→</div>
+          </div>
+
+          <!-- Advanced Roadmap -->
+          <div class="rmp-option-card rmp-card-advanced" onclick="window.topicRoadmapManager.loadTopicById('advanced-track')">
+            <div class="rmp-card-glow rmp-glow-advanced"></div>
+            <div class="rmp-card-icon">🚀</div>
+            <div class="rmp-card-content">
+              <span class="rmp-card-badge rmp-badge-advanced">ADVANCED TRACK</span>
+              <h3 class="rmp-card-title">Advanced Roadmap</h3>
+              <p class="rmp-card-desc">
+                Density matrices, Lindblad decoherence, Bell entanglement,
+                Grover search, teleportation, and VQE molecular chemistry.
+              </p>
+              <div class="rmp-card-meta">
+                <span class="rmp-meta-modules">6 Modules</span>
+                <span class="rmp-meta-time">~180 min</span>
+              </div>
+            </div>
+            <div class="rmp-card-arrow">→</div>
+          </div>
+
+          <!-- Custom Roadmap -->
+          <div class="rmp-option-card rmp-card-custom" onclick="document.getElementById('topic-user-query').focus()">
+            <div class="rmp-card-glow rmp-glow-custom"></div>
+            <div class="rmp-card-icon">🎯</div>
+            <div class="rmp-card-content">
+              <span class="rmp-card-badge rmp-badge-custom">ADAPTIVE AI</span>
+              <h3 class="rmp-card-title">Custom Roadmap</h3>
+              <p class="rmp-card-desc">
+                Type or speak any quantum topic — entanglement, noise, QFT,
+                algorithms — and get a personalized prerequisite diagram.
+              </p>
+              <div class="rmp-card-meta">
+                <span class="rmp-meta-modules">AI-Generated</span>
+                <span class="rmp-meta-time">Any topic</span>
+              </div>
+            </div>
+            <div class="rmp-card-arrow">→</div>
+          </div>
+
+        </div>
+
+        <!-- Search Bar (always visible) -->
+        <div class="rmp-search-section">
+          <form id="topic-roadmap-form" onsubmit="event.preventDefault(); window.topicRoadmapManager.handleSearch();">
+            <div class="topic-input-wrapper">
+              <span class="topic-search-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </span>
+              <input
+                type="text"
+                id="topic-user-query"
+                class="topic-search-field"
+                placeholder="e.g. quantum entanglement, VQE chemistry, Grover search, teleportation..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button class="rmp-search-mic" id="rmp-inline-mic"
+                type="button"
+                onclick="event.stopPropagation(); window.topicRoadmapManager._startRoadmapVoiceSearch()"
+                title="Speak a topic">
+                🎙️
+              </button>
+              <button type="submit" class="btn-topic-generate" id="btn-generate-roadmap">
+                <span>Generate Roadmap</span>
+                <span class="btn-arrow">→</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Quick topic chips -->
+          <div class="topic-suggested-row">
+            <span class="suggested-label">Quick topics:</span>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('quantum circuits for beginners')">Circuits</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('entanglement and Bell states')">Entanglement</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('quantum teleportation protocol')">Teleportation</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('Grover search algorithm')">Grover Search</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('VQE molecular chemistry')">VQE Chemistry</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('decoherence and noise channels')">Decoherence</button>
+          </div>
+        </div>
+
+        <!-- Dynamic Results Stage (SVG Diagram renders here) -->
         <div id="topic-roadmap-results" class="topic-results-stage" style="display: none;"></div>
 
-        <!-- Dynamic Module Detail Split Stage (Populated when clicking a module) -->
+        <!-- Dynamic Module Detail Split Stage -->
         <div id="topic-module-detail-stage" class="topic-module-split-stage" style="display: none;"></div>
 
       </div>
     `;
 
-    // Re-bind enter key and auto-focus
+    // Auto-focus search if on desktop
     if (typeof document !== 'undefined') {
       const inputEl = document.getElementById('topic-user-query');
-      if (inputEl) {
-        setTimeout(() => inputEl.focus(), 150);
+      if (inputEl && window.innerWidth > 768) {
+        setTimeout(() => inputEl.focus(), 250);
       }
     }
   }
@@ -392,6 +466,106 @@ class TopicRoadmapManager {
       this.handleSearch();
     }
   }
+
+  // -------------------------------------------------------------------
+  // Inline Voice Search (Roadmap Page Mic Button)
+  // -------------------------------------------------------------------
+
+  _startRoadmapVoiceSearch() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser. Please type your topic instead.');
+      return;
+    }
+
+    // If already listening, stop
+    if (this._roadmapRecognition) {
+      this._stopRoadmapVoiceSearch();
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;  // single utterance
+    recognition.interimResults = true;
+    recognition.lang = navigator.language || 'en-US';
+    this._roadmapRecognition = recognition;
+
+    // UI: activate mic button + show status
+    const micBtn = document.getElementById('rmp-mic-btn');
+    const inlineMic = document.getElementById('rmp-inline-mic');
+    const statusBar = document.getElementById('rmp-voice-status');
+    const statusLabel = document.getElementById('rmp-voice-label');
+    const inputEl = document.getElementById('topic-user-query');
+
+    if (micBtn) micBtn.classList.add('rmp-mic-active');
+    if (inlineMic) inlineMic.classList.add('rmp-mic-active');
+    if (statusBar) statusBar.style.display = 'flex';
+    if (statusLabel) statusLabel.textContent = 'Listening... say a topic';
+
+    let debounceTimer = null;
+
+    recognition.onresult = (event) => {
+      let transcript = '';
+      let hasFinal = false;
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+        if (event.results[i].isFinal) hasFinal = true;
+      }
+      const trimmed = transcript.trim();
+      if (!trimmed) return;
+
+      // Show what was heard in the input field + status
+      if (inputEl) inputEl.value = trimmed;
+      if (statusLabel) statusLabel.textContent = `Heard: "${trimmed}"`;
+
+      if (hasFinal) {
+        clearTimeout(debounceTimer);
+        this._stopRoadmapVoiceSearch();
+        // Generate roadmap from what was heard
+        setTimeout(() => this.voiceActivatedRoadmap(trimmed), 200);
+      } else {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          this._stopRoadmapVoiceSearch();
+          setTimeout(() => this.voiceActivatedRoadmap(trimmed), 200);
+        }, 1200);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.warn('[TopicRoadmap] Voice search error:', event.error);
+      if (statusLabel) statusLabel.textContent = `Mic error: ${event.error}. Try typing instead.`;
+      setTimeout(() => this._stopRoadmapVoiceSearch(), 2000);
+    };
+
+    recognition.onend = () => {
+      // Auto-cleanup if speech ended without result
+      setTimeout(() => this._stopRoadmapVoiceSearch(), 300);
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      console.warn('[TopicRoadmap] Failed to start voice search:', e);
+      this._stopRoadmapVoiceSearch();
+    }
+  }
+
+  _stopRoadmapVoiceSearch() {
+    if (this._roadmapRecognition) {
+      try { this._roadmapRecognition.abort(); } catch (e) {}
+      this._roadmapRecognition = null;
+    }
+
+    const micBtn = document.getElementById('rmp-mic-btn');
+    const inlineMic = document.getElementById('rmp-inline-mic');
+    const statusBar = document.getElementById('rmp-voice-status');
+
+    if (micBtn) micBtn.classList.remove('rmp-mic-active');
+    if (inlineMic) inlineMic.classList.remove('rmp-mic-active');
+    if (statusBar) setTimeout(() => { statusBar.style.display = 'none'; }, 1500);
+  }
+
 
   handleSearch() {
     const inputEl = document.getElementById('topic-user-query');
@@ -410,7 +584,7 @@ class TopicRoadmapManager {
     resultsContainer.style.display = 'block';
 
     if (match) {
-      this.renderCuratedRoadmap(match, query);
+      this.renderRoadmapDiagram(match, query);
     } else {
       this.renderFallbackView(query);
     }
