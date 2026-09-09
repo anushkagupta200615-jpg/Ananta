@@ -16914,4 +16914,419 @@ input:checked + .slider-round:before {
   transform: translateY(-1px);
 }
 
+/* =========================================================
+   Persistent Voice & Search Bar in Results Stage
+   ========================================================= */
+.rmp-results-persistent-bar {
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(20, 28, 48, 0.88));
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rmp-results-search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(10, 14, 26, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 4px 6px 4px 14px;
+  transition: all 0.2s ease;
+}
+
+.rmp-results-search-wrapper:focus-within {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.rmp-results-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f8fafc;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.rmp-results-input::placeholder {
+  color: #64748b;
+}
+
+.rmp-results-mic-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.rmp-results-mic-btn:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: #818cf8;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.rmp-results-mic-btn.rmp-mic-active {
+  background: rgba(239, 68, 68, 0.25) !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  animation: rmpMicPulse 1.2s infinite ease-in-out;
+}
+
+.btn-results-generate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border: none;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-results-generate:hover {
+  background: linear-gradient(135deg, #4338ca, #6d28d9);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  transform: translateY(-1px);
+}
+
+.rmp-results-quick-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rmp-chips-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-right: 4px;
+}
+
+.topic-chip.topic-chip-active {
+  background: rgba(99, 102, 241, 0.3) !important;
+  border-color: #818cf8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Voice Action Buttons in Status Bar */
+.rmp-voice-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btn-voice-finish {
+  background: linear-gradient(135deg, #059669, #10b981);
+  border: none;
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-voice-finish:hover {
+  background: linear-gradient(135deg, #047857, #059669);
+  transform: translateY(-1px);
+}
+
+.btn-voice-cancel {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-voice-cancel:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #f87171;
+}
+
+/* =========================================================
+   Google AI Studio Loading State Skeleton
+   ========================================================= */
+.rmp-ai-loading-card {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 32px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 27, 75, 0.85));
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 35px rgba(139, 92, 246, 0.2);
+  margin-bottom: 24px;
+}
+
+.rmp-ai-loading-orb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rmp-orb-core {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #c084fc, #6366f1);
+  box-shadow: 0 0 20px rgba(192, 132, 252, 0.8);
+  animation: rmpOrbGlow 1.8s infinite alternate ease-in-out;
+}
+
+.rmp-orb-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px dashed rgba(168, 85, 247, 0.6);
+}
+
+.rmp-ring-1 {
+  animation: rmpSpin 4s infinite linear;
+}
+
+.rmp-ring-2 {
+  inset: 6px;
+  border: 1.5px solid rgba(56, 189, 248, 0.5);
+  border-left-color: transparent;
+  animation: rmpSpinReverse 2.5s infinite linear;
+}
+
+@keyframes rmpOrbGlow {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes rmpSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes rmpSpinReverse {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.rmp-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.15);
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.rmp-loading-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0 0 6px;
+}
+
+.rmp-loading-subtext {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0 0 12px;
+}
+
+.rmp-loading-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.rmp-step-active {
+  color: #818cf8;
+  font-weight: 600;
+}
+
+.results-tag.ai-tag {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(59, 130, 246, 0.25));
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #c084fc;
+  font-weight: 700;
+}
+
+/* =========================================================
+   Curated Landmark Research Paper Badges
+   ========================================================= */
+.curated-paper-badge {
+  margin: 10px 0 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 78, 59, 0.12));
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.paper-badge-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.paper-badge-icon {
+  font-size: 13px;
+}
+
+.paper-badge-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #34d399;
+}
+
+.paper-badge-journal {
+  font-size: 11px;
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.paper-badge-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+  line-height: 1.35;
+}
+
+.paper-badge-meta {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.paper-badge-meta code {
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  color: #67e8f9;
+}
+
+.paper-badge-insight {
+  font-size: 11.5px;
+  color: #a7f3d0;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* Landmark Research Section in Module Reader */
+.theory-paper-section {
+  margin-top: 18px;
+}
+
+.theory-paper-card {
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.8));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.theory-paper-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.theory-paper-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.theory-paper-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.theory-paper-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.theory-paper-journal {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #34d399;
+}
+
+.theory-paper-authors {
+  font-size: 12.5px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.theory-paper-doi {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.theory-paper-doi code {
+  color: #38bdf8;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.theory-paper-insight {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-size: 12.5px;
+  color: #d1fae5;
+  line-height: 1.45;
+}
+
 
