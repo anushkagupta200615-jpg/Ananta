@@ -992,7 +992,408 @@ class TopicRoadmapManager {
     }
     this.activeModule = null;
   }
+
+  // -------------------------------------------------------------------
+  // Voice-Activated Roadmap Entry Point
+  // Called by QuantumVoiceCopilot._executeRoadmapIntent()
+  // -------------------------------------------------------------------
+
+  /**
+   * Populates the search input, runs the match engine, and renders the
+   * visual flow-diagram view. Returns metadata for the voice copilot to
+   * speak back.
+   * @param {string} topicQuery - extracted topic string from voice
+   * @returns {{ count: number, trackName: string }}
+   */
+  voiceActivatedRoadmap(topicQuery) {
+    this.initDOM();
+
+    // Populate search input
+    const inputEl = document.getElementById('topic-user-query');
+    if (inputEl) inputEl.value = topicQuery;
+
+    // Close any open module reader
+    this.closeModuleReader();
+
+    // Run matcher
+    const match = this.matchQueryToTopic(topicQuery);
+    const resultsContainer = document.getElementById('topic-roadmap-results');
+    if (!resultsContainer) {
+      return { count: 0, trackName: topicQuery };
+    }
+
+    resultsContainer.style.display = 'block';
+
+    if (match) {
+      // Render DIAGRAM view (voice default)
+      this.renderRoadmapDiagram(match, topicQuery);
+      resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return { count: match.modules.length, trackName: match.pattern.displayName };
+    } else {
+      this.renderFallbackView(topicQuery);
+      resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return { count: 0, trackName: topicQuery };
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Toggle between Card and Diagram views
+  // -------------------------------------------------------------------
+  toggleRoadmapView(mode) {
+    const cardBtn = document.getElementById('rmv-btn-cards');
+    const diagBtn = document.getElementById('rmv-btn-diagram');
+    const cardView = document.getElementById('rmv-card-view');
+    const diagView = document.getElementById('rmv-diagram-view');
+
+    if (!cardView || !diagView) return;
+
+    if (mode === 'diagram') {
+      cardView.style.display = 'none';
+      diagView.style.display = 'block';
+      if (cardBtn) { cardBtn.classList.remove('rmv-toggle-active'); }
+      if (diagBtn) { diagBtn.classList.add('rmv-toggle-active'); }
+    } else {
+      diagView.style.display = 'none';
+      cardView.style.display = 'block';
+      if (cardBtn) { cardBtn.classList.add('rmv-toggle-active'); }
+      if (diagBtn) { diagBtn.classList.remove('rmv-toggle-active'); }
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Visual Flow-Diagram Renderer
+  // -------------------------------------------------------------------
+
+  /**
+   * Renders the visual SVG flow-diagram roadmap alongside the regular
+   * waterfall card list. Defaults to diagram view when called from voice.
+   */
+  renderRoadmapDiagram(matchResult, query) {
+    const { pattern, modules, detectedLevel = 'BEGINNER', levelRationale = '' } = matchResult;
+    this.currentCuratedModules = modules;
+    const resultsContainer = document.getElementById('topic-roadmap-results');
+    if (!resultsContainer) return;
+
+    // ── Level colors ──────────────────────────────────────────
+    const levelColors = {
+      Beginner:     { node: '#0d9488', glow: 'rgba(13,148,136,0.55)', badge: '#14b8a6', text: '#ccfbf1' },
+      Intermediate: { node: '#7c3aed', glow: 'rgba(124,58,237,0.55)', badge: '#8b5cf6', text: '#ede9fe' },
+      Advanced:     { node: '#c2410c', glow: 'rgba(194,65,12,0.55)',  badge: '#f97316', text: '#ffedd5' },
+    };
+
+    // ── Build card HTML (same as renderCuratedRoadmap) ────────
+    let cardsHtml = '';
+    modules.forEach((mod, idx) => {
+      const stepNum = idx + 1;
+      const isPrereq = idx === 0 && modules.length > 1;
+      const stepType = isPrereq ? 'Prerequisite Foundation' : (idx === modules.length - 1 ? 'Target Mastery Goal' : 'Core Concept');
+      const hasLab = Boolean(mod.circuitPreset);
+
+      cardsHtml += `
+        <div class="waterfall-card-wrapper" style="--stagger-index: ${idx};">
+          <div class="curated-module-card ${hasLab ? 'has-circuit-lab' : ''}" onclick="window.topicRoadmapManager.openModuleReader('${mod.id}')">
+            <div class="curated-card-sidebar">
+              <div class="curated-step-circle">${stepNum}</div>
+              ${stepNum < modules.length ? '<div class="curated-timeline-stem"></div>' : ''}
+            </div>
+            <div class="curated-card-main">
+              <div class="curated-card-header">
+                <div class="curated-badge-group">
+                  <span class="curated-step-tag">${stepType}</span>
+                  <span class="curated-module-badge">${mod.number}</span>
+                  <span class="curated-level-badge level-${mod.level.toLowerCase()}">${mod.level}</span>
+                </div>
+                <span class="curated-time-badge">${mod.timeEst}</span>
+              </div>
+              <h3 class="curated-card-title">${mod.title}</h3>
+              <p class="curated-card-summary">${mod.summary}</p>
+              <div class="curated-math-preview"><code>${mod.mathFormula}</code></div>
+              <div class="curated-card-footer">
+                ${hasLab ? `
+                  <div class="curated-lab-pill">
+                    <span class="lab-pill-dot"></span>
+                    <span>Interactive Circuit Lab Attached</span>
+                  </div>
+                ` : `
+                  <div class="curated-theory-pill">
+                    <span class="theory-pill-dot"></span>
+                    <span>Theoretical Foundations</span>
+                  </div>
+                `}
+                <button class="btn-open-curated-module">
+                  <span>Start ${mod.number}</span>
+                  <span class="open-arrow">→</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    // ── Build SVG diagram ──────────────────────────────────────
+    const svgDiagram = this._buildRoadmapSVG(modules, levelColors);
+
+    // ── Assemble full HTML ─────────────────────────────────────
+    resultsContainer.innerHTML = `
+      <div class="curated-results-header">
+        <div class="curated-header-top">
+          <span class="results-tag">ADAPTIVE PATHWAY ASSEMBLED</span>
+          <span class="results-level-badge level-${detectedLevel.toLowerCase()}">${detectedLevel} TRACK</span>
+          <span class="results-step-count">${modules.length} Ordered Steps to Mastery</span>
+        </div>
+        <h2 class="results-topic-title">${pattern.displayName}</h2>
+        <p class="results-topic-desc">${pattern.description}</p>
+
+        ${levelRationale ? `
+          <div class="results-rationale-box">
+            <span class="rationale-accent-bar"></span>
+            <span class="rationale-text"><strong>Adaptive Reasoning:</strong> ${levelRationale}</span>
+          </div>
+        ` : ''}
+
+        <div class="results-query-echo">
+          <span class="echo-label">Matched Query:</span>
+          <span class="echo-text">"${query}"</span>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="rmv-toggle-group" role="group" aria-label="Switch roadmap view">
+          <button id="rmv-btn-cards" class="rmv-toggle-btn"
+            onclick="window.topicRoadmapManager.toggleRoadmapView('cards')">
+            📋 Module Cards
+          </button>
+          <button id="rmv-btn-diagram" class="rmv-toggle-btn rmv-toggle-active"
+            onclick="window.topicRoadmapManager.toggleRoadmapView('diagram')">
+            🗺 Flow Diagram
+          </button>
+        </div>
+      </div>
+
+      <!-- Diagram View (default when voice-activated) -->
+      <div id="rmv-diagram-view" class="rmv-diagram-view">
+        ${svgDiagram}
+      </div>
+
+      <!-- Card View (hidden by default when coming from voice) -->
+      <div id="rmv-card-view" class="rmv-card-view" style="display:none;">
+        <div class="waterfall-module-list">${cardsHtml}</div>
+      </div>
+
+      <div class="curated-bottom-actions">
+        <p>Want to explore the entire curriculum without topic filtering?</p>
+        <button class="btn-view-full-roadmap" onclick="window.switchView('docs')">
+          Browse Full Learning Roadmap (All 10 Modules) →
+        </button>
+      </div>
+    `;
+
+    // Trigger staggered node entry animations
+    setTimeout(() => {
+      const nodes = resultsContainer.querySelectorAll('.rdg-node');
+      nodes.forEach((node, i) => {
+        node.style.animationDelay = `${i * 120}ms`;
+        node.classList.add('rdg-node-animate');
+      });
+    }, 80);
+  }
+
+  /**
+   * Builds the SVG roadmap flow diagram.
+   * Layout: left-to-right row of 3, then wraps to new row.
+   */
+  _buildRoadmapSVG(modules, levelColors) {
+    const COLS = 3;          // max nodes per row
+    const NODE_W = 220;      // node width
+    const NODE_H = 130;      // node height
+    const COL_GAP = 80;      // horizontal gap between nodes
+    const ROW_GAP = 90;      // vertical gap between rows
+    const PAD = 30;          // canvas padding
+
+    const rows = Math.ceil(modules.length / COLS);
+    const cols = Math.min(modules.length, COLS);
+    const svgW = cols * (NODE_W + COL_GAP) - COL_GAP + PAD * 2;
+    const svgH = rows * (NODE_H + ROW_GAP) - ROW_GAP + PAD * 2;
+
+    // Node positions
+    const positions = modules.map((_, i) => {
+      const row = Math.floor(i / COLS);
+      const col = i % COLS;
+      // Zigzag: even rows go left→right, odd rows right→left
+      const actualCol = (row % 2 === 0) ? col : (Math.min(modules.length - row * COLS, COLS) - 1 - col);
+      return {
+        x: PAD + actualCol * (NODE_W + COL_GAP),
+        y: PAD + row * (NODE_H + ROW_GAP),
+      };
+    });
+
+    // Build arrow paths between consecutive nodes
+    let arrowDefs = `
+      <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1" opacity="0.85"/>
+        </marker>
+        <filter id="node-glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+    `;
+
+    let arrows = '';
+    for (let i = 0; i < modules.length - 1; i++) {
+      const from = positions[i];
+      const to   = positions[i + 1];
+
+      const fromRow = Math.floor(i / COLS);
+      const toRow   = Math.floor((i + 1) / COLS);
+
+      let x1, y1, x2, y2, pathD;
+
+      if (fromRow === toRow) {
+        // Same row → horizontal arrow
+        const fromDir = (fromRow % 2 === 0) ? 1 : -1;
+        x1 = from.x + (fromDir > 0 ? NODE_W : 0);
+        y1 = from.y + NODE_H / 2;
+        x2 = to.x + (fromDir > 0 ? 0 : NODE_W);
+        y2 = to.y + NODE_H / 2;
+        // Bezier for smooth curve
+        const cx1 = x1 + fromDir * 30, cy1 = y1, cx2 = x2 - fromDir * 30, cy2 = y2;
+        pathD = `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
+      } else {
+        // Row transition → vertical arrow from bottom of from-node to top of to-node
+        x1 = from.x + NODE_W / 2;
+        y1 = from.y + NODE_H;
+        x2 = to.x + NODE_W / 2;
+        y2 = to.y;
+        const midY = (y1 + y2) / 2;
+        pathD = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+      }
+
+      arrows += `
+        <path class="rdg-arrow" d="${pathD}"
+          fill="none" stroke="#6366f1" stroke-width="2.5"
+          stroke-dasharray="7 5" marker-end="url(#arrowhead)" opacity="0.78"/>
+      `;
+    }
+
+    // Build nodes
+    let nodesSVG = '';
+    modules.forEach((mod, i) => {
+      const pos  = positions[i];
+      const lc   = levelColors[mod.level] || levelColors['Beginner'];
+      const cx   = pos.x + NODE_W / 2;
+      const cy   = pos.y + NODE_H / 2;
+      const step = i + 1;
+
+      nodesSVG += `
+        <g class="rdg-node" data-module-id="${mod.id}"
+          onclick="window.topicRoadmapManager.openModuleReader('${mod.id}')"
+          style="cursor:pointer;"
+          role="button" tabindex="0" aria-label="Open ${mod.number}: ${mod.title}">
+
+          <!-- Glow backing -->
+          <rect x="${pos.x - 6}" y="${pos.y - 6}"
+            width="${NODE_W + 12}" height="${NODE_H + 12}"
+            rx="18" fill="${lc.glow}" class="rdg-node-glow"/>
+
+          <!-- Node body -->
+          <rect x="${pos.x}" y="${pos.y}"
+            width="${NODE_W}" height="${NODE_H}"
+            rx="14"
+            fill="#0d1225"
+            stroke="${lc.node}"
+            stroke-width="1.8"
+            class="rdg-node-rect"/>
+
+          <!-- Step number circle -->
+          <circle cx="${pos.x + 24}" cy="${pos.y + 22}" r="13"
+            fill="${lc.badge}" opacity="0.9"/>
+          <text x="${pos.x + 24}" y="${pos.y + 27}"
+            text-anchor="middle" font-size="11" font-weight="700"
+            fill="#fff" font-family="Inter,sans-serif">${step}</text>
+
+          <!-- Level badge pill -->
+          <rect x="${pos.x + 42}" y="${pos.y + 11}"
+            width="${mod.level.length * 7 + 14}" height="22"
+            rx="11" fill="${lc.badge}" opacity="0.18"/>
+          <text x="${pos.x + 49 + mod.level.length * 3.5}" y="${pos.y + 26}"
+            text-anchor="middle" font-size="10" font-weight="600"
+            fill="${lc.text}" font-family="Inter,sans-serif">${mod.level.toUpperCase()}</text>
+
+          <!-- Module number label -->
+          <text x="${pos.x + 12}" y="${pos.y + 56}"
+            font-size="10" fill="#64748b" font-family="Inter,sans-serif"
+            font-weight="500">${mod.number}</text>
+
+          <!-- Title (word-wrap via 2 tspans) -->
+          ${this._svgWordWrap(mod.title, pos.x + 12, pos.y + 71, NODE_W - 20, 13, '#e2e8f0')}
+
+          <!-- Time estimate -->
+          <text x="${pos.x + NODE_W - 10}" y="${pos.y + NODE_H - 10}"
+            text-anchor="end" font-size="10" fill="#475569"
+            font-family="Inter,sans-serif">⏱ ${mod.timeEst}</text>
+
+          <!-- Circuit lab indicator dot -->
+          ${mod.circuitPreset ? `
+            <circle cx="${pos.x + 12}" cy="${pos.y + NODE_H - 12}" r="4"
+              fill="#10b981" opacity="0.9"/>
+            <text x="${pos.x + 20}" y="${pos.y + NODE_H - 9}"
+              font-size="9" fill="#10b981"
+              font-family="Inter,sans-serif">Circuit Lab</text>
+          ` : ''}
+        </g>
+      `;
+    });
+
+    return `
+      <div class="rdg-scroll-wrapper">
+        <svg class="rdg-svg"
+          viewBox="0 0 ${svgW} ${svgH}"
+          width="${svgW}" height="${svgH}"
+          xmlns="http://www.w3.org/2000/svg"
+          role="img" aria-label="Roadmap flow diagram">
+          ${arrowDefs}
+          ${arrows}
+          ${nodesSVG}
+        </svg>
+
+        <p class="rdg-click-hint">
+          Click any node to open its full module reader with theory, math, and hands-on circuit lab.
+        </p>
+      </div>
+    `;
+  }
+
+  /**
+   * SVG text word-wrap helper — splits title into max 2 lines.
+   */
+  _svgWordWrap(text, x, y, maxWidth, fontSize, fill) {
+    const avgCharW = fontSize * 0.58;
+    const maxChars = Math.floor(maxWidth / avgCharW);
+
+    if (text.length <= maxChars) {
+      return `<text x="${x}" y="${y}" font-size="${fontSize}" fill="${fill}"
+        font-family="Inter,sans-serif" font-weight="600">${text}</text>`;
+    }
+
+    // Find best split point near the middle
+    const mid = Math.floor(text.length / 2);
+    let splitAt = text.lastIndexOf(' ', mid + 10);
+    if (splitAt < 1) splitAt = text.indexOf(' ', mid);
+    if (splitAt < 1) splitAt = maxChars;
+
+    const line1 = text.slice(0, splitAt).trim();
+    const line2 = text.slice(splitAt).trim();
+
+    return `<text x="${x}" y="${y}" font-size="${fontSize}" fill="${fill}"
+      font-family="Inter,sans-serif" font-weight="600">
+      <tspan x="${x}" dy="0">${line1}</tspan>
+      <tspan x="${x}" dy="${fontSize + 2}">${line2}</tspan>
+    </text>`;
+  }
 }
+
 
 if (typeof window !== 'undefined') {
   window.TopicRoadmapManager = TopicRoadmapManager;

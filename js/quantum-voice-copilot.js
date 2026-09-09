@@ -568,6 +568,17 @@ class QuantumVoiceCopilot {
     let text = rawText.toLowerCase().trim();
     console.log('[QuantumVoiceCopilot] Ingested raw voice:', text);
 
+    // -----------------------------------------------------------------------
+    // PRIORITY 0: Roadmap Diagram Intent — intercepts BEFORE circuit logic.
+    // These commands navigate to the Roadmap tab and generate a visual
+    // learning path diagram. They must never fall through to the circuit builder.
+    // -----------------------------------------------------------------------
+    const roadmapIntent = this._detectRoadmapIntent(text);
+    if (roadmapIntent) {
+      this._executeRoadmapIntent(roadmapIntent, rawText);
+      return;
+    }
+
     // Make sure we are viewing Composer!
     if (window.switchTab) {
       window.switchTab('simulator');
@@ -917,6 +928,99 @@ class QuantumVoiceCopilot {
     this._playChime('warn');
     if (shouldSpeak) this._speak(`I heard: ${rawClause}. What gate shall I place next? You can say: Add H on 0, or CNOT 0 to 1.`);
     return null;
+  }
+
+  // -------------------------------------------------------------
+  // Roadmap Intent Detection & Execution
+  // -------------------------------------------------------------
+
+  /**
+   * Returns a cleaned topic query string if the voice input is a roadmap request,
+   * or null if it is not a roadmap command.
+   */
+  _detectRoadmapIntent(text) {
+    // Patterns: "give me a roadmap for X", "create a roadmap for X",
+    // "show roadmap for X", "roadmap for X", "learning path for X",
+    // "how do I learn X", "what's the path to learn X", "quantum X roadmap"
+    const roadmapPatterns = [
+      /\b(?:give\s+me\s+a?\s*|create\s+a?\s*|generate\s+a?\s*|make\s+a?\s*|show\s+(?:me\s+)?a?\s*)roadmap\s+for\s+(.+)/i,
+      /\broadmap\s+for\s+(.+)/i,
+      /\b(?:give\s+me\s+a?\s*|create\s+a?\s*|generate\s+a?\s*|show\s+(?:me\s+)?)learning\s+(?:path|pathway|plan|track)\s+for\s+(.+)/i,
+      /\blearning\s+(?:path|pathway|plan|track)\s+for\s+(.+)/i,
+      /\bhow\s+(?:do\s+i\s+|can\s+i\s+|to\s+)learn\s+(.+)/i,
+      /\bwhat(?:'s|\s+is)\s+the\s+(?:path|roadmap|way|track)\s+to\s+(?:learn\s+)?(.+)/i,
+      /\bpath\s+to\s+(?:learn|master|understand)\s+(.+)/i,
+      /\b(?:study\s+plan|curriculum)\s+for\s+(.+)/i,
+      /\bteach\s+me\s+(.+)/i,
+      /\bi\s+want\s+to\s+learn\s+(.+)/i,
+    ];
+
+    for (const pattern of roadmapPatterns) {
+      const m = text.match(pattern);
+      if (m && m[1]) {
+        // Clean trailing filler words
+        let topic = m[1]
+          .replace(/\bplease\b|\bnow\b|\btoday\b|\bquickly\b|\bfast\b/gi, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        // Remove trailing punctuation
+        topic = topic.replace(/[.?!,]+$/, '').trim();
+        if (topic.length > 1) return topic;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Handles a detected roadmap voice intent:
+   * - Switches to Topic Roadmap tab
+   * - Fires topic search and renders visual diagram
+   * - Provides voice + visual feedback
+   */
+  _executeRoadmapIntent(topicQuery, rawText) {
+    console.log('[QuantumVoiceCopilot] Roadmap intent detected for topic:', topicQuery);
+
+    // 1. Visual feedback immediately
+    this._setDialogueUser(rawText);
+    this._setSubtitle(`Generating roadmap: "${topicQuery}"...`);
+    this._updateStatus('🗺️ BUILDING ROADMAP...', 'speaking');
+    this._playChime('success');
+
+    // 2. Switch to topic-roadmap tab (not simulator)
+    if (window.switchView) {
+      window.switchView('topic-roadmap');
+    } else if (window.switchTab) {
+      window.switchTab('topic-roadmap');
+    }
+
+    // 3. Fire roadmap generation after a short delay to allow tab transition
+    setTimeout(() => {
+      const roadmapMgr = window.topicRoadmapManager;
+      if (roadmapMgr && typeof roadmapMgr.voiceActivatedRoadmap === 'function') {
+        const result = roadmapMgr.voiceActivatedRoadmap(topicQuery);
+        const modulesCount = result ? result.count : 0;
+        const trackName = result ? result.trackName : topicQuery;
+
+        this._setActionFeedback(`🗺️ Roadmap generated: ${trackName} (${modulesCount} modules)`);
+        this._speak(
+          `Roadmap generated for ${topicQuery}. Your personalized learning path has ${modulesCount} modules. Scroll down to explore each step.`
+        );
+        this._setSubtitle(`Roadmap ready: "${trackName}"`);
+      } else {
+        // Graceful fallback: populate search and trigger manually
+        const inputEl = document.getElementById('topic-user-query');
+        if (inputEl) {
+          inputEl.value = topicQuery;
+          if (roadmapMgr) roadmapMgr.handleSearch();
+        }
+        this._speak(`Navigated to the Roadmap tab for "${topicQuery}". Scroll down to see your learning path.`);
+        this._setActionFeedback(`🗺️ Roadmap opened for: ${topicQuery}`);
+      }
+
+      if (this.isListening) {
+        this._updateStatus('🟢 LISTENING — WHAT NEXT?', 'listening');
+      }
+    }, 420);
   }
 
   // -------------------------------------------------------------
