@@ -2956,8 +2956,25 @@ Key Advantage:
           <div class="feature-header-badge">UNIVERSAL MULTI-FRAMEWORK QUANTUM BRIDGE</div>
           <h1 class="feature-header-title">Universal Transpiler & AI Circuit Doctor</h1>
           <p class="feature-header-desc">
-            Bidirectional translation across **Google Cirq**, **IBM Qiskit**, **Amazon Braket**, **PennyLane**, **OpenQASM 3.0**, and **PyQuil** with live peephole gate cancellation, KAK Cartan decomposition, and topology SWAP routing.
+            Bidirectional translation across <strong>Google Cirq</strong>, <strong>IBM Qiskit</strong>, <strong>Amazon Braket</strong>, <strong>PennyLane</strong>, <strong>OpenQASM 3.0</strong>, and <strong>PyQuil</strong> with real-time gate cancellation, KAK Cartan decomposition, and physical QPU noise diagnostics.
           </p>
+        </div>
+
+        <!-- 🩺 Educational Explainer Card: Demystifying "AI Circuit Doctor" -->
+        <div class="doctor-explainer-card">
+          <div class="doctor-explainer-header">
+            <div class="doctor-badge-cluster">
+              <span class="doctor-pill-pulse">🩺 QUANTUM COMPILER & NOISE PHYSICIST</span>
+              <span class="doctor-subtitle">What is the "AI Circuit Doctor"? Concept Explained</span>
+            </div>
+            <div class="doctor-level-tabs">
+              <button type="button" class="btn-doc-tab active" id="btn-doc-tab-simple" onclick="if(window.transpilerDoctor) window.transpilerDoctor.setExplainerLevel('simple')">🌱 Plain English (Beginner)</button>
+              <button type="button" class="btn-doc-tab" id="btn-doc-tab-deep" onclick="if(window.transpilerDoctor) window.transpilerDoctor.setExplainerLevel('deep')">⚛️ Hardware Physics (Expert)</button>
+            </div>
+          </div>
+          <div class="doctor-explainer-body" id="doctor-explainer-body">
+            <!-- Populated dynamically by TranspilerDoctor.renderExplainer() -->
+          </div>
         </div>
 
         <!-- Preset Circuits -->
@@ -3014,7 +3031,7 @@ Key Advantage:
               </div>
               <button class="btn-copy-code" id="btn-copy-transpiled">Copy Code</button>
             </div>
-            <div class="transpiler-status-pill optimized" id="transpiler-status-pill">⚡ AI Circuit Doctor Active: 5 redundant gates eliminated (11 → 6 gates). Showing optimized circuit.</div>
+            <div class="transpiler-status-pill optimized" id="transpiler-status-pill">⚡ AI Circuit Doctor Active: Redundant gates eliminated. Showing optimized circuit.</div>
             <textarea class="code-textarea" id="transpiler-target-code" readonly spellcheck="false" placeholder="Transpiled code will appear here..."></textarea>
           </div>
         </div>
@@ -3022,32 +3039,100 @@ Key Advantage:
         <!-- AI Circuit Doctor Diagnostic Deck -->
         <div class="doctor-diagnostics-deck">
           <div class="doctor-deck-header">
-            <h3>🔬 AI Circuit Doctor Diagnostics & Optimization Metrics</h3>
+            <div class="doctor-deck-title-group">
+              <h3>🔬 Circuit Clinical Diagnostics & Hardware Noise Audit</h3>
+              <p class="doctor-deck-subtitle">Quantitative QPU decoherence timing, gate redundancy analysis, and hardware topology mapping.</p>
+            </div>
+            <div class="doctor-deck-actions">
+              <button type="button" class="btn-gemini-audit" id="btn-ai-clinical-audit" onclick="if(window.transpilerDoctor) window.transpilerDoctor.fetchGoogleAIAudit()">
+                🤖 Live Google AI Studio Deep Audit
+              </button>
+            </div>
           </div>
 
-          <div class="doctor-metrics-row">
-            <div class="doctor-metric-card">
-              <span class="doc-label">Gate Compression</span>
-              <span class="doc-val" id="doctor-gate-reduction">11 → 7 gates (-4 gates)</span>
+          <!-- Live Google AI Studio Audit Panel -->
+          <div class="doctor-ai-audit-panel" id="doctor-ai-audit-panel" style="display: none;">
+            <div class="ai-audit-top-bar">
+              <div class="ai-audit-title-tag">
+                <span class="pulse-dot"></span>
+                <span>GOOGLE AI STUDIO (GEMINI 2.5 FLASH) CLINICAL QPU AUDIT</span>
+              </div>
+              <button type="button" class="btn-close-audit" onclick="if(window.transpilerDoctor) window.transpilerDoctor.closeAuditPanel()">✕ Close</button>
             </div>
-            <div class="doctor-metric-card">
-              <span class="doc-label">Circuit Depth Reduction</span>
-              <span class="doc-val" id="doctor-depth-reduction">8 → 5 (-3)</span>
+            <div class="ai-audit-content" id="doctor-ai-audit-content">
+              <!-- Dynamically populated -->
             </div>
-            <div class="doctor-metric-card">
-              <span class="doc-label">KAK Cartan 2-Qubit Limit</span>
-              <span class="doc-val" id="doctor-kak-cnot-count">2 CNOTs (Cartan limit: 2)</span>
+          </div>
+
+          <!-- Comprehensive 8-Metric Diagnostic Grid -->
+          <div class="doctor-metrics-row-grid">
+            <!-- 1. Circuit Health Score -->
+            <div class="doctor-metric-card health-score-card">
+              <div class="doc-card-top">
+                <span class="doc-label">Circuit Health Index</span>
+                <span class="doc-badge-status" id="doctor-health-badge">Optimal (100%)</span>
+              </div>
+              <span class="doc-val highlight-green" id="doctor-health-score">100%</span>
+              <div class="doc-subtext" id="doctor-health-desc">Zero redundant operations detected</div>
             </div>
+
+            <!-- 2. Execution Time Saved -->
             <div class="doctor-metric-card">
-              <span class="doc-label">Entanglement Entropy ($S_{vN}$)</span>
-              <span class="doc-val" id="doctor-entropy-val">1.000 (Max Entangled)</span>
+              <span class="doc-label">QPU Execution Time Saved</span>
+              <span class="doc-val highlight-green" id="doctor-time-saved">+450 ns</span>
+              <div class="doc-subtext" id="doctor-time-desc">Superconducting transmon gate clock</div>
+            </div>
+
+            <!-- 3. Coherence Preservation Gain -->
+            <div class="doctor-metric-card">
+              <span class="doc-label">Coherence Survival Boost</span>
+              <span class="doc-val highlight-cyan" id="doctor-coherence-gain">+0.45% F</span>
+              <div class="doc-subtext" id="doctor-coherence-desc">Decoherence decay e^(-Δt/T₁) prevented</div>
+            </div>
+
+            <!-- 4. Gate Compression -->
+            <div class="doctor-metric-card">
+              <span class="doc-label">Gate Compression Ratio</span>
+              <span class="doc-val" id="doctor-gate-reduction">11 → 7 gates (-36.4%)</span>
+              <div class="doc-subtext" id="doctor-gate-desc">4 redundant operations pruned</div>
+            </div>
+
+            <!-- 5. Circuit Depth Reduction -->
+            <div class="doctor-metric-card">
+              <span class="doc-label">Critical Path Depth</span>
+              <span class="doc-val" id="doctor-depth-reduction">8 → 5 layers (-37.5%)</span>
+              <div class="doc-subtext">Parallel gate execution layers</div>
+            </div>
+
+            <!-- 6. KAK Cartan Limit -->
+            <div class="doctor-metric-card">
+              <span class="doc-label">KAK Cartan 2-Qubit Bound</span>
+              <span class="doc-val" id="doctor-kak-cnot-count">2 CNOTs (Limit: 3)</span>
+              <div class="doc-subtext">Minimal two-qubit entangler capacity</div>
+            </div>
+
+            <!-- 7. Entanglement Capacity -->
+            <div class="doctor-metric-card">
+              <span class="doc-label">Entanglement Entropy (S_vN)</span>
+              <span class="doc-val" id="doctor-entropy-val">1.000 (Max Bell/GHZ)</span>
+              <div class="doc-subtext">Subsystem Von Neumann entropy</div>
+            </div>
+
+            <!-- 8. Quantum Volume Footprint -->
+            <div class="doctor-metric-card">
+              <span class="doc-label">Quantum Volume Requirement</span>
+              <span class="doc-val highlight-purple" id="doctor-qv-req">QV ≥ 16</span>
+              <div class="doc-subtext">Minimum QPU fidelity volume needed</div>
             </div>
           </div>
 
           <div class="doctor-split-analysis">
             <!-- Left: Peephole Optimizer Log -->
             <div class="doctor-findings-card">
-              <h4>Peephole Inverse Cancellations & Merges</h4>
+              <div class="findings-header">
+                <h4>Peephole Inverse Cancellations & Merges</h4>
+                <span class="findings-pill" id="doctor-cancellations-count">3 Applied</span>
+              </div>
               <div id="doctor-diagnostic-results" class="doctor-findings-list">
                 <!-- Dynamically populated by TranspilerDoctor -->
               </div>
@@ -3055,8 +3140,11 @@ Key Advantage:
 
             <!-- Right: Hardware Topology SWAP Routing -->
             <div class="doctor-topology-card">
-              <h4>Hardware Architecture SWAP Overhead</h4>
-              <p class="topo-desc">Estimates SWAP gate routing cost across physical superconducting and trapped-ion coupling graphs:</p>
+              <div class="findings-header">
+                <h4>Physical Hardware Coupling & SWAP Overhead</h4>
+                <span class="findings-pill neutral">Nearest-Neighbor Mapping</span>
+              </div>
+              <p class="topo-desc">Estimates SWAP gate routing penalties across physical superconducting transmon and trapped-ion coupling graphs:</p>
               <div id="doctor-hw-routing-stats" class="hw-routing-list">
                 <!-- Populated dynamically -->
               </div>
