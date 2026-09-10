@@ -142,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     topicRoadmapManager = new window.TopicRoadmapManager();
     window.topicRoadmapManager = topicRoadmapManager;
   }
+  window.knowledgeGraphManager = new KnowledgeGraphManager();
 
   // ── Quantum Hardware & Security Studios ─────────────────────
   let quantumDebugger = null;
@@ -198,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Groups for dropdown highlights
     const studioTabs = ['surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry', 'debugger', 'cryo-twin', 'pqc-auditor'];
     const algorithmTabs = ['algorithms', 'research'];
-    const learnTabs = ['intuition', 'challenges', 'docs', 'topic-roadmap'];
+    const learnTabs = ['intuition', 'challenges', 'docs', 'topic-roadmap', 'knowledge-graph'];
 
     // Undock circuit designer from topic roadmap reader when switching away
     if (tabKey !== 'topic-roadmap' && window.topicRoadmapManager && window.topicRoadmapManager.undockCircuitDesigner) {
@@ -378,6 +379,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Refresh Algorithm Library when entering Algorithms tab
     if (tabKey === 'algorithms' && window.algorithmLibrary) {
       setTimeout(() => window.algorithmLibrary.render(), 40);
+    }
+
+    // Refresh Knowledge Graph View
+    if (tabKey === 'knowledge-graph' && window.knowledgeGraphManager) {
+      setTimeout(() => {
+        window.knowledgeGraphManager.render();
+      }, 50);
     }
 
     // Trigger LaTeX / Math typesetter on view change

@@ -175,6 +175,16 @@
                 <span class="dropdown-rich-desc">Interactive flowchart diagrams, voice-activated pathways & guided tracks</span>
               </div>
             </a>
+            <a href="#knowledge-graph" class="dropdown-rich-item" data-tab="knowledge-graph">
+              <span class="dropdown-rich-icon">🕸️</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Knowledge Graph</span>
+                  <span class="dropdown-badge badge-learn">PREREQUISITE MAP</span>
+                </div>
+                <span class="dropdown-rich-desc">Interactive curriculum dependency graph & concept mastery tracker</span>
+              </div>
+            </a>
             <a href="#docs" class="dropdown-rich-item" data-tab="docs">
               <span class="dropdown-rich-icon">🗺️</span>
               <div class="dropdown-rich-info">
@@ -290,6 +300,7 @@
     <!-- Category: Learn & Reference -->
     <div class="mobile-nav-section-title">LEARN & REFERENCE</div>
     <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav()">🎯 Roadmap Studio (Basic · Advanced · Custom)</a>
+    <a href="#knowledge-graph" class="mobile-nav-item" data-tab="knowledge-graph" onclick="window.closeMobileNav()">🕸️ Knowledge Graph (Concept Map & Mastery)</a>
     <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">🗺️ Full Curriculum & Docs (All 10 Modules)</a>
     <a href="#intuition" class="mobile-nav-item" data-tab="intuition" onclick="window.closeMobileNav()">🔬 Intuition Lab</a>
     <a href="#challenges" class="mobile-nav-item" data-tab="challenges" onclick="window.closeMobileNav()">🏆 Challenges & Quests</a>
@@ -3411,6 +3422,7 @@ Key Advantage:
 
     <!-- ================= VIEW: TOPIC-SPECIFIC LEARNING JOURNEY ================= -->
     <section class="viewport-section" id="view-topic-roadmap" style="display: none;"></section>
+    <section class="viewport-section" id="view-knowledge-graph" style="display:none"></section>
 
   </main>
 
@@ -3913,6 +3925,8 @@ Key Advantage:
   <script src="js/cryo-twin.js"></script>
   <script src="js/pqc-auditor.js"></script>
   <script src="js/quantum-voice-copilot.js"></script>
+  <script src="js/knowledge-graph-data.js"></script>
+  <script src="js/knowledge-graph.js"></script>
   <script src="js/app.js"></script>
   <!-- KaTeX Auto-Render Engine -->
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
