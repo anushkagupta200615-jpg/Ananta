@@ -4,6 +4,7 @@
 // Tasks: voice-parse, audio-parse, circuit-doctor, roadmap, concept-doctor, provider-info
 
 const { resolveTranscript, sampleSuggestions } = require('../ananta-backend/utils/voiceIntent');
+const { prepareTurn } = require('../ananta-backend/utils/voiceAgent');
 
 const _defaultKeyB64 ='QVEuQWI4Uk42TFozV0wtZ2JnOUh0bldoVzFJNG5qY3JWTkVWMFBReEVHQ2JwYmdvRHdHdmc=';
 
@@ -260,6 +261,48 @@ async function handler(req, res) {
   const responseSchemaNote = 'Return ONLY raw JSON. No markdown fences, no commentary.';
 
   switch (task) {
+    // ------------------------------------------------------------------
+    // 0. VOICE AGENT — the primary path. Handles building, questions and
+    //    error explanation in one schema, with conversation memory and
+    //    numbers grounded in a real backend simulation of the live circuit.
+    // ------------------------------------------------------------------
+    case 'voice-agent': {
+      const { transcript, circuit, history, errorContext } = payload;
+      if (!transcript && !errorContext) {
+        return res.status(400).json({ error: 'transcript or errorContext is required' });
+      }
+
+      const turn = prepareTurn({ transcript, circuit, history, errorContext });
+
+      return await callMultiProviderAI(
+        req,
+        body,
+        turn.systemPrompt,
+        '',
+        () => {
+          // No provider available: answer questions and errors from the
+          // simulator, and hand build requests to the circuit parser.
+          const settled = turn.deterministic();
+          if (settled) return settled;
+
+          const plan = parseVoiceLocally(transcript, circuit);
+          return {
+            mode: plan.clarification_needed ? 'clarify' : 'build',
+            num_qubits: plan.num_qubits,
+            reset_existing: plan.reset_existing,
+            operations: plan.operations || [],
+            spoken_response: plan.clarification_needed || plan.explanation || 'Done.',
+            display_text: plan.explanation || plan.clarification_needed || '',
+            teaching_tip: plan.teaching_tip || null,
+            error_feedback: plan.error_feedback || null,
+            clarification_needed: plan.clarification_needed || null,
+            confidence: plan.confidence
+          };
+        },
+        res
+      );
+    }
+
     // ------------------------------------------------------------------
     // 1. VOICE COPILOT — text transcript intent parser (Grok & Gemini)
     // ------------------------------------------------------------------
