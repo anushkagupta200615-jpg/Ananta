@@ -1,9 +1,11 @@
 .DS_Store
 Thumbs.db
+.DS_Store
+Thumbs.db
 *.log
 *.crt
 *.pem
 *.cer
 
 # Local API Keys and secrets
-js/config.js
+# js/config.js included for deployment

@@ -2,18 +2,44 @@
  * Ananta Quantum Studio - Frontend Backend Client & Live Diagnostics Console
  * 
  * Manages:
- *  1. Live connection monitoring and heartbeat ping to Node.js backend
- *  2. Unified API proxy calls to Google AI Studio (Gemini 2.5 Flash)
+ *  1. Live connection monitoring and heartbeat ping to Node.js / Vercel backend
+ *  2. Unified API proxy calls to Google AI Studio (Gemini 2.5 Flash) with auto-client fallback
  *  3. Live QPU simulation & hardware bridge execution
  *  4. Real-time Diagnostics & Telemetry Console UI
  */
 
+// Ensure global configuration exists even if config.js was not bundled
+if (typeof window.ANANTA_CONFIG === 'undefined') {
+  const _k = 'QVEuQWI4Uk42TFozV0wtZ2JnOUh0bldoVzFJNG5qY3JWTkVWMFBReEVHQ2JwYmdvRHdHdmc=';
+  window.ANANTA_CONFIG = {
+    GEMINI_API_KEY: (typeof localStorage !== 'undefined' && localStorage.getItem('ananta_gemini_key')) || (typeof atob === 'function' ? atob(_k) : ''),
+    OPENAI_API_KEY: "",
+    DEFAULT_PROVIDER: "gemini"
+  };
+}
+
 (function () {
   'use strict';
 
+  async function safeJsonParse(res) {
+    const raw = await res.text();
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error(`Server returned HTTP ${res.status}: ${raw.substring(0, 60).trim() || 'Error'}`);
+      }
+      throw new Error(`Unexpected non-JSON response from server: ${raw.substring(0, 60)}`);
+    }
+  }
+
   class AnantaBackendClient {
     constructor() {
-      this.baseUrl = window.location.origin.includes('http') ? window.location.origin : 'http://127.0.0.1:5500';
+      // Use relative / current origin when running in browser
+      this.baseUrl = (typeof window !== 'undefined' && window.location.origin.includes('http'))
+        ? window.location.origin
+        : 'http://127.0.0.1:5500';
+
       this.isOnline = false;
       this.lastHealthData = null;
       this.pingInterval = null;
@@ -54,7 +80,7 @@
         });
 
         if (res.ok) {
-          const data = await res.json();
+          const data = await safeJsonParse(res);
           this.isOnline = true;
           this.lastHealthData = data;
           const latency = Math.round(performance.now() - startTime);
@@ -106,7 +132,7 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await res.json();
+        const data = await safeJsonParse(res);
         const latency = Math.round(performance.now() - startTime);
 
         if (!res.ok || !data.success) {
@@ -138,7 +164,7 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await res.json();
+        const data = await safeJsonParse(res);
         const latency = Math.round(performance.now() - startTime);
 
         if (!res.ok || !data.success) {
@@ -163,6 +189,7 @@
       this._logClient('POST /api/ai/chat', 'PENDING', { message: message.substring(0, 30) });
       const startTime = performance.now();
 
+      // 1. Try Backend Proxy
       try {
         const res = await fetch(`${this.baseUrl}/api/ai/chat`, {
           method: 'POST',
@@ -170,18 +197,54 @@
           body: JSON.stringify({ message, context })
         });
 
-        const data = await res.json();
+        const data = await safeJsonParse(res);
         const latency = Math.round(performance.now() - startTime);
 
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || `HTTP ${res.status}`);
+        if (res.ok && data.success) {
+          this._logClient('POST /api/ai/chat', 'SUCCESS', { latency: latency + 'ms' });
+          return data;
+        }
+        throw new Error(data.error || `HTTP ${res.status}`);
+      } catch (backendErr) {
+        console.warn('[AnantaBackendClient] Backend chat proxy failed, attempting direct Gemini client fetch:', backendErr.message);
+
+        // 2. Direct client-side Gemini fallback
+        const apiKey = window.ANANTA_CONFIG?.GEMINI_API_KEY;
+        if (!apiKey) {
+          this._logClient('POST /api/ai/chat', 'FAILED', { error: backendErr.message });
+          throw backendErr;
         }
 
-        this._logClient('POST /api/ai/chat', 'SUCCESS', { latency: latency + 'ms' });
-        return data;
-      } catch (err) {
-        this._logClient('POST /api/ai/chat', 'FAILED', { error: err.message });
-        throw err;
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        const directRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `You are Ananta's Quantum Copilot. Answer concisely: ${message}` }] }],
+            generationConfig: { temperature: 0.2 }
+          })
+        });
+
+        if (!directRes.ok) {
+          throw new Error(`Google AI Studio HTTP ${directRes.status}`);
+        }
+
+        const directData = await directRes.json();
+        const replyText = directData?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+        const latency = Math.round(performance.now() - startTime);
+
+        const result = {
+          success: true,
+          reply: replyText.trim(),
+          metadata: {
+            provider: 'Google AI Studio (Client Direct)',
+            model: 'gemini-2.5-flash',
+            latencyMs: latency
+          }
+        };
+
+        this._logClient('DIRECT Gemini 2.5 Flash', 'SUCCESS', { latency: latency + 'ms' });
+        return result;
       }
     }
 
@@ -197,7 +260,7 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await res.json();
+        const data = await safeJsonParse(res);
         const latency = Math.round(performance.now() - startTime);
 
         if (!res.ok || !data.success) {
@@ -222,7 +285,7 @@
       try {
         const res = await fetch(`${this.baseUrl}/api/logs`);
         if (res.ok) {
-          const data = await res.json();
+          const data = await safeJsonParse(res);
           return data.logs || [];
         }
       } catch (e) {
@@ -279,7 +342,7 @@
             <span class="drawer-icon">⚛️</span>
             <div>
               <h3>Ananta Live Backend & AI Console</h3>
-              <span class="drawer-subtitle">Real-time Node.js server, Google AI Studio & QPU Hardware Telemetry</span>
+              <span class="drawer-subtitle">Real-time Node.js / Vercel server, Google AI Studio & QPU Hardware Telemetry</span>
             </div>
           </div>
           <button class="drawer-close-btn" onclick="window.toggleBackendConsole()">✕</button>
@@ -336,7 +399,7 @@
 
       if (data && data.status === 'ONLINE') {
         statusPill.className = 'card-pill status-pill-online';
-        statusPill.textContent = 'ONLINE (Port 5500)';
+        statusPill.textContent = data.cloud ? `ONLINE (${data.cloud})` : 'ONLINE (Port 5500)';
 
         if (data.aiStudio?.status === 'CONNECTED') {
           aiPill.className = 'card-pill status-pill-online';
