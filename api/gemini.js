@@ -88,8 +88,9 @@ function rankModel(name, preferred) {
   return score;
 }
 
-async function resolveGeminiModel(apiKey) {
-  if (_modelCache.gemini) return _modelCache.gemini;
+/** Ranked list of every model this key may call, best first. */
+async function resolveGeminiModels(apiKey) {
+  if (_modelCache.geminiList) return _modelCache.geminiList;
 
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
   if (!res.ok) throw new Error(`Gemini ListModels HTTP ${res.status}`);
@@ -102,9 +103,14 @@ async function resolveGeminiModel(apiKey) {
   if (!usable.length) throw new Error('Gemini key has no models supporting generateContent');
 
   usable.sort((a, b) => rankModel(b, ['flash']) - rankModel(a, ['flash']));
-  _modelCache.gemini = usable[0];
-  console.log('[Gemini API] Using discovered model:', _modelCache.gemini);
-  return _modelCache.gemini;
+  _modelCache.geminiList = usable;
+  return usable;
+}
+
+async function resolveGeminiModel(apiKey) {
+  if (_modelCache.gemini) return _modelCache.gemini;
+  const list = await resolveGeminiModels(apiKey);
+  return list[0];
 }
 
 async function resolveGrokModel(grokKey) {
@@ -200,13 +206,12 @@ async function callGrokAPI(grokKey, systemPrompt, userText, model = null) {
 }
 
 // --------------------------------------------------------------------
-// Google AI Studio (Gemini 2.5 Flash) Direct Caller
+// Google AI Studio Direct Caller
 // --------------------------------------------------------------------
-async function callGeminiDirect(apiKey, systemPrompt, userText) {
+async function callGeminiOnce(apiKey, model, systemPrompt, userText) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 16000);
   try {
-    const model = await resolveGeminiModel(apiKey);
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const fullPrompt = userText ? `${systemPrompt}\n\nUser input: "${userText}"` : systemPrompt;
 
@@ -235,6 +240,36 @@ async function callGeminiDirect(apiKey, systemPrompt, userText) {
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+/**
+ * Tries the discovered models best-first. The top-ranked model can be
+ * overloaded (503) or out of quota (429) for a given key while another is
+ * perfectly usable, so a single stale choice must not take the whole copilot
+ * offline. The model that works is remembered for subsequent calls.
+ */
+async function callGeminiDirect(apiKey, systemPrompt, userText) {
+  const ranked = await resolveGeminiModels(apiKey);
+  // Whatever worked last time goes first.
+  const candidates = _modelCache.gemini
+    ? [_modelCache.gemini, ...ranked.filter(m => m !== _modelCache.gemini)]
+    : ranked;
+
+  let lastErr;
+  for (const model of candidates.slice(0, 4)) {
+    try {
+      const result = await callGeminiOnce(apiKey, model, systemPrompt, userText);
+      _modelCache.gemini = model;
+      return result;
+    } catch (err) {
+      lastErr = err;
+      console.warn(`[Gemini API] ${model} failed: ${err.message}`);
+      // A malformed answer is the model's fault, not the endpoint's — trying a
+      // different model is reasonable, but a bad key never will be.
+      if (/HTTP (401|403)/.test(err.message)) break;
+    }
+  }
+  throw lastErr || new Error('No usable Gemini model');
 }
 
 // --------------------------------------------------------------------
