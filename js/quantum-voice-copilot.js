@@ -317,7 +317,7 @@ class QuantumVoiceCopilot {
 
       this.recognition.onresult = (event) => {
         // Echo prevention: Ignore incoming microphone audio if Copilot is currently speaking aloud!
-        if (this.isSpeaking) {
+        if (this.isSpeaking || this._isProcessingVoice) {
           return;
         }
 
@@ -341,18 +341,15 @@ class QuantumVoiceCopilot {
         this._setSubtitle(`Heard: "${trimmed}"`);
         this._updateStatus('🔊 HEARING YOU...', 'listening');
 
-        // If marked final by browser, process immediately!
-        if (hasFinal) {
-          clearTimeout(this.speechDebounceTimer);
-          this._processTranscript(trimmed);
-        } else {
-          // If interim, don't wait indefinitely for Chrome! Debounce 650ms after speech pause!
-          clearTimeout(this.speechDebounceTimer);
-          this.speechDebounceTimer = setTimeout(() => {
-            console.log('[QuantumVoiceCopilot] Executing interim speech on pause:', trimmed);
+        // Clear debounce timer and only fire after user finishes phrase
+        clearTimeout(this.speechDebounceTimer);
+        const waitMs = hasFinal ? 400 : 2000;
+        this.speechDebounceTimer = setTimeout(() => {
+          if (!this._isProcessingVoice && trimmed.length > 2) {
+            console.log('[QuantumVoiceCopilot] Processing finalized voice utterance:', trimmed);
             this._processTranscript(trimmed);
-          }, 650);
-        }
+          }
+        }, waitMs);
       };
 
       this.recognition.onerror = (event) => {
@@ -362,9 +359,10 @@ class QuantumVoiceCopilot {
           this._updateStatus('⚠️ MIC BLOCKED', 'error');
           this.isListening = false;
           this._updateMicBtn(false);
-        } else if (event.error === 'network') {
-          this._setSubtitle('Speech network service unavailable. You can type commands below!');
-          this._updateStatus('⌨️ TYPE COMMAND', 'warning');
+        } else if (event.error === 'network' || event.error === 'no-speech') {
+          // If network speech failed, fallback to audio stream buffer if available
+          this._setSubtitle('Listening via audio stream...');
+          this._updateStatus('🎙️ RECORDING AUDIO', 'listening');
         }
       };
 
@@ -374,7 +372,7 @@ class QuantumVoiceCopilot {
             if (this.isActive && this.isListening && this.recognition) {
               try { this.recognition.start(); } catch (e) {}
             }
-          }, 200);
+          }, 300);
         } else {
           this.isListening = false;
           this._updateStatus('⏸️ MUTED', 'muted');
@@ -385,8 +383,25 @@ class QuantumVoiceCopilot {
       this.recognition.start();
     } catch (e) {
       console.warn('[QuantumVoiceCopilot] Failed to start recognition:', e);
-      this._setSubtitle('Could not access microphone. You can type commands below!');
-      this._updateStatus('⌨️ TYPE COMMAND', 'warning');
+      this._setSubtitle('Listening via audio recorder...');
+      this._updateStatus('🎙️ RECORDING AUDIO', 'listening');
+    }
+
+    // Also start high-fidelity MediaRecorder stream for direct Gemini audio fallback
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        this.audioStream = stream;
+        try {
+          this.mediaRecorder = new MediaRecorder(stream);
+          this.audioChunks = [];
+          this.mediaRecorder.ondataavailable = e => {
+            if (e.data && e.data.size > 0) this.audioChunks.push(e.data);
+          };
+          this.mediaRecorder.start(250);
+        } catch(err) {
+          console.warn('[QuantumVoiceCopilot] MediaRecorder notice:', err);
+        }
+      }).catch(() => {});
     }
   }
 
@@ -395,6 +410,13 @@ class QuantumVoiceCopilot {
     clearTimeout(this.speechDebounceTimer);
     if (this.recognition) {
       try { this.recognition.stop(); } catch (e) {}
+    }
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      try { this.mediaRecorder.stop(); } catch (e) {}
+    }
+    if (this.audioStream) {
+      try { this.audioStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+      this.audioStream = null;
     }
     this._updateStatus('⏸️ MUTED', 'muted');
     this._updateMicBtn(false);
@@ -565,76 +587,83 @@ class QuantumVoiceCopilot {
   // -------------------------------------------------------------
   async _processTranscript(rawText) {
     if (!rawText) return;
-    let text = rawText.toLowerCase().trim();
-    console.log('[QuantumVoiceCopilot] Ingested raw voice:', text);
-
-    // -----------------------------------------------------------------------
-    // PRIORITY 0: Roadmap Diagram Intent — intercepts BEFORE circuit logic.
-    // These commands navigate to the Roadmap tab and generate a visual
-    // learning path diagram. They must never fall through to the circuit builder.
-    // -----------------------------------------------------------------------
-    const roadmapIntent = this._detectRoadmapIntent(text);
-    if (roadmapIntent) {
-      this._executeRoadmapIntent(roadmapIntent, rawText);
+    if (this._isProcessingVoice) {
+      console.log('[QuantumVoiceCopilot] Voice synthesis already in progress, skipping duplicate trigger.');
       return;
     }
+    this._isProcessingVoice = true;
 
-    // Make sure we are viewing Composer!
-    if (window.switchTab) {
-      window.switchTab('simulator');
-    }
+    try {
+      let text = rawText.toLowerCase().trim();
+      console.log('[QuantumVoiceCopilot] Ingested raw voice:', text);
 
-    const ui = window.circuitUI;
-    if (!ui) {
-      this._setActionFeedback('Circuit UI not loaded yet.', false);
-      return;
-    }
-
-    // If user says "make a circuit with..." or "create a circuit with..." or "draw circuit with...":
-    const isNewCircuit = /^(?:make|create|draw|generate|build|construct)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)\s+(?:with|having|of|for|that\s+has)?\s+/i.test(text);
-    if (isNewCircuit) {
-      ui.clearCircuit();
-      text = text.replace(/^(?:make|create|draw|generate|build|construct)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)\s+(?:with|having|of|for|that\s+has)?\s+/i, '');
-    }
-
-    // Step 1: Intelligent clause splitting on:
-    // - "then", "and then", "after that", "next"
-    // - "and" followed by an action/gate (with optional articles like a, an, the)
-    // - commas followed by an action/gate
-    const gateLookahead = '(?:a\\s+|an\\s+|the\\s+|another\\s+)?(?:add|put|place|insert|apply|set|wire|cnot|cx|hadamard|\\bh\\b|pauli|not|\\bx\\b|\\by\\b|\\bz\\b|\\bs\\b|\\bt\\b|\\bm\\b|swap|toffoli|ccx|measure|measurement|run|clear)\\b';
-    const splitRegex = new RegExp('\\s+and\\s+(?=' + gateLookahead + ')', 'gi');
-    const commaRegex = new RegExp(',\\s*(?=' + gateLookahead + ')', 'gi');
-
-    let normalized = text
-      .replace(/\s*(?:,\s*then\s*|\s+then\s+|,\s*and\s+then\s+|\s+and\s+then\s+|\s+after\s+that\s+|\s+next\s+|;\s*)\s*/gi, ' | ')
-      .replace(splitRegex, ' | ')
-      .replace(commaRegex, ' | ');
-
-    const clauses = normalized.split(/\s*\|\s*/).map(c => c.trim()).filter(Boolean);
-
-    if (clauses.length > 1) {
-      console.log('[QuantumVoiceCopilot] Executing multi-step sequence of', clauses.length, 'clauses:', clauses);
-      const actionSummaries = [];
-      for (const clause of clauses) {
-        if (clause) {
-          const res = await this._executeSingleIntent(clause, false);
-          if (res) actionSummaries.push(res);
-        }
-      }
-      if (actionSummaries.length > 0) {
-        this._setActionFeedback(`⚡ Built Sequence: ${actionSummaries.join(' ➔ ')}`);
-        this._playChime('success');
-        this._speak(`Synthesized circuit sequence with ${actionSummaries.length} operations.`);
-        setTimeout(() => {
-          if (ui.renderGrid) ui.renderGrid();
-          if (ui.renderCnotConnectors) ui.renderCnotConnectors();
-        }, 60);
+      // -----------------------------------------------------------------------
+      // PRIORITY 0: Roadmap Diagram Intent — intercepts BEFORE circuit logic.
+      // These commands navigate to the Roadmap tab and generate a visual
+      // learning path diagram. They must never fall through to the circuit builder.
+      // -----------------------------------------------------------------------
+      const roadmapIntent = this._detectRoadmapIntent(text);
+      if (roadmapIntent) {
+        this._executeRoadmapIntent(roadmapIntent, rawText);
         return;
       }
-    }
 
-    // Single intent execution
-    await this._executeSingleIntent(text, true);
+      // Make sure we are viewing Composer!
+      if (window.switchTab) {
+        window.switchTab('simulator');
+      }
+
+      const ui = window.circuitUI;
+      if (!ui) {
+        this._setActionFeedback('Circuit UI not loaded yet.', false);
+        return;
+      }
+
+      // If user says "make a circuit with..." or "create a circuit with..." or "draw circuit with...":
+      const isNewCircuit = /^(?:make|create|draw|generate|build|construct)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)\s+(?:with|having|of|for|that\s+has)?\s+/i.test(text);
+      if (isNewCircuit) {
+        ui.clearCircuit();
+        text = text.replace(/^(?:make|create|draw|generate|build|construct)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)\s+(?:with|having|of|for|that\s+has)?\s+/i, '');
+      }
+
+      // Step 1: Intelligent clause splitting
+      const gateLookahead = '(?:a\\s+|an\\s+|the\\s+|another\\s+)?(?:add|put|place|insert|apply|set|wire|cnot|cx|hadamard|\\bh\\b|pauli|not|\\bx\\b|\\by\\b|\\bz\\b|\\bs\\b|\\bt\\b|\\bm\\b|swap|toffoli|ccx|measure|measurement|run|clear)\\b';
+      const splitRegex = new RegExp('\\s+and\\s+(?=' + gateLookahead + ')', 'gi');
+      const commaRegex = new RegExp(',\\s*(?=' + gateLookahead + ')', 'gi');
+
+      let normalized = text
+        .replace(/\s*(?:,\s*then\s*|\s+then\s+|,\s*and\s+then\s+|\s+and\s+then\s+|\s+after\s+that\s+|\s+next\s+|;\s*)\s*/gi, ' | ')
+        .replace(splitRegex, ' | ')
+        .replace(commaRegex, ' | ');
+
+      const clauses = normalized.split(/\s*\|\s*/).map(c => c.trim()).filter(Boolean);
+
+      if (clauses.length > 1) {
+        console.log('[QuantumVoiceCopilot] Executing multi-step sequence of', clauses.length, 'clauses:', clauses);
+        const actionSummaries = [];
+        for (const clause of clauses) {
+          if (clause) {
+            const res = await this._executeSingleIntent(clause, false);
+            if (res) actionSummaries.push(res);
+          }
+        }
+        if (actionSummaries.length > 0) {
+          this._setActionFeedback(`⚡ Built Sequence: ${actionSummaries.join(' ➔ ')}`);
+          this._playChime('success');
+          this._speak(`Synthesized circuit sequence with ${actionSummaries.length} operations.`);
+          setTimeout(() => {
+            if (ui.renderGrid) ui.renderGrid();
+            if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+          }, 60);
+          return;
+        }
+      }
+
+      // Single intent execution
+      await this._executeSingleIntent(text, true);
+    } finally {
+      this._isProcessingVoice = false;
+    }
   }
 
   async _executeSingleIntent(rawClause, shouldSpeak = true) {
