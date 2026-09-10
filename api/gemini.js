@@ -263,24 +263,54 @@ async function handler(req, res) {
     // ------------------------------------------------------------------
     case 'voice-parse': {
       const { transcript, currentCircuit } = payload;
-      const systemPrompt = `You are an elite quantum circuit synthesis engine for a web quantum composer.
-Given the user's spoken instruction and the current circuit state, output ONLY a valid JSON object matching this schema:
+      const circuitSnapshot = JSON.stringify(currentCircuit || { num_qubits: 2, grid: [] });
+      const systemPrompt = `You are an expert quantum computing mentor and circuit synthesis engine for a web-based quantum circuit composer called "Ananta Quantum Studio".
+
+YOUR ROLE:
+- You are a patient, step-by-step voice mentor. The user speaks instructions and you translate them into precise circuit operations.
+- You MUST also explain what you're doing and teach the user quantum concepts as you go.
+- If the user makes a mistake or asks for something physically impossible, explain the error clearly instead of guessing.
+
+CRITICAL MULTI-TARGET RULE:
+- If the user says "put S on q0 AND q3", you MUST emit TWO separate operations: one with targets:[0] and one with targets:[3].
+- If the user says "add H to qubit 0, 1, and 2", emit THREE operations, one per qubit.
+- NEVER combine multiple qubits into a single targets array for single-qubit gates (H, X, Y, Z, S, T, M). Each qubit gets its own operation.
+- Multi-qubit gates like CNOT use controls + targets together in ONE operation.
+
+SPOKEN LANGUAGE RULES:
+- "H not" or "H naught" or "H nought" = Hadamard on wire 0 (qubit 0).
+- "q0", "qubit 0", "wire 0", "first qubit" = qubit index 0.
+- "q1", "qubit 1", "wire 1", "second qubit" = qubit index 1.
+- "t1" = column/step 0 (0-indexed), "t2" = column 1, "t3" = column 2, etc.
+- "CNOT from 0 to 1" = CNOT with control=0, target=1.
+
+GATE NAMES: H, X, Y, Z, S, T, CNOT, CZ, SWAP, Toffoli, Rx, Ry, Rz, MEASURE
+
+OUTPUT SCHEMA (return ONLY this JSON, no markdown fences, no commentary):
 {
-  "num_qubits": <int>,
-  "reset_existing": <bool>,
+  "num_qubits": <int, minimum qubits needed>,
+  "reset_existing": <bool, true only if user says "make/create/build a new circuit">,
   "operations": [
-    { "action": "<place|move|remove>", "from_step": <int|null>, "step": <int|null>, "gate": "<H|X|Y|Z|S|T|CNOT|CZ|SWAP|Toffoli|Rx|Ry|Rz|MEASURE>",
-      "targets": [<int>...], "controls": [<int>...], "params": { "theta": <float> } }
+    {
+      "action": "place",
+      "gate": "<gate name>",
+      "targets": [<int>],
+      "controls": [<int, only for controlled gates>],
+      "step": <int|null, 0-indexed column, null = auto-place at next free slot>,
+      "from_step": <int|null, only for move actions>,
+      "params": { "theta": <float, only for Rx/Ry/Rz> }
+    }
   ],
+  "explanation": "<1-3 sentence step-by-step explanation of what you built and why, suitable for a student>",
+  "error_feedback": "<null, OR a clear explanation of what's wrong with the user's request if it's physically impossible or ambiguous>",
+  "teaching_tip": "<a one-liner quantum physics insight related to the gates/circuit just built, e.g. 'The S gate applies a π/2 phase rotation, equivalent to √Z.'>",
   "confidence": <float 0-1>,
-  "clarification_needed": "<string|null>"
+  "clarification_needed": "<null, OR a question to ask the user if the instruction is truly ambiguous>"
 }
-Support any qubit count and any gate above.
-Handle gate movement and relocation commands (e.g. 'take H not from t1 to t3', 'move H on wire 0 from step 1 to step 3', 'shift gate from t1 to t3').
-In spoken audio, 'H not' or 'H naught' refers to Hadamard on wire 0 (H0).
-'t1' is column 0 (0-indexed). 't3' is column 2 (0-indexed).
-For move operations, set "action": "move", "from_step": <source 0-indexed column>, "step": <target 0-indexed column>.
-Current circuit state: ${JSON.stringify(currentCircuit || {})}
+
+CURRENT CIRCUIT STATE (use this to understand what's already placed):
+${circuitSnapshot}
+
 ${responseSchemaNote}`;
 
       return await callMultiProviderAI(
@@ -540,32 +570,68 @@ function parseVoiceLocally(transcript, currentCircuit) {
     };
   }
 
-  // Extract CNOTs
-  const cnotMatches = text.matchAll(/\b(?:cnot|cx|controlled\s*not)\b.*?(?:from|ctrl|control)?\s*([0-7])\s*(?:to|target|tgt)?\s*([0-7])/gi);
+  // Extract CNOTs and CZ
+  const cnotMatches = text.matchAll(/\b(?:cnot|cx|controlled\s*not|cz|controlled\s*z)\b.*?(?:from|ctrl|control)?\s*([0-7])\s*(?:to|target|tgt|and)?\s*([0-7])/gi);
   for (const m of cnotMatches) {
     const ctrl = parseInt(m[1], 10);
     const tgt = parseInt(m[2], 10);
-    operations.push({ step: null, gate: 'CNOT', targets: [tgt], controls: [ctrl], params: {} });
+    const isCz = /\b(cz|controlled\s*z)\b/i.test(m[0]);
+    if (ctrl === tgt) {
+      return {
+        num_qubits: Math.max(numQubits, ctrl + 1),
+        reset_existing: false,
+        operations: [],
+        confidence: 0.95,
+        clarification_needed: null,
+        explanation: 'Invalid gate operation detected.',
+        error_feedback: `A controlled gate cannot have the same control and target qubit (Qubit ${ctrl}). Please specify two distinct qubits.`,
+        teaching_tip: 'Two-qubit entangling gates require one control wire and one distinct target wire to execute conditional operations.'
+      };
+    }
+    operations.push({ step: null, gate: isCz ? 'CZ' : 'CNOT', targets: [tgt], controls: [ctrl], params: {} });
     numQubits = Math.max(numQubits, ctrl + 1, tgt + 1);
   }
 
-  // Extract single gates
-  const gateMap = {
-    'hadamard': 'H', 'h gate': 'H', '\\bh\\b': 'H',
-    'pauli x': 'X', 'not gate': 'X', '\\bx\\b': 'X',
-    'pauli y': 'Y', '\\by\\b': 'Y',
-    'pauli z': 'Z', '\\bz\\b': 'Z',
-    'phase': 'S', '\\bs gate\\b': 'S',
-    't gate': 'T', '\\bt\\b': 'T',
-    'measure': 'MEASURE', 'measurement': 'MEASURE'
-  };
+  // Extract SWAP gates
+  const swapMatches = text.matchAll(/\b(?:swap|exchange)\b.*?(?:qubit|q|wire)?\s*([0-7])\s*(?:and|with|to)?\s*(?:qubit|q|wire)?\s*([0-7])/gi);
+  for (const m of swapMatches) {
+    const qA = parseInt(m[1], 10);
+    const qB = parseInt(m[2], 10);
+    if (qA !== qB) {
+      operations.push({ step: null, gate: 'SWAP', targets: [qA, qB], controls: [], params: {} });
+      numQubits = Math.max(numQubits, qA + 1, qB + 1);
+    }
+  }
 
-  for (const [pattern, gate] of Object.entries(gateMap)) {
-    const regex = new RegExp(`${pattern}\\s*(?:on|at|to|qubit)?\\s*([0-7])`, 'gi');
-    for (const m of text.matchAll(regex)) {
-      const q = parseInt(m[1], 10);
-      operations.push({ step: null, gate, targets: [q], controls: [], params: {} });
-      numQubits = Math.max(numQubits, q + 1);
+  // Extract single gates — handles both single target and multi-target lists
+  // e.g. "put s to q0 and q3", "h on 0, 1 and 2", "x on q1"
+  const gatePatterns = [
+    { pattern: /\b(?:hadamard|h\s*gate|\bh\b)\b/i, gate: 'H' },
+    { pattern: /\b(?:pauli\s*x|not\s*gate|bit\s*flip|x\s*gate|\bnot\b|\bx\b)\b/i, gate: 'X' },
+    { pattern: /\b(?:pauli\s*y|y\s*gate|\by\b)\b/i, gate: 'Y' },
+    { pattern: /\b(?:pauli\s*z|phase\s*flip|z\s*gate|\bz\b)\b/i, gate: 'Z' },
+    { pattern: /\b(?:phase\s*gate|\bs\s*gate\b|\bs\b)\b/i, gate: 'S' },
+    { pattern: /\b(?:pi\s*over\s*8|t\s*gate|\bt\b)\b/i, gate: 'T' },
+    { pattern: /\b(?:measure|measurement|\bm\b)\b/i, gate: 'MEASURE' }
+  ];
+
+  for (const { pattern, gate } of gatePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      // Find the substring after this gate mention
+      const idx = text.indexOf(match[0]) + match[0].length;
+      const afterText = text.slice(idx);
+      // Extract all qubit references until next gate or punctuation
+      // e.g., "to q0 and q3", "on 0, 1, 2", "at q0"
+      const targetListMatch = afterText.match(/^\s*(?:to|on|at|in|qubit|wire|q)?\s*([q0-7\s,and]+)/i);
+      if (targetListMatch) {
+        const qMatches = targetListMatch[1].matchAll(/(?:qubit|wire|q)?\s*([0-7])/gi);
+        for (const qm of qMatches) {
+          const q = parseInt(qm[1], 10);
+          operations.push({ step: null, gate, targets: [q], controls: [], params: {} });
+          numQubits = Math.max(numQubits, q + 1);
+        }
+      }
     }
   }
 
@@ -591,12 +657,32 @@ function parseVoiceLocally(transcript, currentCircuit) {
     operations.push({ step: 0, gate: 'H', targets: [0], controls: [], params: {} });
   }
 
+  // Generate physics teaching tip based on gates placed
+  const gateTypes = [...new Set(operations.map(o => o.gate))];
+  let teachingTip = 'Quantum circuits manipulate complex probability amplitudes using unitary matrix transformations.';
+  if (gateTypes.includes('H')) {
+    teachingTip = 'Hadamard (H) maps basis states |0⟩ and |1⟩ into equal superpositions (|0⟩+|1⟩)/√2 and (|0⟩-|1⟩)/√2.';
+  } else if (gateTypes.includes('S')) {
+    teachingTip = 'The Phase gate S applies a π/2 (90°) rotation around the Z-axis, equivalent to the square root of Pauli-Z (√Z).';
+  } else if (gateTypes.includes('T')) {
+    teachingTip = 'The T gate is a π/4 phase rotation (√S) essential for universal fault-tolerant quantum computation (Magic State Distillation).';
+  } else if (gateTypes.includes('CNOT')) {
+    teachingTip = 'CNOT flips the target qubit if and only if the control qubit is |1⟩, generating quantum entanglement when preceded by Hadamard.';
+  } else if (gateTypes.includes('X')) {
+    teachingTip = 'Pauli-X acts as a quantum NOT gate, flipping |0⟩ to |1⟩ and vice versa via a π rotation around the Bloch sphere X-axis.';
+  }
+
+  const opSummary = operations.map(o => `${o.gate} on q${o.targets.join(',')}`).join(', ');
+
   return {
     num_qubits: Math.max(2, numQubits),
     reset_existing: resetExisting,
     operations,
     confidence: 0.95,
-    clarification_needed: null
+    clarification_needed: null,
+    explanation: `Synthesized ${operations.length} gate operation(s): ${opSummary}.`,
+    error_feedback: null,
+    teaching_tip: teachingTip
   };
 }
 
