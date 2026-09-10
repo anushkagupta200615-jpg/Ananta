@@ -1045,10 +1045,28 @@ class QuantumVoiceCopilot {
     // 4.4 Single Qubit Gates (H, X, Y, Z, S, T, M)
     const singleGate = this._matchSingleGate(clean);
     if (singleGate) {
-      const q = this._extractQubit(clean);
-      const col = this._extractColumn(clean, q);
-      this._placeSingleGate(singleGate, q, col, shouldSpeak);
-      return `${singleGate}(q${q})`;
+      const allQubits = this._extractAllQubits(clean);
+      if (allQubits.length > 1) {
+        const placedQubits = [];
+        for (const q of allQubits) {
+          while (ui.numQubits <= q) ui.addQubit();
+          const col = this._extractColumn(clean, q);
+          this._placeSingleGate(singleGate, q, col, false);
+          placedQubits.push(`Q${q}`);
+        }
+        const summary = `Placed ${singleGate} on ${placedQubits.join(' and ')}.`;
+        this._setActionFeedback(summary);
+        this._setDialogueAI(summary);
+        this._playChime('success');
+        if (shouldSpeak) this._speak(summary);
+        return summary;
+      } else {
+        const q = this._extractQubit(clean);
+        while (ui.numQubits <= q) ui.addQubit();
+        const col = this._extractColumn(clean, q);
+        this._placeSingleGate(singleGate, q, col, shouldSpeak);
+        return `${singleGate}(q${q})`;
+      }
     }
 
     // 4.5 Remove/Delete Gate
@@ -1104,6 +1122,16 @@ class QuantumVoiceCopilot {
 
       this._updateBadge(source);
 
+      // Error explanation feedback from Voice Mentor LLM
+      if (plan.error_feedback) {
+        const errNotice = `⚠️ ${plan.error_feedback}`;
+        this._setActionFeedback(errNotice, false);
+        this._setDialogueAI(errNotice);
+        this._playChime('warn');
+        if (shouldSpeak) this._speak(plan.error_feedback);
+        return null;
+      }
+
       if (plan.clarification_needed) {
         this._setActionFeedback(plan.clarification_needed, false);
         this._setDialogueAI(plan.clarification_needed);
@@ -1111,34 +1139,71 @@ class QuantumVoiceCopilot {
         return null;
       }
 
+      // Auto-expand qubits if synthesis requires more wires
+      if (ui && plan.num_qubits && plan.num_qubits > ui.numQubits) {
+        while (ui.numQubits < Math.min(8, plan.num_qubits)) {
+          ui.addQubit();
+        }
+      }
+
       if (plan.reset_existing && ui) ui.clearCircuit();
       let placed = 0, skipped = [];
 
       if (plan.operations && Array.isArray(plan.operations)) {
         for (const op of plan.operations) {
-          const targetQ = (op.targets && op.targets.length > 0) ? op.targets[0] : 0;
-          const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumn(targetQ);
+          const targets = (op.targets && op.targets.length > 0) ? op.targets : [0];
 
           if (op.action === 'move' || op.from_step !== undefined) {
             const fromStep = op.from_step !== undefined ? op.from_step : 0;
             const toStep = (op.step !== undefined && op.step !== null) ? op.step : 2;
-            if (ui && ui.moveGate) {
-              ui.moveGate(targetQ, fromStep, targetQ, toStep);
-              placed++;
+            for (const targetQ of targets) {
+              while (ui && ui.numQubits <= targetQ) ui.addQubit();
+              if (ui && ui.moveGate) {
+                ui.moveGate(targetQ, fromStep, targetQ, toStep);
+                placed++;
+              }
             }
-          } else if (op.gate === 'CNOT' && op.controls && op.controls.length >= 1) {
-            // NOTE: placeGate() supports arbitrary control/target (Section 4.3)
-            const ctrl = op.controls[0];
-            const tgt = targetQ;
+          } else if (op.gate === 'CNOT' || op.gate === 'CX') {
+            const ctrl = (op.controls && op.controls.length > 0) ? op.controls[0] : 0;
+            const tgt = targets[0] !== undefined ? targets[0] : 1;
+            while (ui && ui.numQubits <= Math.max(ctrl, tgt)) ui.addQubit();
+            const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumnForPair(ctrl, tgt);
             if (ui) {
               ui.placeGate('CX', ctrl, col, tgt);
               placed++;
             }
+          } else if (op.gate === 'SWAP') {
+            const q1 = targets[0] !== undefined ? targets[0] : 0;
+            const q2 = targets[1] !== undefined ? targets[1] : 1;
+            while (ui && ui.numQubits <= Math.max(q1, q2)) ui.addQubit();
+            const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumnForPair(q1, q2);
+            if (ui) {
+              ui.grid[q1][col] = 'SWAP';
+              ui.grid[q2][col] = 'SWAP';
+              ui.renderGrid();
+              ui.updateSimulation();
+              placed++;
+            }
+          } else if (op.gate === 'Toffoli' || op.gate === 'CCX') {
+            while (ui && ui.numQubits < 3) ui.addQubit();
+            const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumnForTrio(0, 1, 2);
+            if (ui) {
+              ui.grid[0][col] = 'CX_CTRL';
+              ui.grid[1][col] = 'CX_CTRL';
+              ui.grid[2][col] = 'CX_TGT';
+              ui.renderGrid();
+              ui.updateSimulation();
+              placed++;
+            }
           } else if (['H', 'X', 'Y', 'Z', 'S', 'T', 'M', 'MEASURE'].includes(op.gate)) {
             const gate = op.gate === 'MEASURE' ? 'M' : op.gate;
-            if (ui) {
-              ui.placeGate(gate, targetQ, col);
-              placed++;
+            for (const targetQ of targets) {
+              while (ui && ui.numQubits <= targetQ) ui.addQubit();
+              const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumn(targetQ);
+              if (ui) {
+                ui.placeGate(gate, targetQ, col);
+                placed++;
+              }
             }
           } else {
             skipped.push(op.gate);
@@ -1146,13 +1211,20 @@ class QuantumVoiceCopilot {
         }
       }
 
-      const summary = `Built ${placed} operation(s) from: "${rawClause}"` +
-        (skipped.length ? ` (engine can't yet place: ${skipped.join(', ')})` : '');
-      this._setActionFeedback(summary, skipped.length === 0);
-      this._setDialogueAI(summary);
+      setTimeout(() => {
+        if (ui && ui.renderGrid) ui.renderGrid();
+        if (ui && ui.renderCnotConnectors) ui.renderCnotConnectors();
+      }, 60);
+
+      const explanation = plan.explanation || `Built ${placed} operation(s) from: "${rawClause}"`;
+      const tip = plan.teaching_tip ? `\n💡 Tip: ${plan.teaching_tip}` : '';
+      const fullDialogue = `${explanation}${tip}`;
+
+      this._setActionFeedback(explanation, skipped.length === 0);
+      this._setDialogueAI(fullDialogue);
       this._playChime('success');
-      if (shouldSpeak) this._speak(summary);
-      return summary;
+      if (shouldSpeak) this._speak(explanation);
+      return explanation;
     } catch (err) {
       console.warn('[QuantumVoiceCopilot] Backend parse failed:', err);
       if (typeof setStatusBadge === 'function') {
@@ -1165,6 +1237,28 @@ class QuantumVoiceCopilot {
       this._playChime('warn');
       return null;
     }
+  }
+
+  _nextFreeColumnForPair(q1, q2) {
+    const ui = window.circuitUI;
+    if (!ui || !ui.grid) return 0;
+    for (let c = 0; c < (ui.numCols || 16); c++) {
+      if ((!ui.grid[q1] || !ui.grid[q1][c]) && (!ui.grid[q2] || !ui.grid[q2][c])) {
+        return c;
+      }
+    }
+    return 0;
+  }
+
+  _nextFreeColumnForTrio(q1, q2, q3) {
+    const ui = window.circuitUI;
+    if (!ui || !ui.grid) return 0;
+    for (let c = 0; c < (ui.numCols || 16); c++) {
+      if ((!ui.grid[q1] || !ui.grid[q1][c]) && (!ui.grid[q2] || !ui.grid[q2][c]) && (!ui.grid[q3] || !ui.grid[q3][c])) {
+        return c;
+      }
+    }
+    return 0;
   }
 
   _nextFreeColumn(qubit) {
@@ -1909,6 +2003,21 @@ class QuantumVoiceCopilot {
       }
     }
     return 0;
+  }
+
+  _extractAllQubits(text) {
+    const results = [];
+    const re = /\b(?:qubit|wire|q|line)?\s*([0-7]|zero|one|two|three|four|five|six|seven)\b/gi;
+    for (const m of text.matchAll(re)) {
+      const preWord = text.substring(Math.max(0, m.index - 8), m.index).toLowerCase();
+      if (/(?:col|step|slot|time|t\s*=?)\s*$/i.test(preWord.trim())) continue;
+
+      const q = this._extractQubitNum(m[1]);
+      if (q >= 0 && q < 8 && !results.includes(q)) {
+        results.push(q);
+      }
+    }
+    return results;
   }
 
   _extractColumn(text, qubit, findEmptyIfMissing = true) {
