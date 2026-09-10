@@ -202,10 +202,94 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  // Dedicated Multi-task Gemini Endpoint (/api/gemini)
-  if (pathname === '/api/gemini' || pathname === '/gemini') {
+  // Dedicated Multi-task Gemini Endpoint (/api/gemini, /api/ai, /api/grok)
+  if (pathname === '/api/gemini' || pathname === '/gemini' || pathname === '/api/ai' || pathname === '/api/grok') {
     const geminiHandler = require('./gemini.js');
     return geminiHandler(req, res);
+  }
+
+  // ================= RESEARCH PAPER EXTRACTION ENDPOINTS =================
+  const { googleSearch } = require('../ananta-backend/utils/googleSearch');
+  const { extractTextFromUrl } = require('../ananta-backend/utils/extractText');
+  const { findTermOccurrences } = require('../ananta-backend/utils/findTerm');
+  const { summarizeText } = require('../ananta-backend/utils/summarize');
+
+  if (pathname === '/api/search' && req.method === 'POST') {
+    const body = await getParsedBody(req);
+    const { query, num } = body || {};
+    if (!query) return sendJson(res, 400, { error: 'query is required' });
+    try {
+      const results = await googleSearch(query, num || 10);
+      return sendJson(res, 200, { query, results });
+    } catch (err) {
+      return sendJson(res, 500, { error: err.message });
+    }
+  }
+
+  if (pathname === '/api/fetch-content' && req.method === 'POST') {
+    const body = await getParsedBody(req);
+    const { url } = body || {};
+    if (!url) return sendJson(res, 400, { error: 'url is required' });
+    try {
+      const { title, text } = await extractTextFromUrl(url);
+      return sendJson(res, 200, { url, title, length: text.length, text });
+    } catch (e) {
+      return sendJson(res, 500, { error: 'Could not fetch/parse that URL: ' + e.message });
+    }
+  }
+
+  if (pathname === '/api/find-term' && req.method === 'POST') {
+    const body = await getParsedBody(req);
+    const { url, text, term } = body || {};
+    if (!term) return sendJson(res, 400, { error: 'term is required' });
+    if (!url && !text) return sendJson(res, 400, { error: 'provide either url or text' });
+
+    try {
+      let sourceText = text;
+      let title = null;
+      if (!sourceText && url) {
+        const extracted = await extractTextFromUrl(url);
+        sourceText = extracted.text;
+        title = extracted.title;
+      }
+
+      const occurrences = findTermOccurrences(sourceText, term);
+      if (!occurrences.length) {
+        return sendJson(res, 200, { term, title, found: false, message: `"${term}" was not found in this document.` });
+      }
+
+      const topOccurrences = occurrences.slice(0, 5);
+      const summarized = await Promise.all(
+        topOccurrences.map(async (occ) => ({
+          context: occ.context,
+          summary: await summarizeText(occ.context, term),
+        }))
+      );
+      return sendJson(res, 200, { term, title, found: true, totalOccurrences: occurrences.length, results: summarized });
+    } catch (e) {
+      return sendJson(res, 500, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/summarize' && req.method === 'POST') {
+    const body = await getParsedBody(req);
+    const { url, text } = body || {};
+    if (!url && !text) return sendJson(res, 400, { error: 'provide either url or text' });
+
+    try {
+      let sourceText = text;
+      let title = null;
+      if (!sourceText && url) {
+        const extracted = await extractTextFromUrl(url);
+        sourceText = extracted.text;
+        title = extracted.title;
+      }
+      const truncated = (sourceText || '').slice(0, 15000);
+      const summary = await summarizeText(truncated);
+      return sendJson(res, 200, { title, summary });
+    } catch (e) {
+      return sendJson(res, 500, { error: e.message });
+    }
   }
 
   // 1. GET /api or /api/health

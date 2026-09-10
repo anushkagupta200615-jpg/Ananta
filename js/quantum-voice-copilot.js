@@ -1036,6 +1036,12 @@ class QuantumVoiceCopilot {
       if (res) return res;
     }
 
+    // 4.3b Move / Shift / Take Gate from Step X to Step Y (e.g. "take H not from t1 to t3")
+    if (/\b(?:move|take|shift|transfer|relocate|drag|change)\b/i.test(clean) || /\b(?:from\s+t?\d+\s+to\s+t?\d+)\b/i.test(clean)) {
+      const moveRes = this._parseAndMoveGate(clean, shouldSpeak);
+      if (moveRes) return moveRes;
+    }
+
     // 4.4 Single Qubit Gates (H, X, Y, Z, S, T, M)
     const singleGate = this._matchSingleGate(clean);
     if (singleGate) {
@@ -1113,7 +1119,14 @@ class QuantumVoiceCopilot {
           const targetQ = (op.targets && op.targets.length > 0) ? op.targets[0] : 0;
           const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumn(targetQ);
 
-          if (op.gate === 'CNOT' && op.controls && op.controls.length >= 1) {
+          if (op.action === 'move' || op.from_step !== undefined) {
+            const fromStep = op.from_step !== undefined ? op.from_step : 0;
+            const toStep = (op.step !== undefined && op.step !== null) ? op.step : 2;
+            if (ui && ui.moveGate) {
+              ui.moveGate(targetQ, fromStep, targetQ, toStep);
+              placed++;
+            }
+          } else if (op.gate === 'CNOT' && op.controls && op.controls.length >= 1) {
             // NOTE: placeGate() supports arbitrary control/target (Section 4.3)
             const ctrl = op.controls[0];
             const tgt = targetQ;
@@ -1794,6 +1807,70 @@ class QuantumVoiceCopilot {
   // -------------------------------------------------------------
   // Freeform Gate Placement & Helper Parsers
   // -------------------------------------------------------------
+  _parseAndMoveGate(text, shouldSpeak = true) {
+    const ui = window.circuitUI;
+    if (!ui) return null;
+
+    // Matches: "from t1 to t3", "from step 1 to step 3", "from 1 to 3", "from col 1 to col 3"
+    const fromToMatch = text.match(/\bfrom\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|slot\s*)?([1-9])\s+(?:to|into)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|slot\s*)?([1-9])\b/i);
+    const toMatch = text.match(/\b(?:to|into)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|slot\s*)([1-9])\b/i);
+
+    let fromCol = -1;
+    let toCol = -1;
+
+    if (fromToMatch) {
+      fromCol = parseInt(fromToMatch[1], 10) - 1;
+      toCol = parseInt(fromToMatch[2], 10) - 1;
+    } else if (toMatch) {
+      toCol = parseInt(toMatch[1], 10) - 1;
+    }
+
+    // Determine target qubit: "H not" / "H naught" / "H0" -> Qubit 0
+    let q = 0;
+    if (/\b(?:h\s*not|h\s*naught|h\s*zero|h0|x\s*not|x\s*naught|x0)\b/i.test(text)) {
+      q = 0;
+    } else {
+      q = this._extractQubit(text);
+    }
+
+    // If fromCol is unknown, search for the gate or first occupied slot on wire q
+    const targetGate = this._matchSingleGate(text);
+    if (fromCol === -1) {
+      for (let c = 0; c < (ui.numCols || 16); c++) {
+        const existing = ui.grid[q] ? ui.grid[q][c] : null;
+        if (existing) {
+          if (!targetGate || existing === targetGate) {
+            fromCol = c;
+            break;
+          }
+        }
+      }
+    }
+
+    if (fromCol === -1) fromCol = 0; // Default to step 1
+    if (toCol === -1) toCol = 2; // Default to step 3
+
+    const existingGate = (ui.grid[q] && ui.grid[q][fromCol]) ? ui.grid[q][fromCol] : null;
+    const requestedGate = targetGate || existingGate || 'H';
+
+    if (!existingGate) {
+      ui.placeGate(requestedGate, q, toCol);
+      this._setActionFeedback(`Placed ${requestedGate} on Qubit ${q} at t=${toCol + 1}.`);
+      this._playChime('success');
+      if (shouldSpeak) this._speak(`Placed ${requestedGate} on qubit ${q} at time step ${toCol + 1}.`);
+      return `Place(${requestedGate}, q${q}, t${toCol+1})`;
+    }
+
+    ui.moveGate(q, fromCol, q, toCol);
+    const gateName = requestedGate === 'H' ? 'Hadamard' : (requestedGate === 'X' ? 'Pauli-X' : requestedGate);
+    this._setActionFeedback(`Moved ${gateName} on Qubit ${q} from t=${fromCol + 1} to t=${toCol + 1}.`);
+    this._playChime('success');
+    if (shouldSpeak) {
+      this._speak(`Moved ${gateName} gate on qubit ${q} from time step ${fromCol + 1} to time step ${toCol + 1}.`);
+    }
+    return `Move(q${q}, t${fromCol+1} ➔ t${toCol+1})`;
+  }
+
   _matchSingleGate(text) {
     if (/\b(hadamard|h\s*gate|letter\s*h|\bh\b)\b/i.test(text)) return 'H';
     if (/\b(pauli\s*x|not\s*gate|bit\s*flip|x\s*gate|\bnot\b|\bx\b)\b/i.test(text)) return 'X';
@@ -1807,6 +1884,8 @@ class QuantumVoiceCopilot {
 
   _extractQubit(text) {
     const patterns = [
+      { regex: /\b(?:h|x|y|z|gate)?\s*(?:not|naught)\b/i, parse: () => 0 },
+      { regex: /\b(?:h0|x0|y0|z0)\b/i, parse: () => 0 },
       { regex: /\b(?:qubit|q|line|wire|register)\s*([0-7])\b/i, parse: m => parseInt(m[1], 10) },
       { regex: /\b(?:qubit|q|line|wire|register)\s*(zero|one|two|three|four|five|six|seven)\b/i, parse: m => this._extractQubitNum(m[1]) },
       { regex: /\b(first|1st)\s*(?:qubit|line|wire)?\b/i, parse: () => 0 },
@@ -1833,9 +1912,13 @@ class QuantumVoiceCopilot {
   }
 
   _extractColumn(text, qubit, findEmptyIfMissing = true) {
-    const colMatch = text.match(/\b(?:column|col|slot|step)\s*(\d+)\b/i);
+    const colMatch = text.match(/\b(?:t\s*=?\s*|time\s*step\s*|column|col|slot|step)\s*([1-9]\d*)\b/i);
     if (colMatch) {
       return Math.max(0, parseInt(colMatch[1], 10) - 1);
+    }
+    const atMatch = text.match(/\b(?:at|on|in)\s+(?:slot|step|col|t)?\s*([1-9])\b/i);
+    if (atMatch) {
+      return Math.max(0, parseInt(atMatch[1], 10) - 1);
     }
     if (!findEmptyIfMissing) return -1;
     return this._findNextCol(qubit);

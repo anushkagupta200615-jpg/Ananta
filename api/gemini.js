@@ -269,13 +269,17 @@ Given the user's spoken instruction and the current circuit state, output ONLY a
   "num_qubits": <int>,
   "reset_existing": <bool>,
   "operations": [
-    { "step": <int|null>, "gate": "<H|X|Y|Z|S|T|CNOT|CZ|SWAP|Toffoli|Rx|Ry|Rz|MEASURE>",
+    { "action": "<place|move|remove>", "from_step": <int|null>, "step": <int|null>, "gate": "<H|X|Y|Z|S|T|CNOT|CZ|SWAP|Toffoli|Rx|Ry|Rz|MEASURE>",
       "targets": [<int>...], "controls": [<int>...], "params": { "theta": <float> } }
   ],
   "confidence": <float 0-1>,
   "clarification_needed": "<string|null>"
 }
-Support any qubit count and any gate above. If the instruction names an algorithm (Bell pair, GHZ, Grover, QFT, Teleportation), expand it into the exact explicit gate sequence.
+Support any qubit count and any gate above.
+Handle gate movement and relocation commands (e.g. 'take H not from t1 to t3', 'move H on wire 0 from step 1 to step 3', 'shift gate from t1 to t3').
+In spoken audio, 'H not' or 'H naught' refers to Hadamard on wire 0 (H0).
+'t1' is column 0 (0-indexed). 't3' is column 2 (0-indexed).
+For move operations, set "action": "move", "from_step": <source 0-indexed column>, "step": <target 0-indexed column>.
 Current circuit state: ${JSON.stringify(currentCircuit || {})}
 ${responseSchemaNote}`;
 
@@ -481,6 +485,32 @@ function parseVoiceLocally(transcript, currentCircuit) {
   const operations = [];
   let numQubits = currentCircuit?.num_qubits || 2;
   let resetExisting = /^(?:make|create|draw|generate|build|construct|new)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)/i.test(text);
+
+  // Check move / relocation intent (e.g. "take H not from t1 to t3", "move H from t1 to t3")
+  const moveMatch = text.match(/\b(?:take|move|shift|relocate|drag)\b[\s\S]*?\b(?:from\s+)?(?:t\s*=?\s*|step\s*|col\s*)?([1-9])\s+(?:to|into)\s+(?:t\s*=?\s*|step\s*|col\s*)?([1-9])\b/i);
+  if (moveMatch) {
+    const fromCol = parseInt(moveMatch[1], 10) - 1;
+    const toCol = parseInt(moveMatch[2], 10) - 1;
+    let q = 0;
+    if (/\b(?:h\s*not|h\s*naught|h0|q0|wire\s*0|qubit\s*0)\b/i.test(text)) q = 0;
+    else {
+      const qMatch = text.match(/\b(?:qubit|wire|q|line)\s*([0-7])\b/i);
+      if (qMatch) q = parseInt(qMatch[1], 10);
+    }
+    let gate = 'H';
+    if (/\b(?:pauli\s*x|x\s*gate|\bx\b)\b/i.test(text)) gate = 'X';
+    else if (/\b(?:pauli\s*y|y\s*gate|\by\b)\b/i.test(text)) gate = 'Y';
+    else if (/\b(?:pauli\s*z|z\s*gate|\bz\b)\b/i.test(text)) gate = 'Z';
+    return {
+      num_qubits: Math.max(numQubits, q + 1),
+      reset_existing: false,
+      operations: [
+        { action: 'move', from_step: fromCol, step: toCol, gate, targets: [q], controls: [], params: {} }
+      ],
+      confidence: 1.0,
+      clarification_needed: null
+    };
+  }
 
   // Check algorithm presets
   if (/\b(bell\s*state|bell\s*pair|epr\s*pair)\b/i.test(text)) {
