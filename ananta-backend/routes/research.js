@@ -132,4 +132,26 @@ router.post("/summarize", async (req, res) => {
   }
 });
 
+/**
+ * POST /api/synthesize-topic
+ * body: { topic: string, papers: Array<{ id, title, authors, year, abstract }> }
+ * Synthesizes multiple research papers on a single topic into a unified narrative
+ * with structured citations.
+ */
+router.post("/synthesize-topic", async (req, res) => {
+  try {
+    const { topic, papers } = req.body;
+    if (!topic || !Array.isArray(papers) || papers.length === 0) {
+      return res.status(400).json({ error: "provide topic and non-empty papers array" });
+    }
+
+    const { synthesizeTopic } = require("../utils/summarize");
+    const result = await synthesizeTopic(topic, papers);
+    res.json(result);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

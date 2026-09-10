@@ -5334,6 +5334,524 @@ body.dark-theme .btn-paper-simulate {
   border-color: var(--border-darker);
 }
 
+/* ==========================================
+ * TOPIC-WISE SYNTHESIS & VIEW SWITCHER
+ * ========================================== */
+.papers-view-switcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+/* Custom Concept Search & Synthesis Jumbo Box */
+.topic-custom-search-box {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.75));
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 14px;
+  padding: 24px 26px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 20px rgba(56, 189, 248, 0.08);
+}
+
+.topic-custom-search-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.topic-custom-search-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topic-badge-dynamic {
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+
+.topic-custom-search-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin: 0 0 16px 0;
+}
+
+.topic-custom-search-desc strong {
+  color: #38bdf8;
+}
+
+.topic-custom-input-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.topic-custom-input-bar input {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13.5px;
+  color: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.topic-custom-input-bar input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.btn-synthesize-custom-word {
+  background: linear-gradient(135deg, #0284c7, #6366f1);
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
+}
+
+.btn-synthesize-custom-word:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45);
+}
+
+.topic-quick-suggestions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.quick-suggest-label {
+  color: #94a3b8;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.quick-suggest-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  padding: 3px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.quick-suggest-chip:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.papers-view-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.papers-view-btn:hover {
+  color: var(--text-white);
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.papers-view-btn.active {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(99, 102, 241, 0.25));
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.18);
+}
+
+.topic-synthesis-status-chip {
+  font-size: 11px;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.topic-synthesis-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.topic-synthesis-heading {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin: 0 0 4px 0;
+}
+
+.topic-synthesis-sub {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.btn-synthesize-all {
+  background: linear-gradient(135deg, #0284c7, #4f46e5);
+  color: #ffffff;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+}
+
+.btn-synthesize-all:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
+  filter: brightness(1.1);
+}
+
+.topic-synthesis-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.topic-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 24px 26px;
+  box-shadow: var(--card-shadow);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.topic-card:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(56, 189, 248, 0.08);
+}
+
+.topic-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #38bdf8, #818cf8);
+  opacity: 0.8;
+}
+
+.topic-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.topic-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.topic-card-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.topic-papers-count {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.topic-card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-topic-resynthesize {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-topic-resynthesize:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-white);
+  border-color: var(--text-subtle);
+}
+
+.topic-paper-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.topic-paper-pill {
+  font-size: 11.5px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.topic-paper-pill:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.topic-synthesis-body {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: #e2e8f0;
+  margin-bottom: 18px;
+}
+
+.topic-paragraph {
+  margin-bottom: 12px;
+}
+
+.topic-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+/* Clickable Citation Badges */
+.citation-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin: 0 2px;
+  cursor: pointer;
+  text-decoration: none;
+  vertical-align: baseline;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.citation-marker:hover {
+  background: #38bdf8;
+  color: #0b1120;
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+  transform: translateY(-1px);
+}
+
+.citation-marker::after {
+  content: '↗';
+  font-size: 9px;
+  opacity: 0.8;
+}
+
+/* Key Takeaways Box */
+.topic-takeaways-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-top: 14px;
+}
+
+.topic-takeaways-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #a78bfa;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topic-takeaways-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.topic-takeaway-item {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+}
+
+.topic-takeaway-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Glowing Pulse Highlight for target paper card */
+@keyframes paperPulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8);
+    border-color: #38bdf8;
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 28px 6px rgba(56, 189, 248, 0.6);
+    border-color: #38bdf8;
+    transform: scale(1.015);
+  }
+  100% {
+    box-shadow: 0 8px 24px rgba(15, 98, 254, 0.12);
+    border-color: var(--accent-blue);
+    transform: scale(1);
+  }
+}
+
+.paper-card-highlighted {
+  animation: paperPulseGlow 2.4s ease-out forwards;
+  z-index: 10;
+  position: relative;
+}
+
+/* Per-paper on-card AI Summary Drawer */
+.btn-paper-aisummary {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.btn-paper-aisummary:hover {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+}
+
+.paper-ai-summary-drawer {
+  background: rgba(16, 185, 129, 0.07);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  display: none;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.paper-ai-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.paper-ai-summary-text {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #f1f5f9;
+  margin: 0;
+}
+
 /* BibTeX Modal */
 .bibtex-modal-backdrop {
   display: none;

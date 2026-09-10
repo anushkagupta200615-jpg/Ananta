@@ -42,6 +42,14 @@ const SOURCES = [
     branch: 'main',
     label: 'QC Collection of Resources',
     description: 'IBM/Qiskit guided projects, CERN lectures, cheatsheets, and Microsoft Azure Quantum resources.'
+  },
+  {
+    id: 'awesome-qml',
+    owner: 'krishnakumarsekar',
+    repo: 'awesome-quantum-machine-learning',
+    branch: 'master',
+    label: 'Awesome Quantum ML',
+    description: 'Curated list of quantum machine learning frameworks, research papers, classical-quantum neural networks, and libraries.'
   }
 ];
 

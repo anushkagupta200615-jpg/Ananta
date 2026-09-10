@@ -2485,8 +2485,21 @@ Key Advantage:
             </p>
           </div>
 
+          <!-- Papers vs Topic-Wise View Toggle -->
+          <div class="papers-view-switcher">
+            <button class="papers-view-btn active" id="btn-view-per-paper" onclick="window.switchPapersView('per-paper')">
+              📑 Per-Paper Summaries
+            </button>
+            <button class="papers-view-btn" id="btn-view-topic-synthesis" onclick="window.switchPapersView('topic-synthesis')">
+              🔬 Topic-Wise Synthesis
+            </button>
+            <span class="topic-synthesis-status-chip" id="topic-synthesis-badge" style="display:none;">
+              ✨ Multi-Paper Co-citation Synthesis
+            </span>
+          </div>
+
           <!-- Search & Category Filters -->
-          <div class="research-toolbar">
+          <div class="research-toolbar" id="research-papers-toolbar">
             <div class="research-search-box">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/>
@@ -2514,9 +2527,54 @@ Key Advantage:
             </div>
           </div>
 
-          <!-- Research Papers Grid -->
+          <!-- Research Papers Grid (Per-Paper View) -->
           <div class="research-grid" id="research-grid-container">
             <!-- Populated dynamically by app.js -->
+          </div>
+
+          <!-- Topic-Wise Synthesis Container -->
+          <div id="topic-synthesis-container" style="display: none;">
+            <!-- Ask ANY Concept or Word Box -->
+            <div class="topic-custom-search-box">
+              <div class="topic-custom-search-title-row">
+                <div class="topic-custom-search-title">
+                  <span>🔬</span> Ask or Synthesize ANY Word / Concept Across All Research Papers
+                </div>
+                <span class="topic-badge-dynamic">Dynamic Live Synthesis</span>
+              </div>
+              <p class="topic-custom-search-desc">
+                Enter <strong>any term or concept</strong> (e.g. <em>decoherence</em>, <em>teleportation</em>, <em>fault tolerance</em>, <em>barren plateaus</em>, <em>transmon</em>, <em>quantum walk</em>, <em>anyon</em>, <em>QKD</em>). Ananta will retrieve all matching papers across the research corpus and synthesize their collective findings with clickable citations.
+              </p>
+              <div class="topic-custom-input-bar">
+                <input type="text" id="topic-custom-input" placeholder="Type ANY quantum concept or word (e.g. 'decoherence', 'teleportation', 'fault tolerance', 'anyons')..." onkeydown="if(event.key==='Enter') window.synthesizeAnyWord()" />
+                <button class="btn-synthesize-custom-word" id="btn-synthesize-custom-word" onclick="window.synthesizeAnyWord()">
+                  ⚡ Synthesize Across Papers
+                </button>
+              </div>
+              <div class="topic-quick-suggestions" id="topic-quick-suggestions">
+                <span class="quick-suggest-label">Suggestions:</span>
+                <!-- Filled dynamically by app.js -->
+              </div>
+            </div>
+
+            <!-- Custom Topic Live Result Showcase -->
+            <div id="topic-custom-result-showcase" style="display:none; margin-bottom: 24px;"></div>
+
+            <div class="topic-synthesis-header-bar">
+              <div class="topic-synthesis-info">
+                <h3 class="topic-synthesis-heading">Cross-Paper Concept Clusters</h3>
+                <p class="topic-synthesis-sub">Browse multi-paper syntheses across topics with &ge;2 publications. Click any citation to view the source paper.</p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <span id="topic-synthesis-stats" class="research-counter-badge">0 Topics Loaded</span>
+                <button class="btn-synthesize-all" id="btn-synthesize-all" onclick="window.synthesizeAllTopics()">
+                  🧠 Synthesize All Clusters
+                </button>
+              </div>
+            </div>
+            <div class="topic-synthesis-grid" id="topic-synthesis-grid">
+              <!-- Populated dynamically by app.js -->
+            </div>
           </div>
         </div>
 

@@ -1560,6 +1560,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </a>
       ` : '';
 
+      card.id = `paper-card-${p.id}`;
+
       card.innerHTML = `
         <div class="paper-top-row">
           <span class="paper-badge ${catBadgeClass}">${catBadgeLabel}</span>
@@ -1571,15 +1573,409 @@ document.addEventListener('DOMContentLoaded', () => {
         <p class="paper-abstract">${p.abstract}</p>
         <div class="paper-actions-bar">
           ${simulateBtn}
+          <button class="btn-paper-aisummary" id="btn-aisummary-${p.id}" onclick="window.togglePaperAiSummary('${p.id}')">
+            🧠 AI Summary
+          </button>
           <button class="btn-paper-cite" onclick="window.openBibtexModal('${p.id}')">
             Cite BibTeX
           </button>
           ${pdfLink}
         </div>
+        <div class="paper-ai-summary-drawer" id="paper-summary-drawer-${p.id}"></div>
       `;
       researchGrid.appendChild(card);
     });
   }
+
+  // Per-paper on-card AI Summary toggle
+  window.__PAPER_AI_SUMMARY_CACHE = window.__PAPER_AI_SUMMARY_CACHE || {};
+  window.togglePaperAiSummary = async function(paperId) {
+    const drawer = document.getElementById(`paper-summary-drawer-${paperId}`);
+    const btn = document.getElementById(`btn-aisummary-${paperId}`);
+    if (!drawer) return;
+
+    if (drawer.style.display === 'block') {
+      drawer.style.display = 'none';
+      if (btn) btn.innerHTML = '🧠 AI Summary';
+      return;
+    }
+
+    drawer.style.display = 'block';
+    if (btn) btn.innerHTML = '🧠 Hide Summary';
+
+    if (window.__PAPER_AI_SUMMARY_CACHE[paperId]) {
+      const cached = window.__PAPER_AI_SUMMARY_CACHE[paperId];
+      drawer.innerHTML = `
+        <div class="paper-ai-summary-header">
+          <span>🧠 Executive Research Summary</span>
+          <span style="font-size: 10px; opacity: 0.8;">Instant AI Cached</span>
+        </div>
+        <p class="paper-ai-summary-text">${cached}</p>
+      `;
+      return;
+    }
+
+    const paper = (window.QUANTUM_RESEARCH_PAPERS || []).find(p => p.id === paperId);
+    if (!paper) return;
+
+    drawer.innerHTML = `
+      <div style="color: #34d399; font-size: 12px; display: flex; align-items: center; gap: 8px; padding: 4px 0;">
+        <span style="display:inline-block; width:12px; height:12px; border:2px solid #34d399; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></span>
+        Synthesizing executive scientific summary...
+      </div>
+    `;
+
+    try {
+      const res = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: paper.abstract, title: paper.title })
+      });
+      const data = await res.json();
+      const summary = data.summary || paper.abstract;
+      window.__PAPER_AI_SUMMARY_CACHE[paperId] = summary;
+
+      drawer.innerHTML = `
+        <div class="paper-ai-summary-header">
+          <span>🧠 Executive Research Summary</span>
+          <span style="font-size: 10px; opacity: 0.8;">AI Synthesized</span>
+        </div>
+        <p class="paper-ai-summary-text">${summary}</p>
+      `;
+    } catch (err) {
+      drawer.innerHTML = `
+        <div class="paper-ai-summary-header" style="color: #f87171;">Summary Notice</div>
+        <p class="paper-ai-summary-text" style="color: #cbd5e1;">${paper.abstract}</p>
+      `;
+    }
+  };
+
+  // ==========================================
+  // 8A. TOPIC-WISE CROSS-PAPER SYNTHESIS ENGINE
+  // ==========================================
+  let currentPapersViewMode = 'per-paper';
+  window.__TOPIC_SYNTHESIS_CACHE = window.__TOPIC_SYNTHESIS_CACHE || {};
+
+  window.switchPapersView = function(mode) {
+    currentPapersViewMode = mode;
+    const btnPerPaper = document.getElementById('btn-view-per-paper');
+    const btnTopic = document.getElementById('btn-view-topic-synthesis');
+    const badge = document.getElementById('topic-synthesis-badge');
+    const papersGrid = document.getElementById('research-grid-container');
+    const topicContainer = document.getElementById('topic-synthesis-container');
+
+    if (mode === 'topic-synthesis') {
+      if (btnPerPaper) btnPerPaper.classList.remove('active');
+      if (btnTopic) btnTopic.classList.add('active');
+      if (badge) badge.style.display = 'inline-flex';
+      if (papersGrid) papersGrid.style.display = 'none';
+      if (topicContainer) topicContainer.style.display = 'block';
+      renderTopicWiseSynthesis();
+    } else {
+      if (btnPerPaper) btnPerPaper.classList.add('active');
+      if (btnTopic) btnTopic.classList.remove('active');
+      if (badge) badge.style.display = 'none';
+      if (papersGrid) papersGrid.style.display = 'grid';
+      if (topicContainer) topicContainer.style.display = 'none';
+      renderResearchLibrary();
+    }
+  };
+
+  // Smoothly scrolls to a paper card and flashes a glowing pulse highlight
+  window.scrollToPaper = function(paperId) {
+    if (!paperId) return;
+
+    if (currentPapersViewMode !== 'per-paper') {
+      window.switchPapersView('per-paper');
+    }
+
+    const targetPaper = (window.QUANTUM_RESEARCH_PAPERS || []).find(p => p.id === paperId);
+    if (targetPaper) {
+      if (activeCategory !== 'all' && targetPaper.category !== activeCategory) {
+        activeCategory = 'all';
+        catPills.forEach(p => p.classList.toggle('active', p.getAttribute('data-cat') === 'all'));
+      }
+      if (searchQuery) {
+        searchQuery = '';
+        if (searchInput) searchInput.value = '';
+        if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+      }
+      renderResearchLibrary();
+    }
+
+    setTimeout(() => {
+      const card = document.getElementById(`paper-card-${paperId}`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.remove('paper-card-highlighted');
+        void card.offsetWidth;
+        card.classList.add('paper-card-highlighted');
+        setTimeout(() => {
+          card.classList.remove('paper-card-highlighted');
+        }, 2800);
+      }
+    }, 120);
+  };
+
+  // Format inline citation markers [paper-id] into clickable interactive badges
+  function formatCitationsInText(text, topicPapers) {
+    if (!text) return '';
+    const paperLookup = new Map((topicPapers || []).map(p => [p.id, p]));
+    (window.QUANTUM_RESEARCH_PAPERS || []).forEach(p => {
+      if (!paperLookup.has(p.id)) paperLookup.set(p.id, p);
+    });
+
+    return text.replace(/\[([a-zA-Z0-9_\-]+(?:,\s*[a-zA-Z0-9_\-]+)*)\]/g, (match, idsStr) => {
+      const ids = idsStr.split(',').map(s => s.trim());
+      const buttons = ids.map(id => {
+        const p = paperLookup.get(id);
+        const label = p
+          ? (p.title.length > 34 ? `${p.authors.split(',')[0].split(' ')[0]} ${p.year}` : p.title)
+          : id;
+        const fullTitle = p ? `${p.title} (${p.authors}, ${p.year})` : id;
+        return `<button class="citation-marker" onclick="window.scrollToPaper('${id}')" title="Inspect source publication: ${fullTitle.replace(/"/g, '&quot;')}">${label}</button>`;
+      }).join(' ');
+      return buttons;
+    });
+  }
+
+  function renderTopicWiseSynthesis() {
+    const topicGrid = document.getElementById('topic-synthesis-grid');
+    const statsBadge = document.getElementById('topic-synthesis-stats');
+    if (!topicGrid || !window.QUANTUM_RESEARCH_PAPERS) return;
+
+    // Dynamically cluster papers by their assigned topics
+    const topicMap = new Map();
+    window.QUANTUM_RESEARCH_PAPERS.forEach(p => {
+      const topics = (p.topics && p.topics.length) ? p.topics : [p.category.replace('-', ' ')];
+      topics.forEach(t => {
+        if (!topicMap.has(t)) topicMap.set(t, []);
+        topicMap.get(t).push(p);
+      });
+    });
+
+    // Filter topics by active search query if present
+    const q = searchQuery ? searchQuery.toLowerCase() : '';
+    const entries = Array.from(topicMap.entries()).filter(([topic, papers]) => {
+      if (!q) return true;
+      if (topic.toLowerCase().includes(q)) return true;
+      return papers.some(p => 
+        (p.title && p.title.toLowerCase().includes(q)) ||
+        (p.authors && p.authors.toLowerCase().includes(q)) ||
+        (p.abstract && p.abstract.toLowerCase().includes(q))
+      );
+    });
+
+    if (statsBadge) {
+      statsBadge.textContent = `${entries.length} Concept Clusters Active`;
+    }
+
+    if (entries.length === 0) {
+      topicGrid.innerHTML = `
+        <div style="text-align: center; padding: 48px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;">
+          <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-white);">No topic clusters match your search</h3>
+          <p style="font-size: 13px; color: var(--text-dim);">Try searching for terms like "superposition", "surface code", "error correction", or "VQE".</p>
+        </div>
+      `;
+      return;
+    }
+
+    topicGrid.innerHTML = '';
+
+    entries.forEach(([topic, papers]) => {
+      const card = document.createElement('div');
+      card.className = 'topic-card';
+      const isMultiPaper = papers.length >= 2;
+      const cached = window.__TOPIC_SYNTHESIS_CACHE[topic];
+
+      // Paper pills
+      const paperPillsHtml = papers.map(p => `
+        <button class="topic-paper-pill" onclick="window.scrollToPaper('${p.id}')" title="Inspect paper: ${p.title.replace(/"/g, '&quot;')}">
+          <span>📄</span>
+          <strong>${p.year}</strong>
+          <span>${p.title.length > 40 ? p.title.slice(0, 40) + '…' : p.title}</span>
+        </button>
+      `).join('');
+
+      let contentHtml = '';
+      if (!isMultiPaper) {
+        // Single paper: show individual summary
+        const p = papers[0];
+        contentHtml = `
+          <div class="topic-synthesis-body">
+            <p class="topic-paragraph">
+              <strong>Single-Paper Topic Anchor:</strong> ${formatCitationsInText(`[${p.id}] ${p.abstract}`, [p])}
+            </p>
+          </div>
+        `;
+      } else if (cached) {
+        // Render synthesized narrative and takeaways with citations
+        const paragraphsHtml = (cached.synthesis_paragraphs || []).map(para => `
+          <p class="topic-paragraph">${formatCitationsInText(para.text, papers)}</p>
+        `).join('');
+
+        const takeawaysHtml = (cached.key_takeaways && cached.key_takeaways.length) ? `
+          <div class="topic-takeaways-box">
+            <div class="topic-takeaways-title">
+              <span>⚡</span> Key Cross-Paper Takeaways & Citations
+            </div>
+            <ul class="topic-takeaways-list">
+              ${cached.key_takeaways.map(t => `
+                <li class="topic-takeaway-item">${formatCitationsInText(t.point, papers)}</li>
+              `).join('')}
+            </ul>
+          </div>
+        ` : '';
+
+        contentHtml = `
+          <div class="topic-synthesis-body">
+            ${paragraphsHtml}
+            ${takeawaysHtml}
+          </div>
+        `;
+      } else {
+        // Not yet synthesized: placeholder with instant synthesis trigger
+        contentHtml = `
+          <div class="topic-synthesis-body" id="topic-body-${encodeURIComponent(topic)}">
+            <div style="background: rgba(56, 189, 248, 0.05); border: 1px dashed rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 18px; text-align: center;">
+              <p style="margin: 0 0 10px 0; color: #cbd5e1; font-size: 13px;">
+                Ready to synthesize findings across these <strong>${papers.length} publications</strong> with inline source citations.
+              </p>
+              <button onclick="window.synthesizeTopicForCard('${topic.replace(/'/g, "\\'")}')" class="btn-synthesize-all" style="font-size: 11.5px; padding: 6px 14px;">
+                🧠 Synthesize Cross-Paper Findings
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      const resynthesizeBtn = isMultiPaper ? `
+        <button class="btn-topic-resynthesize" onclick="window.synthesizeTopicForCard('${topic.replace(/'/g, "\\'")}', true)" title="Re-synthesize this topic with latest AI">
+          ${cached ? '🔄 Re-synthesize' : '⚡ Synthesize'}
+        </button>
+      ` : '';
+
+      card.innerHTML = `
+        <div class="topic-card-header">
+          <div class="topic-card-title-group">
+            <h4 class="topic-card-title">${topic}</h4>
+            <span class="topic-papers-count">${papers.length} ${papers.length === 1 ? 'Paper' : 'Papers Analyzed'}</span>
+          </div>
+          <div class="topic-card-actions">
+            ${resynthesizeBtn}
+          </div>
+        </div>
+        <div class="topic-paper-pills">
+          ${paperPillsHtml}
+        </div>
+        ${contentHtml}
+      `;
+
+      topicGrid.appendChild(card);
+    });
+
+    // Auto-synthesize the first 2 visible multi-paper topics on first load if not yet cached
+    const needsAuto = entries.filter(([t, p]) => p.length >= 2 && !window.__TOPIC_SYNTHESIS_CACHE[t]).slice(0, 2);
+    if (needsAuto.length > 0) {
+      setTimeout(() => {
+        needsAuto.forEach(([topic]) => {
+          window.synthesizeTopicForCard(topic, false);
+        });
+      }, 200);
+    }
+  }
+
+  // Synthesize a specific topic dynamically via /api/synthesize-topic
+  window.synthesizeTopicForCard = async function(topic, forceRefresh = false) {
+    if (!topic) return;
+    if (!forceRefresh && window.__TOPIC_SYNTHESIS_CACHE[topic]) {
+      renderTopicWiseSynthesis();
+      return;
+    }
+
+    const topicMap = new Map();
+    (window.QUANTUM_RESEARCH_PAPERS || []).forEach(p => {
+      const topics = (p.topics && p.topics.length) ? p.topics : [p.category];
+      topics.forEach(t => {
+        if (!topicMap.has(t)) topicMap.set(t, []);
+        topicMap.get(t).push(p);
+      });
+    });
+
+    const papers = topicMap.get(topic) || [];
+    if (!papers.length) return;
+
+    const bodyEl = document.getElementById(`topic-body-${encodeURIComponent(topic)}`);
+    if (bodyEl) {
+      bodyEl.innerHTML = `
+        <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 8px; padding: 18px; text-align: center; color: #38bdf8; font-size: 13px;">
+          <span style="display:inline-block; width:14px; height:14px; border:2px solid #38bdf8; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; margin-right: 8px;"></span>
+          Synthesizing cross-paper analysis across ${papers.length} publications with inline citations...
+        </div>
+      `;
+    }
+
+    try {
+      const res = await fetch('/api/synthesize-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic,
+          papers: papers.map(p => ({
+            id: p.id,
+            title: p.title,
+            authors: p.authors,
+            year: p.year,
+            abstract: p.abstract,
+            category: p.category
+          }))
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.synthesis_paragraphs) {
+        window.__TOPIC_SYNTHESIS_CACHE[topic] = data;
+      }
+    } catch (err) {
+      console.warn('Synthesis error:', err);
+    } finally {
+      renderTopicWiseSynthesis();
+    }
+  };
+
+  // Synthesizes all multi-paper topics in batches
+  window.synthesizeAllTopics = async function() {
+    const btn = document.getElementById('btn-synthesize-all');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Synthesizing All Topics...';
+    }
+
+    const topicMap = new Map();
+    (window.QUANTUM_RESEARCH_PAPERS || []).forEach(p => {
+      const topics = (p.topics && p.topics.length) ? p.topics : [p.category];
+      topics.forEach(t => {
+        if (!topicMap.has(t)) topicMap.set(t, []);
+        topicMap.get(t).push(p);
+      });
+    });
+
+    const multiTopics = Array.from(topicMap.keys()).filter(t => (topicMap.get(t) || []).length >= 2);
+
+    for (const topic of multiTopics) {
+      if (!window.__TOPIC_SYNTHESIS_CACHE[topic]) {
+        await window.synthesizeTopicForCard(topic, false);
+      }
+    }
+
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '✅ All Topics Synthesized';
+      setTimeout(() => {
+        btn.innerHTML = '🧠 Synthesize All Topics';
+      }, 3000);
+    }
+  };
 
   function updateCategoryCounts() {
     if (!window.QUANTUM_RESEARCH_PAPERS) return;
@@ -1602,7 +1998,11 @@ document.addEventListener('DOMContentLoaded', () => {
       catPills.forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       activeCategory = pill.getAttribute('data-cat');
-      renderResearchLibrary();
+      if (currentPapersViewMode === 'per-paper') {
+        renderResearchLibrary();
+      } else {
+        renderTopicWiseSynthesis();
+      }
     });
   });
 
@@ -1613,7 +2013,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (clearSearchBtn) {
         clearSearchBtn.style.display = searchQuery ? 'inline-block' : 'none';
       }
-      renderResearchLibrary();
+      if (currentPapersViewMode === 'per-paper') {
+        renderResearchLibrary();
+      } else {
+        renderTopicWiseSynthesis();
+      }
     });
   }
 
@@ -1622,7 +2026,11 @@ document.addEventListener('DOMContentLoaded', () => {
       searchInput.value = '';
       searchQuery = '';
       clearSearchBtn.style.display = 'none';
-      renderResearchLibrary();
+      if (currentPapersViewMode === 'per-paper') {
+        renderResearchLibrary();
+      } else {
+        renderTopicWiseSynthesis();
+      }
     });
   }
 
