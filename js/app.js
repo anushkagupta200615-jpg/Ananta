@@ -1874,6 +1874,23 @@ document.addEventListener('DOMContentLoaded', () => {
       topicGrid.appendChild(card);
     });
 
+    // Populate quick suggestion chips for arbitrary words
+    const suggestContainer = document.getElementById('topic-quick-suggestions');
+    if (suggestContainer && (!suggestContainer.dataset.initialized)) {
+      suggestContainer.dataset.initialized = 'true';
+      const dynamicKeywords = [
+        'Decoherence', 'Teleportation', 'Fault Tolerance', 'Barren Plateaus',
+        'Surface Codes', 'Superposition', 'Entanglement', 'Grover Search',
+        'Shor Factoring', 'VQE', 'QAOA', 'Transmon', 'Anyons', 'Quantum Walks', 'BB84 QKD'
+      ];
+      suggestContainer.innerHTML = `
+        <span class="quick-suggest-label">Try any term:</span>
+        ${dynamicKeywords.map(kw => `
+          <button class="quick-suggest-chip" onclick="window.synthesizeAnyWord('${kw}')">${kw}</button>
+        `).join('')}
+      `;
+    }
+
     // Auto-synthesize the first 2 visible multi-paper topics on first load if not yet cached
     const needsAuto = entries.filter(([t, p]) => p.length >= 2 && !window.__TOPIC_SYNTHESIS_CACHE[t]).slice(0, 2);
     if (needsAuto.length > 0) {
@@ -1884,6 +1901,160 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 200);
     }
   }
+
+  // ==========================================
+  // ASK / SYNTHESIZE ANY WORD OR CONCEPT DYNAMICALLY
+  // ==========================================
+  window.synthesizeAnyWord = async function(customWord = null) {
+    const input = document.getElementById('topic-custom-input');
+    const term = (customWord || (input ? input.value : '')).trim();
+    if (!term) {
+      alert('Please enter any word or concept to synthesize across research papers (e.g. "decoherence", "teleportation", "fault tolerance", "vqe")');
+      return;
+    }
+    if (input) input.value = term;
+
+    const showcase = document.getElementById('topic-custom-result-showcase');
+    if (!showcase) return;
+
+    showcase.style.display = 'block';
+    showcase.innerHTML = `
+      <div style="background: var(--bg-card); border: 1px solid var(--accent-blue); border-radius: 14px; padding: 26px; text-align: center; color: #38bdf8; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
+        <span style="display:inline-block; width:22px; height:22px; border:2px solid #38bdf8; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; margin-bottom: 12px;"></span>
+        <h3 style="margin: 0 0 6px 0; color: #ffffff; font-size: 17px;">Scanning publications and synthesizing: "${term}"...</h3>
+        <p style="margin: 0; font-size: 13px; color: #cbd5e1;">Analyzing paper abstracts, methodologies, and findings across the entire quantum research corpus...</p>
+      </div>
+    `;
+    showcase.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // 1. Retrieve all matching papers from the corpus
+    const termLower = term.toLowerCase();
+    const queryTokens = termLower.split(/[\s,&+/\-_]+/).filter(w => w.length >= 3);
+
+    let matchingPapers = (window.QUANTUM_RESEARCH_PAPERS || []).filter(p => {
+      const text = `${p.title} ${p.abstract} ${p.authors} ${p.category} ${(p.topics || []).join(' ')}`.toLowerCase();
+      if (text.includes(termLower)) return true;
+      return queryTokens.length > 0 && queryTokens.some(tok => text.includes(tok));
+    });
+
+    // 2. If fewer than 2 papers found in local static corpus, search arXiv live via /api/search!
+    if (matchingPapers.length < 2) {
+      try {
+        const arxivRes = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: term, num: 4 })
+        });
+        const arxivData = await arxivRes.json();
+        if (arxivData.results && arxivData.results.length) {
+          arxivData.results.forEach((r, idx) => {
+            matchingPapers.push({
+              id: `arxiv-${Date.now().toString(36)}-${idx}`,
+              title: r.title,
+              authors: r.authors || 'arXiv Researchers',
+              year: r.published ? (parseInt(r.published) || 2024) : 2024,
+              abstract: r.snippet || '',
+              category: 'arxiv',
+              pdfUrl: r.link
+            });
+          });
+        }
+      } catch (err) {
+        console.warn('Live search notice:', err.message);
+      }
+    }
+
+    if (matchingPapers.length === 0) {
+      showcase.innerHTML = `
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 26px; text-align: center;">
+          <h4 style="margin: 0 0 6px 0; color: #fff; font-size: 16px;">No research publications found for "${term}"</h4>
+          <p style="margin: 0; font-size: 13px; color: #94a3b8;">Try searching for concepts like "decoherence", "teleportation", "fault tolerance", "vqe", "anyon", or "transmon".</p>
+        </div>
+      `;
+      return;
+    }
+
+    // 3. Synthesize findings across the matching papers with citations
+    try {
+      const res = await fetch('/api/synthesize-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: term,
+          papers: matchingPapers.map(p => ({
+            id: p.id,
+            title: p.title,
+            authors: p.authors,
+            year: p.year,
+            abstract: p.abstract,
+            category: p.category
+          }))
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.synthesis_paragraphs) throw new Error(data.error || 'Failed to synthesize');
+
+      // 4. Render customized synthesis showcase
+      const paragraphsHtml = (data.synthesis_paragraphs || []).map(para => `
+        <p class="topic-paragraph">${formatCitationsInText(para.text, matchingPapers)}</p>
+      `).join('');
+
+      const takeawaysHtml = (data.key_takeaways && data.key_takeaways.length) ? `
+        <div class="topic-takeaways-box">
+          <div class="topic-takeaways-title">
+            <span>⚡</span> Key Cross-Paper Takeaways & Citations for "${term}"
+          </div>
+          <ul class="topic-takeaways-list">
+            ${data.key_takeaways.map(t => `
+              <li class="topic-takeaway-item">${formatCitationsInText(t.point, matchingPapers)}</li>
+            `).join('')}
+          </ul>
+        </div>
+      ` : '';
+
+      const paperPillsHtml = matchingPapers.map(p => `
+        <button class="topic-paper-pill" onclick="window.scrollToPaper('${p.id}')" title="Inspect paper: ${p.title.replace(/"/g, '&quot;')}">
+          <span>📄</span>
+          <strong>${p.year}</strong>
+          <span>${p.title.length > 40 ? p.title.slice(0, 40) + '…' : p.title}</span>
+        </button>
+      `).join('');
+
+      showcase.innerHTML = `
+        <div class="topic-card" style="border-color: #38bdf8; box-shadow: 0 10px 30px rgba(56, 189, 248, 0.15);">
+          <div class="topic-card-header">
+            <div class="topic-card-title-group">
+              <span style="font-size: 20px;">✨</span>
+              <h4 class="topic-card-title">Live Cross-Paper Synthesis: "${term}"</h4>
+              <span class="topic-papers-count">${matchingPapers.length} Publications Synthesized</span>
+            </div>
+            <div class="topic-card-actions">
+              <button class="btn-topic-resynthesize" onclick="window.synthesizeAnyWord('${term.replace(/'/g, "\\'")}')" title="Re-synthesize with AI">
+                🔄 Re-synthesize
+              </button>
+              <button class="btn-topic-resynthesize" onclick="document.getElementById('topic-custom-result-showcase').style.display='none'" title="Close">
+                ✕ Close
+              </button>
+            </div>
+          </div>
+          <div class="topic-paper-pills">
+            ${paperPillsHtml}
+          </div>
+          <div class="topic-synthesis-body">
+            ${paragraphsHtml}
+            ${takeawaysHtml}
+          </div>
+        </div>
+      `;
+    } catch (err) {
+      showcase.innerHTML = `
+        <div style="background: var(--bg-card); border: 1px solid #f87171; border-radius: 12px; padding: 20px; color: #f87171;">
+          Failed to synthesize "${term}": ${err.message}
+        </div>
+      `;
+    }
+  };
 
   // Synthesize a specific topic dynamically via /api/synthesize-topic
   window.synthesizeTopicForCard = async function(topic, forceRefresh = false) {
