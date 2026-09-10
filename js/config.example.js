@@ -1,6 +1,5 @@
-﻿// Ananta Quantum Studio - Config Template for Git
+// Ananta Quantum Studio - Client Configuration Template
+// Note: AI inference keys are securely managed via backend environment variables (/api/gemini.js).
 window.ANANTA_CONFIG = {
-  GEMINI_API_KEY: "",
-  OPENAI_API_KEY: "",
   DEFAULT_PROVIDER: "gemini"
 };

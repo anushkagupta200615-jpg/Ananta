@@ -259,6 +259,12 @@ const server = http.createServer(async (req, res) => {
 
   // ================= API ROUTES =================
 
+  // Dedicated Multi-task Gemini Endpoint (/api/gemini)
+  if (pathname === '/api/gemini') {
+    const geminiHandler = require('./api/gemini.js');
+    return geminiHandler(req, res);
+  }
+
   // 1. GET /api/health
   if (pathname === '/api/health' && req.method === 'GET') {
     const uptimeSec = Math.round(process.uptime());

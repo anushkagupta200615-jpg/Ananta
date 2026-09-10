@@ -32,6 +32,13 @@ window.closeMobileNav = function() {
   overlay.classList.remove('open');
   btn && btn.classList.remove('is-open');
   document.body.style.overflow = '';
+// Shared helper — Section 5.3 Honesty Badges
+window.setStatusBadge = function(elementId, isLive) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.classList.toggle('live', isLive);
+  el.classList.toggle('fallback', !isLive);
+  el.textContent = isLive ? '● Live AI' : '○ Local Fallback';
 };
 
 document.addEventListener('DOMContentLoaded', () => {

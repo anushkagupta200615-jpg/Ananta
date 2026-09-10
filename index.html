@@ -1835,6 +1835,7 @@
             <div class="copilot-hud-title">
               <span class="copilot-hud-dot live"></span>
               <span class="copilot-hud-heading">AI Voice & Camera Copilot</span>
+              <span id="copilot-status-badge" class="ai-status-badge fallback">○ Local Fallback</span>
             </div>
             <div class="copilot-hud-actions">
               <button class="copilot-hud-btn" id="copilot-btn-cam" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleCamera()" title="Toggle Camera">📷</button>
@@ -2613,7 +2614,7 @@ Key Advantage:
         <!-- ================= CONCEPT DOCTOR: ASK & ANIMATE ================= -->
         <div class="concept-doctor-panel">
           <div class="doctor-header-row">
-            <div class="doctor-badge">🩺 AI Quantum Concept Doctor</div>
+            <div class="doctor-badge">🩺 AI Quantum Concept Doctor <span id="concept-status-badge" class="ai-status-badge fallback">○ Local Fallback</span></div>
             <h2>Struggling with a Concept? Type it below and see it animated!</h2>
             <p>Tell us what is confusing you (e.g., "I don't get Quantum Tunneling", "Why can't we clone qubits?", "Wavefunction collapse", "Teleportation"). Our engine translates it into a real-world analogy and runs a live interactive simulation.</p>
           </div>
@@ -2960,7 +2961,7 @@ Key Advantage:
         <!-- Header -->
         <div class="feature-header-bar">
           <div class="feature-header-badge">UNIVERSAL MULTI-FRAMEWORK QUANTUM BRIDGE</div>
-          <h1 class="feature-header-title">Universal Transpiler & AI Circuit Doctor</h1>
+          <h1 class="feature-header-title">Universal Transpiler & AI Circuit Doctor <span id="doctor-status-badge" class="ai-status-badge fallback">○ Local Fallback</span></h1>
           <p class="feature-header-desc">
             Bidirectional translation across <strong>Google Cirq</strong>, <strong>IBM Qiskit</strong>, <strong>Amazon Braket</strong>, <strong>PennyLane</strong>, <strong>OpenQASM 3.0</strong>, and <strong>PyQuil</strong> with real-time gate cancellation, KAK Cartan decomposition, and physical QPU noise diagnostics.
           </p>

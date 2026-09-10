@@ -115,12 +115,12 @@ class ConceptDoctor {
     });
   }
 
-  searchAndExplain(queryText) {
+  async searchAndExplain(queryText) {
     if (!queryText || !queryText.trim()) return;
     const q = queryText.toLowerCase();
 
     // Check knowledge base matching
-    let bestMatch = 'tunneling';
+    let bestMatch = null;
     let maxScore = 0;
 
     Object.values(this.knowledgeBase).forEach(item => {
@@ -136,20 +136,207 @@ class ConceptDoctor {
       }
     });
 
-    // Update pill active state
-    const pills = document.querySelectorAll('.concept-quick-pill');
-    pills.forEach(p => {
-      if (p.getAttribute('data-concept') === bestMatch) {
-        p.classList.add('active');
-      } else {
-        p.classList.remove('active');
+    // Only trust the local keyword match above a real confidence threshold.
+    if (bestMatch && maxScore >= 3) {
+      this.loadConcept(bestMatch);
+      // Update pill active state
+      const pills = document.querySelectorAll('.concept-quick-pill');
+      pills.forEach(p => {
+        if (p.getAttribute('data-concept') === bestMatch) {
+          p.classList.add('active');
+        } else {
+          p.classList.remove('active');
+        }
+      });
+      if (typeof setStatusBadge === 'function') {
+        setStatusBadge('concept-status-badge', false); // "Local Fallback"
       }
-    });
+      return;
+    }
 
-    this.loadConcept(bestMatch);
+    // Otherwise, ask the backend — grounded in this exact knowledge base (Section 4.4)
+    this._showThinkingState(queryText);
+    try {
+      const groundingEntries = Object.values(this.knowledgeBase).map(item => ({
+        id: item.id,
+        title: item.title,
+        analogy: item.analogy
+      }));
+
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: 'concept-doctor',
+          payload: { question: queryText, groundingEntries }
+        })
+      });
+
+      if (!response.ok) throw new Error(`Backend HTTP ${response.status}`);
+      const { result } = await response.json();
+
+      if (typeof setStatusBadge === 'function') {
+        setStatusBadge('concept-status-badge', true); // "Live AI"
+      }
+
+      if (result && result.matched_source && this.knowledgeBase[result.matched_source]) {
+        this.loadConcept(result.matched_source); // reuse existing animation
+        const pills = document.querySelectorAll('.concept-quick-pill');
+        pills.forEach(p => {
+          if (p.getAttribute('data-concept') === result.matched_source) {
+            p.classList.add('active');
+          } else {
+            p.classList.remove('active');
+          }
+        });
+      } else if (result) {
+        this.renderGroundedExplanation(result); // plain text render, no canvas animation
+      } else {
+        throw new Error('Empty result from AI');
+      }
+    } catch (err) {
+      console.warn('[ConceptDoctor] Backend unavailable:', err);
+      if (typeof setStatusBadge === 'function') {
+        setStatusBadge('concept-status-badge', false); // "Local Fallback"
+      }
+      // Honest fallback: say we don't have this one, instead of guessing.
+      this.renderNotCoveredMessage(queryText);
+    }
+  }
+
+  _showThinkingState(queryText) {
+    const titleEl = document.getElementById('doctor-concept-title');
+    const analogyEl = document.getElementById('doctor-concept-analogy');
+    const impactEl = document.getElementById('doctor-concept-impact');
+    const controlsContainer = document.getElementById('doctor-canvas-controls');
+
+    if (titleEl) titleEl.textContent = `🩺 Diagnosing: "${queryText}"...`;
+    if (analogyEl) analogyEl.textContent = 'Synthesizing a grounded pedagogical explanation with Google Gemini 2.5 Flash...';
+    if (impactEl) impactEl.textContent = 'Verifying quantum physics principles against curriculum knowledge base...';
+    if (controlsContainer) {
+      controlsContainer.innerHTML = '<div style="color: #a855f7; font-size: 13px; font-weight: 600; padding: 6px 0;">⚡ Gemini AI Clinical Analysis in progress...</div>';
+    }
+  }
+
+  renderGroundedExplanation(result) {
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+
+    const titleEl = document.getElementById('doctor-concept-title');
+    const analogyEl = document.getElementById('doctor-concept-analogy');
+    const impactEl = document.getElementById('doctor-concept-impact');
+    const controlsContainer = document.getElementById('doctor-canvas-controls');
+
+    if (titleEl) titleEl.textContent = result.title || 'AI Quantum Diagnosis';
+    if (analogyEl) analogyEl.textContent = result.analogy || 'No analogy provided.';
+    if (impactEl) impactEl.textContent = result.explanation || 'No explanation provided.';
+
+    if (controlsContainer) {
+      controlsContainer.innerHTML = `
+        <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #c084fc;">
+          ✨ <strong>Grounded AI Synthesis:</strong> This response was synthesized in real-time by Google Gemini 2.5 Flash, grounded exclusively in certified quantum mechanics principles.
+        </div>
+      `;
+    }
+
+    const canvas = document.getElementById('doctor-animation-canvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+      }
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      const w = rect.width;
+      const h = rect.height;
+      ctx.fillStyle = '#080816';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = 'rgba(168, 85, 247, 0.2)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 30) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += 30) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#a855f7';
+      ctx.shadowBlur = 15;
+      for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin(x * 0.04) * 35 * Math.cos(x * 0.01);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  renderNotCoveredMessage(queryText) {
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+
+    const titleEl = document.getElementById('doctor-concept-title');
+    const analogyEl = document.getElementById('doctor-concept-analogy');
+    const impactEl = document.getElementById('doctor-concept-impact');
+    const controlsContainer = document.getElementById('doctor-canvas-controls');
+
+    if (titleEl) titleEl.textContent = `Concept Not Covered: "${queryText}"`;
+    if (analogyEl) analogyEl.textContent = `Our current interactive simulation engine does not have a dedicated interactive module for "${queryText}".`;
+    if (impactEl) impactEl.textContent = 'Try asking about Quantum Tunneling, Teleportation, No-Cloning Theorem, Wavefunction Collapse, Decoherence, or the Bloch Sphere!';
+
+    if (controlsContainer) {
+      controlsContainer.innerHTML = `
+        <div style="background: rgba(148, 163, 184, 0.1); border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #94a3b8;">
+          ℹ️ <strong>Honest Local Notice:</strong> Rather than guessing or hallucinating physics outside our grounded modules, Concept Doctor lets you know when a concept isn't in our core library.
+        </div>
+      `;
+    }
+
+    const canvas = document.getElementById('doctor-animation-canvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+      }
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      const w = rect.width;
+      const h = rect.height;
+      ctx.fillStyle = '#080816';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '14px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No interactive simulation available for this query', w / 2, h / 2);
+      ctx.restore();
+    }
   }
 
   loadConcept(conceptId) {
+    if (typeof setStatusBadge === 'function') {
+      setStatusBadge('concept-status-badge', false); // "Local Fallback"
+    }
     const data = this.knowledgeBase[conceptId];
     if (!data) return;
 

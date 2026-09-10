@@ -547,23 +547,23 @@ class QuantumVoiceCopilot {
     }
   }
 
-  executeTextCommand() {
+  async executeTextCommand() {
     const input = document.getElementById('copilot-text-input');
     if (!input || !input.value.trim()) return;
     const cmd = input.value.trim();
     input.value = '';
-    this.executeSpokenCommand(cmd);
+    await this.executeSpokenCommand(cmd);
   }
 
-  executeSpokenCommand(transcript) {
+  async executeSpokenCommand(transcript) {
     this._setSubtitle(`Command: "${transcript}"`);
-    this._processTranscript(transcript);
+    await this._processTranscript(transcript);
   }
 
   // -------------------------------------------------------------
   // Universal Generative Quantum Circuit AI Engine
   // -------------------------------------------------------------
-  _processTranscript(rawText) {
+  async _processTranscript(rawText) {
     if (!rawText) return;
     let text = rawText.toLowerCase().trim();
     console.log('[QuantumVoiceCopilot] Ingested raw voice:', text);
@@ -617,7 +617,7 @@ class QuantumVoiceCopilot {
       const actionSummaries = [];
       for (const clause of clauses) {
         if (clause) {
-          const res = this._executeSingleIntent(clause, false);
+          const res = await this._executeSingleIntent(clause, false);
           if (res) actionSummaries.push(res);
         }
       }
@@ -634,10 +634,10 @@ class QuantumVoiceCopilot {
     }
 
     // Single intent execution
-    this._executeSingleIntent(text, true);
+    await this._executeSingleIntent(text, true);
   }
 
-  _executeSingleIntent(rawClause, shouldSpeak = true) {
+  async _executeSingleIntent(rawClause, shouldSpeak = true) {
     const ui = window.circuitUI;
     if (!ui) return null;
 
@@ -923,30 +923,103 @@ class QuantumVoiceCopilot {
       }
     }
 
-    // Enhanced AI Copilot Fallback: If not a circuit command, query Live Google AI Studio (Gemini 2.5 Flash) via backend!
-    if (window.anantaBackend && typeof window.anantaBackend.callAiChat === 'function' && rawClause.length > 5) {
-      this._updateStatus('🤖 ASKING GOOGLE AI STUDIO...', 'speaking');
-      this._setActionFeedback(`Consulting Google AI Studio for: "${rawClause}"...`);
-      window.anantaBackend.callAiChat(rawClause, 'Ananta Quantum Circuit Studio')
-        .then(res => {
-          if (res && res.reply) {
-            this._setActionFeedback(`✨ Gemini 2.5 Flash: ${res.reply}`);
-            if (shouldSpeak) this._speak(res.reply);
-          }
-        })
-        .catch(() => {
-          this._setActionFeedback(`Unrecognized: "${rawClause}". Try: "Add H on 0", "Make GHZ", "CNOT 0 to 1"`, false);
-          this._playChime('warn');
-          if (shouldSpeak) this._speak(`I heard: ${rawClause}. What gate shall I place next? You can say: Add H on 0, or CNOT 0 to 1.`);
-        });
-      return 'AI_QUERY';
-    }
+    // Fallback: ask the backend to interpret this generally instead of
+    // giving up. This is the actual "not hardcoded to Bell state" fix (Section 4.3).
+    return await this._generalizedFallback(rawClause, shouldSpeak);
+  }
 
-    // Default Fallback
-    this._setActionFeedback(`Unrecognized: "${rawClause}". Try: "Add H on 0", "Make GHZ", "CNOT 0 to 1"`, false);
-    this._playChime('warn');
-    if (shouldSpeak) this._speak(`I heard: ${rawClause}. What gate shall I place next? You can say: Add H on 0, or CNOT 0 to 1.`);
-    return null;
+  async _generalizedFallback(rawClause, shouldSpeak = true) {
+    const ui = window.circuitUI;
+    this._setActionFeedback(`  Thinking about "${rawClause}"...`, true);
+    this._setDialogueUser(rawClause);
+    this._setDialogueAI('Synthesizing circuit via Gemini 2.5 Flash...');
+    const currentCircuit = {
+      num_qubits: ui ? ui.numQubits : 2,
+      grid: ui ? ui.grid : [] // existing engine state, sent as context
+    };
+
+    try {
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: 'voice-parse',
+          payload: { transcript: rawClause, currentCircuit }
+        })
+      });
+      if (!response.ok) throw new Error(`Backend HTTP ${response.status}`);
+      const { result: plan } = await response.json();
+
+      if (typeof setStatusBadge === 'function') {
+        setStatusBadge('copilot-status-badge', true); // "Live AI"
+      }
+
+      if (plan.clarification_needed) {
+        this._setActionFeedback(plan.clarification_needed, false);
+        this._setDialogueAI(plan.clarification_needed);
+        if (shouldSpeak) this._speak(plan.clarification_needed);
+        return null;
+      }
+
+      if (plan.reset_existing && ui) ui.clearCircuit();
+      let placed = 0, skipped = [];
+
+      if (plan.operations && Array.isArray(plan.operations)) {
+        for (const op of plan.operations) {
+          const targetQ = (op.targets && op.targets.length > 0) ? op.targets[0] : 0;
+          const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumn(targetQ);
+
+          if (op.gate === 'CNOT' && op.controls && op.controls.length >= 1) {
+            // NOTE: placeGate() supports arbitrary control/target (Section 4.3)
+            const ctrl = op.controls[0];
+            const tgt = targetQ;
+            if (ui) {
+              ui.placeGate('CX', ctrl, col, tgt);
+              placed++;
+            }
+          } else if (['H', 'X', 'Y', 'Z', 'S', 'T', 'M', 'MEASURE'].includes(op.gate)) {
+            const gate = op.gate === 'MEASURE' ? 'M' : op.gate;
+            if (ui) {
+              ui.placeGate(gate, targetQ, col);
+              placed++;
+            }
+          } else {
+            skipped.push(op.gate);
+          }
+        }
+      }
+
+      const summary = `Built ${placed} operation(s) from: "${rawClause}"` +
+        (skipped.length ? ` (engine can't yet place: ${skipped.join(', ')})` : '');
+      this._setActionFeedback(summary, skipped.length === 0);
+      this._setDialogueAI(summary);
+      this._playChime('success');
+      if (shouldSpeak) this._speak(summary);
+      return summary;
+    } catch (err) {
+      console.warn('[QuantumVoiceCopilot] Backend parse failed:', err);
+      if (typeof setStatusBadge === 'function') {
+        setStatusBadge('copilot-status-badge', false); // "Local Fallback"
+      }
+      this._setActionFeedback(
+        `Unrecognized: "${rawClause}". Try: "Add H on 0", "Make GHZ", "CNOT 0 to 1"`,
+        false
+      );
+      this._playChime('warn');
+      return null;
+    }
+  }
+
+  _nextFreeColumn(qubit) {
+    if (typeof this._findNextCol === 'function') {
+      return this._findNextCol(qubit);
+    }
+    const ui = window.circuitUI;
+    if (!ui || !ui.grid || !ui.grid[qubit]) return 0;
+    for (let c = 0; c < (ui.numCols || 16); c++) {
+      if (!ui.grid[qubit][c]) return c;
+    }
+    return 0;
   }
 
   // -------------------------------------------------------------

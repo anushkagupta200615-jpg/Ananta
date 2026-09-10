@@ -285,9 +285,9 @@ class CircuitUI {
     }, this.numCols * 75 + 100);
   }
 
-  placeGate(gateName, qubit, col) {
-    if (gateName === 'CX') {
-      const targetQubit = (qubit + 1) % this.numQubits;
+  placeGate(gateName, qubit, col, explicitTarget = null) {
+    if (gateName === 'CX' || gateName === 'CNOT') {
+      const targetQubit = explicitTarget !== null ? explicitTarget : (qubit + 1) % this.numQubits;
       this.grid[qubit][col] = 'CX_CTRL';
       this.grid[targetQubit][col] = 'CX_TGT';
     } else {
@@ -303,8 +303,8 @@ class CircuitUI {
       slot1.classList.add('gate-shockwave');
       setTimeout(() => slot1.classList.remove('gate-shockwave'), 500);
     }
-    if (gateName === 'CX') {
-      const targetQubit = (qubit + 1) % this.numQubits;
+    if (gateName === 'CX' || gateName === 'CNOT') {
+      const targetQubit = explicitTarget !== null ? explicitTarget : (qubit + 1) % this.numQubits;
       const slot2 = document.getElementById(`slot-${targetQubit}-${col}`);
       if (slot2) {
         slot2.classList.add('gate-shockwave');
