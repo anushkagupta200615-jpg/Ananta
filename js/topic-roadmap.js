@@ -12,7 +12,7 @@ class TopicRoadmapManager {
     this.activeModule = null;
     this.isDockedInSplit = false;
 
-    // Define Master Curriculum Modules (10 Core Modules corresponding to #docs)
+    // Define Master Curriculum Modules (18 Core Modules with Landmark Research Citations)
     this.modules = [
       {
         id: 'module-01',
@@ -23,6 +23,7 @@ class TopicRoadmapManager {
         level: 'Beginner',
         timeEst: '15 mins',
         summary: 'Understand complex probability amplitudes, the Born rule, and continuous statevectors in 2^n dimensional Hilbert space.',
+        researchPaper: 'Dirac, Principles of Quantum Mechanics (1930) / Born, Z. Phys. (1926)',
         circuitPreset: null,
         mathFormula: '|ψ⟩ = α|0⟩ + β|1⟩,   where |α|² + |β|² = 1',
         intuition: 'A qubit is not a classical bit with uncertainty. It is a unit vector on the complex sphere where amplitudes can constructively or destructively interfere.'
@@ -36,6 +37,7 @@ class TopicRoadmapManager {
         level: 'Beginner',
         timeEst: '20 mins',
         summary: 'Learn single-qubit rotations (H, X, Y, Z, S, T) and multi-qubit Kronecker expansions that preserve quantum norm.',
+        researchPaper: 'Nielsen & Chuang, Quantum Computation & Quantum Information (2010)',
         circuitPreset: 'superposition',
         mathFormula: 'U · U† = I,   |+⟩ = H|0⟩ = (|0⟩ + |1⟩)/√2',
         intuition: 'Every quantum gate is a reversible rotation in Hilbert space. Applying H puts the qubit into equal superposition.',
@@ -50,6 +52,7 @@ class TopicRoadmapManager {
         level: 'Intermediate',
         timeEst: '25 mins',
         summary: 'Explore pure vs mixed quantum states, partial trace over entangled subsystems, and von Neumann entropy.',
+        researchPaper: 'von Neumann, Mathematische Grundlagen der Quantenmechanik (1932)',
         circuitPreset: null,
         mathFormula: 'ρ = ∑ p_i |ψ_i⟩⟨ψ_i|,   Tr(ρ) = 1,   Tr(ρ²) ≤ 1',
         intuition: 'When a qubit is entangled or decohered, it can no longer be described by a statevector alone. The density matrix tracks classical mixture and quantum coherences.'
@@ -63,6 +66,7 @@ class TopicRoadmapManager {
         level: 'Intermediate',
         timeEst: '20 mins',
         summary: 'Calculate expectation values ⟨Z⟩, ⟨X⟩, ⟨Y⟩ from physical projective measurements and density matrices.',
+        researchPaper: 'Pauli, Z. Phys. 43, 601 (1927)',
         circuitPreset: 'superposition',
         mathFormula: '⟨O⟩ = ⟨ψ|O|ψ⟩ = Tr(ρ O),   ⟨Z⟩ = P(0) - P(1)',
         intuition: 'Pauli observables quantify the projection of the quantum state along the Bloch sphere coordinate axes.',
@@ -77,6 +81,7 @@ class TopicRoadmapManager {
         level: 'Advanced',
         timeEst: '30 mins',
         summary: 'Model energy relaxation (T1) and transverse dephasing (T2) in physical superconducting transmon qubits.',
+        researchPaper: 'G. Lindblad, Commun. Math. Phys. 48, 119 (1976)',
         circuitPreset: null,
         mathFormula: 'dρ/dt = -i[H, ρ] + ∑ (L_k ρ L_k† - ½ {L_k† L_k, ρ})',
         intuition: 'Quantum systems are not isolated. Coupling to thermal electromagnetic environments causes phase information to leak out exponentially.'
@@ -90,6 +95,7 @@ class TopicRoadmapManager {
         level: 'Intermediate',
         timeEst: '25 mins',
         summary: 'Master syntax translation between Python SDKs (Cirq, Qiskit, Braket) and standard hardware assembly languages.',
+        researchPaper: 'Cross et al., OpenQASM 3.0 Spec, ACM TOCS (2022)',
         circuitPreset: 'bell',
         mathFormula: 'OPENQASM 3.0; qubit[2] q; h q[0]; cx q[0], q[1];',
         intuition: 'Transpilers map mathematical unitary matrices into hardware-native pulse sequences and gate topologies.',
@@ -104,6 +110,7 @@ class TopicRoadmapManager {
         level: 'Intermediate',
         timeEst: '25 mins',
         summary: 'Construct the four maximally entangled Einstein-Podolsky-Rosen (EPR) Bell states and measure entanglement entropy.',
+        researchPaper: 'Einstein, Podolsky, Rosen (1935) / J. S. Bell, Physics 1 (1964)',
         circuitPreset: 'bell',
         mathFormula: '|Φ⁺⟩ = (|00⟩ + |11⟩)/√2,   S(ρ_A) = 1.000 ebit',
         intuition: 'Entangled qubits exhibit correlations that cannot be explained by any local classical variables, violating Bell inequalities.',
@@ -118,6 +125,7 @@ class TopicRoadmapManager {
         level: 'Advanced',
         timeEst: '30 mins',
         summary: 'Transmit an unknown quantum state using a pre-shared Bell pair, Bell-state measurement, and 2 classical bits.',
+        researchPaper: 'Bennett, Brassard, Crépeau, Jozsa, Peres, Wootters, PRL 70 (1993)',
         circuitPreset: 'teleport',
         mathFormula: '|ψ⟩ ⊗ |Φ⁺⟩ → Bell Measurement → Pauli Correction (X^b Z^a)',
         intuition: 'Information is transferred without moving physical matter, respecting the No-Cloning theorem because the source state is destroyed.',
@@ -132,6 +140,7 @@ class TopicRoadmapManager {
         level: 'Advanced',
         timeEst: '35 mins',
         summary: 'Achieve quadratic speedup O(√N) for unstructured database search using phase oracles and diffusion inversion.',
+        researchPaper: 'L. K. Grover, STOC \'96 (1996) / Phys. Rev. Lett. 79 (1997)',
         circuitPreset: 'grover',
         mathFormula: 'G = (2|ψ⟩⟨ψ| - I) · O_f,   Iterations ≈ (π/4)√N',
         intuition: 'By inverting target states around the average mean amplitude, the probability of measuring the correct answer surges toward 100%.',
@@ -146,10 +155,131 @@ class TopicRoadmapManager {
         level: 'Advanced',
         timeEst: '35 mins',
         summary: 'Hybrid quantum-classical optimization to calculate molecular ground state energies and chemical binding curves.',
+        researchPaper: 'Peruzzo, McClean, Shadbolt, O\'Brien et al., Nature Comm. 5 (2014)',
         circuitPreset: 'vqe',
         mathFormula: 'E(θ) = ⟨ψ(θ)|H_molecule|ψ(θ)⟩ ≥ E_ground',
         intuition: 'The quantum processor computes state energy efficiently while a classical optimizer tunes gate parameters iteratively.',
         exerciseGoal: 'Inspect the VQE ansatz circuit for Hydrogen H2 and run the variational energy evaluation.'
+      },
+      {
+        id: 'module-11',
+        docId: 'doc-sec-qft',
+        number: 'Module 11',
+        title: 'Quantum Fourier Transform & Phase Estimation (QPE)',
+        category: 'Quantum Algorithms',
+        level: 'Advanced',
+        timeEst: '35 mins',
+        summary: 'Extract eigenvalues of unitary operators with exponential speedup over classical FFT, forming the computational core of Shor’s factoring and quantum simulation.',
+        researchPaper: 'P. Shor, FOCS (1994) / A. Kitaev, arXiv:quant-ph/9511026 (1995)',
+        circuitPreset: 'grover',
+        mathFormula: '|j⟩ ↦ (1/√N) ∑ ω^{j k} |k⟩,   where ω = e^{2πi / N}',
+        intuition: 'QFT transforms state basis from computational amplitude space to phase frequency space through controlled phase rotations and Hadamards.',
+        exerciseGoal: 'Trace phase kickback interference on the ancillary register to resolve operator eigenvalues with binary precision.'
+      },
+      {
+        id: 'module-12',
+        docId: 'doc-sec-surface-code',
+        number: 'Module 12',
+        title: 'Fault-Tolerant Surface Codes & Quantum Error Correction',
+        category: 'FTQC Hardware',
+        level: 'Advanced',
+        timeEst: '40 mins',
+        summary: 'Protect quantum memory using topological 2D lattice stabilizer codes (X and Z syndrome checks) with threshold error rates near 1%.',
+        researchPaper: 'A. Fowler et al., Phys. Rev. A 86 (2012) / Google Quantum AI, Nature 614 (2023)',
+        circuitPreset: null,
+        mathFormula: 'S = ⟨g_1, g_2, ..., g_{n-k}⟩,   g_i |ψ_L⟩ = +1 |ψ_L⟩,   d = 2t + 1',
+        intuition: 'Physical qubits inevitably suffer decoherence. By entangling data qubits with ancilla syndrome checkers in a checkerboard lattice, errors can be detected and corrected without measuring the underlying superposition.',
+        exerciseGoal: 'Analyze minimum-weight perfect matching (MWPM) syndrome graphs and verify logical error suppression below physical fault thresholds.'
+      },
+      {
+        id: 'module-13',
+        docId: 'doc-sec-qaoa',
+        number: 'Module 13',
+        title: 'Quantum Approximate Optimization Algorithm (QAOA)',
+        category: 'NISQ Optimization',
+        level: 'Advanced',
+        timeEst: '30 mins',
+        summary: 'Solve NP-hard combinatorial graph problems (Max-Cut, TSP, Portfolio Optimization) by alternating problem cost and transverse driver Hamiltonians.',
+        researchPaper: 'E. Farhi, J. Goldstone, S. Gutmann, arXiv:1411.4028 (2014)',
+        circuitPreset: 'vqe',
+        mathFormula: '|γ, β⟩ = ∏ e^{-i β_p H_M} e^{-i γ_p H_C} |+⟩^{\\otimes n}',
+        intuition: 'QAOA is the discrete Trotterized analog of adiabatic quantum computing, steering states along an energy landscape toward the ground-state solution.',
+        exerciseGoal: 'Synthesize parameterized cost unitaries for a 4-node Max-Cut graph and optimize variational angle parameters (γ, β).'
+      },
+      {
+        id: 'module-14',
+        docId: 'doc-sec-qml',
+        number: 'Module 14',
+        title: 'Quantum Machine Learning & Quantum Kernel Estimation',
+        category: 'Quantum AI',
+        level: 'Advanced',
+        timeEst: '35 mins',
+        summary: 'Map classical datasets non-linearly into high-dimensional Hilbert feature spaces to evaluate quantum kernels and train variational quantum classifiers (VQC).',
+        researchPaper: 'V. Havlíček et al., Nature 567 (2019) / M. Schuld & N. Killoran, PRL 122 (2019)',
+        circuitPreset: 'bell',
+        mathFormula: 'K(x, x\') = |⟨Φ(x)|Φ(x\')⟩|² = |⟨0| U_Φ†(x\') U_Φ(x) |0⟩|²',
+        intuition: 'Classical SVMs struggle with complex feature spaces. Quantum processors can compute inner products in exponentially large spaces where classical computation is intractable.',
+        exerciseGoal: 'Encode a 2D dataset with ZZ-feature maps and observe separation boundaries in quantum kernel space.'
+      },
+      {
+        id: 'module-15',
+        docId: 'doc-sec-pulse-control',
+        number: 'Module 15',
+        title: 'Microwave Pulse Control & Hamiltonian Drive (DRAG)',
+        category: 'Control Physics',
+        level: 'Advanced',
+        timeEst: '35 mins',
+        summary: 'Synthesize sub-nanosecond Gaussian and DRAG microwave envelope pulses to eliminate leakage into transmon higher excited states (|2⟩).',
+        researchPaper: 'F. Motzoi et al., Phys. Rev. Lett. 103, 110501 (2009)',
+        circuitPreset: null,
+        mathFormula: 'Ω(t) = Ω_x(t) cos(ω_d t) - (Ω̇_x(t) / Δ) sin(ω_d t)',
+        intuition: 'A transmon is a weakly anharmonic oscillator. Fast pulses have spectral width that can accidentally excite the qubit out of computational subspace unless derivative correction (DRAG) cancels out-of-phase leakage.',
+        exerciseGoal: 'Tune DRAG derivative scaling factor to suppress non-computational leakage below 10^-4.'
+      },
+      {
+        id: 'module-16',
+        docId: 'doc-sec-pqc',
+        number: 'Module 16',
+        title: 'Post-Quantum Cryptography & Shor Threat Analysis',
+        category: 'Security & PQC',
+        level: 'Advanced',
+        timeEst: '30 mins',
+        summary: 'Quantify cryptographic risk timelines (Y2K8 / Y2Q) for RSA-2048 and ECC, and evaluate NIST lattice-based standards (ML-KEM, ML-DSA).',
+        researchPaper: 'NIST FIPS 203 / 204 Standards (2024) / C. Gidney & M. Ekerå, Quantum 5 (2021)',
+        circuitPreset: null,
+        mathFormula: 'N = p · q,   Shor Logical Qubits ≈ 2n + 2,   LWE Hardness: A s + e = b (mod q)',
+        intuition: 'While classical RSA and ECC are completely broken in polynomial time by Shor’s period finding, Learning With Errors (LWE) high-dimensional lattice vectors have no known quantum speedup.',
+        exerciseGoal: 'Calculate physical error-corrected qubit overheads required to break RSA-2048 at physical error rate 10^-3.'
+      },
+      {
+        id: 'module-17',
+        docId: 'doc-sec-cryo-hardware',
+        number: 'Module 17',
+        title: 'Cryogenic Hardware & Superconducting Qubit Physics',
+        category: 'Cryo Engineering',
+        level: 'Advanced',
+        timeEst: '30 mins',
+        summary: 'Explore dilution refrigerator thermodynamics (3He/4He phase separation), thermal quasiparticle poisoning, and transmon Josephson energy ratios (Ej/Ec >> 1).',
+        researchPaper: 'J. Koch et al., Phys. Rev. A 76, 042319 (2007) Transmon Physics',
+        circuitPreset: null,
+        mathFormula: 'H = 4 E_C (n - n_g)² - E_J cos(φ),   E_J / E_C ≈ 50-80,   T_base ≈ 15 mK',
+        intuition: 'Thermal fluctuations at room temperature (~300 K / 26 meV) would immediately destroy fragile micro-eV quantum superpositions. Dilution refrigerators cool transmons down to 15 millikelvin to freeze out blackbody radiation.',
+        exerciseGoal: 'Balance dilution cooling power against coaxial RF line attenuation at the 4K and 100mK stages.'
+      },
+      {
+        id: 'module-18',
+        docId: 'doc-sec-quantum-internet',
+        number: 'Module 18',
+        title: 'Quantum Internet, Repeaters & Entanglement Swapping',
+        category: 'Quantum Networks',
+        level: 'Advanced',
+        timeEst: '35 mins',
+        summary: 'Distribute entanglement across planetary distances without physical qubit transit using quantum memory repeaters and Bell state measurements.',
+        researchPaper: 'H. J. Kimble, Nature 453, 1023–1030 (2008) "The Quantum Internet"',
+        circuitPreset: 'teleport',
+        mathFormula: '|Φ⁺⟩₁₂ ⊗ |Φ⁺⟩₃₄  --[BSM₂₃]-->  |Φ⁺⟩₁₄   (Entanglement Swapped across distance)',
+        intuition: 'Optical fiber attenuation absorbs photons over long distances. Since quantum states cannot be classically amplified (No-Cloning theorem), quantum repeaters use entanglement swapping at intermediate nodes to link distant stations.',
+        exerciseGoal: 'Trace Bell state projection on intermediate nodes to verify non-local entanglement established between end nodes 1 and 4.'
       }
     ];
 
@@ -157,42 +287,49 @@ class TopicRoadmapManager {
     this.topicPatterns = [
       {
         topicId: 'beginner-track',
-        displayName: 'Beginner Feature Roadmap: Foundations & Quantum Gates',
-        description: 'Guided foundational pathway covering Hilbert space geometry, single-qubit rotations, Pauli observables, and compiling your first circuits.',
+        displayName: 'Beginner Foundations: Hilbert Space, Gates & Entanglement',
+        description: 'Structured zero-to-hero onboarding designed for learners starting with 0 prior knowledge: master statevectors, rotations, measurement, and Bell pairs.',
         keywords: [
           'beginner', 'beginner roadmap', 'beginner track', 'foundations', 'start', 'intro', 'introduction',
-          'beginner to advanced', 'basics', 'zero knowledge', 'getting started', 'learn quantum'
+          'beginner to advanced', 'basics', 'zero knowledge', 'getting started', 'learn quantum', 'i am already a beginner',
+          'i am beginner', 'for beginner', 'starter', 'starting from scratch'
         ],
-        moduleIds: ['module-01', 'module-02', 'module-04', 'module-06']
+        moduleIds: ['module-01', 'module-02', 'module-04', 'module-06', 'module-07']
       },
       {
         topicId: 'intermediate-track',
-        displayName: 'Intermediate Feature Roadmap: Circuit Engineering & Entanglement',
-        description: 'Accelerated track for learners with linear algebra/coding basics: covers Pauli observables, OpenQASM coding, Bell pairs, and teleportation.',
+        displayName: 'Intermediate Pathway: Circuit Engineering, Teleportation & Grover',
+        description: 'Accelerated track for learners with math/coding basics: bypasses definitions and dives straight into Pauli algebra, Cirq, Bell states, teleportation, and Grover search.',
         keywords: [
-          'intermediate', 'intermediate track', 'know basics', 'moderate', 'some knowledge', 'intermediate roadmap'
+          'intermediate', 'intermediate track', 'know basics', 'moderate', 'some knowledge', 'intermediate roadmap',
+          'i know basics', 'already know basics', 'developer', 'quantum programmer'
         ],
-        moduleIds: ['module-02', 'module-04', 'module-06', 'module-07', 'module-08']
+        moduleIds: ['module-02', 'module-04', 'module-06', 'module-07', 'module-08', 'module-09']
       },
       {
         topicId: 'advanced-track',
-        displayName: 'Advanced Feature Roadmap: Entanglement, NISQ & VQE Chemistry',
-        description: 'Advanced graduate-level pathway covering density matrices, Lindblad noise, Bell entanglement, Grover search, and VQE molecular chemistry.',
+        displayName: 'Advanced Quantum Mastery: FTQC, Surface Codes, VQE & Algorithms',
+        description: 'Advanced graduate-level pathway covering density matrices, Lindblad noise, Grover search, VQE chemistry, QFT phase estimation, and fault-tolerant surface codes.',
         keywords: [
           'advanced', 'advanced roadmap', 'advanced track', 'nisq', 'vqe chemistry', 'master equation',
-          'entanglement', 'teleportation', 'grover', 'expert', 'graduate', 'ftqc'
+          'entanglement', 'teleportation', 'grover', 'expert', 'graduate', 'ftqc', 'learn from advanced',
+          'i wanna learn from advanced', 'wanna learn from advanced', 'from advanced'
         ],
-        moduleIds: ['module-03', 'module-05', 'module-07', 'module-08', 'module-09', 'module-10']
+        moduleIds: ['module-03', 'module-05', 'module-07', 'module-08', 'module-09', 'module-10', 'module-11', 'module-12', 'module-13', 'module-14']
       },
       {
         topicId: 'full-curriculum',
-        displayName: 'Full Master Learning Roadmap: 10-Module Quantum Mastery',
-        description: 'Complete end-to-end curriculum from Hilbert space foundations to VQE molecular algorithms and fault-tolerant quantum computing.',
+        displayName: 'Full Master Learning Roadmap: Complete 18-Module Quantum Mastery',
+        description: 'Comprehensive end-to-end curriculum from Hilbert space foundations to VQE molecular algorithms, surface code error correction, QML, and quantum internet repeaters.',
         keywords: [
-          'full', 'complete', 'all modules', 'master', 'everything', 'entire', '10 modules', 'full roadmap',
-          'full curriculum', 'full learning roadmap', 'complete roadmap', 'all topics'
+          'full', 'complete', 'all modules', 'master', 'everything', 'entire', '18 modules', '10 modules', 'full roadmap',
+          'full curriculum', 'full learning roadmap', 'complete roadmap', 'all topics', 'all'
         ],
-        moduleIds: ['module-01', 'module-02', 'module-03', 'module-04', 'module-05', 'module-06', 'module-07', 'module-08', 'module-09', 'module-10']
+        moduleIds: [
+          'module-01', 'module-02', 'module-03', 'module-04', 'module-05', 'module-06',
+          'module-07', 'module-08', 'module-09', 'module-10', 'module-11', 'module-12',
+          'module-13', 'module-14', 'module-15', 'module-16', 'module-17', 'module-18'
+        ]
       },
       {
         topicId: 'circuits-basics',
@@ -212,17 +349,17 @@ class TopicRoadmapManager {
           'entangle', 'entanglement', 'bell', 'bell state', 'bell states', 'bell pair', 'epr',
           'spooky', 'superdense', 'correlated', 'chsh'
         ],
-        moduleIds: ['module-01', 'module-02', 'module-07']
+        moduleIds: ['module-01', 'module-02', 'module-07', 'module-18']
       },
       {
         topicId: 'teleportation',
-        displayName: 'Quantum Teleportation & Protocols',
-        description: 'Understand how quantum information is transmitted across distant nodes using shared entanglement.',
+        displayName: 'Quantum Teleportation & Quantum Networks',
+        description: 'Understand how quantum information is transmitted across distant nodes using shared entanglement and repeaters.',
         keywords: [
           'teleport', 'teleportation', 'quantum teleportation', 'transfer state', 'quantum network',
-          'quantum internet', 'channel'
+          'quantum internet', 'channel', 'repeater', 'swapping'
         ],
-        moduleIds: ['module-01', 'module-02', 'module-07', 'module-08']
+        moduleIds: ['module-01', 'module-02', 'module-07', 'module-08', 'module-18']
       },
       {
         topicId: 'grover-search',
@@ -232,7 +369,7 @@ class TopicRoadmapManager {
           'grover', 'grover search', 'search algorithm', 'amplitude amplification', 'oracle',
           'diffusion', 'unstructured search', 'database search'
         ],
-        moduleIds: ['module-01', 'module-02', 'module-09']
+        moduleIds: ['module-01', 'module-02', 'module-07', 'module-09']
       },
       {
         topicId: 'vqe-chemistry',
@@ -242,37 +379,56 @@ class TopicRoadmapManager {
           'vqe', 'chemistry', 'molecule', 'molecular', 'variational', 'eigensolver',
           'hydrogen', 'ground state', 'hamiltonian', 'parameter shift', 'nisq'
         ],
-        moduleIds: ['module-01', 'module-04', 'module-10']
+        moduleIds: ['module-01', 'module-02', 'module-04', 'module-10']
       },
       {
-        topicId: 'noise-decoherence',
-        displayName: 'Decoherence, Noise & Mixed States',
-        description: 'Study open quantum systems, T1 relaxation, T2 dephasing, and density matrix formalism.',
-        keywords: [
-          'noise', 'decoherence', 'lindblad', 'density matrix', 'mixed state', 't1', 't2',
-          'dephasing', 'relaxation', 'open system', 'purity', 'fidelity'
-        ],
-        moduleIds: ['module-01', 'module-03', 'module-05']
+        topicId: 'qft-phase',
+        displayName: 'QFT & Quantum Phase Estimation',
+        description: 'Master exponential Fourier speedup, modular exponentiation, and the mathematical engine behind Shor’s algorithm.',
+        keywords: ['qft', 'fourier', 'phase estimation', 'qpe', 'shor', 'period finding', 'eigenvalue'],
+        moduleIds: ['module-01', 'module-02', 'module-06', 'module-11']
       },
       {
-        topicId: 'programming-transpilation',
-        displayName: 'Quantum Programming with Cirq & OpenQASM',
-        description: 'Hands-on cross-framework development compiling quantum circuits into OpenQASM and Google Cirq.',
-        keywords: [
-          'programming', 'python', 'cirq', 'qasm', 'openqasm', 'qiskit', 'code',
-          'transpile', 'compiler', 'ast', 'software'
-        ],
-        moduleIds: ['module-01', 'module-02', 'module-06']
+        topicId: 'error-correction',
+        displayName: 'Surface Codes & Fault-Tolerant Quantum Computing',
+        description: 'Study 2D topological stabilizer codes, syndrome extraction, and fault-tolerant logical qubit operations.',
+        keywords: ['error correction', 'surface code', 'ftqc', 'fault tolerant', 'stabilizer', 'syndrome', 'logical qubit', 'decoder', 'mwpm'],
+        moduleIds: ['module-02', 'module-05', 'module-07', 'module-12']
       },
       {
-        topicId: 'algorithms-advantage',
-        displayName: 'Quantum Algorithm Speedups & Complexity',
-        description: 'Understand how quantum parallelism, phase kickback, and interference enable asymptotic speedups.',
-        keywords: [
-          'algorithm', 'algorithms', 'speedup', 'advantage', 'complexity', 'polynomial',
-          'exponential', 'parallelism', 'quantum computing'
-        ],
-        moduleIds: ['module-01', 'module-02', 'module-07', 'module-09', 'module-10']
+        topicId: 'qaoa-optimization',
+        displayName: 'QAOA & Combinatorial Optimization',
+        description: 'Solve NP-hard combinatorial graph problems with alternating problem cost and driver Hamiltonians.',
+        keywords: ['qaoa', 'optimization', 'maxcut', 'combinatorial', 'graph', 'tsp', 'portfolio'],
+        moduleIds: ['module-01', 'module-02', 'module-10', 'module-13']
+      },
+      {
+        topicId: 'qml-machine-learning',
+        displayName: 'Quantum Machine Learning & Feature Maps',
+        description: 'Evaluate quantum kernels in exponentially large Hilbert spaces and train variational classifiers.',
+        keywords: ['qml', 'machine learning', 'kernel', 'quantum kernel', 'vqc', 'classifier', 'svm', 'feature map', 'quantum ai'],
+        moduleIds: ['module-01', 'module-02', 'module-07', 'module-14']
+      },
+      {
+        topicId: 'pulse-control',
+        displayName: 'Microwave Pulse Control & DRAG Optimization',
+        description: 'Model continuous Hamiltonian drives, calibrate sub-nanosecond Gaussian envelopes, and cancel phase leakage.',
+        keywords: ['pulse', 'microwave', 'drag', 'control', 'envelope', 'anharmonicity', 'grape', 'optimal control'],
+        moduleIds: ['module-02', 'module-05', 'module-15']
+      },
+      {
+        topicId: 'pqc-security',
+        displayName: 'Post-Quantum Cryptography & Threat Modeling',
+        description: 'Quantify RSA/ECC vulnerability timelines, evaluate lattice hardness, and prepare for NIST standards.',
+        keywords: ['pqc', 'post quantum', 'cryptography', 'security', 'lattice', 'ml-kem', 'ml-dsa', 'kyber', 'dilithium', 'rsa', 'threat'],
+        moduleIds: ['module-09', 'module-11', 'module-16']
+      },
+      {
+        topicId: 'cryo-hardware',
+        displayName: 'Cryogenic Hardware & Superconducting Qubits',
+        description: 'Thermodynamics of dilution refrigerators, transmon Josephson junctions, and millikelvin RF lines.',
+        keywords: ['cryo', 'dilution refrigerator', 'hardware', 'transmon', 'superconducting', 'josephson', 'milli-kelvin', 'kelvin', 'cooling'],
+        moduleIds: ['module-05', 'module-15', 'module-17']
       }
     ];
 
@@ -356,10 +512,14 @@ class TopicRoadmapManager {
             </button>
           </div>
 
-          <!-- Voice status label (hidden until mic is active) -->
+          <!-- Voice status label with finish and cancel actions -->
           <div class="rmp-voice-status" id="rmp-voice-status" style="display:none;">
             <span class="rmp-voice-dot"></span>
-            <span id="rmp-voice-label">Listening... say a topic</span>
+            <span id="rmp-voice-label">Listening... speak your topic or background</span>
+            <div class="rmp-voice-actions">
+              <button class="btn-voice-finish" type="button" onclick="window.topicRoadmapManager._finishVoiceAndGenerate()">⚡ Generate Now</button>
+              <button class="btn-voice-cancel" type="button" onclick="window.topicRoadmapManager._stopRoadmapVoiceSearch()">✕</button>
+            </div>
           </div>
         </div>
 
@@ -409,15 +569,14 @@ class TopicRoadmapManager {
             <div class="rmp-card-glow rmp-glow-custom"></div>
             <div class="rmp-card-icon">🎯</div>
             <div class="rmp-card-content">
-              <span class="rmp-card-badge rmp-badge-custom">ADAPTIVE AI</span>
+              <span class="rmp-card-badge rmp-badge-custom">GOOGLE AI STUDIO</span>
               <h3 class="rmp-card-title">Custom Roadmap</h3>
               <p class="rmp-card-desc">
-                Type or speak any quantum topic — entanglement, noise, QFT,
-                algorithms — and get a personalized prerequisite diagram.
+                Type or speak any background (e.g. "I am already a beginner", "I wanna learn from advanced", "QML & FTQC") — synthesized dynamically via Gemini 2.5.
               </p>
               <div class="rmp-card-meta">
-                <span class="rmp-meta-modules">AI-Generated</span>
-                <span class="rmp-meta-time">Any topic</span>
+                <span class="rmp-meta-modules">AI-Synthesized</span>
+                <span class="rmp-meta-time">Any background</span>
               </div>
             </div>
             <div class="rmp-card-arrow">→</div>
@@ -431,14 +590,14 @@ class TopicRoadmapManager {
           <div class="rmp-strip-details">
             <div class="rmp-strip-title-row">
               <span class="rmp-strip-title">Full Master Learning Roadmap</span>
-              <span class="rmp-strip-badge">ALL 10 MODULES · ZERO TO FTQC</span>
+              <span class="rmp-strip-badge">ALL 18 MODULES · ZERO TO FTQC & HARDWARE</span>
             </div>
             <p class="rmp-strip-desc">
-              Hilbert space geometry, unitaries, density matrices, Pauli observables, Lindblad noise, OpenQASM, Bell entanglement, teleportation, Grover search & VQE chemistry.
+              Hilbert space geometry, unitaries, density matrices, Pauli observables, Lindblad noise, OpenQASM, Bell entanglement, teleportation, Grover search, VQE chemistry, QFT phase estimation, Surface Codes, QAOA, QML, DRAG pulse control, Post-Quantum Cryptography, Cryogenics & Quantum Internet.
             </p>
           </div>
           <div class="rmp-strip-action">
-            <span class="rmp-strip-cta">Explore All 10 Modules</span>
+            <span class="rmp-strip-cta">Explore All 18 Modules</span>
             <span class="rmp-strip-arrow">→</span>
           </div>
         </div>
@@ -457,14 +616,14 @@ class TopicRoadmapManager {
                 type="text"
                 id="topic-user-query"
                 class="topic-search-field"
-                placeholder="e.g. I know basics, quantum entanglement, VQE chemistry, Grover search..."
+                placeholder="e.g. I am already a beginner, I wanna learn from advanced, VQE chemistry, Surface codes..."
                 autocomplete="off"
                 spellcheck="false"
               />
               <button class="rmp-search-mic" id="rmp-inline-mic"
                 type="button"
-                onclick="event.stopPropagation(); window.topicRoadmapManager._startRoadmapVoiceSearch()"
-                title="Speak a topic">
+                onclick="event.stopPropagation(); window.topicRoadmapManager._startRoadmapVoiceSearch('inline')"
+                title="Speak a topic or background">
                 🎙️
               </button>
               <button type="submit" class="btn-topic-generate" id="btn-generate-roadmap">
@@ -477,13 +636,14 @@ class TopicRoadmapManager {
           <!-- Quick topic chips -->
           <div class="topic-suggested-row">
             <span class="suggested-label">Quick topics:</span>
-            <button class="topic-chip topic-chip-highlight" onclick="window.topicRoadmapManager.loadTopicById('full-curriculum')">🌟 All 10 Modules</button>
-            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('quantum circuits for beginners')">Circuits</button>
-            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('entanglement and Bell states')">Entanglement</button>
-            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('quantum teleportation protocol')">Teleportation</button>
-            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('Grover search algorithm')">Grover Search</button>
+            <button class="topic-chip topic-chip-highlight" onclick="window.topicRoadmapManager.loadTopicById('full-curriculum')">🌟 All 18 Modules</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('I am already a beginner, give a roadmap according to it')">🌱 Beginner Track</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('I wanna learn from advanced quantum computing')">🚀 Advanced Track</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('Surface codes and fault-tolerant quantum computing')">Surface Codes</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('Quantum machine learning and kernel feature maps')">QML</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('Post-quantum cryptography and Shor threat analysis')">PQC Security</button>
+            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('Cryogenic hardware and superconducting transmons')">Hardware</button>
             <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('VQE molecular chemistry')">VQE Chemistry</button>
-            <button class="topic-chip" onclick="window.topicRoadmapManager.setQueryAndSearch('decoherence and noise channels')">Decoherence</button>
           </div>
         </div>
 
@@ -514,153 +674,369 @@ class TopicRoadmapManager {
   }
 
   // -------------------------------------------------------------------
-  // Inline Voice Search (Roadmap Page Mic Button)
+  // Continuous Voice Search (Mic Button on Landing & Results)
   // -------------------------------------------------------------------
 
-  _startRoadmapVoiceSearch() {
+  _startRoadmapVoiceSearch(source = 'hero') {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser. Please type your topic instead.');
+      alert('Speech recognition is not supported in this browser. Please type your topic or question instead.');
       return;
     }
 
-    // If already listening, stop
+    // Toggle off if already listening
     if (this._roadmapRecognition) {
       this._stopRoadmapVoiceSearch();
       return;
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;  // single utterance
+    recognition.continuous = true;  // Keep listening continuously so user isn't prematurely cut off
     recognition.interimResults = true;
     recognition.lang = navigator.language || 'en-US';
     this._roadmapRecognition = recognition;
+    this._accumulatedTranscript = '';
+    this._voiceSilenceTimer = null;
+    this._isVoiceActive = true;
 
-    // UI: activate mic button + show status
-    const micBtn = document.getElementById('rmp-mic-btn');
-    const inlineMic = document.getElementById('rmp-inline-mic');
-    const statusBar = document.getElementById('rmp-voice-status');
-    const statusLabel = document.getElementById('rmp-voice-label');
-    const inputEl = document.getElementById('topic-user-query');
-
-    if (micBtn) micBtn.classList.add('rmp-mic-active');
-    if (inlineMic) inlineMic.classList.add('rmp-mic-active');
-    if (statusBar) statusBar.style.display = 'flex';
-    if (statusLabel) statusLabel.textContent = 'Listening... say a topic';
-
-    let debounceTimer = null;
+    this._setVoiceUIActive(true);
+    this._updateVoiceStatusLabel('Listening... speak your topic, question, or background');
 
     recognition.onresult = (event) => {
-      let transcript = '';
-      let hasFinal = false;
+      let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-        if (event.results[i].isFinal) hasFinal = true;
+        const res = event.results[i];
+        if (res.isFinal) {
+          this._accumulatedTranscript = (this._accumulatedTranscript + ' ' + res[0].transcript).trim();
+        } else {
+          interim += res[0].transcript;
+        }
       }
-      const trimmed = transcript.trim();
-      if (!trimmed) return;
 
-      // Show what was heard in the input field + status
-      if (inputEl) inputEl.value = trimmed;
-      if (statusLabel) statusLabel.textContent = `Heard: "${trimmed}"`;
+      const fullText = (this._accumulatedTranscript + ' ' + interim).trim();
+      if (!fullText) return;
 
-      if (hasFinal) {
-        clearTimeout(debounceTimer);
-        this._stopRoadmapVoiceSearch();
-        // Generate roadmap from what was heard
-        setTimeout(() => this.voiceActivatedRoadmap(trimmed), 200);
-      } else {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
+      // Update both landing and results inputs live
+      const heroInput = document.getElementById('topic-user-query');
+      const resultsInput = document.getElementById('rmp-results-query-input');
+      if (heroInput) heroInput.value = fullText;
+      if (resultsInput) resultsInput.value = fullText;
+
+      this._updateVoiceStatusLabel(`Heard: "${fullText}" (Click "Generate Now" or pause 3s)`);
+
+      // Reset generous silence debounce timer (3200ms of true silence before committing)
+      if (this._voiceSilenceTimer) clearTimeout(this._voiceSilenceTimer);
+      this._voiceSilenceTimer = setTimeout(() => {
+        const textToSubmit = (this._accumulatedTranscript + ' ' + interim).trim();
+        if (textToSubmit) {
           this._stopRoadmapVoiceSearch();
-          setTimeout(() => this.voiceActivatedRoadmap(trimmed), 200);
-        }, 1200);
-      }
+          this.generateRoadmap(textToSubmit);
+        }
+      }, 3200);
     };
 
     recognition.onerror = (event) => {
-      console.warn('[TopicRoadmap] Voice search error:', event.error);
-      if (statusLabel) statusLabel.textContent = `Mic error: ${event.error}. Try typing instead.`;
-      setTimeout(() => this._stopRoadmapVoiceSearch(), 2000);
+      console.warn('[TopicRoadmap] Voice recognition error:', event.error);
+      if (event.error !== 'no-speech') {
+        this._updateVoiceStatusLabel(`Mic notice: ${event.error}. You can type or click retry.`);
+        setTimeout(() => this._stopRoadmapVoiceSearch(), 2500);
+      }
     };
 
     recognition.onend = () => {
-      // Auto-cleanup if speech ended without result
-      setTimeout(() => this._stopRoadmapVoiceSearch(), 300);
+      // If recognition ended while voice was active
+      if (this._isVoiceActive && this._accumulatedTranscript.trim()) {
+        const text = this._accumulatedTranscript.trim();
+        this._stopRoadmapVoiceSearch();
+        this.generateRoadmap(text);
+      } else if (this._isVoiceActive) {
+        this._stopRoadmapVoiceSearch();
+      }
     };
 
     try {
       recognition.start();
     } catch (e) {
-      console.warn('[TopicRoadmap] Failed to start voice search:', e);
+      console.warn('[TopicRoadmap] Failed to start voice recognition:', e);
       this._stopRoadmapVoiceSearch();
     }
   }
 
+  _finishVoiceAndGenerate() {
+    if (this._voiceSilenceTimer) clearTimeout(this._voiceSilenceTimer);
+    const heroInput = document.getElementById('topic-user-query');
+    const resultsInput = document.getElementById('rmp-results-query-input');
+    const query = (this._accumulatedTranscript || (resultsInput?.value) || (heroInput?.value) || '').trim();
+    this._stopRoadmapVoiceSearch();
+    if (query) {
+      this.generateRoadmap(query);
+    }
+  }
+
   _stopRoadmapVoiceSearch() {
+    if (this._voiceSilenceTimer) {
+      clearTimeout(this._voiceSilenceTimer);
+      this._voiceSilenceTimer = null;
+    }
     if (this._roadmapRecognition) {
       try { this._roadmapRecognition.abort(); } catch (e) {}
       this._roadmapRecognition = null;
     }
-
-    const micBtn = document.getElementById('rmp-mic-btn');
-    const inlineMic = document.getElementById('rmp-inline-mic');
-    const statusBar = document.getElementById('rmp-voice-status');
-
-    if (micBtn) micBtn.classList.remove('rmp-mic-active');
-    if (inlineMic) inlineMic.classList.remove('rmp-mic-active');
-    if (statusBar) setTimeout(() => { statusBar.style.display = 'none'; }, 1500);
+    this._setVoiceUIActive(false);
   }
 
+  _setVoiceUIActive(isActive) {
+    this._isVoiceActive = isActive;
+    const heroMic = document.getElementById('rmp-mic-btn');
+    const inlineMic = document.getElementById('rmp-inline-mic');
+    const resultsMic = document.getElementById('rmp-results-mic-btn');
+    const heroStatus = document.getElementById('rmp-voice-status');
+    const resultsStatus = document.getElementById('rmp-results-voice-status');
+
+    [heroMic, inlineMic, resultsMic].forEach(btn => {
+      if (btn) {
+        if (isActive) btn.classList.add('rmp-mic-active');
+        else btn.classList.remove('rmp-mic-active');
+      }
+    });
+
+    [heroStatus, resultsStatus].forEach(bar => {
+      if (bar) {
+        if (isActive) bar.style.display = 'flex';
+        else setTimeout(() => { if (!this._isVoiceActive) bar.style.display = 'none'; }, 800);
+      }
+    });
+  }
+
+  _updateVoiceStatusLabel(text) {
+    const heroLabel = document.getElementById('rmp-voice-label');
+    const resultsLabel = document.getElementById('rmp-results-voice-label');
+    if (heroLabel) heroLabel.textContent = text;
+    if (resultsLabel) resultsLabel.textContent = text;
+  }
 
   handleSearch() {
     const inputEl = document.getElementById('topic-user-query');
     if (!inputEl) return;
     const query = inputEl.value.trim();
     if (!query) return;
+    this.generateRoadmap(query);
+  }
 
-    // Reset module reader split view if open
+  handleResultsSearch() {
+    const inputEl = document.getElementById('rmp-results-query-input');
+    if (!inputEl) return;
+    const query = inputEl.value.trim();
+    if (!query) return;
+    this.generateRoadmap(query);
+  }
+
+  // Unified Roadmap Generation Orchestrator (Google AI Studio + Local Adaptive Engine)
+  async generateRoadmap(query) {
+    const trimmed = (query || '').trim();
+    if (!trimmed) return;
+
+    // Synchronize both search inputs
+    const heroInput = document.getElementById('topic-user-query');
+    const resultsInput = document.getElementById('rmp-results-query-input');
+    if (heroInput) heroInput.value = trimmed;
+    if (resultsInput) resultsInput.value = trimmed;
+
     this.closeModuleReader();
 
-    // Match query against topicPatterns
-    const match = this.matchQueryToTopic(query);
+    const resultsContainer = document.getElementById('topic-roadmap-results');
+    if (!resultsContainer) return;
+    resultsContainer.style.display = 'block';
+
+    // Show dynamic AI loading card immediately
+    this.renderAILoadingState(trimmed);
+    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Handle exact preset shortcuts
+    const cleanLower = trimmed.toLowerCase();
+    if (cleanLower === 'beginner' || cleanLower === 'beginner track' || cleanLower === 'basic roadmap') {
+      this.loadTopicById('beginner-track');
+      return;
+    }
+    if (cleanLower === 'advanced' || cleanLower === 'advanced track' || cleanLower === 'advanced roadmap') {
+      this.loadTopicById('advanced-track');
+      return;
+    }
+    if (cleanLower === 'intermediate' || cleanLower === 'intermediate track') {
+      this.loadTopicById('intermediate-track');
+      return;
+    }
+    if (cleanLower === 'full' || cleanLower === 'all' || cleanLower === 'full roadmap' || cleanLower === 'all 18 modules') {
+      this.loadTopicById('full-curriculum');
+      return;
+    }
+
+    // Try Google AI Studio Gemini 2.5 Flash
+    let aiMatch = null;
+    try {
+      aiMatch = await this.generateCustomRoadmapAI(trimmed);
+    } catch (err) {
+      console.warn('[TopicRoadmap] Gemini synthesis notice, using local adaptive engine:', err);
+    }
+
+    if (aiMatch && aiMatch.modules && aiMatch.modules.length > 0) {
+      this.renderRoadmapDiagram(aiMatch, trimmed);
+    } else {
+      // Local adaptive fallback matching across all 18 modules
+      const localMatch = this.matchQueryToTopic(trimmed);
+      if (localMatch) {
+        this.renderRoadmapDiagram(localMatch, trimmed);
+      } else {
+        this.renderFallbackView(trimmed);
+      }
+    }
+
+    setTimeout(() => {
+      resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  }
+
+  // Dynamic Pathway Synthesis via Google AI Studio Gemini 2.5 Flash
+  async generateCustomRoadmapAI(userPrompt) {
+    const apiKey = (typeof window !== 'undefined' && window.ANANTA_CONFIG?.GEMINI_API_KEY) ? window.ANANTA_CONFIG.GEMINI_API_KEY : '';
+    if (!apiKey) {
+      console.info('[TopicRoadmap] No Gemini API key detected, using local adaptive engine.');
+      return null;
+    }
+
+    const moduleCatalog = this.modules.map(m => `- ${m.id}: ${m.number} ${m.title} (${m.level}, ${m.category}) - ${m.summary}`).join('\n');
+
+    const systemPrompt = `You are the Lead Quantum Curriculum Architect & Quantum Information Physicist for Ananta Quantum Studio.
+You must construct a personalized, mathematically rigorous learning pathway for a user based on their background, question, or request.
+
+Available 18 Quantum Modules in the Curriculum:
+${moduleCatalog}
+
+User Request: "${userPrompt}"
+
+Instructions:
+1. Analyze the user's expertise level and request:
+   - If they state they are a "beginner", "no prior knowledge", "already a beginner", or ask basic concepts, START at foundational modules (e.g. module-01, module-02, module-04, module-06).
+   - If they state they "already know basics" or are "intermediate", skip introductory 101 definitions and begin with circuit engineering, Pauli observables, density matrices, and algorithms (e.g. module-02, module-04, module-06, module-07, module-08).
+   - If they state "advanced", "learn from advanced", "expert", or ask about specialized topics (e.g., surface codes, FTQC, VQE, QML, microwave pulses, post-quantum crypto, cryogenics), skip basics completely and build a deep, high-level sequence (e.g. module-03, module-05, module-10, module-11, module-12, module-14, module-16).
+   - If they ask for a specific topic (e.g., "teleportation", "Grover search", "cryogenics", "error correction"), include its essential prerequisites followed by the target topic and advanced next steps.
+2. Select between 3 and 10 module IDs from the 18 available modules in STRICT prerequisite order.
+3. Provide a clear rationale explaining why this specific sequence fits the user's background.
+
+You MUST return ONLY a valid JSON object with the following schema:
+{
+  "displayName": "Concise descriptive title of this customized roadmap (e.g., 'Adaptive Pathway: Fault-Tolerant QC & QML')",
+  "description": "2-sentence summary of the curriculum and what the learner will master.",
+  "detectedLevel": "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "MASTER",
+  "levelRationale": "Clear explanation of how the user's prompt informed this selection and ordering.",
+  "moduleIds": ["module-XX", "module-YY", ...]
+}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: systemPrompt }]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: 'application/json'
+        }
+      })
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Google AI Studio returned HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) throw new Error('Empty response from Google AI Studio');
+
+    const parsed = JSON.parse(rawText);
+    if (!parsed.moduleIds || !Array.isArray(parsed.moduleIds) || parsed.moduleIds.length === 0) {
+      throw new Error('Invalid moduleIds structure in AI response');
+    }
+
+    const matchedModules = parsed.moduleIds
+      .map(id => this.modules.find(m => m.id === id))
+      .filter(Boolean);
+
+    if (matchedModules.length === 0) {
+      throw new Error('Could not resolve AI module IDs to existing curriculum');
+    }
+
+    return {
+      pattern: {
+        displayName: parsed.displayName || 'Custom AI-Generated Quantum Roadmap',
+        description: parsed.description || 'Personalized pathway synthesized by Google AI Studio.'
+      },
+      modules: matchedModules,
+      detectedLevel: parsed.detectedLevel || 'INTERMEDIATE',
+      levelRationale: parsed.levelRationale || 'Synthesized using Google AI Studio based on your prompt.',
+      score: 100,
+      isAiSynthesized: true,
+      aiProvider: 'Google AI Studio (Gemini 2.5 Flash)'
+    };
+  }
+
+  // Loading skeleton while Google AI Studio synthesizes the pathway
+  renderAILoadingState(query) {
     const resultsContainer = document.getElementById('topic-roadmap-results');
     if (!resultsContainer) return;
 
-    resultsContainer.style.display = 'block';
-
-    if (match) {
-      this.renderRoadmapDiagram(match, query);
-    } else {
-      this.renderFallbackView(query);
-    }
-
-    // Smooth scroll down to results with comfortable margin
-    setTimeout(() => {
-      resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 60);
+    resultsContainer.innerHTML = `
+      <div class="rmp-ai-loading-card">
+        <div class="rmp-ai-loading-orb">
+          <div class="rmp-orb-core"></div>
+          <div class="rmp-orb-ring rmp-ring-1"></div>
+          <div class="rmp-orb-ring rmp-ring-2"></div>
+        </div>
+        <div class="rmp-ai-loading-content">
+          <div class="rmp-ai-badge">
+            <span class="rmp-ai-sparkle">✨</span>
+            <span>GOOGLE AI STUDIO · GEMINI 2.5 FLASH</span>
+          </div>
+          <h3 class="rmp-loading-title">Synthesizing Personalized Quantum Roadmap</h3>
+          <p class="rmp-loading-subtext">Analyzing query: <em>"${query.replace(/"/g, '&quot;')}"</em></p>
+          <div class="rmp-loading-steps">
+            <span class="rmp-step-active">⚡ Evaluating prerequisite dependencies across 18 quantum physics modules...</span>
+            <span>📄 Cross-referencing landmark research papers (Nature, PRL, NIST)...</span>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
-  // Intelligent Knowledge & Topic Matching Engine
+  // Intelligent Knowledge & Topic Matching Engine (Robust 18-Module Local Engine)
   matchQueryToTopic(query) {
     const clean = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
     const queryWords = clean.split(/\s+/).filter(w => w.length > 0);
 
     // Check for full/complete/master requests
     const fullTrackPhrases = [
-      'full', 'complete', 'all modules', 'master', 'whole', 'entire', '10 modules',
+      'full', 'complete', 'all modules', 'master', 'whole', 'entire', '18 modules', 'all 18',
       'full roadmap', 'complete roadmap', 'everything', 'end to end', 'comprehensive',
-      'all topics', 'curriculum', 'whole diagram'
+      'all topics', 'curriculum', 'whole diagram', 'all 18 modules'
     ];
     if (fullTrackPhrases.some(p => clean.includes(p))) {
       return {
         pattern: {
-          displayName: 'Full Master Learning Roadmap: 10-Module Quantum Mastery',
-          description: 'Comprehensive end-to-end curriculum from Hilbert space foundations to VQE molecular algorithms and fault-tolerant quantum computing.'
+          displayName: 'Full Master Learning Roadmap: Complete 18-Module Quantum Mastery',
+          description: 'Comprehensive end-to-end curriculum from Hilbert space foundations to VQE molecular algorithms, surface code error correction, QML, and quantum internet repeaters.'
         },
         modules: this.modules,
         detectedLevel: 'MASTER',
-        levelRationale: 'Assembled complete 10-module master progression covering all foundational, intermediate, and advanced quantum domains.',
+        levelRationale: 'Assembled complete 18-module master progression covering foundational, intermediate, advanced, and hardware domains.',
         score: 100
       };
     }
@@ -668,9 +1044,10 @@ class TopicRoadmapManager {
     // 1. Detect User's Prior Knowledge Level
     const beginnerPhrases = [
       '0 prior', 'zero prior', 'no prior', '0 knowledge', 'zero knowledge', 'no knowledge',
-      'no experience', 'from scratch', 'beginner', 'novice', 'new to', 'starter', 'basics',
-      'never studied', 'high school', '101', 'start from zero', 'freshman', 'absolute beginner',
-      '0 background', 'zero background', 'no background', 'start from scratch'
+      'no experience', 'from scratch', 'beginner', 'already a beginner', 'already beginner',
+      'i am already a beginner', 'novice', 'new to', 'starter', 'basics', 'never studied',
+      'high school', '101', 'start from zero', 'freshman', 'absolute beginner', '0 background',
+      'zero background', 'no background', 'start from scratch'
     ];
     const intermediatePhrases = [
       'know basics', 'know basic', 'know linear algebra', 'know python', 'know coding',
@@ -680,17 +1057,18 @@ class TopicRoadmapManager {
       'some prior', 'basic knowledge', 'basics known'
     ];
     const advancedPhrases = [
-      'advanced', 'expert', 'graduate', 'phd', 'researcher', 'know statevector',
-      'know entanglement', 'know density matrix', 'postgrad', 'mastery', 'know hamiltonian',
-      'know qft', 'know shor', 'advanced background', 'know algorithms'
+      'advanced', 'learn from advanced', 'learn advanced', 'expert', 'graduate', 'phd',
+      'researcher', 'know statevector', 'know entanglement', 'know density matrix',
+      'postgrad', 'mastery', 'know hamiltonian', 'know qft', 'know shor',
+      'advanced background', 'know algorithms'
     ];
 
-    let detectedLevel = 'BEGINNER'; // Default assumption
+    let detectedLevel = 'BEGINNER';
     let levelRationale = 'Assembled full foundational scaffolding (Hilbert spaces to circuit synthesis)';
 
     if (advancedPhrases.some(p => clean.includes(p))) {
       detectedLevel = 'ADVANCED';
-      levelRationale = 'Accelerated track skipping foundational math; focused on advanced quantum protocols & NISQ algorithms';
+      levelRationale = 'Accelerated track skipping foundational math; focused on advanced quantum protocols, algorithms & hardware';
     } else if (intermediatePhrases.some(p => clean.includes(p))) {
       detectedLevel = 'INTERMEDIATE';
       levelRationale = 'Adapted for intermediate background (knows math/gates); accelerated past introductory 101 definitions';
@@ -699,7 +1077,7 @@ class TopicRoadmapManager {
       levelRationale = 'Zero-to-hero onboarding starting from fundamental complex statevectors & Dirac notation';
     }
 
-    // 2. Define Concept & Topic Knowledge Domain Scaffoldings
+    // 2. Define Comprehensive Concept Domains across all 18 Modules
     const topicDomains = [
       {
         key: 'circuits',
@@ -717,9 +1095,9 @@ class TopicRoadmapManager {
         name: 'Quantum Entanglement & Bell Pairs',
         keywords: ['entangle', 'entanglement', 'bell', 'bell state', 'bell states', 'epr', 'spooky', 'correlated', 'chsh'],
         modulesByLevel: {
-          BEGINNER: ['module-01', 'module-02', 'module-07'],
-          INTERMEDIATE: ['module-02', 'module-06', 'module-07'],
-          ADVANCED: ['module-04', 'module-07']
+          BEGINNER: ['module-01', 'module-02', 'module-07', 'module-18'],
+          INTERMEDIATE: ['module-02', 'module-06', 'module-07', 'module-18'],
+          ADVANCED: ['module-04', 'module-07', 'module-18']
         },
         description: 'Master non-local correlations, Einstein-Podolsky-Rosen paradox, and creating maximally entangled states.'
       },
@@ -728,9 +1106,9 @@ class TopicRoadmapManager {
         name: 'Quantum Teleportation & State Transfer Protocol',
         keywords: ['teleport', 'teleportation', 'transfer state', 'quantum internet', 'channel', 'state transfer'],
         modulesByLevel: {
-          BEGINNER: ['module-01', 'module-02', 'module-07', 'module-08'],
-          INTERMEDIATE: ['module-02', 'module-07', 'module-08'],
-          ADVANCED: ['module-07', 'module-08', 'module-09']
+          BEGINNER: ['module-01', 'module-02', 'module-07', 'module-08', 'module-18'],
+          INTERMEDIATE: ['module-02', 'module-07', 'module-08', 'module-18'],
+          ADVANCED: ['module-07', 'module-08', 'module-18']
         },
         description: 'Understand how quantum statevectors are transmitted across distant nodes using shared entanglement & classical bits.'
       },
@@ -759,11 +1137,11 @@ class TopicRoadmapManager {
       {
         key: 'noise',
         name: 'Decoherence, Noise Channels & Lindblad Physics',
-        keywords: ['noise', 'decoherence', 'lindblad', 't1', 't2', 'relaxation', 'dephasing', 'open system', 'error', 'cryo', 'hardware', 'fidelity'],
+        keywords: ['noise', 'decoherence', 'lindblad', 't1', 't2', 'relaxation', 'dephasing', 'open system', 'error', 'cryo', 'fidelity'],
         modulesByLevel: {
           BEGINNER: ['module-01', 'module-02', 'module-03', 'module-05'],
           INTERMEDIATE: ['module-03', 'module-04', 'module-05'],
-          ADVANCED: ['module-03', 'module-05']
+          ADVANCED: ['module-03', 'module-05', 'module-15']
         },
         description: 'Study open quantum systems, energy relaxation (T1), dephasing (T2), and density matrix master equations.'
       },
@@ -814,13 +1192,101 @@ class TopicRoadmapManager {
       {
         key: 'algorithms',
         name: 'Quantum Algorithms & Asymptotic Speedups',
-        keywords: ['algorithm', 'algorithms', 'speedup', 'advantage', 'complexity', 'polynomial', 'exponential', 'shor', 'qft', 'simon', 'deutsch'],
+        keywords: ['algorithm', 'algorithms', 'speedup', 'advantage', 'complexity', 'polynomial', 'exponential', 'shor', 'simon', 'deutsch'],
         modulesByLevel: {
           BEGINNER: ['module-01', 'module-02', 'module-07', 'module-09', 'module-10'],
-          INTERMEDIATE: ['module-02', 'module-06', 'module-07', 'module-09', 'module-10'],
-          ADVANCED: ['module-07', 'module-09', 'module-10']
+          INTERMEDIATE: ['module-02', 'module-06', 'module-07', 'module-09', 'module-11'],
+          ADVANCED: ['module-07', 'module-09', 'module-10', 'module-11', 'module-13']
         },
         description: 'Understand how quantum parallelism, phase kickback, and constructive interference achieve computational advantage.'
+      },
+      {
+        key: 'qft',
+        name: 'QFT & Quantum Phase Estimation',
+        keywords: ['qft', 'fourier', 'phase estimation', 'qpe', 'shor', 'period finding', 'eigenvalue'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-06', 'module-11'],
+          INTERMEDIATE: ['module-02', 'module-06', 'module-11'],
+          ADVANCED: ['module-06', 'module-11', 'module-16']
+        },
+        description: 'Master exponential Fourier speedup, modular exponentiation, and the mathematical engine behind Shor’s algorithm.'
+      },
+      {
+        key: 'surface_codes',
+        name: 'Surface Codes & Fault-Tolerant Quantum Computing',
+        keywords: ['surface code', 'surface codes', 'ftqc', 'fault tolerant', 'fault-tolerant', 'error correction', 'stabilizer', 'syndrome', 'logical qubit', 'decoder', 'mwpm'],
+        modulesByLevel: {
+          BEGINNER: ['module-02', 'module-05', 'module-07', 'module-12'],
+          INTERMEDIATE: ['module-05', 'module-07', 'module-12'],
+          ADVANCED: ['module-05', 'module-12', 'module-17']
+        },
+        description: 'Study 2D topological stabilizer codes, syndrome extraction, and fault-tolerant logical qubit operations.'
+      },
+      {
+        key: 'qaoa',
+        name: 'QAOA & Combinatorial Optimization',
+        keywords: ['qaoa', 'optimization', 'maxcut', 'combinatorial', 'graph', 'tsp', 'portfolio'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-10', 'module-13'],
+          INTERMEDIATE: ['module-02', 'module-10', 'module-13'],
+          ADVANCED: ['module-10', 'module-13']
+        },
+        description: 'Solve NP-hard combinatorial graph problems with alternating problem cost and driver Hamiltonians.'
+      },
+      {
+        key: 'qml',
+        name: 'Quantum Machine Learning & Feature Maps',
+        keywords: ['qml', 'machine learning', 'kernel', 'quantum kernel', 'vqc', 'classifier', 'svm', 'feature map', 'quantum ai'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-07', 'module-14'],
+          INTERMEDIATE: ['module-02', 'module-07', 'module-14'],
+          ADVANCED: ['module-07', 'module-10', 'module-14']
+        },
+        description: 'Evaluate quantum kernels in exponentially large Hilbert spaces and train variational classifiers.'
+      },
+      {
+        key: 'pulse',
+        name: 'Microwave Pulse Control & DRAG Optimization',
+        keywords: ['pulse', 'microwave', 'drag', 'control', 'envelope', 'anharmonicity', 'grape', 'optimal control'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-05', 'module-15'],
+          INTERMEDIATE: ['module-02', 'module-05', 'module-15'],
+          ADVANCED: ['module-05', 'module-15', 'module-17']
+        },
+        description: 'Model continuous Hamiltonian drives, calibrate sub-nanosecond Gaussian envelopes, and cancel phase leakage.'
+      },
+      {
+        key: 'pqc',
+        name: 'Post-Quantum Cryptography & Threat Modeling',
+        keywords: ['pqc', 'post quantum', 'cryptography', 'security', 'lattice', 'ml-kem', 'ml-dsa', 'kyber', 'dilithium', 'rsa', 'threat'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-09', 'module-11', 'module-16'],
+          INTERMEDIATE: ['module-09', 'module-11', 'module-16'],
+          ADVANCED: ['module-11', 'module-16']
+        },
+        description: 'Quantify RSA/ECC vulnerability timelines, evaluate lattice hardness, and prepare for NIST standards.'
+      },
+      {
+        key: 'cryo',
+        name: 'Cryogenic Hardware & Superconducting Qubits',
+        keywords: ['cryo', 'dilution refrigerator', 'hardware', 'transmon', 'superconducting', 'josephson', 'milli-kelvin', 'kelvin', 'cooling'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-05', 'module-15', 'module-17'],
+          INTERMEDIATE: ['module-05', 'module-15', 'module-17'],
+          ADVANCED: ['module-05', 'module-15', 'module-17']
+        },
+        description: 'Thermodynamics of dilution refrigerators, transmon Josephson junctions, and millikelvin RF lines.'
+      },
+      {
+        key: 'internet',
+        name: 'Quantum Internet & Entanglement Swapping',
+        keywords: ['internet', 'quantum internet', 'repeater', 'swapping', 'network', 'quantum network', 'quantum repeater'],
+        modulesByLevel: {
+          BEGINNER: ['module-01', 'module-02', 'module-07', 'module-08', 'module-18'],
+          INTERMEDIATE: ['module-02', 'module-07', 'module-08', 'module-18'],
+          ADVANCED: ['module-07', 'module-08', 'module-18']
+        },
+        description: 'Architecture of long-distance quantum repeaters, BSM entanglement swapping, and quantum memory.'
       }
     ];
 
@@ -845,18 +1311,18 @@ class TopicRoadmapManager {
       }
     });
 
-    // Check if query was purely level-focused (e.g. "I have 0 prior knowledge", "I am a beginner", "advanced track")
+    // Handle pure level queries (e.g. "I am already a beginner, give a roadmap according to it", "I wanna learn from advanced")
     if (bestDomainScore < 10) {
       if (detectedLevel === 'BEGINNER') {
         return {
           pattern: {
             displayName: 'Adaptive Beginner Roadmap: Foundations & Quantum Gates',
-            description: 'Customized for learners starting with zero prior background: master Hilbert space geometry, single-qubit rotations, and compiling your first circuits.'
+            description: 'Customized for learners starting with zero prior background: master Hilbert space geometry, single-qubit rotations, Pauli observables, and compiling your first circuits.'
           },
           modules: ['module-01', 'module-02', 'module-04', 'module-06'].map(id => this.modules.find(m => m.id === id)),
           detectedLevel,
           levelRationale,
-          score: 20
+          score: 25
         };
       } else if (detectedLevel === 'ADVANCED') {
         return {
@@ -867,7 +1333,7 @@ class TopicRoadmapManager {
           modules: ['module-03', 'module-05', 'module-07', 'module-08', 'module-09', 'module-10'].map(id => this.modules.find(m => m.id === id)),
           detectedLevel,
           levelRationale,
-          score: 20
+          score: 25
         };
       } else if (detectedLevel === 'INTERMEDIATE') {
         return {
@@ -878,7 +1344,7 @@ class TopicRoadmapManager {
           modules: ['module-02', 'module-04', 'module-06', 'module-07', 'module-08'].map(id => this.modules.find(m => m.id === id)),
           detectedLevel,
           levelRationale,
-          score: 20
+          score: 25
         };
       }
     }
@@ -1107,6 +1573,34 @@ class TopicRoadmapManager {
                 <div class="theory-section-tag">Physical Intuition</div>
                 <p class="theory-text">${mod.intuition}</p>
               </div>
+
+              ${mod.researchPaper ? `
+                <div class="theory-section theory-paper-box">
+                  <div class="theory-section-tag">Landmark Research Publication & ArXiv Citation</div>
+                  <div class="theory-paper-card">
+                    <div class="theory-paper-top">
+                      <span class="theory-paper-icon">📄</span>
+                      <div class="theory-paper-heading">
+                        <h4 class="theory-paper-title">${typeof mod.researchPaper === 'object' ? mod.researchPaper.title : mod.researchPaper}</h4>
+                        ${typeof mod.researchPaper === 'object' && mod.researchPaper.journal ? `
+                          <span class="theory-paper-journal">${mod.researchPaper.journal} (${mod.researchPaper.year})</span>
+                        ` : ''}
+                      </div>
+                    </div>
+                    ${typeof mod.researchPaper === 'object' && mod.researchPaper.authors ? `
+                      <p class="theory-paper-authors"><strong>Authors:</strong> ${mod.researchPaper.authors}</p>
+                    ` : ''}
+                    ${typeof mod.researchPaper === 'object' && mod.researchPaper.doi ? `
+                      <p class="theory-paper-doi"><strong>Citation / DOI:</strong> <code>${mod.researchPaper.doi}</code></p>
+                    ` : ''}
+                    ${typeof mod.researchPaper === 'object' && mod.researchPaper.keyInsight ? `
+                      <div class="theory-paper-insight">
+                        <strong>Breakthrough Contribution:</strong> ${mod.researchPaper.keyInsight}
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              ` : ''}
 
               ${hasCircuitLab ? `
                 <div class="theory-exercise-box">
@@ -1389,6 +1883,25 @@ class TopicRoadmapManager {
                 </div>
               ` : ''}
 
+              ${mod.researchPaper ? `
+                <div class="curated-paper-badge">
+                  <div class="paper-badge-top">
+                    <span class="paper-badge-icon">📄</span>
+                    <span class="paper-badge-tag">LANDMARK RESEARCH CITATION</span>
+                    ${typeof mod.researchPaper === 'object' && mod.researchPaper.journal ? `
+                      <span class="paper-badge-journal">${mod.researchPaper.journal} (${mod.researchPaper.year})</span>
+                    ` : ''}
+                  </div>
+                  <div class="paper-badge-title">${typeof mod.researchPaper === 'object' ? mod.researchPaper.title : mod.researchPaper}</div>
+                  ${typeof mod.researchPaper === 'object' && mod.researchPaper.authors ? `
+                    <div class="paper-badge-meta">${mod.researchPaper.authors} · <code>${mod.researchPaper.doi || ''}</code></div>
+                  ` : ''}
+                  ${typeof mod.researchPaper === 'object' && mod.researchPaper.keyInsight ? `
+                    <div class="paper-badge-insight"><strong>Key Contribution:</strong> ${mod.researchPaper.keyInsight}</div>
+                  ` : ''}
+                </div>
+              ` : ''}
+
               <div class="curated-card-footer">
                 ${hasLab ? `
                   <div class="curated-lab-pill">
@@ -1426,13 +1939,70 @@ class TopicRoadmapManager {
 
     // ── Assemble full HTML ─────────────────────────────────────
     resultsContainer.innerHTML = `
+      <!-- Persistent Search & Voice Bar directly in Results View -->
+      <div class="rmp-results-persistent-bar">
+        <div class="rmp-results-search-wrapper">
+          <span class="topic-search-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </span>
+          <input
+            type="text"
+            id="rmp-results-query-input"
+            class="rmp-results-input"
+            placeholder="Ask another question or topic (e.g. 'I am already a beginner', 'Learn from advanced', 'Surface codes')..."
+            value="${(query || '').replace(/"/g, '&quot;')}"
+            onkeydown="if(event.key==='Enter'){event.preventDefault(); window.topicRoadmapManager.handleResultsSearch();}"
+          />
+          <button class="rmp-results-mic-btn" id="rmp-results-mic-btn" type="button"
+            onclick="window.topicRoadmapManager._startRoadmapVoiceSearch('results')"
+            title="Speak a new roadmap query">
+            <span class="rmp-mic-icon">🎙️</span>
+          </button>
+          <button class="btn-results-generate" type="button"
+            onclick="window.topicRoadmapManager.handleResultsSearch()">
+            <span>Generate</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+
+        <!-- Voice status banner in results view -->
+        <div class="rmp-voice-status" id="rmp-results-voice-status" style="display:none;">
+          <span class="rmp-voice-dot"></span>
+          <span id="rmp-results-voice-label">Listening... speak your question or background</span>
+          <div class="rmp-voice-actions">
+            <button class="btn-voice-finish" type="button" onclick="window.topicRoadmapManager._finishVoiceAndGenerate()">⚡ Generate Now</button>
+            <button class="btn-voice-cancel" type="button" onclick="window.topicRoadmapManager._stopRoadmapVoiceSearch()">✕</button>
+          </div>
+        </div>
+
+        <!-- Quick Switch Chips in Results View -->
+        <div class="rmp-results-quick-chips">
+          <span class="rmp-chips-label">Switch Track:</span>
+          <button class="topic-chip ${detectedLevel === 'BEGINNER' ? 'topic-chip-active' : ''}"
+            onclick="window.topicRoadmapManager.loadTopicById('beginner-track')">🌱 Beginner (4 Modules)</button>
+          <button class="topic-chip ${detectedLevel === 'INTERMEDIATE' ? 'topic-chip-active' : ''}"
+            onclick="window.topicRoadmapManager.loadTopicById('intermediate-track')">⚡ Intermediate (5 Modules)</button>
+          <button class="topic-chip ${detectedLevel === 'ADVANCED' ? 'topic-chip-active' : ''}"
+            onclick="window.topicRoadmapManager.loadTopicById('advanced-track')">🚀 Advanced (6 Modules)</button>
+          <button class="topic-chip topic-chip-highlight ${detectedLevel === 'MASTER' ? 'topic-chip-active' : ''}"
+            onclick="window.topicRoadmapManager.loadTopicById('full-curriculum')">🗺️ Full 18 Modules</button>
+        </div>
+      </div>
+
       <div class="curated-results-header">
         <div class="results-header-nav-row">
           <button class="btn-rmp-back-landing" type="button" onclick="window.topicRoadmapManager.backToLanding()">
             ← Back to Track Selection
           </button>
           <div class="results-badges-cluster">
-            <span class="results-tag">ADAPTIVE PATHWAY ASSEMBLED</span>
+            ${matchResult.isAiSynthesized ? `
+              <span class="results-tag ai-tag">✨ GOOGLE AI STUDIO SYNTHESIS</span>
+            ` : `
+              <span class="results-tag">ADAPTIVE PATHWAY ASSEMBLED</span>
+            `}
             <span class="results-level-badge level-${detectedLevel.toLowerCase()}">${detectedLevel} TRACK</span>
             <span class="results-step-count">${modules.length} Ordered Steps</span>
             <span class="results-time-count">⏱ ~${totalMins} min total</span>
@@ -1457,7 +2027,7 @@ class TopicRoadmapManager {
         ` : ''}
 
         <!-- 3-Way View Switcher -->
-        <div class="rmv-toggle-group" role="group" aria-label="Switch roadmap display view">
+        <div class="rmp-toggle-group" role="group" aria-label="Switch roadmap display view">
           <button id="rmv-btn-combined" class="rmv-toggle-btn rmv-toggle-active" type="button"
             onclick="window.topicRoadmapManager.toggleRoadmapView('combined')">
             ⚡ Combined (Diagram + Full List)
@@ -1498,9 +2068,9 @@ class TopicRoadmapManager {
       </div>
 
       <div class="curated-bottom-actions">
-        <p>Want to explore all 10 core modules in a single comprehensive syllabus?</p>
+        <p>Want to explore all 18 core modules in a single comprehensive syllabus?</p>
         <button class="btn-view-full-roadmap" type="button" onclick="window.topicRoadmapManager.loadTopicById('full-curriculum')">
-          Browse Full Master Learning Roadmap (All 10 Modules) →
+          Browse Full Master Learning Roadmap (All 18 Modules) →
         </button>
       </div>
     `;
