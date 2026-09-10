@@ -2211,30 +2211,178 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeZooCategory = 'all';
   let zooSearchQuery = '';
 
-  window.switchResearchMode = function(mode) {
-    const papersSub = document.getElementById('research-papers-subview');
-    const zooSub = document.getElementById('quantum-zoo-subview');
-    const librarySub = document.getElementById('resource-library-subview');
-    const tabPapers = document.getElementById('tab-mode-papers');
-    const tabZoo = document.getElementById('tab-mode-zoo');
-    const tabLibrary = document.getElementById('tab-mode-library');
+  // ==========================================
+  // 8D. LIVE LITERATURE SEARCH (backend: /api/research/brief)
+  // ==========================================
+  let litSearchBusy = false;
 
-    [papersSub, zooSub, librarySub].forEach(el => { if (el) el.style.display = 'none'; });
-    [tabPapers, tabZoo, tabLibrary].forEach(el => { if (el) el.classList.remove('active'); });
+  window.initLiteratureSearch = function() {
+    const box = document.getElementById('litsearch-suggestions');
+    if (!box || box.dataset.ready) return;
+    box.dataset.ready = '1';
 
-    if (mode === 'zoo') {
-      if (zooSub) zooSub.style.display = 'block';
-      if (tabZoo) tabZoo.classList.add('active');
-      renderZooLibrary();
-    } else if (mode === 'library') {
-      if (librarySub) librarySub.style.display = 'block';
-      if (tabLibrary) tabLibrary.classList.add('active');
-      window.loadResourceLibrary();
-    } else {
-      if (papersSub) papersSub.style.display = 'block';
-      if (tabPapers) tabPapers.classList.add('active');
-      renderResearchLibrary();
+    // Seeded from the categories the archive already organises itself by, so
+    // the prompts track the app rather than being a fixed list.
+    const seeds = [...document.querySelectorAll('#research-category-pills .cat-pill')]
+      .map(p => p.textContent.replace(/\(.*\)/, '').trim())
+      .filter(t => t && !/^all$/i.test(t));
+
+    box.innerHTML = seeds.slice(0, 7).map(t =>
+      `<button type="button" class="litsearch-chip" onclick="window.runLiteratureSearch('${t.replace(/'/g, "\\'")}')">${t}</button>`
+    ).join('');
+  };
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /** Turns [P1] / [P1, P3] citation tags into links that scroll to the paper. */
+  function linkCitations(text, papers) {
+    const known = new Set(papers.map(p => p.id));
+    return escapeHtml(text).replace(/\[([P0-9,\s]+)\]/g, (match, ids) => {
+      const parts = ids.split(',').map(s => s.trim()).filter(id => known.has(id));
+      if (!parts.length) return match;
+      return parts.map(id =>
+        `<a href="#litpaper-${id}" class="litsearch-cite" onclick="window.focusLitPaper('${id}');return false;">${id}</a>`
+      ).join(' ');
+    });
+  }
+
+  window.focusLitPaper = function(id) {
+    const el = document.getElementById(`litpaper-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('litsearch-highlight');
+    setTimeout(() => el.classList.remove('litsearch-highlight'), 1600);
+  };
+
+  window.runLiteratureSearch = async function(presetTopic) {
+    const input = document.getElementById('litsearch-input');
+    const status = document.getElementById('litsearch-status');
+    const synthEl = document.getElementById('litsearch-synthesis');
+    const grid = document.getElementById('litsearch-results');
+    if (!input || !status || !grid) return;
+
+    if (presetTopic) input.value = presetTopic;
+    const topic = input.value.trim();
+    if (!topic) { input.focus(); return; }
+    if (litSearchBusy) return;
+
+    litSearchBusy = true;
+    const submit = document.getElementById('litsearch-submit');
+    if (submit) { submit.disabled = true; submit.textContent = 'Searching…'; }
+
+    status.className = 'litsearch-status is-busy';
+    status.textContent = `Searching the literature for “${topic}” and preparing a synthesis…`;
+    synthEl.innerHTML = '';
+    grid.innerHTML = '';
+
+    try {
+      const base = (window.anantaBackend && window.anantaBackend.baseUrl) || '';
+      const res = await fetch(`${base}/api/research/brief`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, limit: 12 })
+      });
+      if (!res.ok) throw new Error(`Backend returned HTTP ${res.status}`);
+      const data = await res.json();
+
+      renderLiteratureResults(data);
+    } catch (err) {
+      status.className = 'litsearch-status is-error';
+      status.textContent = `Could not complete the search: ${err.message}`;
+    } finally {
+      litSearchBusy = false;
+      if (submit) { submit.disabled = false; submit.textContent = 'Search & Summarize'; }
     }
+  };
+
+  function renderLiteratureResults(data) {
+    const status = document.getElementById('litsearch-status');
+    const synthEl = document.getElementById('litsearch-synthesis');
+    const grid = document.getElementById('litsearch-results');
+    const papers = data.papers || [];
+
+    const sourceSummary = (data.sources || [])
+      .map(s => `${s.label}: ${s.error ? 'unavailable' : s.count}`)
+      .join(' · ');
+
+    status.className = 'litsearch-status';
+    status.innerHTML = papers.length
+      ? `Found <strong>${papers.length}</strong> publications for <strong>${escapeHtml(data.query)}</strong> &nbsp;·&nbsp; <span class="litsearch-sources">${escapeHtml(sourceSummary)}</span>`
+      : `No publications matched “${escapeHtml(data.topic)}”. Try a broader or more specific phrase.`;
+
+    if (data.synthesis && data.synthesis.synthesis_paragraphs) {
+      const paras = data.synthesis.synthesis_paragraphs
+        .map(p => `<p>${linkCitations(p.text, papers)}</p>`).join('');
+      const takeaways = (data.synthesis.key_takeaways || [])
+        .map(k => `<li>${linkCitations(k.point, papers)}</li>`).join('');
+
+      synthEl.innerHTML = `
+        <section class="litsearch-synthesis-card">
+          <header class="litsearch-synthesis-head">
+            <h2>Synthesis: ${escapeHtml(data.query)}</h2>
+            <span class="litsearch-synth-badge">Cited across ${papers.length} sources</span>
+          </header>
+          <div class="litsearch-synthesis-body">${paras}</div>
+          ${takeaways ? `<h3 class="litsearch-takeaway-head">Key takeaways</h3><ul class="litsearch-takeaways">${takeaways}</ul>` : ''}
+        </section>
+      `;
+    } else if (data.synthesisError) {
+      synthEl.innerHTML = `<section class="litsearch-synthesis-card is-muted">
+        <p>Papers retrieved, but the synthesis step was unavailable: ${escapeHtml(data.synthesisError)}</p>
+      </section>`;
+    }
+
+    grid.innerHTML = papers.map(p => {
+      const meta = [p.year, p.venue, p.citationCount != null ? `${p.citationCount} citations` : null]
+        .filter(Boolean).map(escapeHtml).join(' · ');
+      const abstract = p.abstract
+        ? escapeHtml(p.abstract.length > 420 ? p.abstract.slice(0, 420) + '…' : p.abstract)
+        : '<em>No abstract published for this record.</em>';
+
+      return `
+        <article class="paper-card litsearch-card" id="litpaper-${p.id}">
+          <div class="paper-top-row">
+            <span class="paper-badge badge-qml">${escapeHtml(p.id)} · ${escapeHtml(p.source)}</span>
+            <span class="paper-year">${escapeHtml(p.year || '—')}</span>
+          </div>
+          <h3 class="paper-title">${escapeHtml(p.title)}</h3>
+          <div class="paper-authors">${escapeHtml(p.authors)}</div>
+          <div class="paper-venue">${meta}</div>
+          <p class="paper-abstract">${abstract}</p>
+          <div class="paper-actions-bar">
+            ${p.url ? `<a href="${encodeURI(p.url)}" target="_blank" rel="noopener noreferrer" class="btn-paper-pdf">Open record ↗</a>` : ''}
+            ${p.pdfUrl ? `<a href="${encodeURI(p.pdfUrl)}" target="_blank" rel="noopener noreferrer" class="btn-paper-pdf">PDF ↗</a>` : ''}
+            ${p.doi ? `<a href="https://doi.org/${encodeURIComponent(p.doi)}" target="_blank" rel="noopener noreferrer" class="btn-paper-cite">DOI</a>` : ''}
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  window.switchResearchMode = function(mode) {
+    const views = {
+      search:  { sub: 'literature-search-subview', tab: 'tab-mode-search',  onShow: () => window.initLiteratureSearch() },
+      papers:  { sub: 'research-papers-subview',   tab: 'tab-mode-papers',  onShow: () => renderResearchLibrary() },
+      catalog: { sub: 'quantum-zoo-subview',       tab: 'tab-mode-catalog', onShow: () => renderZooLibrary() },
+      library: { sub: 'resource-library-subview',  tab: 'tab-mode-library', onShow: () => window.loadResourceLibrary() }
+    };
+
+    Object.values(views).forEach(v => {
+      const sub = document.getElementById(v.sub);
+      const tab = document.getElementById(v.tab);
+      if (sub) sub.style.display = 'none';
+      if (tab) tab.classList.remove('active');
+    });
+
+    const view = views[mode] || views.search;
+    const sub = document.getElementById(view.sub);
+    const tab = document.getElementById(view.tab);
+    if (sub) sub.style.display = 'block';
+    if (tab) tab.classList.add('active');
+    view.onShow();
   };
 
   // ==========================================
@@ -2876,6 +3024,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial render of research library
   renderResearchLibrary();
+  // Establish the default research mode properly, so its subview is not merely
+  // visible by virtue of having no display style yet.
+  window.switchResearchMode('search');
 
   // ==========================================
   // 9. Determine Initial Active View & Routing

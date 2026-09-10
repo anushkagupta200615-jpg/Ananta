@@ -149,7 +149,7 @@
               <span class="dropdown-rich-icon">📚</span>
               <div class="dropdown-rich-info">
                 <div class="dropdown-rich-title-line">
-                  <span class="dropdown-rich-title">Algorithm Zoo & Papers</span>
+                  <span class="dropdown-rich-title">Research Archive & Algorithms</span>
                   <span class="dropdown-badge badge-catalog">74 ALGOS</span>
                 </div>
                 <span class="dropdown-rich-desc">74 quantum algorithms catalog & interactive seminal paper reproductions</span>
@@ -285,7 +285,7 @@
     <!-- Category: Algorithms & Research -->
     <div class="mobile-nav-section-title">ALGORITHMS & RESEARCH</div>
     <a href="#algorithms" class="mobile-nav-item" data-tab="algorithms" onclick="window.closeMobileNav()">📐 Benchmark Labs</a>
-    <a href="#research" class="mobile-nav-item" data-tab="research" onclick="window.closeMobileNav()">📚 Algorithm Zoo & Papers</a>
+    <a href="#research" class="mobile-nav-item" data-tab="research" onclick="window.closeMobileNav()">📚 Research Archive & Algorithms</a>
 
     <!-- Category: Learn & Reference -->
     <div class="mobile-nav-section-title">LEARN & REFERENCE</div>
@@ -2465,19 +2465,53 @@ Key Advantage:
         
         <!-- Primary Research View Mode Switcher -->
         <div class="research-mode-switcher">
-          <button class="research-mode-tab active" id="tab-mode-papers" onclick="window.switchResearchMode('papers')">
-            📑 Landmark Papers & Textbooks (38)
+          <button class="research-mode-tab active" id="tab-mode-search" onclick="window.switchResearchMode('search')">
+            🔎 Literature Search
           </button>
-          <button class="research-mode-tab" id="tab-mode-zoo" onclick="window.switchResearchMode('zoo')">
-            ⚡ Universal Algorithm Catalog (74 Algorithms)
+          <button class="research-mode-tab" id="tab-mode-papers" onclick="window.switchResearchMode('papers')">
+            📑 Landmark Papers & Textbooks
+          </button>
+          <button class="research-mode-tab" id="tab-mode-catalog" onclick="window.switchResearchMode('catalog')">
+            ⚡ Algorithm Catalog
           </button>
           <button class="research-mode-tab" id="tab-mode-library" onclick="window.switchResearchMode('library')">
             🌐 Community Resource Library
           </button>
         </div>
 
+        <!-- ================= MODE 0: LIVE LITERATURE SEARCH ================= -->
+        <div id="literature-search-subview">
+          <div class="research-hero-banner">
+            <div class="research-pill-tag">
+              <span>🔎</span> Live from arXiv &amp; Crossref
+            </div>
+            <h1 class="research-hero-title">Quantum Literature Search</h1>
+            <p class="research-hero-desc">
+              Describe any topic in plain language. The archive searches the current literature, ranks what it finds by relevance and citation weight, and synthesizes the results into a single cited review.
+            </p>
+          </div>
+
+          <form class="litsearch-form" onsubmit="event.preventDefault(); window.runLiteratureSearch();">
+            <div class="research-search-box litsearch-box">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" id="litsearch-input" autocomplete="off"
+                     placeholder="e.g. I want to know about superposition — or decoherence, surface codes, VQE…" />
+            </div>
+            <button type="submit" class="litsearch-submit" id="litsearch-submit">Search &amp; Summarize</button>
+          </form>
+
+          <div class="litsearch-suggestions" id="litsearch-suggestions"></div>
+
+          <div class="litsearch-status" id="litsearch-status"></div>
+          <div id="litsearch-synthesis"></div>
+          <div class="research-grid" id="litsearch-results"></div>
+        </div>
+
         <!-- ================= MODE 1: RESEARCH PAPERS & TEXTBOOKS ================= -->
-        <div id="research-papers-subview">
+        <div id="research-papers-subview" style="display: none;">
           <div class="research-hero-banner">
             <div class="research-pill-tag">
               <span>📚</span> Academic & Open-Access Knowledge Repository
@@ -2581,7 +2615,7 @@ Key Advantage:
           </div>
         </div>
 
-        <!-- ================= MODE 2: GOOGLE QUANTUM AI ALGORITHM COMPENDIUM ================= -->
+        <!-- ================= MODE 2: ALGORITHM CATALOG ================= -->
         <div id="quantum-zoo-subview" style="display: none;">
           <div class="google-compendium-banner">
             <div class="g-quantum-accent-line"></div>

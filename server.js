@@ -418,6 +418,25 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // POST /api/research/discover — live literature search for a plain-language topic
+  // POST /api/research/brief    — the same, plus a cited AI synthesis
+  if ((pathname === '/api/research/discover' || pathname === '/api/research/brief') && req.method === 'POST') {
+    const body = await parseRequestBody(req);
+    const { topic, limit, refresh } = body || {};
+    if (!topic) return sendJson(res, 400, { error: 'topic is required' });
+
+    try {
+      const { discoverPapers, briefTopic } = require('./ananta-backend/utils/researchArchive');
+      const run = pathname.endsWith('/brief') ? briefTopic : discoverPapers;
+      const data = await run({ topic, limit: Math.min(Number(limit) || 12, 40), refresh: refresh === true });
+      logTransaction('POST', pathname, 200, Date.now() - reqStart, { topic, found: data.totalFound });
+      return sendJson(res, 200, data);
+    } catch (err) {
+      logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: err.message });
+      return sendJson(res, 500, { error: err.message });
+    }
+  }
+
   // GET /api/voice/vocabulary — capability registry used for phonetic matching
   if (pathname === '/api/voice/vocabulary' && req.method === 'GET') {
     try {
