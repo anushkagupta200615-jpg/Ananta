@@ -3,7 +3,9 @@
 // Providers: Grok-2 (xAI), Google AI Studio (Gemini 2.5 Flash), Deterministic Quantum AI
 // Tasks: voice-parse, audio-parse, circuit-doctor, roadmap, concept-doctor, provider-info
 
-const _defaultKeyB64 = 'QVEuQWI4Uk42TFozV0wtZ2JnOUh0bldoVzFJNG5qY3JWTkVWMFBReEVHQ2JwYmdvRHdHdmc=';
+const { resolveTranscript, sampleSuggestions } = require('../ananta-backend/utils/voiceIntent');
+
+const _defaultKeyB64 ='QVEuQWI4Uk42TFozV0wtZ2JnOUh0bldoVzFJNG5qY3JWTkVWMFBReEVHQ2JwYmdvRHdHdmc=';
 
 function getApiKey(req) {
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
@@ -264,12 +266,19 @@ async function handler(req, res) {
     case 'voice-parse': {
       const { transcript, currentCircuit } = payload;
       const circuitSnapshot = JSON.stringify(currentCircuit || { num_qubits: 2, grid: [] });
+      const voiceResolution = resolveTranscript(transcript || '');
       const systemPrompt = `You are an expert quantum computing mentor and circuit synthesis engine for a web-based quantum circuit composer called "Ananta Quantum Studio".
 
 YOUR ROLE:
 - You are a patient, step-by-step voice mentor. The user speaks instructions and you translate them into precise circuit operations.
 - You MUST also explain what you're doing and teach the user quantum concepts as you go.
 - If the user makes a mistake or asks for something physically impossible, explain the error clearly instead of guessing.
+
+SPEECH RECOGNITION IS IMPERFECT:
+- This transcript came from a microphone, so words are often garbled, split, or merged ("bellystate" = "bell state", "had a mard" = "hadamard", "grovers" = "grover").
+- Interpret phonetically and charitably: infer the closest quantum term the user plausibly meant rather than rejecting the request.
+- Only ask for clarification when the intent is genuinely unrecoverable, not merely misspelled.${voiceResolution.corrected ? `
+- A phonetic pre-pass already resolved this to: "${voiceResolution.text}". Treat that as a strong hint.` : ''}
 
 CRITICAL MULTI-TARGET RULE:
 - If the user says "put S on q0 AND q3", you MUST emit TWO separate operations: one with targets:[0] and one with targets:[3].
@@ -511,7 +520,11 @@ async function callGeminiAudioWithLocalFallback(apiKey, systemPrompt, audioBase6
 // Deterministic Quantum Fallback Parsers & Synthesis Engines
 // --------------------------------------------------------------------
 function parseVoiceLocally(transcript, currentCircuit) {
-  const text = (transcript || '').toLowerCase().trim();
+  // Correct mispronunciations / speech-recognition drift against the capability
+  // registry before any pattern matching runs, so "bellystate" reaches the Bell
+  // state branch below instead of falling through as unrecognized.
+  const resolution = resolveTranscript(transcript || '');
+  const text = resolution.text.toLowerCase().trim();
   const operations = [];
   let numQubits = currentCircuit?.num_qubits || 2;
   let resetExisting = /^(?:make|create|draw|generate|build|construct|new)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)/i.test(text);
@@ -659,7 +672,9 @@ function parseVoiceLocally(transcript, currentCircuit) {
       reset_existing: false,
       operations: [],
       confidence: 0.2,
-      clarification_needed: `I didn't catch a gate or command in "${transcript}". Try something like "add H on qubit 0", "CNOT 0 to 1", or "make a Bell state".`,
+      clarification_needed: `I heard "${resolution.original}" but couldn't match it to a gate or circuit I know. You could try: ${sampleSuggestions(3).join(', ')}.`,
+      heard: resolution.original,
+      resolved_transcript: resolution.text,
       explanation: null,
       error_feedback: null,
       teaching_tip: null
@@ -687,8 +702,11 @@ function parseVoiceLocally(transcript, currentCircuit) {
     num_qubits: Math.max(2, numQubits),
     reset_existing: resetExisting,
     operations,
-    confidence: 0.95,
+    confidence: resolution.corrected ? 0.85 : 0.95,
     clarification_needed: null,
+    heard: resolution.original,
+    resolved_transcript: resolution.text,
+    corrections: resolution.matches.filter(m => !m.exact),
     explanation: `Synthesized ${operations.length} gate operation(s): ${opSummary}.`,
     error_feedback: null,
     teaching_tip: teachingTip

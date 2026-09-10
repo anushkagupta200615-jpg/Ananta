@@ -40,6 +40,14 @@ class QuantumVoiceCopilot {
 
   _bindEvents() {
     window.quantumVoiceCopilot = this;
+
+    // Voices load asynchronously; pin one as soon as they arrive so every reply
+    // in the session speaks with the same voice.
+    if (window.speechSynthesis) {
+      this._resolveVoice();
+      window.speechSynthesis.addEventListener('voiceschanged', () => this._resolveVoice());
+    }
+
     setTimeout(() => {
       this._updateBadge(this.selectedProvider === 'grok' ? 'grok-2' : (this.selectedProvider === 'gemini' ? 'gemini-2.5-flash' : 'deterministic-quantum-ai'));
     }, 500);
@@ -180,6 +188,9 @@ class QuantumVoiceCopilot {
 
     // 4. Start the audio waveform visualizer
     this._startWaveAnimation();
+
+    // 5. Warm the phonetic vocabulary so mispronunciations resolve locally
+    this.loadVoiceVocabulary();
   }
 
   close() {
@@ -481,6 +492,28 @@ class QuantumVoiceCopilot {
     }
   }
 
+  /**
+   * Resolves one English voice and reuses it for the whole session. getVoices()
+   * returns [] until the engine finishes loading, so picking per-utterance made
+   * the first reply speak in the browser default voice and later replies in the
+   * preferred one — audibly two different speakers.
+   */
+  _resolveVoice() {
+    if (this._pinnedVoice) return this._pinnedVoice;
+    if (!window.speechSynthesis) return null;
+
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || !voices.length) return null;
+
+    const preferred = voices.find(v =>
+      v.lang.startsWith('en') &&
+      (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Jenny') || v.name.includes('Guy'))
+    ) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+
+    if (preferred) this._pinnedVoice = preferred;
+    return this._pinnedVoice || null;
+  }
+
   _speak(text, onComplete = null) {
     console.log('[QuantumVoiceCopilot] Speaking:', text);
     this._setDialogueAI(text);
@@ -494,11 +527,17 @@ class QuantumVoiceCopilot {
       this.isSpeaking = true;
       this._updateStatus('🗣️ COPILOT SPEAKING...', 'speaking');
 
-      // Clear any pending queue
+      // Supersede any utterance that is queued or mid-flight, so two replies
+      // can never overlap into a garbled duet.
+      clearTimeout(this._speakTimer);
+      const speakToken = (this._speakToken || 0) + 1;
+      this._speakToken = speakToken;
+
       window.speechSynthesis.cancel();
       window.speechSynthesis.resume();
 
-      setTimeout(() => {
+      this._speakTimer = setTimeout(() => {
+        if (this._speakToken !== speakToken) return; // a newer reply won
         try {
           const utterance = new SpeechSynthesisUtterance(text);
           // CRITICAL: Bind to window and instance to prevent V8 premature garbage collection
@@ -509,14 +548,8 @@ class QuantumVoiceCopilot {
           utterance.pitch = 1.0;
           utterance.volume = 1.0;
 
-          const voices = window.speechSynthesis.getVoices();
-          if (voices && voices.length) {
-            const preferredVoice = voices.find(v => 
-              v.lang.startsWith('en') && 
-              (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Jenny') || v.name.includes('Guy'))
-            ) || voices.find(v => v.lang.startsWith('en'));
-            if (preferredVoice) utterance.voice = preferredVoice;
-          }
+          const voice = this._resolveVoice();
+          if (voice) utterance.voice = voice;
 
           utterance.onstart = () => {
             this.isSpeaking = true;
@@ -614,6 +647,149 @@ class QuantumVoiceCopilot {
   }
 
   // -------------------------------------------------------------
+  // Phonetic term resolution (vocabulary owned by the backend registry)
+  // -------------------------------------------------------------
+
+  /**
+   * Pulls the capability vocabulary from the backend once per session. The
+   * terms live in exactly one place (ananta-backend/utils/voiceIntent.js); this
+   * side only runs the generic matching algorithm over whatever it is given, so
+   * new capabilities become speakable with no frontend change.
+   */
+  async loadVoiceVocabulary() {
+    if (this._vocabulary) return this._vocabulary;
+    if (this._vocabularyPromise) return this._vocabularyPromise;
+
+    this._vocabularyPromise = (async () => {
+      const base = (window.anantaBackend && window.anantaBackend.baseUrl) || '';
+      const res = await fetch(`${base}/api/voice/vocabulary`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      this._vocabConfig = {
+        minFuzzyLength: data.minFuzzyLength || 5,
+        similarityThreshold: data.similarityThreshold || 0.78,
+        maxNgram: data.maxNgram || 4
+      };
+      this._vocabulary = (data.capabilities || []).flatMap(cap =>
+        (cap.terms || []).map(term => ({
+          id: cap.id,
+          kind: cap.kind,
+          collapsed: term.toLowerCase().replace(/[^a-z0-9]/g, ''),
+          canonical: cap.terms[0]
+        }))
+      );
+      console.log('[QuantumVoiceCopilot] Loaded', this._vocabulary.length, 'voice vocabulary terms.');
+      return this._vocabulary;
+    })().catch(err => {
+      console.warn('[QuantumVoiceCopilot] Vocabulary unavailable, backend will correct instead:', err.message);
+      this._vocabularyPromise = null;
+      return null;
+    });
+
+    return this._vocabularyPromise;
+  }
+
+  _levenshtein(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+
+    let prev = new Array(b.length + 1);
+    let curr = new Array(b.length + 1);
+    for (let j = 0; j <= b.length; j++) prev[j] = j;
+
+    for (let i = 1; i <= a.length; i++) {
+      curr[0] = i;
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+      }
+      const swap = prev; prev = curr; curr = swap;
+    }
+    return prev[b.length];
+  }
+
+  _isTransposition(a, b) {
+    if (a.length !== b.length || a.length < 3) return false;
+    return a.split('').sort().join('') === b.split('').sort().join('');
+  }
+
+  _matchSpokenPhrase(phrase) {
+    const target = phrase.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!target || !this._vocabulary) return null;
+    const cfg = this._vocabConfig;
+
+    let best = null;
+    for (const entry of this._vocabulary) {
+      if (entry.collapsed === target) return { ...entry, score: 1, exact: true };
+      if (this._isTransposition(target, entry.collapsed)) return { ...entry, score: 0.99, exact: false };
+      if (target.length < cfg.minFuzzyLength || entry.collapsed.length < cfg.minFuzzyLength) continue;
+
+      const max = Math.max(target.length, entry.collapsed.length);
+      const score = 1 - this._levenshtein(target, entry.collapsed) / max;
+      if (score >= cfg.similarityThreshold && (!best || score > best.score)) {
+        best = { ...entry, score, exact: false };
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Rewrites a heard phrase so recognized capabilities appear under their
+   * canonical names. Non-overlapping, best-score-first.
+   */
+  _resolveSpokenTerms(rawText) {
+    const original = (rawText || '').trim();
+    if (!this._vocabulary) return { text: original, corrected: false };
+
+    const tokens = original.split(/\s+/).filter(Boolean);
+    if (!tokens.length) return { text: original, corrected: false };
+
+    const maxNgram = this._vocabConfig.maxNgram;
+    const candidates = [];
+    for (let start = 0; start < tokens.length; start++) {
+      for (let len = Math.min(maxNgram, tokens.length - start); len >= 1; len--) {
+        const match = this._matchSpokenPhrase(tokens.slice(start, start + len).join(' '));
+        if (match) candidates.push({ start, end: start + len, match, span: len });
+      }
+    }
+
+    candidates.sort((a, b) => (b.match.score - a.match.score) || (b.span - a.span));
+
+    const claimed = new Array(tokens.length).fill(false);
+    const accepted = [];
+    for (const cand of candidates) {
+      let free = true;
+      for (let i = cand.start; i < cand.end; i++) {
+        if (claimed[i]) { free = false; break; }
+      }
+      if (!free) continue;
+      for (let i = cand.start; i < cand.end; i++) claimed[i] = true;
+      accepted.push(cand);
+    }
+    accepted.sort((a, b) => a.start - b.start);
+
+    const out = [];
+    let cursor = 0;
+    let corrected = false;
+    for (const cand of accepted) {
+      for (let i = cursor; i < cand.start; i++) out.push(tokens[i]);
+      // Leave correctly-spoken text alone; only substitute actual mishearings.
+      if (cand.match.exact) {
+        for (let i = cand.start; i < cand.end; i++) out.push(tokens[i]);
+      } else {
+        out.push(cand.match.canonical);
+        corrected = true;
+      }
+      cursor = cand.end;
+    }
+    for (let i = cursor; i < tokens.length; i++) out.push(tokens[i]);
+
+    return { text: out.join(' '), corrected };
+  }
+
+  // -------------------------------------------------------------
   // Universal Generative Quantum Circuit AI Engine
   // -------------------------------------------------------------
   async _processTranscript(rawText) {
@@ -625,7 +801,15 @@ class QuantumVoiceCopilot {
     this._isProcessingVoice = true;
 
     try {
-      let text = rawText.toLowerCase().trim();
+      const heard = rawText.toLowerCase().trim();
+      // Correct mispronunciations against the backend capability registry before
+      // any matcher runs, so "bellystate" behaves exactly like "bell state".
+      const resolved = this._resolveSpokenTerms(heard);
+      let text = resolved.text;
+      if (resolved.corrected) {
+        console.log('[QuantumVoiceCopilot] Phonetic correction:', heard, '->', text);
+        this._setDialogueUser(`${rawText.trim()}  →  understood as "${text}"`);
+      }
       console.log('[QuantumVoiceCopilot] Ingested raw voice:', text);
 
       // -----------------------------------------------------------------------

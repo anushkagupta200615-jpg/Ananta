@@ -358,6 +358,24 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (pathname === '/api/synthesize-topic' && req.method === 'POST') {
+    const body = await parseRequestBody(req);
+    const { topic, papers } = body || {};
+    if (!topic || !Array.isArray(papers) || papers.length === 0) {
+      return sendJson(res, 400, { error: 'provide topic and a non-empty papers array' });
+    }
+
+    try {
+      const { synthesizeTopic } = require('./ananta-backend/utils/summarize');
+      const result = await synthesizeTopic(topic, papers);
+      logTransaction('POST', pathname, 200, Date.now() - reqStart, { topic, paperCount: papers.length });
+      return sendJson(res, 200, result);
+    } catch (e) {
+      logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: e.message });
+      return sendJson(res, 500, { error: e.message });
+    }
+  }
+
   // 1. GET /api/health
   if (pathname === '/api/health' && req.method === 'GET') {
     const uptimeSec = Math.round(process.uptime());
@@ -398,6 +416,19 @@ const server = http.createServer(async (req, res) => {
       logs: telemetryLogs
     });
     return;
+  }
+
+  // GET /api/voice/vocabulary — capability registry used for phonetic matching
+  if (pathname === '/api/voice/vocabulary' && req.method === 'GET') {
+    try {
+      const { getVocabulary } = require('./ananta-backend/utils/voiceIntent');
+      const data = getVocabulary();
+      logTransaction('GET', pathname, 200, Date.now() - reqStart, { terms: data.capabilities.length });
+      return sendJson(res, 200, data);
+    } catch (err) {
+      logTransaction('GET', pathname, 500, Date.now() - reqStart, { error: err.message });
+      return sendJson(res, 500, { error: err.message });
+    }
   }
 
   // GET /api/resources — Live Community Resource Library (fetched from GitHub, cached)
@@ -748,7 +779,11 @@ User Question: "${message}"`;
     res.writeHead(200, {
       'Content-Type': contentType,
       'Content-Length': stats.size,
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600'
+      // Source files must never be cached in dev: a stale .js/.css after an edit
+      // looks exactly like "the fix didn't work". Only true static assets cache.
+      'Cache-Control': ['.html', '.js', '.css', '.json'].includes(ext)
+        ? 'no-cache'
+        : 'public, max-age=3600'
     });
 
     const stream = fs.createReadStream(filePath);
