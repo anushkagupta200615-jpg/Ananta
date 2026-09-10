@@ -20,11 +20,21 @@ async function extractTextFromUrl(url) {
       const apiRes = await fetch(apiUrl);
       if (apiRes.ok) {
         const xml = await apiRes.text();
-        const titleM = xml.match(/<title>([\s\S]*?)<\/title>/i);
-        const sumM = xml.match(/<summary>([\s\S]*?)<\/summary>/i);
-        const title = titleM ? titleM[1].replace(/\s+/g, ' ').trim() : `arXiv:${arxivId}`;
+        const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/i);
+        const entryXml = entryMatch ? entryMatch[1] : xml;
+
+        const titleM = entryXml.match(/<title>([\s\S]*?)<\/title>/i);
+        const sumM = entryXml.match(/<summary>([\s\S]*?)<\/summary>/i);
+        const authorsM = [...entryXml.matchAll(/<author>[\s\S]*?<name>([\s\S]*?)<\/name>/gi)].map(m => m[1].trim());
+        const dateM = entryXml.match(/<published>([\s\S]*?)<\/published>/i);
+
+        let title = titleM ? titleM[1].replace(/\s+/g, ' ').trim() : `arXiv:${arxivId}`;
+        title = title.replace(/^\s*arXiv\s*Query:[^;]+;/i, '').trim();
         const summary = sumM ? sumM[1].replace(/\s+/g, ' ').trim() : '';
-        const fullText = `Title: ${title}\narXiv Identifier: ${arxivId}\n\nAbstract & Research Core:\n${summary}`;
+        const authors = authorsM.length ? authorsM.join(', ') : 'Researchers in Quantum Science';
+        const date = dateM ? dateM[1].substring(0, 10) : '';
+
+        const fullText = `Title: ${title}\nAuthors: ${authors}\nPublished: ${date}\narXiv Identifier: ${arxivId}\n\nAbstract & Research Core:\n${summary}`;
         return { title, text: fullText };
       }
     } catch (e) {

@@ -1,35 +1,63 @@
 /**
- * Finds every exact occurrence of a term in a body of text (case-insensitive,
- * whole-word match) and returns the surrounding context window for each hit.
+ * Finds occurrences of a term in a body of text (case-insensitive,
+ * handles common typos, inflections, and plurals) and returns context windows.
  *
  * @param {string} text - full document text
- * @param {string} term - exact word/phrase to search for
- * @param {number} windowChars - how many characters of context on each side
+ * @param {string} term - word/phrase to search for
+ * @param {number} windowChars - context window size
  */
-function findTermOccurrences(text, term, windowChars = 400) {
-  if (!term || !term.trim()) return [];
+function findTermOccurrences(text, term, windowChars = 320) {
+  if (!text || !term || !term.trim()) return [];
 
-  // Escape regex special characters in the user-supplied term
-  const escaped = term.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  // \b word boundaries give an "exact word" match rather than a substring match
-  const regex = new RegExp(`\\b${escaped}\\b`, "gi");
+  const rawTerm = term.trim();
+  const typoMap = {
+    'superpostion': 'superposition',
+    'super-position': 'superposition',
+    'entaglement': 'entanglement',
+    'entagelment': 'entanglement',
+    'teleporation': 'teleportation',
+    'decoherance': 'decoherence',
+    'hadmard': 'hadamard',
+    'algorithim': 'algorithm',
+    'transmons': 'transmon',
+    'cryostats': 'cryostat'
+  };
 
+  const normalized = typoMap[rawTerm.toLowerCase()] || rawTerm;
+  // If term ends in s, ies, ed, ing, or ions, find stem
+  const stem = normalized.replace(/(?:ions?|ings?|eds?|es|s)$/i, '');
+  const activePattern = (stem.length >= 3 ? stem : normalized);
+  const escaped = activePattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // 1. Try flexible whole-word matching with common suffixes
+  const regex = new RegExp(`\\b${escaped}(?:s|es|ed|ing|al|ity|ions?|ic)?\\b`, 'gi');
   const matches = [];
   let match;
+
   while ((match = regex.exec(text)) !== null) {
     const start = Math.max(0, match.index - windowChars);
-    const end = Math.min(text.length, match.index + term.length + windowChars);
-
+    const end = Math.min(text.length, match.index + match[0].length + windowChars);
     matches.push({
       matchIndex: match.index,
-      context:
-        (start > 0 ? "..." : "") +
-        text.slice(start, end) +
-        (end < text.length ? "..." : ""),
+      matchedWord: match[0],
+      context: (start > 0 ? '...' : '') + text.slice(start, end).replace(/\s+/g, ' ').trim() + (end < text.length ? '...' : '')
     });
-
-    // Prevent infinite loops on zero-length matches
     if (match.index === regex.lastIndex) regex.lastIndex++;
+  }
+
+  // 2. If no matches, fall back to simple substring search
+  if (matches.length === 0) {
+    const fallbackRegex = new RegExp(escaped, 'gi');
+    while ((match = fallbackRegex.exec(text)) !== null) {
+      const start = Math.max(0, match.index - windowChars);
+      const end = Math.min(text.length, match.index + match[0].length + windowChars);
+      matches.push({
+        matchIndex: match.index,
+        matchedWord: match[0],
+        context: (start > 0 ? '...' : '') + text.slice(start, end).replace(/\s+/g, ' ').trim() + (end < text.length ? '...' : '')
+      });
+      if (match.index === fallbackRegex.lastIndex) fallbackRegex.lastIndex++;
+    }
   }
 
   return matches;
