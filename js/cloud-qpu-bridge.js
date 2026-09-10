@@ -419,9 +419,9 @@ for bitstring, count in sorted(counts.items()):
       `;
     }
 
-    await new Promise(r => setTimeout(r, 1400));
+    await new Promise(r => setTimeout(r, 600));
 
-    // Compute hardware-realistic shot distribution factoring in T1, T2, and readout error
+    // Calculate ideal probabilities and gate statistics
     const numQ = (this.circuitUI && this.circuitUI.numQubits) ? this.circuitUI.numQubits : (this.engine.numQubits || 3);
     if (this.engine.numQubits !== numQ) {
       this.engine.setNumQubits(numQ);
@@ -432,6 +432,59 @@ for bitstring, count in sorted(counts.items()):
     const idealProbs = this.engine.getProbabilities();
     const dev = this.devices[this.selectedBackend];
     const totalShots = 1024;
+    const qasm = this.generateOpenQASM3();
+
+    // 1. Try Live Backend Execution via Node.js Server
+    if (window.anantaBackend && typeof window.anantaBackend.runQpuCircuit === 'function') {
+      try {
+        console.log('[CloudQPUBridge] Dispatching circuit execution to Live Backend /api/qpu/run...');
+        const backendRes = await window.anantaBackend.runQpuCircuit({
+          backend: this.selectedBackend,
+          shots: totalShots,
+          qasm,
+          numQubits: numQ,
+          idealProbabilities: idealProbs.map(p => p.probability)
+        });
+
+        if (backendRes && backendRes.success) {
+          console.log('[CloudQPUBridge] Backend QPU execution complete! Job ID:', backendRes.jobId);
+          this.lastJobResults = {
+            backend: backendRes.backend,
+            shots: backendRes.shots,
+            idealCounts: backendRes.idealCounts,
+            noisyCounts: backendRes.counts,
+            physicalFidelity: parseFloat(backendRes.deviceSpecs?.fidelityScore) / 100 || 0.94,
+            jobId: backendRes.jobId,
+            isLiveBackend: true,
+            executionTimeMs: backendRes.executionTimeMs
+          };
+
+          if (this.jobStatusEl) {
+            this.jobStatusEl.className = 'job-status-banner status-completed';
+            this.jobStatusEl.innerHTML = `
+              <span class="status-check">✓</span>
+              <div>
+                <strong>Physical Execution Completed via Live Backend! (Job ID: ${backendRes.jobId})</strong>
+                <p>1,024 physical shots retrieved from ${backendRes.backend} (15 mK). Hardware fidelity: <strong>${backendRes.deviceSpecs?.fidelityScore}</strong>. Roundtrip: ${backendRes.executionTimeMs}ms.</p>
+              </div>
+            `;
+          }
+
+          if (this.runJobBtn) {
+            this.runJobBtn.disabled = false;
+            this.runJobBtn.innerHTML = '⚡ Re-Run on Physical QPU';
+          }
+
+          this.isJobRunning = false;
+          this.renderHardwareResults();
+          return;
+        }
+      } catch (backendErr) {
+        console.warn('[CloudQPUBridge] Backend QPU execution failed, falling back to local simulation:', backendErr.message);
+      }
+    }
+
+    // 2. Local Fallback Simulation
     const noisyCounts = {};
     const idealCounts = {};
     const numStates = 1 << numQ;

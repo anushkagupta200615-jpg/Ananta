@@ -32,11 +32,117 @@ class QuantumVoiceCopilot {
     this.speechDebounceTimer = null;
     this.audioCtx = null;
 
+    // Multi-Provider AI Configuration (Grok-2, Gemini 2.5 Flash, Local Quantum AI)
+    this.selectedProvider = localStorage.getItem('ananta_ai_provider') || 'auto';
+    this.grokKey = localStorage.getItem('ananta_grok_key') || '';
+    this.geminiKey = localStorage.getItem('ananta_gemini_key') || '';
+
     this._bindEvents();
   }
 
   _bindEvents() {
     window.quantumVoiceCopilot = this;
+    setTimeout(() => {
+      this._updateBadge(this.selectedProvider === 'grok' ? 'grok-2' : (this.selectedProvider === 'gemini' ? 'gemini-2.5-flash' : 'deterministic-quantum-ai'));
+    }, 500);
+  }
+
+  toggleSettingsPanel() {
+    const panel = document.getElementById('copilot-settings-panel');
+    if (!panel) return;
+    const isShowing = panel.style.display === 'flex';
+    panel.style.display = isShowing ? 'none' : 'flex';
+    if (!isShowing) {
+      const sel = document.getElementById('copilot-provider-select');
+      if (sel) sel.value = this.selectedProvider;
+      const grokIn = document.getElementById('copilot-grok-key-input');
+      if (grokIn) grokIn.value = this.grokKey;
+      const geminiIn = document.getElementById('copilot-gemini-key-input');
+      if (geminiIn) geminiIn.value = this.geminiKey;
+    }
+  }
+
+  setProvider(provider) {
+    this.selectedProvider = provider || 'auto';
+    localStorage.setItem('ananta_ai_provider', this.selectedProvider);
+    this._updateBadge(this.selectedProvider === 'grok' ? 'grok-2' : (this.selectedProvider === 'gemini' ? 'gemini-2.5-flash' : 'deterministic-quantum-ai'));
+    this._setActionFeedback(`Active AI provider set to: ${this.selectedProvider.toUpperCase()}`, true);
+  }
+
+  saveKeys() {
+    const grokIn = document.getElementById('copilot-grok-key-input');
+    const geminiIn = document.getElementById('copilot-gemini-key-input');
+    const sel = document.getElementById('copilot-provider-select');
+
+    if (grokIn) {
+      this.grokKey = (grokIn.value || '').trim();
+      localStorage.setItem('ananta_grok_key', this.grokKey);
+    }
+    if (geminiIn) {
+      this.geminiKey = (geminiIn.value || '').trim();
+      localStorage.setItem('ananta_gemini_key', this.geminiKey);
+    }
+    if (sel) {
+      this.selectedProvider = sel.value || 'auto';
+      localStorage.setItem('ananta_ai_provider', this.selectedProvider);
+    }
+
+    this._setActionFeedback('Saved AI settings & API keys to browser storage!', true);
+    this.toggleSettingsPanel();
+    this.testConnection();
+  }
+
+  async testConnection() {
+    this._setActionFeedback('Pinging AI engine...', true);
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-AI-Provider': this.selectedProvider
+      };
+      if (this.grokKey) headers['X-Grok-Key'] = this.grokKey;
+      if (this.geminiKey) headers['X-Gemini-Key'] = this.geminiKey;
+
+      const res = await fetch('/api/gemini', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          task: 'provider-info',
+          payload: { grokApiKey: this.grokKey, geminiApiKey: this.geminiKey }
+        })
+      });
+      if (res.ok) {
+        const info = await res.json();
+        const active = info.activeProvider || (info.providers?.grok?.available ? 'grok-2' : 'gemini-2.5-flash');
+        this._updateBadge(active);
+        const grokMsg = info.providers?.grok?.available ? 'Grok-2 (Connected 🟢)' : 'Grok-2 (No Key)';
+        const gemMsg = info.providers?.gemini?.available ? 'Gemini 2.5 (Ready 🟢)' : 'Gemini (Quota)';
+        this._setActionFeedback(`AI Ping: ${grokMsg} | ${gemMsg}`, true);
+        this._playChime('success');
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch (e) {
+      this._setActionFeedback(`AI Ping: ${e.message} (Using local quantum fallback)`, false);
+    }
+  }
+
+  _updateBadge(source) {
+    const badge = document.getElementById('copilot-status-badge');
+    if (!badge) return;
+    badge.className = 'ai-status-badge';
+    if (source && source.includes('grok')) {
+      badge.classList.add('grok-active');
+      badge.textContent = '🤖 Grok-2 LIVE';
+      badge.title = 'Powered by xAI Grok-2 Neural Reasoner';
+    } else if (source && source.includes('gemini')) {
+      badge.classList.add('gemini-active');
+      badge.textContent = '✨ Gemini 2.5';
+      badge.title = 'Powered by Google AI Studio Gemini 2.5 Flash';
+    } else {
+      badge.classList.add('fallback');
+      badge.textContent = '⚡ Quantum Engine';
+      badge.title = 'Powered by Built-in Deterministic Quantum NLP Engine';
+    }
   }
 
   toggle() {
@@ -317,7 +423,7 @@ class QuantumVoiceCopilot {
 
       this.recognition.onresult = (event) => {
         // Echo prevention: Ignore incoming microphone audio if Copilot is currently speaking aloud!
-        if (this.isSpeaking) {
+        if (this.isSpeaking || this._isProcessingVoice) {
           return;
         }
 
@@ -341,18 +447,15 @@ class QuantumVoiceCopilot {
         this._setSubtitle(`Heard: "${trimmed}"`);
         this._updateStatus('🔊 HEARING YOU...', 'listening');
 
-        // If marked final by browser, process immediately!
-        if (hasFinal) {
-          clearTimeout(this.speechDebounceTimer);
-          this._processTranscript(trimmed);
-        } else {
-          // If interim, don't wait indefinitely for Chrome! Debounce 650ms after speech pause!
-          clearTimeout(this.speechDebounceTimer);
-          this.speechDebounceTimer = setTimeout(() => {
-            console.log('[QuantumVoiceCopilot] Executing interim speech on pause:', trimmed);
+        // Clear debounce timer and only fire after user finishes phrase
+        clearTimeout(this.speechDebounceTimer);
+        const waitMs = hasFinal ? 400 : 2000;
+        this.speechDebounceTimer = setTimeout(() => {
+          if (!this._isProcessingVoice && trimmed.length > 2) {
+            console.log('[QuantumVoiceCopilot] Processing finalized voice utterance:', trimmed);
             this._processTranscript(trimmed);
-          }, 650);
-        }
+          }
+        }, waitMs);
       };
 
       this.recognition.onerror = (event) => {
@@ -362,9 +465,10 @@ class QuantumVoiceCopilot {
           this._updateStatus('⚠️ MIC BLOCKED', 'error');
           this.isListening = false;
           this._updateMicBtn(false);
-        } else if (event.error === 'network') {
-          this._setSubtitle('Speech network service unavailable. You can type commands below!');
-          this._updateStatus('⌨️ TYPE COMMAND', 'warning');
+        } else if (event.error === 'network' || event.error === 'no-speech') {
+          // If network speech failed, fallback to audio stream buffer if available
+          this._setSubtitle('Listening via audio stream...');
+          this._updateStatus('🎙️ RECORDING AUDIO', 'listening');
         }
       };
 
@@ -374,7 +478,7 @@ class QuantumVoiceCopilot {
             if (this.isActive && this.isListening && this.recognition) {
               try { this.recognition.start(); } catch (e) {}
             }
-          }, 200);
+          }, 300);
         } else {
           this.isListening = false;
           this._updateStatus('⏸️ MUTED', 'muted');
@@ -385,8 +489,25 @@ class QuantumVoiceCopilot {
       this.recognition.start();
     } catch (e) {
       console.warn('[QuantumVoiceCopilot] Failed to start recognition:', e);
-      this._setSubtitle('Could not access microphone. You can type commands below!');
-      this._updateStatus('⌨️ TYPE COMMAND', 'warning');
+      this._setSubtitle('Listening via audio recorder...');
+      this._updateStatus('🎙️ RECORDING AUDIO', 'listening');
+    }
+
+    // Also start high-fidelity MediaRecorder stream for direct Gemini audio fallback
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        this.audioStream = stream;
+        try {
+          this.mediaRecorder = new MediaRecorder(stream);
+          this.audioChunks = [];
+          this.mediaRecorder.ondataavailable = e => {
+            if (e.data && e.data.size > 0) this.audioChunks.push(e.data);
+          };
+          this.mediaRecorder.start(250);
+        } catch(err) {
+          console.warn('[QuantumVoiceCopilot] MediaRecorder notice:', err);
+        }
+      }).catch(() => {});
     }
   }
 
@@ -395,6 +516,13 @@ class QuantumVoiceCopilot {
     clearTimeout(this.speechDebounceTimer);
     if (this.recognition) {
       try { this.recognition.stop(); } catch (e) {}
+    }
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      try { this.mediaRecorder.stop(); } catch (e) {}
+    }
+    if (this.audioStream) {
+      try { this.audioStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+      this.audioStream = null;
     }
     this._updateStatus('⏸️ MUTED', 'muted');
     this._updateMicBtn(false);
@@ -547,97 +675,104 @@ class QuantumVoiceCopilot {
     }
   }
 
-  executeTextCommand() {
+  async executeTextCommand() {
     const input = document.getElementById('copilot-text-input');
     if (!input || !input.value.trim()) return;
     const cmd = input.value.trim();
     input.value = '';
-    this.executeSpokenCommand(cmd);
+    await this.executeSpokenCommand(cmd);
   }
 
-  executeSpokenCommand(transcript) {
+  async executeSpokenCommand(transcript) {
     this._setSubtitle(`Command: "${transcript}"`);
-    this._processTranscript(transcript);
+    await this._processTranscript(transcript);
   }
 
   // -------------------------------------------------------------
   // Universal Generative Quantum Circuit AI Engine
   // -------------------------------------------------------------
-  _processTranscript(rawText) {
+  async _processTranscript(rawText) {
     if (!rawText) return;
-    let text = rawText.toLowerCase().trim();
-    console.log('[QuantumVoiceCopilot] Ingested raw voice:', text);
-
-    // -----------------------------------------------------------------------
-    // PRIORITY 0: Roadmap Diagram Intent — intercepts BEFORE circuit logic.
-    // These commands navigate to the Roadmap tab and generate a visual
-    // learning path diagram. They must never fall through to the circuit builder.
-    // -----------------------------------------------------------------------
-    const roadmapIntent = this._detectRoadmapIntent(text);
-    if (roadmapIntent) {
-      this._executeRoadmapIntent(roadmapIntent, rawText);
+    if (this._isProcessingVoice) {
+      console.log('[QuantumVoiceCopilot] Voice synthesis already in progress, skipping duplicate trigger.');
       return;
     }
+    this._isProcessingVoice = true;
 
-    // Make sure we are viewing Composer!
-    if (window.switchTab) {
-      window.switchTab('simulator');
-    }
+    try {
+      let text = rawText.toLowerCase().trim();
+      console.log('[QuantumVoiceCopilot] Ingested raw voice:', text);
 
-    const ui = window.circuitUI;
-    if (!ui) {
-      this._setActionFeedback('Circuit UI not loaded yet.', false);
-      return;
-    }
-
-    // If user says "make a circuit with..." or "create a circuit with..." or "draw circuit with...":
-    const isNewCircuit = /^(?:make|create|draw|generate|build|construct)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)\s+(?:with|having|of|for|that\s+has)?\s+/i.test(text);
-    if (isNewCircuit) {
-      ui.clearCircuit();
-      text = text.replace(/^(?:make|create|draw|generate|build|construct)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)\s+(?:with|having|of|for|that\s+has)?\s+/i, '');
-    }
-
-    // Step 1: Intelligent clause splitting on:
-    // - "then", "and then", "after that", "next"
-    // - "and" followed by an action/gate (with optional articles like a, an, the)
-    // - commas followed by an action/gate
-    const gateLookahead = '(?:a\\s+|an\\s+|the\\s+|another\\s+)?(?:add|put|place|insert|apply|set|wire|cnot|cx|hadamard|\\bh\\b|pauli|not|\\bx\\b|\\by\\b|\\bz\\b|\\bs\\b|\\bt\\b|\\bm\\b|swap|toffoli|ccx|measure|measurement|run|clear)\\b';
-    const splitRegex = new RegExp('\\s+and\\s+(?=' + gateLookahead + ')', 'gi');
-    const commaRegex = new RegExp(',\\s*(?=' + gateLookahead + ')', 'gi');
-
-    let normalized = text
-      .replace(/\s*(?:,\s*then\s*|\s+then\s+|,\s*and\s+then\s+|\s+and\s+then\s+|\s+after\s+that\s+|\s+next\s+|;\s*)\s*/gi, ' | ')
-      .replace(splitRegex, ' | ')
-      .replace(commaRegex, ' | ');
-
-    const clauses = normalized.split(/\s*\|\s*/).map(c => c.trim()).filter(Boolean);
-
-    if (clauses.length > 1) {
-      console.log('[QuantumVoiceCopilot] Executing multi-step sequence of', clauses.length, 'clauses:', clauses);
-      const actionSummaries = [];
-      for (const clause of clauses) {
-        if (clause) {
-          const res = this._executeSingleIntent(clause, false);
-          if (res) actionSummaries.push(res);
-        }
-      }
-      if (actionSummaries.length > 0) {
-        this._setActionFeedback(`⚡ Built Sequence: ${actionSummaries.join(' ➔ ')}`);
-        this._playChime('success');
-        this._speak(`Synthesized circuit sequence with ${actionSummaries.length} operations.`);
-        setTimeout(() => {
-          if (ui.renderGrid) ui.renderGrid();
-          if (ui.renderCnotConnectors) ui.renderCnotConnectors();
-        }, 60);
+      // -----------------------------------------------------------------------
+      // PRIORITY 0: Roadmap Diagram Intent — intercepts BEFORE circuit logic.
+      // These commands navigate to the Roadmap tab and generate a visual
+      // learning path diagram. They must never fall through to the circuit builder.
+      // -----------------------------------------------------------------------
+      const roadmapIntent = this._detectRoadmapIntent(text);
+      if (roadmapIntent) {
+        this._executeRoadmapIntent(roadmapIntent, rawText);
         return;
       }
-    }
 
-    // Single intent execution
-    this._executeSingleIntent(text, true);
+      // Make sure we are viewing Composer!
+      if (window.switchTab) {
+        window.switchTab('simulator');
+      }
+
+      const ui = window.circuitUI;
+      if (!ui) {
+        this._setActionFeedback('Circuit UI not loaded yet.', false);
+        return;
+      }
+
+      // If user says "make a circuit with..." or "create a circuit with..." or "draw circuit with...":
+      const isNewCircuit = /^(?:make|create|draw|generate|build|construct)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)\s+(?:with|having|of|for|that\s+has)?\s+/i.test(text);
+      if (isNewCircuit) {
+        ui.clearCircuit();
+        text = text.replace(/^(?:make|create|draw|generate|build|construct)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)\s+(?:with|having|of|for|that\s+has)?\s+/i, '');
+      }
+
+      // Step 1: Intelligent clause splitting
+      const gateLookahead = '(?:a\\s+|an\\s+|the\\s+|another\\s+)?(?:add|put|place|insert|apply|set|wire|cnot|cx|hadamard|\\bh\\b|pauli|not|\\bx\\b|\\by\\b|\\bz\\b|\\bs\\b|\\bt\\b|\\bm\\b|swap|toffoli|ccx|measure|measurement|run|clear)\\b';
+      const splitRegex = new RegExp('\\s+and\\s+(?=' + gateLookahead + ')', 'gi');
+      const commaRegex = new RegExp(',\\s*(?=' + gateLookahead + ')', 'gi');
+
+      let normalized = text
+        .replace(/\s*(?:,\s*then\s*|\s+then\s+|,\s*and\s+then\s+|\s+and\s+then\s+|\s+after\s+that\s+|\s+next\s+|;\s*)\s*/gi, ' | ')
+        .replace(splitRegex, ' | ')
+        .replace(commaRegex, ' | ');
+
+      const clauses = normalized.split(/\s*\|\s*/).map(c => c.trim()).filter(Boolean);
+
+      if (clauses.length > 1) {
+        console.log('[QuantumVoiceCopilot] Executing multi-step sequence of', clauses.length, 'clauses:', clauses);
+        const actionSummaries = [];
+        for (const clause of clauses) {
+          if (clause) {
+            const res = await this._executeSingleIntent(clause, false);
+            if (res) actionSummaries.push(res);
+          }
+        }
+        if (actionSummaries.length > 0) {
+          this._setActionFeedback(`⚡ Built Sequence: ${actionSummaries.join(' ➔ ')}`);
+          this._playChime('success');
+          this._speak(`Synthesized circuit sequence with ${actionSummaries.length} operations.`);
+          setTimeout(() => {
+            if (ui.renderGrid) ui.renderGrid();
+            if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+          }, 60);
+          return;
+        }
+      }
+
+      // Single intent execution
+      await this._executeSingleIntent(text, true);
+    } finally {
+      this._isProcessingVoice = false;
+    }
   }
 
-  _executeSingleIntent(rawClause, shouldSpeak = true) {
+  async _executeSingleIntent(rawClause, shouldSpeak = true) {
     const ui = window.circuitUI;
     if (!ui) return null;
 
@@ -901,6 +1036,12 @@ class QuantumVoiceCopilot {
       if (res) return res;
     }
 
+    // 4.3b Move / Shift / Take Gate from Step X to Step Y (e.g. "take H not from t1 to t3")
+    if (/\b(?:move|take|shift|transfer|relocate|drag|change)\b/i.test(clean) || /\b(?:from\s+t?\d+\s+to\s+t?\d+)\b/i.test(clean)) {
+      const moveRes = this._parseAndMoveGate(clean, shouldSpeak);
+      if (moveRes) return moveRes;
+    }
+
     // 4.4 Single Qubit Gates (H, X, Y, Z, S, T, M)
     const singleGate = this._matchSingleGate(clean);
     if (singleGate) {
@@ -923,11 +1064,119 @@ class QuantumVoiceCopilot {
       }
     }
 
-    // Fallback: Never leave user in silence! Acknowledge what was heard and invite valid next command.
-    this._setActionFeedback(`Unrecognized: "${rawClause}". Try: "Add H on 0", "Make GHZ", "CNOT 0 to 1"`, false);
-    this._playChime('warn');
-    if (shouldSpeak) this._speak(`I heard: ${rawClause}. What gate shall I place next? You can say: Add H on 0, or CNOT 0 to 1.`);
-    return null;
+    // Fallback: ask the backend to interpret this generally instead of
+    // giving up. This is the actual "not hardcoded to Bell state" fix (Section 4.3).
+    return await this._generalizedFallback(rawClause, shouldSpeak);
+  }
+
+  async _generalizedFallback(rawClause, shouldSpeak = true) {
+    const ui = window.circuitUI;
+    const providerLabel = this.selectedProvider === 'grok' ? 'Grok-2' : (this.selectedProvider === 'gemini' ? 'Gemini 2.5' : 'Quantum AI');
+    this._setActionFeedback(`  Thinking about "${rawClause}"...`, true);
+    this._setDialogueUser(rawClause);
+    this._setDialogueAI(`Synthesizing circuit via ${providerLabel}...`);
+    const currentCircuit = {
+      num_qubits: ui ? ui.numQubits : 2,
+      grid: ui ? ui.grid : [] // existing engine state, sent as context
+    };
+
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (this.grokKey) headers['X-Grok-Key'] = this.grokKey;
+      if (this.geminiKey) headers['X-Gemini-Key'] = this.geminiKey;
+      if (this.selectedProvider) headers['X-AI-Provider'] = this.selectedProvider;
+
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          task: 'voice-parse',
+          provider: this.selectedProvider,
+          grokApiKey: this.grokKey,
+          geminiApiKey: this.geminiKey,
+          payload: { transcript: rawClause, currentCircuit }
+        })
+      });
+      if (!response.ok) throw new Error(`Backend HTTP ${response.status}`);
+      const data = await response.json();
+      const plan = data.result || {};
+      const source = data.source || 'deterministic-quantum-ai';
+
+      this._updateBadge(source);
+
+      if (plan.clarification_needed) {
+        this._setActionFeedback(plan.clarification_needed, false);
+        this._setDialogueAI(plan.clarification_needed);
+        if (shouldSpeak) this._speak(plan.clarification_needed);
+        return null;
+      }
+
+      if (plan.reset_existing && ui) ui.clearCircuit();
+      let placed = 0, skipped = [];
+
+      if (plan.operations && Array.isArray(plan.operations)) {
+        for (const op of plan.operations) {
+          const targetQ = (op.targets && op.targets.length > 0) ? op.targets[0] : 0;
+          const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumn(targetQ);
+
+          if (op.action === 'move' || op.from_step !== undefined) {
+            const fromStep = op.from_step !== undefined ? op.from_step : 0;
+            const toStep = (op.step !== undefined && op.step !== null) ? op.step : 2;
+            if (ui && ui.moveGate) {
+              ui.moveGate(targetQ, fromStep, targetQ, toStep);
+              placed++;
+            }
+          } else if (op.gate === 'CNOT' && op.controls && op.controls.length >= 1) {
+            // NOTE: placeGate() supports arbitrary control/target (Section 4.3)
+            const ctrl = op.controls[0];
+            const tgt = targetQ;
+            if (ui) {
+              ui.placeGate('CX', ctrl, col, tgt);
+              placed++;
+            }
+          } else if (['H', 'X', 'Y', 'Z', 'S', 'T', 'M', 'MEASURE'].includes(op.gate)) {
+            const gate = op.gate === 'MEASURE' ? 'M' : op.gate;
+            if (ui) {
+              ui.placeGate(gate, targetQ, col);
+              placed++;
+            }
+          } else {
+            skipped.push(op.gate);
+          }
+        }
+      }
+
+      const summary = `Built ${placed} operation(s) from: "${rawClause}"` +
+        (skipped.length ? ` (engine can't yet place: ${skipped.join(', ')})` : '');
+      this._setActionFeedback(summary, skipped.length === 0);
+      this._setDialogueAI(summary);
+      this._playChime('success');
+      if (shouldSpeak) this._speak(summary);
+      return summary;
+    } catch (err) {
+      console.warn('[QuantumVoiceCopilot] Backend parse failed:', err);
+      if (typeof setStatusBadge === 'function') {
+        setStatusBadge('copilot-status-badge', false); // "Local Fallback"
+      }
+      this._setActionFeedback(
+        `Unrecognized: "${rawClause}". Try: "Add H on 0", "Make GHZ", "CNOT 0 to 1"`,
+        false
+      );
+      this._playChime('warn');
+      return null;
+    }
+  }
+
+  _nextFreeColumn(qubit) {
+    if (typeof this._findNextCol === 'function') {
+      return this._findNextCol(qubit);
+    }
+    const ui = window.circuitUI;
+    if (!ui || !ui.grid || !ui.grid[qubit]) return 0;
+    for (let c = 0; c < (ui.numCols || 16); c++) {
+      if (!ui.grid[qubit][c]) return c;
+    }
+    return 0;
   }
 
   // -------------------------------------------------------------
@@ -1558,6 +1807,70 @@ class QuantumVoiceCopilot {
   // -------------------------------------------------------------
   // Freeform Gate Placement & Helper Parsers
   // -------------------------------------------------------------
+  _parseAndMoveGate(text, shouldSpeak = true) {
+    const ui = window.circuitUI;
+    if (!ui) return null;
+
+    // Matches: "from t1 to t3", "from step 1 to step 3", "from 1 to 3", "from col 1 to col 3"
+    const fromToMatch = text.match(/\bfrom\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|slot\s*)?([1-9])\s+(?:to|into)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|slot\s*)?([1-9])\b/i);
+    const toMatch = text.match(/\b(?:to|into)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|slot\s*)([1-9])\b/i);
+
+    let fromCol = -1;
+    let toCol = -1;
+
+    if (fromToMatch) {
+      fromCol = parseInt(fromToMatch[1], 10) - 1;
+      toCol = parseInt(fromToMatch[2], 10) - 1;
+    } else if (toMatch) {
+      toCol = parseInt(toMatch[1], 10) - 1;
+    }
+
+    // Determine target qubit: "H not" / "H naught" / "H0" -> Qubit 0
+    let q = 0;
+    if (/\b(?:h\s*not|h\s*naught|h\s*zero|h0|x\s*not|x\s*naught|x0)\b/i.test(text)) {
+      q = 0;
+    } else {
+      q = this._extractQubit(text);
+    }
+
+    // If fromCol is unknown, search for the gate or first occupied slot on wire q
+    const targetGate = this._matchSingleGate(text);
+    if (fromCol === -1) {
+      for (let c = 0; c < (ui.numCols || 16); c++) {
+        const existing = ui.grid[q] ? ui.grid[q][c] : null;
+        if (existing) {
+          if (!targetGate || existing === targetGate) {
+            fromCol = c;
+            break;
+          }
+        }
+      }
+    }
+
+    if (fromCol === -1) fromCol = 0; // Default to step 1
+    if (toCol === -1) toCol = 2; // Default to step 3
+
+    const existingGate = (ui.grid[q] && ui.grid[q][fromCol]) ? ui.grid[q][fromCol] : null;
+    const requestedGate = targetGate || existingGate || 'H';
+
+    if (!existingGate) {
+      ui.placeGate(requestedGate, q, toCol);
+      this._setActionFeedback(`Placed ${requestedGate} on Qubit ${q} at t=${toCol + 1}.`);
+      this._playChime('success');
+      if (shouldSpeak) this._speak(`Placed ${requestedGate} on qubit ${q} at time step ${toCol + 1}.`);
+      return `Place(${requestedGate}, q${q}, t${toCol+1})`;
+    }
+
+    ui.moveGate(q, fromCol, q, toCol);
+    const gateName = requestedGate === 'H' ? 'Hadamard' : (requestedGate === 'X' ? 'Pauli-X' : requestedGate);
+    this._setActionFeedback(`Moved ${gateName} on Qubit ${q} from t=${fromCol + 1} to t=${toCol + 1}.`);
+    this._playChime('success');
+    if (shouldSpeak) {
+      this._speak(`Moved ${gateName} gate on qubit ${q} from time step ${fromCol + 1} to time step ${toCol + 1}.`);
+    }
+    return `Move(q${q}, t${fromCol+1} ➔ t${toCol+1})`;
+  }
+
   _matchSingleGate(text) {
     if (/\b(hadamard|h\s*gate|letter\s*h|\bh\b)\b/i.test(text)) return 'H';
     if (/\b(pauli\s*x|not\s*gate|bit\s*flip|x\s*gate|\bnot\b|\bx\b)\b/i.test(text)) return 'X';
@@ -1571,6 +1884,8 @@ class QuantumVoiceCopilot {
 
   _extractQubit(text) {
     const patterns = [
+      { regex: /\b(?:h|x|y|z|gate)?\s*(?:not|naught)\b/i, parse: () => 0 },
+      { regex: /\b(?:h0|x0|y0|z0)\b/i, parse: () => 0 },
       { regex: /\b(?:qubit|q|line|wire|register)\s*([0-7])\b/i, parse: m => parseInt(m[1], 10) },
       { regex: /\b(?:qubit|q|line|wire|register)\s*(zero|one|two|three|four|five|six|seven)\b/i, parse: m => this._extractQubitNum(m[1]) },
       { regex: /\b(first|1st)\s*(?:qubit|line|wire)?\b/i, parse: () => 0 },
@@ -1597,9 +1912,13 @@ class QuantumVoiceCopilot {
   }
 
   _extractColumn(text, qubit, findEmptyIfMissing = true) {
-    const colMatch = text.match(/\b(?:column|col|slot|step)\s*(\d+)\b/i);
+    const colMatch = text.match(/\b(?:t\s*=?\s*|time\s*step\s*|column|col|slot|step)\s*([1-9]\d*)\b/i);
     if (colMatch) {
       return Math.max(0, parseInt(colMatch[1], 10) - 1);
+    }
+    const atMatch = text.match(/\b(?:at|on|in)\s+(?:slot|step|col|t)?\s*([1-9])\b/i);
+    if (atMatch) {
+      return Math.max(0, parseInt(atMatch[1], 10) - 1);
     }
     if (!findEmptyIfMissing) return -1;
     return this._findNextCol(qubit);

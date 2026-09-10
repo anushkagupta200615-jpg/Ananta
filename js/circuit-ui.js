@@ -285,9 +285,9 @@ class CircuitUI {
     }, this.numCols * 75 + 100);
   }
 
-  placeGate(gateName, qubit, col) {
-    if (gateName === 'CX') {
-      const targetQubit = (qubit + 1) % this.numQubits;
+  placeGate(gateName, qubit, col, explicitTarget = null) {
+    if (gateName === 'CX' || gateName === 'CNOT') {
+      const targetQubit = explicitTarget !== null ? explicitTarget : (qubit + 1) % this.numQubits;
       this.grid[qubit][col] = 'CX_CTRL';
       this.grid[targetQubit][col] = 'CX_TGT';
     } else {
@@ -303,8 +303,8 @@ class CircuitUI {
       slot1.classList.add('gate-shockwave');
       setTimeout(() => slot1.classList.remove('gate-shockwave'), 500);
     }
-    if (gateName === 'CX') {
-      const targetQubit = (qubit + 1) % this.numQubits;
+    if (gateName === 'CX' || gateName === 'CNOT') {
+      const targetQubit = explicitTarget !== null ? explicitTarget : (qubit + 1) % this.numQubits;
       const slot2 = document.getElementById(`slot-${targetQubit}-${col}`);
       if (slot2) {
         slot2.classList.add('gate-shockwave');
@@ -328,6 +328,36 @@ class CircuitUI {
 
     this.renderGrid();
     this.updateSimulation();
+  }
+
+  moveGate(fromQ, fromCol, toQ, toCol) {
+    if (fromQ < 0 || fromQ >= this.numQubits || fromCol < 0 || fromCol >= this.numCols) return false;
+    toQ = toQ !== undefined ? toQ : fromQ;
+    if (toQ < 0 || toQ >= this.numQubits || toCol < 0 || toCol >= this.numCols) return false;
+
+    const gate = this.grid[fromQ][fromCol];
+    if (!gate) return false;
+
+    if (gate === 'CX_CTRL' || gate === 'CX_TGT') {
+      let ctrlQ = -1, tgtQ = -1;
+      for (let q = 0; q < this.numQubits; q++) {
+        if (this.grid[q][fromCol] === 'CX_CTRL') ctrlQ = q;
+        if (this.grid[q][fromCol] === 'CX_TGT') tgtQ = q;
+        this.grid[q][fromCol] = null;
+      }
+      if (ctrlQ !== -1 && tgtQ !== -1) {
+        this.grid[ctrlQ][toCol] = 'CX_CTRL';
+        this.grid[tgtQ][toCol] = 'CX_TGT';
+      }
+    } else {
+      this.grid[fromQ][fromCol] = null;
+      this.grid[toQ][toCol] = gate;
+    }
+
+    this.renderGrid();
+    this.updateSimulation();
+    if (this.renderCnotConnectors) this.renderCnotConnectors();
+    return true;
   }
 
   clearCircuit() {

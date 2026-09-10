@@ -1,57 +1,31 @@
 /**
- * Ananta Quantum Studio - Production Full-Stack Backend Server
+ * Ananta Quantum Studio - Vercel Serverless API Gateway
  * 
- * Provides:
- *  1. Live REST API for Google AI Studio (Gemini 2.5 Flash) proxying
- *  2. Real-time QPU simulation and hardware bridge execution endpoints
- *  3. Backend health diagnostics and live telemetry transaction log
- *  4. High-performance static asset streaming
+ * Provides cloud endpoints for:
+ *  - GET  /api/health
+ *  - GET  /api/logs
+ *  - GET  /api/qpu/devices
+ *  - POST /api/ai/audit
+ *  - POST /api/ai/roadmap
+ *  - POST /api/ai/chat
+ *  - POST /api/qpu/run
  */
 
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+let DEFAULT_GEMINI_KEY = process.env.GEMINI_API_KEY || '';
 
-const PORT = process.env.PORT || 5500;
-const HOST = '127.0.0.1';
-
-// Load or fallback Gemini API Key
-let GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-if (!GEMINI_API_KEY) {
+// If local config exists (e.g. local dev), load it
+if (!DEFAULT_GEMINI_KEY) {
   try {
-    const configPath = path.join(__dirname, 'js', 'config.js');
-    if (fs.existsSync(configPath)) {
-      const configContent = fs.readFileSync(configPath, 'utf8');
-      const match = configContent.match(/GEMINI_API_KEY:\s*["']([^"']+)["']/);
-      if (match && match[1]) {
-        GEMINI_API_KEY = match[1].trim();
-      }
+    const fs = require('fs');
+    const path = require('path');
+    const cfgPath = path.join(__dirname, '..', 'js', 'config.js');
+    if (fs.existsSync(cfgPath)) {
+      const match = fs.readFileSync(cfgPath, 'utf8').match(/GEMINI_API_KEY:\s*["']([^"']+)["']/);
+      if (match && match[1]) DEFAULT_GEMINI_KEY = match[1].trim();
     }
-  } catch (e) {
-    console.warn('[Server] Could not read js/config.js for GEMINI_API_KEY:', e.message);
-  }
+  } catch (e) {}
 }
 
-// Global server telemetry log for live console inspection
-const telemetryLogs = [];
-const MAX_LOGS = 100;
-function logTransaction(method, endpoint, statusCode, durationMs, details = {}) {
-  const entry = {
-    id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-    timestamp: new Date().toISOString(),
-    method,
-    endpoint,
-    statusCode,
-    durationMs: Math.round(durationMs),
-    details
-  };
-  telemetryLogs.unshift(entry);
-  if (telemetryLogs.length > MAX_LOGS) telemetryLogs.pop();
-  console.log(`[API ${method}] ${endpoint} -> ${statusCode} (${entry.durationMs}ms)`);
-  return entry;
-}
-
-// Physical Device Fleet Catalog
 const QPU_DEVICES = {
   'ibm_brisbane': {
     name: 'ibm_brisbane',
@@ -120,75 +94,45 @@ const QPU_DEVICES = {
   }
 };
 
-const mimeTypes = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'application/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.pdf': 'application/pdf',
-  '.crt': 'text/plain; charset=utf-8',
-  '.txt': 'text/plain; charset=utf-8'
-};
+const serverlessLogs = [];
 
-// Helper: send JSON response with standard CORS
-function sendJson(res, statusCode, data, headers = {}) {
-  const payload = JSON.stringify(data);
+function sendJson(res, statusCode, data) {
+  const body = JSON.stringify(data);
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-    ...headers
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
   });
-  res.end(payload);
+  res.end(body);
 }
 
-// Helper: parse incoming JSON request body
-function parseRequestBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk;
-      if (body.length > 5 * 1024 * 1024) {
-        reject(new Error('Request payload too large'));
-      }
-    });
+async function getParsedBody(req) {
+  if (req.body && typeof req.body === 'object') return req.body;
+  if (typeof req.body === 'string') {
+    try { return JSON.parse(req.body); } catch (e) { return {}; }
+  }
+  return new Promise((resolve) => {
+    let raw = '';
+    req.on('data', chunk => { raw += chunk; });
     req.on('end', () => {
-      if (!body) {
-        return resolve({});
-      }
-      try {
-        resolve(JSON.parse(body));
-      } catch (err) {
-        reject(new Error('Invalid JSON: ' + err.message));
-      }
+      if (!raw) return resolve({});
+      try { resolve(JSON.parse(raw)); } catch (e) { resolve({}); }
     });
-    req.on('error', reject);
+    req.on('error', () => resolve({}));
   });
 }
 
-// Call Google AI Studio (Gemini 2.5 Flash)
-async function callGeminiApi(prompt, systemInstruction = '', isJson = true) {
-  if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY not configured on backend');
+async function callGeminiApi(prompt, systemInstruction = '', isJson = true, customKey = '') {
+  const activeKey = customKey || DEFAULT_GEMINI_KEY;
+  if (!activeKey) {
+    throw new Error('GEMINI_API_KEY is not configured on server. Set GEMINI_API_KEY in Vercel Project Settings or provide X-Gemini-Key header.');
   }
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-  
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`;
   const payload = {
-    contents: [
-      {
-        parts: [{ text: prompt }]
-      }
-    ],
-    generationConfig: {
-      temperature: 0.2
-    }
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.2 }
   };
 
   if (isJson) {
@@ -196,9 +140,7 @@ async function callGeminiApi(prompt, systemInstruction = '', isJson = true) {
   }
 
   if (systemInstruction) {
-    payload.systemInstruction = {
-      parts: [{ text: systemInstruction }]
-    };
+    payload.systemInstruction = { parts: [{ text: systemInstruction }] };
   }
 
   const startTime = Date.now();
@@ -240,11 +182,14 @@ async function callGeminiApi(prompt, systemInstruction = '', isJson = true) {
   }
 }
 
-// Server Request Handler
-const server = http.createServer(async (req, res) => {
+module.exports = async function handler(req, res) {
   const reqStart = Date.now();
-  const reqUrl = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`);
-  const pathname = reqUrl.pathname;
+  const host = req.headers['host'] || '127.0.0.1';
+  const reqUrl = new URL(req.url, `https://${host}`);
+  let pathname = reqUrl.pathname;
+
+  // Normalize /api trailing slashes
+  pathname = pathname.replace(/\/+$/, '') || '/';
 
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -257,53 +202,44 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ================= API ROUTES =================
-
-  // Dedicated Multi-task Multi-Provider AI Endpoint (/api/gemini, /api/ai, /api/grok)
-  if (pathname === '/api/gemini' || pathname === '/api/ai' || pathname === '/api/grok') {
-    try {
-      delete require.cache[require.resolve('./api/gemini.js')];
-    } catch (e) {}
-    const aiHandler = require('./api/gemini.js');
-    return aiHandler(req, res);
+  // Dedicated Multi-task Gemini Endpoint (/api/gemini, /api/ai, /api/grok)
+  if (pathname === '/api/gemini' || pathname === '/gemini' || pathname === '/api/ai' || pathname === '/api/grok') {
+    const geminiHandler = require('./gemini.js');
+    return geminiHandler(req, res);
   }
 
   // ================= RESEARCH PAPER EXTRACTION ENDPOINTS =================
-  const { googleSearch } = require('./ananta-backend/utils/googleSearch');
-  const { extractTextFromUrl } = require('./ananta-backend/utils/extractText');
-  const { findTermOccurrences } = require('./ananta-backend/utils/findTerm');
-  const { summarizeText } = require('./ananta-backend/utils/summarize');
+  const { googleSearch } = require('../ananta-backend/utils/googleSearch');
+  const { extractTextFromUrl } = require('../ananta-backend/utils/extractText');
+  const { findTermOccurrences } = require('../ananta-backend/utils/findTerm');
+  const { summarizeText } = require('../ananta-backend/utils/summarize');
 
   if (pathname === '/api/search' && req.method === 'POST') {
-    const body = await parseRequestBody(req);
+    const body = await getParsedBody(req);
     const { query, num } = body || {};
     if (!query) return sendJson(res, 400, { error: 'query is required' });
     try {
       const results = await googleSearch(query, num || 10);
-      logTransaction('POST', pathname, 200, Date.now() - reqStart, { query, count: results.length });
       return sendJson(res, 200, { query, results });
     } catch (err) {
-      logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: err.message });
       return sendJson(res, 500, { error: err.message });
     }
   }
 
   if (pathname === '/api/fetch-content' && req.method === 'POST') {
-    const body = await parseRequestBody(req);
+    const body = await getParsedBody(req);
     const { url } = body || {};
     if (!url) return sendJson(res, 400, { error: 'url is required' });
     try {
       const { title, text } = await extractTextFromUrl(url);
-      logTransaction('POST', pathname, 200, Date.now() - reqStart, { url, title, length: text.length });
       return sendJson(res, 200, { url, title, length: text.length, text });
     } catch (e) {
-      logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: e.message });
       return sendJson(res, 500, { error: 'Could not fetch/parse that URL: ' + e.message });
     }
   }
 
   if (pathname === '/api/find-term' && req.method === 'POST') {
-    const body = await parseRequestBody(req);
+    const body = await getParsedBody(req);
     const { url, text, term } = body || {};
     if (!term) return sendJson(res, 400, { error: 'term is required' });
     if (!url && !text) return sendJson(res, 400, { error: 'provide either url or text' });
@@ -329,7 +265,6 @@ const server = http.createServer(async (req, res) => {
           summary: await summarizeText(occ.context, term),
         }))
       );
-      logTransaction('POST', pathname, 200, Date.now() - reqStart, { term, count: occurrences.length });
       return sendJson(res, 200, { term, title, found: true, totalOccurrences: occurrences.length, results: summarized });
     } catch (e) {
       return sendJson(res, 500, { error: e.message });
@@ -337,7 +272,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/summarize' && req.method === 'POST') {
-    const body = await parseRequestBody(req);
+    const body = await getParsedBody(req);
     const { url, text } = body || {};
     if (!url && !text) return sendJson(res, 400, { error: 'provide either url or text' });
 
@@ -351,28 +286,25 @@ const server = http.createServer(async (req, res) => {
       }
       const truncated = (sourceText || '').slice(0, 15000);
       const summary = await summarizeText(truncated);
-      logTransaction('POST', pathname, 200, Date.now() - reqStart, { title });
       return sendJson(res, 200, { title, summary });
     } catch (e) {
       return sendJson(res, 500, { error: e.message });
     }
   }
 
-  // 1. GET /api/health
-  if (pathname === '/api/health' && req.method === 'GET') {
-    const uptimeSec = Math.round(process.uptime());
-    const data = {
+  // 1. GET /api or /api/health
+  if ((pathname === '/api' || pathname === '/api/health') && req.method === 'GET') {
+    return sendJson(res, 200, {
       status: 'ONLINE',
-      server: 'Ananta Quantum Full-Stack Engine',
+      server: 'Ananta Quantum Vercel Serverless Engine',
       version: '2.5.0',
-      uptimeSec,
-      port: PORT,
+      cloud: 'Vercel Serverless Function',
       timestamp: new Date().toISOString(),
       aiStudio: {
         provider: 'Google AI Studio',
         model: 'gemini-2.5-flash',
-        keyConfigured: Boolean(GEMINI_API_KEY && GEMINI_API_KEY.length > 10),
-        status: GEMINI_API_KEY ? 'CONNECTED' : 'KEY_MISSING'
+        keyConfigured: Boolean(DEFAULT_GEMINI_KEY && DEFAULT_GEMINI_KEY.length > 10),
+        status: (DEFAULT_GEMINI_KEY && DEFAULT_GEMINI_KEY.length > 10) ? 'CONNECTED' : 'READY_FOR_KEY'
       },
       qpuDevices: Object.keys(QPU_DEVICES),
       activeFeatures: [
@@ -385,42 +317,34 @@ const server = http.createServer(async (req, res) => {
         'Cryostat Digital Twin',
         'PQC Security Auditor'
       ]
-    };
-    sendJson(res, 200, data);
-    logTransaction('GET', pathname, 200, Date.now() - reqStart, { status: 'ONLINE' });
-    return;
+    });
   }
 
-  // 2. GET /api/logs (Backend Telemetry & Transaction Logs)
+  // 2. GET /api/logs
   if (pathname === '/api/logs' && req.method === 'GET') {
-    sendJson(res, 200, {
-      total: telemetryLogs.length,
-      logs: telemetryLogs
+    return sendJson(res, 200, {
+      total: serverlessLogs.length,
+      logs: serverlessLogs
     });
-    return;
   }
 
   // 3. GET /api/qpu/devices
   if (pathname === '/api/qpu/devices' && req.method === 'GET') {
-    sendJson(res, 200, {
+    return sendJson(res, 200, {
       success: true,
       count: Object.keys(QPU_DEVICES).length,
       devices: QPU_DEVICES
     });
-    logTransaction('GET', pathname, 200, Date.now() - reqStart);
-    return;
   }
 
-  // 4. POST /api/ai/audit (Live Google AI Studio Deep Audit for Transpiler Doctor)
+  // 4. POST /api/ai/audit
   if (pathname === '/api/ai/audit' && req.method === 'POST') {
     try {
-      const body = await parseRequestBody(req);
+      const body = await getParsedBody(req);
       const { code, framework = 'cirq', rawGates = 0, optGates = 0, savings = 0, qubits = 3 } = body;
 
       if (!code) {
-        sendJson(res, 400, { error: 'Missing quantum circuit code in request body' });
-        logTransaction('POST', pathname, 400, Date.now() - reqStart, { error: 'Missing code' });
-        return;
+        return sendJson(res, 400, { error: 'Missing quantum circuit code in request body' });
       }
 
       const prompt = `You are the Principal Quantum Hardware Architect & Circuit Compiler Lead at Google Quantum AI and IBM Quantum.
@@ -446,7 +370,8 @@ Return ONLY a valid JSON object matching this schema:
   "clinicalPrescription": "Concrete next steps (e.g., Dynamical Decoupling sequence, Zero-Noise Extrapolation, KAK Cartan synthesis)."
 }`;
 
-      const aiRes = await callGeminiApi(prompt, '', true);
+      const clientKey = (req.headers['x-gemini-key'] || '').trim();
+      const aiRes = await callGeminiApi(prompt, '', true, clientKey);
       let parsedAudit;
       try {
         parsedAudit = JSON.parse(aiRes.text);
@@ -463,37 +388,29 @@ Return ONLY a valid JSON object matching this schema:
           model: aiRes.modelVersion,
           latencyMs: aiRes.latencyMs,
           usage: aiRes.usage,
+          cloud: 'Vercel Serverless',
           timestamp: new Date().toISOString()
         }
       };
 
-      sendJson(res, 200, responseData);
-      logTransaction('POST', pathname, 200, Date.now() - reqStart, {
-        circuitName: parsedAudit.circuitName,
-        latencyMs: aiRes.latencyMs
-      });
-      return;
+      return sendJson(res, 200, responseData);
     } catch (err) {
-      console.error('[API /api/ai/audit Error]', err);
-      sendJson(res, 502, {
+      console.error('[Vercel API /api/ai/audit Error]', err);
+      return sendJson(res, 502, {
         success: false,
         error: err.message || 'Error processing AI audit with Google AI Studio'
       });
-      logTransaction('POST', pathname, 502, Date.now() - reqStart, { error: err.message });
-      return;
     }
   }
 
-  // 5. POST /api/ai/roadmap (Live Google AI Studio Personalized Curriculum Synthesis)
+  // 5. POST /api/ai/roadmap
   if (pathname === '/api/ai/roadmap' && req.method === 'POST') {
     try {
-      const body = await parseRequestBody(req);
+      const body = await getParsedBody(req);
       const { userPrompt, moduleCatalog = '' } = body;
 
       if (!userPrompt) {
-        sendJson(res, 400, { error: 'Missing userPrompt in request body' });
-        logTransaction('POST', pathname, 400, Date.now() - reqStart, { error: 'Missing prompt' });
-        return;
+        return sendJson(res, 400, { error: 'Missing userPrompt in request body' });
       }
 
       const systemPrompt = `You are the Lead Quantum Curriculum Architect & Quantum Information Physicist for Ananta Quantum Studio.
@@ -522,7 +439,8 @@ You MUST return ONLY a valid JSON object with the following schema:
   "moduleIds": ["module-01", "module-02", ...]
 }`;
 
-      const aiRes = await callGeminiApi(systemPrompt, '', true);
+      const clientKey = (req.headers['x-gemini-key'] || '').trim();
+      const aiRes = await callGeminiApi(systemPrompt, '', true, clientKey);
       let parsedRoadmap;
       try {
         parsedRoadmap = JSON.parse(aiRes.text);
@@ -531,44 +449,34 @@ You MUST return ONLY a valid JSON object with the following schema:
         parsedRoadmap = JSON.parse(cleaned);
       }
 
-      const responseData = {
+      return sendJson(res, 200, {
         success: true,
         roadmap: parsedRoadmap,
         metadata: {
           provider: 'Google AI Studio (Gemini 2.5 Flash)',
           model: aiRes.modelVersion,
           latencyMs: aiRes.latencyMs,
-          usage: aiRes.usage,
+          cloud: 'Vercel Serverless',
           timestamp: new Date().toISOString()
         }
-      };
-
-      sendJson(res, 200, responseData);
-      logTransaction('POST', pathname, 200, Date.now() - reqStart, {
-        displayName: parsedRoadmap.displayName,
-        level: parsedRoadmap.detectedLevel
       });
-      return;
     } catch (err) {
-      console.error('[API /api/ai/roadmap Error]', err);
-      sendJson(res, 502, {
+      console.error('[Vercel API /api/ai/roadmap Error]', err);
+      return sendJson(res, 502, {
         success: false,
         error: err.message || 'Error generating roadmap with Google AI Studio'
       });
-      logTransaction('POST', pathname, 502, Date.now() - reqStart, { error: err.message });
-      return;
     }
   }
 
-  // 6. POST /api/ai/chat (Conversational Quantum Reasoning & Copilot Assistant)
+  // 6. POST /api/ai/chat
   if (pathname === '/api/ai/chat' && req.method === 'POST') {
     try {
-      const body = await parseRequestBody(req);
+      const body = await getParsedBody(req);
       const { message, context = '' } = body;
 
       if (!message) {
-        sendJson(res, 400, { error: 'Missing message in request body' });
-        return;
+        return sendJson(res, 400, { error: 'Missing message in request body' });
       }
 
       const prompt = `You are Ananta's Quantum Copilot, a brilliant quantum physicist and circuit designer.
@@ -578,33 +486,31 @@ If relevant, give gate sequence recommendations.
 Current Studio Context: ${context || 'General Quantum Studio'}
 User Question: "${message}"`;
 
-      const aiRes = await callGeminiApi(prompt, '', false);
-      sendJson(res, 200, {
+      const clientKey = (req.headers['x-gemini-key'] || '').trim();
+      const aiRes = await callGeminiApi(prompt, '', false, clientKey);
+      return sendJson(res, 200, {
         success: true,
         reply: aiRes.text.trim(),
         metadata: {
           provider: 'Google AI Studio (Gemini 2.5 Flash)',
           model: aiRes.modelVersion,
-          latencyMs: aiRes.latencyMs
+          latencyMs: aiRes.latencyMs,
+          cloud: 'Vercel Serverless'
         }
       });
-      logTransaction('POST', pathname, 200, Date.now() - reqStart, { messageLength: message.length });
-      return;
     } catch (err) {
-      console.error('[API /api/ai/chat Error]', err);
-      sendJson(res, 502, {
+      console.error('[Vercel API /api/ai/chat Error]', err);
+      return sendJson(res, 502, {
         success: false,
         error: err.message
       });
-      logTransaction('POST', pathname, 502, Date.now() - reqStart, { error: err.message });
-      return;
     }
   }
 
-  // 7. POST /api/qpu/run (Physical QPU Hardware Execution & Realistic Noise Dispatch)
+  // 7. POST /api/qpu/run
   if (pathname === '/api/qpu/run' && req.method === 'POST') {
     try {
-      const body = await parseRequestBody(req);
+      const body = await getParsedBody(req);
       const {
         backend = 'ibm_brisbane',
         shots = 1024,
@@ -616,11 +522,6 @@ User Question: "${message}"`;
       const device = QPU_DEVICES[backend] || QPU_DEVICES['ibm_brisbane'];
       const jobId = 'job_' + backend + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
 
-      // Simulate execution time factoring in device queue
-      const simulatedQueueWaitMs = Math.min(2500, Math.max(300, (device.queue || 1) * 60));
-      await new Promise(r => setTimeout(r, simulatedQueueWaitMs));
-
-      // Calculate shot counts with hardware noise (T1 relaxation, T2 dephasing, Readout error)
       const numStates = 1 << numQubits;
       const noisyCounts = {};
       const idealCounts = {};
@@ -639,14 +540,12 @@ User Question: "${message}"`;
       const t2Median = device.t2Median || 160;
       const roError = device.readoutError || 0.019;
 
-      // Realistic noise degradation
-      const circuitDurationUs = 0.035 * 6; // approximate circuit duration
+      const circuitDurationUs = 0.035 * 6;
       const t1Decay = Math.exp(-circuitDurationUs / t1Median);
       const t2Decay = Math.exp(-circuitDurationUs / t2Median);
       const fidelityFactor = t1Decay * t2Decay;
 
       for (let shot = 0; shot < shots; shot++) {
-        // Ideal sample
         const rand = Math.random();
         let cum = 0;
         let idealSample = 0;
@@ -659,14 +558,11 @@ User Question: "${message}"`;
         }
         idealCounts[idealSample.toString(2).padStart(numQubits, '0')]++;
 
-        // Hardware noisy sample
         let physicalSample = idealSample;
         if (Math.random() > fidelityFactor) {
-          // Decoherence decay towards ground state |0...0> or random thermal state
           physicalSample = (Math.random() < 0.7) ? 0 : Math.floor(Math.random() * numStates);
         }
 
-        // Readout bit-flip errors
         let bitArray = physicalSample.toString(2).padStart(numQubits, '0').split('');
         for (let b = 0; b < numQubits; b++) {
           if (Math.random() < roError) {
@@ -677,7 +573,7 @@ User Question: "${message}"`;
         noisyCounts[noisyBitstring] = (noisyCounts[noisyBitstring] || 0) + 1;
       }
 
-      const resultPayload = {
+      return sendJson(res, 200, {
         success: true,
         jobId,
         backend: device.name,
@@ -697,56 +593,13 @@ User Question: "${message}"`;
         counts: noisyCounts,
         idealCounts,
         openqasm3: qasm || 'OPENQASM 3.0;\n// Executed by Ananta Cloud QPU Bridge'
-      };
-
-      sendJson(res, 200, resultPayload);
-      logTransaction('POST', pathname, 200, Date.now() - reqStart, {
-        jobId,
-        backend: device.name,
-        shots
       });
-      return;
     } catch (err) {
-      console.error('[API /api/qpu/run Error]', err);
-      sendJson(res, 500, { success: false, error: err.message });
-      logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: err.message });
-      return;
+      console.error('[Vercel API /api/qpu/run Error]', err);
+      return sendJson(res, 500, { success: false, error: err.message });
     }
   }
 
-  // ================= STATIC FILE SERVING =================
-  let reqPath = pathname;
-  if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
-
-  const safePath = path.normalize(reqPath).replace(/^(\.\.[\/\\])+/, '');
-  const filePath = path.join(__dirname, safePath);
-
-  fs.stat(filePath, (statErr, stats) => {
-    if (statErr || !stats.isFile()) {
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end(`404 Not Found: ${reqPath}`);
-      return;
-    }
-
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = mimeTypes[ext] || 'application/octet-stream';
-
-    res.writeHead(200, {
-      'Content-Type': contentType,
-      'Content-Length': stats.size,
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600'
-    });
-
-    const stream = fs.createReadStream(filePath);
-    stream.pipe(res);
-  });
-});
-
-server.listen(PORT, HOST, () => {
-  console.log('====================================================');
-  console.log(`⚛️  Ananta Full-Stack Quantum Server ACTIVE`);
-  console.log(`🌐 URL: http://${HOST}:${PORT}/`);
-  console.log(`🔍 Health Check: http://${HOST}:${PORT}/api/health`);
-  console.log(`🤖 Google AI Studio Key: ${GEMINI_API_KEY ? 'Configured (' + GEMINI_API_KEY.substring(0, 8) + '...)' : 'MISSING'}`);
-  console.log('====================================================');
-});
+  // 404 for unknown API route
+  sendJson(res, 404, { error: `Endpoint not found: ${pathname}` });
+};

@@ -445,6 +445,9 @@ class TopicRoadmapManager {
       else if (topicId === 'intermediate-track') detectedLevel = 'INTERMEDIATE';
       else if (topicId === 'full-curriculum') detectedLevel = 'MASTER';
 
+      if (typeof setStatusBadge === 'function') {
+        setStatusBadge('roadmap-status-badge', false); // "Local Fallback"
+      }
       const matchResult = {
         pattern,
         modules: matchedModules,
@@ -490,6 +493,7 @@ class TopicRoadmapManager {
               <div class="topic-pill-badge">
                 <span class="topic-badge-dot"></span>
                 <span>Quantum Learning Roadmap Studio</span>
+                <span id="roadmap-status-badge" class="ai-status-badge fallback">○ Local Fallback</span>
               </div>
 
               <h1 class="topic-entry-heading">
@@ -883,6 +887,9 @@ class TopicRoadmapManager {
       this.renderRoadmapDiagram(aiMatch, trimmed);
     } else {
       // Local adaptive fallback matching across all 18 modules
+      if (typeof setStatusBadge === 'function') {
+        setStatusBadge('roadmap-status-badge', false); // "Local Fallback"
+      }
       const localMatch = this.matchQueryToTopic(trimmed);
       if (localMatch) {
         this.renderRoadmapDiagram(localMatch, trimmed);
@@ -897,96 +904,51 @@ class TopicRoadmapManager {
   }
 
   // Dynamic Pathway Synthesis via Google AI Studio Gemini 2.5 Flash
+  // Dynamic Pathway Synthesis via /api/gemini Backend (Section 4.2)
   async generateCustomRoadmapAI(userPrompt) {
-    const apiKey = (typeof window !== 'undefined' && window.ANANTA_CONFIG?.GEMINI_API_KEY) ? window.ANANTA_CONFIG.GEMINI_API_KEY : '';
-    if (!apiKey) {
-      console.info('[TopicRoadmap] No Gemini API key detected, using local adaptive engine.');
-      return null;
+    const availableModuleIds = this.modules.map(m => m.id);
+    try {
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: 'roadmap',
+          payload: { instruction: userPrompt, availableModuleIds }
+        })
+      });
+      if (!response.ok) throw new Error(`Backend returned HTTP ${response.status}`);
+      const { result: parsed } = await response.json();
+      if (!parsed.moduleIds || !Array.isArray(parsed.moduleIds) || parsed.moduleIds.length === 0) {
+        throw new Error('Invalid moduleIds structure in AI response');
+      }
+      const matchedModules = parsed.moduleIds
+        .map(id => this.modules.find(m => m.id === id))
+        .filter(Boolean);
+      if (matchedModules.length === 0) throw new Error('Could not resolve AI module IDs');
+
+      if (typeof setStatusBadge === 'function') {
+        setStatusBadge('roadmap-status-badge', true); // "Live AI"
+      }
+      return {
+        pattern: {
+          displayName: parsed.displayName || 'Custom AI-Generated Quantum Roadmap',
+          description: parsed.description || parsed.reasoning || 'Personalized pathway synthesized by Gemini.',
+          modules: matchedModules
+        },
+        modules: matchedModules,
+        detectedLevel: parsed.detectedLevel || 'INTERMEDIATE',
+        levelRationale: parsed.reasoning || parsed.levelRationale || 'Synthesized using Gemini based on your prompt.',
+        score: 100,
+        isAiSynthesized: true,
+        aiProvider: 'Google AI Studio (Gemini 2.5 Flash via /api/gemini)'
+      };
+    } catch (err) {
+      console.info('[TopicRoadmap] Backend unavailable, using local adaptive engine.', err);
+      if (typeof setStatusBadge === 'function') {
+        setStatusBadge('roadmap-status-badge', false); // "Local Fallback"
+      }
+      return null; // caller already falls back to matchQueryToTopic() — unchanged
     }
-
-    const moduleCatalog = this.modules.map(m => `- ${m.id}: ${m.number} ${m.title} (${m.level}, ${m.category}) - ${m.summary}`).join('\n');
-
-    const systemPrompt = `You are the Lead Quantum Curriculum Architect & Quantum Information Physicist for Ananta Quantum Studio.
-You must construct a personalized, mathematically rigorous learning pathway for a user based on their background, question, or request.
-
-Available 18 Quantum Modules in the Curriculum:
-${moduleCatalog}
-
-User Request: "${userPrompt}"
-
-Instructions:
-1. Analyze the user's expertise level and request:
-   - If they state they are a "beginner", "no prior knowledge", "already a beginner", or ask basic concepts, START at foundational modules (e.g. module-01, module-02, module-04, module-06).
-   - If they state they "already know basics" or are "intermediate", skip introductory 101 definitions and begin with circuit engineering, Pauli observables, density matrices, and algorithms (e.g. module-02, module-04, module-06, module-07, module-08).
-   - If they state "advanced", "learn from advanced", "expert", or ask about specialized topics (e.g., surface codes, FTQC, VQE, QML, microwave pulses, post-quantum crypto, cryogenics), skip basics completely and build a deep, high-level sequence (e.g. module-03, module-05, module-10, module-11, module-12, module-14, module-16).
-   - If they ask for a specific topic (e.g., "teleportation", "Grover search", "cryogenics", "error correction"), include its essential prerequisites followed by the target topic and advanced next steps.
-2. Select between 3 and 10 module IDs from the 18 available modules in STRICT prerequisite order.
-3. Provide a clear rationale explaining why this specific sequence fits the user's background.
-
-You MUST return ONLY a valid JSON object with the following schema:
-{
-  "displayName": "Concise descriptive title of this customized roadmap (e.g., 'Adaptive Pathway: Fault-Tolerant QC & QML')",
-  "description": "2-sentence summary of the curriculum and what the learner will master.",
-  "detectedLevel": "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "MASTER",
-  "levelRationale": "Clear explanation of how the user's prompt informed this selection and ordering.",
-  "moduleIds": ["module-XX", "module-YY", ...]
-}`;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: systemPrompt }]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: 'application/json'
-        }
-      })
-    });
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`Google AI Studio returned HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) throw new Error('Empty response from Google AI Studio');
-
-    const parsed = JSON.parse(rawText);
-    if (!parsed.moduleIds || !Array.isArray(parsed.moduleIds) || parsed.moduleIds.length === 0) {
-      throw new Error('Invalid moduleIds structure in AI response');
-    }
-
-    const matchedModules = parsed.moduleIds
-      .map(id => this.modules.find(m => m.id === id))
-      .filter(Boolean);
-
-    if (matchedModules.length === 0) {
-      throw new Error('Could not resolve AI module IDs to existing curriculum');
-    }
-
-    return {
-      pattern: {
-        displayName: parsed.displayName || 'Custom AI-Generated Quantum Roadmap',
-        description: parsed.description || 'Personalized pathway synthesized by Google AI Studio.'
-      },
-      modules: matchedModules,
-      detectedLevel: parsed.detectedLevel || 'INTERMEDIATE',
-      levelRationale: parsed.levelRationale || 'Synthesized using Google AI Studio based on your prompt.',
-      score: 100,
-      isAiSynthesized: true,
-      aiProvider: 'Google AI Studio (Gemini 2.5 Flash)'
-    };
   }
 
   // Loading skeleton while Google AI Studio synthesizes the pathway

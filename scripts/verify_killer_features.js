@@ -71,12 +71,12 @@ async function runTests() {
     }
   }
 
-  // 3. Test HTTP Server response on http://localhost:8080/
+  // 3. Test HTTP Server response on http://localhost:5500/
   await new Promise((resolve) => {
-    http.get('http://localhost:8080/index.html', (res) => {
-      console.log(`\n✅ HTTP Server Response Status: ${res.statusCode} ${res.statusMessage}`);
+    http.get('http://127.0.0.1:5500/api/health', (res) => {
+      console.log(`\n✅ Backend Health Status: ${res.statusCode} ${res.statusMessage}`);
       if (res.statusCode === 200) {
-        console.log('✅ Local server operational and serving index.html successfully.');
+        console.log('✅ Local server operational with live API backend.');
       } else {
         console.error(`❌ Unexpected HTTP status code: ${res.statusCode}`);
       }

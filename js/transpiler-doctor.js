@@ -792,68 +792,51 @@ class TranspilerDoctor {
       `;
     }
 
-    const apiKey = (typeof window !== 'undefined' && window.ANANTA_CONFIG?.GEMINI_API_KEY) ? window.ANANTA_CONFIG.GEMINI_API_KEY : '';
     const srcCode = this.sourceCodeArea ? this.sourceCodeArea.value : '';
     const rawGatesCount = this.circuitAST ? this.circuitAST.length : 0;
     const optGatesCount = this.optimizedAST ? this.optimizedAST.length : 0;
-    const gateSavings = rawGatesCount - optGatesCount;
 
     try {
-      if (!apiKey) throw new Error('NO_API_KEY');
-
-      const prompt = `You are the Principal Quantum Hardware Architect & Circuit Compiler Lead at Google Quantum AI and IBM Quantum.
-Perform an in-depth clinical audit and hardware noise prognosis for this quantum circuit written in ${this.sourceFramework.toUpperCase()}:
-
-\`\`\`
-${srcCode}
-\`\`\`
-
-Diagnostic context:
-- Total Raw Gates: ${rawGatesCount}
-- Optimized Gates: ${optGatesCount}
-- Pruned Redundancies: ${gateSavings} gates
-- Active Qubits: ${this.declaredNumQubits}
-
-Return ONLY a valid JSON object matching this schema:
-{
-  "circuitName": "Descriptive algorithm title (e.g. 4-Qubit GHZ State Preparation or Entangled Bell State)",
-  "healthAssessment": "2-3 sentences evaluating circuit health, gate bloat, and compilation status.",
-  "gatePathology": "Specific explanation of which gates are redundant, unmerged, or causing unnecessary depth.",
-  "decoherenceRisks": "Which physical qubits or operations carry highest risk of T1 decay or T2 dephasing on superconducting transmons.",
-  "qpuRecommendation": "Comparative analysis: performance on IBM Eagle (Heavy-Hex), Google Sycamore (2D Grid), and IonQ Forte (All-to-All).",
-  "clinicalPrescription": "Concrete next steps (e.g., Dynamical Decoupling sequence, Zero-Noise Extrapolation, KAK Cartan synthesis)."
-}`;
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 16000);
-
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/gemini', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Gemini-Key': (window.ANANTA_CONFIG?.GEMINI_API_KEY || '')
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: 'application/json'
+          task: 'circuit-doctor',
+          payload: {
+            sourceCode: srcCode,
+            sourceFramework: this.sourceFramework,
+            rawGatesCount,
+            optGatesCount,
+            numQubits: this.declaredNumQubits
           }
         })
       });
-      clearTimeout(timeoutId);
 
       if (!response.ok) throw new Error(`HTTP_${response.status}`);
       const data = await response.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!rawText) throw new Error('EMPTY_RESPONSE');
-
-      const audit = JSON.parse(rawText);
-      this.renderAuditResults(audit);
+      const audit = data.result || data.audit;
+      this.renderAuditResults(audit, {
+        isLive: true,
+        provider: 'Google AI Studio (Gemini 2.5 Flash)',
+        model: data.source || 'gemini-2.5-flash'
+      });
+      if (typeof window.setStatusBadge === 'function') {
+        window.setStatusBadge('doctor-status-badge', true);
+      }
     } catch (err) {
-      console.warn('[TranspilerDoctor] Falling back to local physics diagnostic audit:', err);
-      // Construct rich deterministic physics report from AST
+      console.warn('[TranspilerDoctor] Falling back to local physics diagnostic audit:', err.message);
       const fallbackAudit = this.generateLocalFallbackAudit();
-      this.renderAuditResults(fallbackAudit);
+      this.renderAuditResults(fallbackAudit, {
+        isLive: false,
+        provider: 'Local Deterministic Physics Engine',
+        errorReason: err.message
+      });
+      if (typeof window.setStatusBadge === 'function') {
+        window.setStatusBadge('doctor-status-badge', false);
+      }
     } finally {
       if (this.btnAiClinicalAudit) {
         this.btnAiClinicalAudit.disabled = false;
@@ -887,13 +870,26 @@ Return ONLY a valid JSON object matching this schema:
     };
   }
 
-  renderAuditResults(audit) {
+  renderAuditResults(audit, meta = {}) {
     if (!this.aiAuditContentEl) return;
+
+    const isLive = meta.isLive === true;
+    const badgeStyle = isLive
+      ? 'background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(52, 211, 153, 0.4); color: #34d399;'
+      : 'background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(251, 191, 36, 0.3); color: #fbbf24;';
+
+    const badgeLabel = isLive
+      ? `🟢 LIVE GOOGLE AI STUDIO (${meta.model || 'Gemini 2.5 Flash'}${meta.latencyMs ? ' · ' + meta.latencyMs + 'ms' : ''})`
+      : `⚠️ DETERMINISTIC AST FALLBACK (${meta.errorReason || 'Offline Mode'})`;
+
     this.aiAuditContentEl.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
         <div style="font-size: 15px; font-weight: 800; color: #ffffff;">
           🔬 Clinical Assessment: <span style="color: #38bdf8;">${audit.circuitName || 'Quantum Circuit Audit'}</span>
         </div>
+        <span style="font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; font-family: 'Roboto Mono', monospace; ${badgeStyle}">
+          ${badgeLabel}
+        </span>
       </div>
 
       <div class="ai-audit-grid">

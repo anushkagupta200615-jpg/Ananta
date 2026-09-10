@@ -34,6 +34,15 @@ window.closeMobileNav = function() {
   document.body.style.overflow = '';
 };
 
+// Shared helper — Section 5.3 Honesty Badges
+window.setStatusBadge = function(elementId, isLive) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.classList.toggle('live', isLive);
+  el.classList.toggle('fallback', !isLive);
+  el.textContent = isLive ? '● Live AI' : '○ Local Fallback';
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 1. Dual Theme System (Light & Dark)
@@ -1857,6 +1866,277 @@ document.addEventListener('DOMContentLoaded', () => {
     window.loadPresetSafe(presetKey);
     switchView('simulator');
   };
+
+  // ==========================================
+  // Live Research Paper Extractor & Analyzer Handlers
+  // ==========================================
+  let currentExtractedText = '';
+  let currentExtractedUrl = '';
+  let lastPaperSearchResults = [];
+  let lastSearchQuery = '';
+
+  window.openPaperExtractorModal = function() {
+    const modal = document.getElementById('paper-extractor-modal');
+    if (modal) modal.style.display = 'flex';
+  };
+
+  window.closePaperExtractorModal = function() {
+    const modal = document.getElementById('paper-extractor-modal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  window.renderLastPaperSearchResults = function() {
+    const container = document.getElementById('extractor-results-container');
+    const status = document.getElementById('extractor-status');
+    if (!container || !lastPaperSearchResults.length) return;
+
+    if (status) status.textContent = `Found ${lastPaperSearchResults.length} research papers for "${lastSearchQuery}":`;
+
+    container.innerHTML = lastPaperSearchResults.map((r, i) => `
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px; margin-bottom: 12px; transition: border-color 0.2s;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
+          <h4 style="margin: 0; color: #38bdf8; font-size: 14px; line-height: 1.4;">${r.title}</h4>
+          <span style="font-size: 11px; background: rgba(56,189,248,0.12); color: #38bdf8; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">${r.published || 'arXiv'}</span>
+        </div>
+        ${r.authors ? `<div style="font-size: 11.5px; color: #a78bfa; margin-bottom: 6px;">✍ ${r.authors}</div>` : ''}
+        <p style="margin: 0 0 10px 0; color: #cbd5e1; font-size: 12px; line-height: 1.55;">${r.snippet}</p>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <button onclick="window.runLivePaperExtract('${r.link || r.pdfUrl}')" style="background: linear-gradient(135deg, #7c3aed, #6366f1); color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">📄 Read Paper & Terms</button>
+          <button onclick="window.runLivePaperExtractAndSummarize('${r.link || r.pdfUrl}')" style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; color: #34d399; padding: 5px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 600; cursor: pointer;">🧠 AI Summary</button>
+          <a href="${r.link || r.pdfUrl}" target="_blank" rel="noopener noreferrer" style="color: #94a3b8; font-size: 11.5px; text-decoration: underline; margin-left: auto;">View arXiv ↗</a>
+        </div>
+      </div>
+    `).join('');
+  };
+
+  window.runLivePaperSearch = async function() {
+    const input = document.getElementById('extractor-query-input');
+    const container = document.getElementById('extractor-results-container');
+    const status = document.getElementById('extractor-status');
+    const query = (input ? input.value : '').trim();
+
+    if (!query) {
+      alert('Please enter a research topic to search (e.g. "superposition", "quantum error correction", "VQE")');
+      return;
+    }
+
+    if (status) {
+      status.style.display = 'block';
+      status.textContent = `Searching peer-reviewed arXiv papers for "${query}"...`;
+    }
+    if (container) {
+      container.innerHTML = '<div style="text-align:center; padding: 36px; color:#94a3b8;"><span style="font-size: 20px;">⚛️</span><br/><br/>Searching arXiv quant-ph research archives...</div>';
+    }
+
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, num: 6 })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch search results');
+
+      lastPaperSearchResults = data.results || [];
+      lastSearchQuery = query;
+
+      if (!lastPaperSearchResults.length) {
+        if (status) status.textContent = `No papers found for "${query}".`;
+        container.innerHTML = `<div style="text-align:center; padding: 24px; color: #94a3b8;">No matching papers found for "${query}". Try related keywords like "superposition", "entanglement", or "qubits".</div>`;
+        return;
+      }
+
+      window.renderLastPaperSearchResults();
+    } catch (e) {
+      if (status) status.textContent = `Error: ${e.message}`;
+      if (container) container.innerHTML = `<div style="color: #f87171; padding: 12px;">Failed to search: ${e.message}</div>`;
+    }
+  };
+
+  window.runLivePaperExtract = async function(customUrl = null) {
+    const input = document.getElementById('extractor-query-input');
+    const container = document.getElementById('extractor-results-container');
+    const status = document.getElementById('extractor-status');
+    const url = customUrl || (input ? input.value : '').trim();
+
+    if (!url || (!url.startsWith('http') && !url.includes('arxiv.org'))) {
+      alert('Please enter or click a valid URL (e.g. https://arxiv.org/abs/quant-ph/9705052)');
+      return;
+    }
+
+    currentExtractedUrl = url;
+    if (status) {
+      status.style.display = 'block';
+      status.textContent = `Extracting verified paper text and abstract...`;
+    }
+    if (container) {
+      container.innerHTML = '<div style="text-align:center; padding: 36px; color:#94a3b8;">Extracting paper text from arXiv...</div>';
+    }
+
+    try {
+      const res = await fetch('/api/fetch-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to extract paper text');
+
+      currentExtractedText = data.text || '';
+      if (status) status.textContent = `Extracted "${data.title}"`;
+
+      container.innerHTML = `
+        <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            ${lastPaperSearchResults.length ? `<button onclick="window.renderLastPaperSearchResults()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer;">← Back to Search Results</button>` : '<span></span>'}
+            <button onclick="window.runLivePaperSummarize()" style="background: #059669; color: #fff; border: none; padding: 4px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 600; cursor: pointer;">🧠 Generate AI Summary</button>
+          </div>
+          <h3 style="margin: 0 0 6px 0; color: #a855f7; font-size: 15px; line-height: 1.4;">${data.title}</h3>
+          <span style="font-size: 11px; color: #94a3b8;">Source: <a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #38bdf8;">${url}</a> &bull; ${data.length} characters</span>
+        </div>
+        <div style="white-space: pre-wrap; font-family: monospace; font-size: 12px; line-height: 1.6; color: #e2e8f0; max-height: 280px; overflow-y: auto; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px;">
+          ${data.text}
+        </div>
+      `;
+    } catch (e) {
+      if (status) status.textContent = `Extraction error: ${e.message}`;
+      if (container) container.innerHTML = `<div style="color: #f87171; padding: 12px;">Failed to extract: ${e.message}</div>`;
+    }
+  };
+
+  window.runLivePaperExtractAndSummarize = async function(url) {
+    await window.runLivePaperExtract(url);
+    if (currentExtractedText) {
+      await window.runLivePaperSummarize();
+    }
+  };
+
+  window.runLiveFindTerm = async function() {
+    const termInput = document.getElementById('extractor-term-input');
+    const container = document.getElementById('extractor-results-container');
+    const status = document.getElementById('extractor-status');
+    const term = (termInput ? termInput.value : '').trim();
+
+    if (!term) {
+      alert('Please enter a term to find (e.g. "superposition", "decoherence", "fidelity")');
+      return;
+    }
+    if (!currentExtractedText && !currentExtractedUrl) {
+      // If user hasn't extracted a paper yet but there's a search result, extract first one
+      if (lastPaperSearchResults.length > 0) {
+        await window.runLivePaperExtract(lastPaperSearchResults[0].link || lastPaperSearchResults[0].pdfUrl);
+      } else {
+        alert('Please search or extract a paper first, then search for terms inside it.');
+        return;
+      }
+    }
+
+    if (status) {
+      status.style.display = 'block';
+      status.textContent = `Searching and analyzing occurrences of "${term}"...`;
+    }
+
+    try {
+      const res = await fetch('/api/find-term', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          term,
+          text: currentExtractedText || undefined,
+          url: (!currentExtractedText && currentExtractedUrl) ? currentExtractedUrl : undefined
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to find term');
+
+      if (!data.found) {
+        if (status) status.textContent = `Term "${term}" was not found in this specific document.`;
+        return;
+      }
+
+      if (status) status.textContent = `Found ${data.totalOccurrences} occurrences of "${term}". AI contextual explanations:`;
+      const summaries = data.results || [];
+
+      container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="color: #38bdf8; font-weight: 700; font-size: 13px;">
+            🔍 Contextual Analysis for: "${term}" (${data.totalOccurrences} instances found)
+          </div>
+          ${lastPaperSearchResults.length ? `<button onclick="window.renderLastPaperSearchResults()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">← Back to Papers</button>` : ''}
+        </div>
+        ${summaries.map((s, idx) => `
+          <div style="background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.25); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+            <div style="font-weight: 600; color: #c084fc; margin-bottom: 4px; font-size: 12px;">Passage ${idx + 1} AI Explanation:</div>
+            <p style="margin: 0 0 6px 0; font-size: 13px; color: #f8fafc; line-height: 1.5;">${s.summary}</p>
+            <details style="font-size: 11px; color: #94a3b8;">
+              <summary style="cursor: pointer; color: #38bdf8;">View verbatim excerpt</summary>
+              <pre style="margin-top: 4px; white-space: pre-wrap; font-size: 11px; color: #cbd5e1; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px;">${s.context}</pre>
+            </details>
+          </div>
+        `).join('')}
+      `;
+    } catch (e) {
+      if (status) status.textContent = `Error: ${e.message}`;
+    }
+  };
+
+  window.runLivePaperSummarize = async function() {
+    const container = document.getElementById('extractor-results-container');
+    const status = document.getElementById('extractor-status');
+
+    if (!currentExtractedText && !currentExtractedUrl) {
+      alert('Please search/extract a paper first!');
+      return;
+    }
+
+    if (status) {
+      status.style.display = 'block';
+      status.textContent = 'Generating comprehensive AI paper summary...';
+    }
+
+    try {
+      const res = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: currentExtractedText || undefined,
+          url: (!currentExtractedText && currentExtractedUrl) ? currentExtractedUrl : undefined
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to summarize');
+
+      if (status) status.textContent = 'Summary synthesized:';
+      container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <h3 style="margin: 0; color: #34d399; font-size: 15px;">🧠 Executive Research Summary</h3>
+          ${lastPaperSearchResults.length ? `<button onclick="window.renderLastPaperSearchResults()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">← Back to Papers</button>` : ''}
+        </div>
+        <div style="background: rgba(5,150,105,0.1); border: 1px solid rgba(5,150,105,0.3); border-radius: 8px; padding: 14px;">
+          <h4 style="margin: 0 0 6px 0; color: #a7f3d0; font-size: 13.5px;">${data.title || 'Scientific Manuscript'}</h4>
+          <p style="margin: 0; font-size: 13px; line-height: 1.65; color: #f8fafc;">${data.summary}</p>
+        </div>
+      `;
+    } catch (e) {
+      if (status) status.textContent = `Summary error: ${e.message}`;
+    }
+  };
+
+  // Keyboard shortcut: Enter on query input triggers search, Enter on term input triggers find
+  setTimeout(() => {
+    const qInput = document.getElementById('extractor-query-input');
+    if (qInput) {
+      qInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') window.runLivePaperSearch();
+      });
+    }
+    const tInput = document.getElementById('extractor-term-input');
+    if (tInput) {
+      tInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') window.runLiveFindTerm();
+      });
+    }
+  }, 1000);
 
   // Initial render of research library
   renderResearchLibrary();
