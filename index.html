@@ -1178,8 +1178,8 @@
           </div>
 
           <div class="ribbon-actions">
-            <button class="tool-btn btn-voice-camera" id="btn-voice-camera" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggle()" title="Live AI Voice & Video Camera Copilot (Speak to place gates and build circuits hands-free)">
-              🎙️ Voice & Camera AI
+            <button class="tool-btn btn-voice-camera" id="btn-voice-camera" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggle()" title="Live AI Voice Copilot (Speak to place gates and build circuits hands-free)">
+              🎙️ Voice AI
             </button>
             <button class="tool-btn btn-cloud-qpu" id="btn-open-qpu-modal" onclick="if(window.cloudQPUBridge) window.cloudQPUBridge.openModal()" title="Execute on Real Physical IBM Quantum Cloud Processor">
               🚀 Cloud QPU
@@ -1831,18 +1831,17 @@
           </div>
         </div>
 
-        <!-- Floating Live AI Voice & Video Camera Copilot HUD -->
+        <!-- Floating Live AI Voice Copilot HUD -->
         <div id="quantum-copilot-hud" class="quantum-copilot-hud" style="display:none;">
           <!-- Header Bar -->
           <div class="copilot-hud-header">
             <div class="copilot-hud-title">
               <span class="copilot-hud-dot live"></span>
-              <span class="copilot-hud-heading">AI Voice & Camera Copilot</span>
+              <span class="copilot-hud-heading">AI Voice Copilot</span>
               <span id="copilot-status-badge" class="ai-status-badge fallback">○ Local Fallback</span>
             </div>
             <div class="copilot-hud-actions">
               <button class="copilot-hud-btn" id="copilot-btn-settings" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleSettingsPanel()" title="Select AI Engine (Grok-2 / Gemini)">⚙️</button>
-              <button class="copilot-hud-btn" id="copilot-btn-cam" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleCamera()" title="Toggle Camera">📷</button>
               <button class="copilot-hud-btn" id="copilot-btn-mic" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleMic()" title="Toggle Mic">🎙️</button>
               <button class="copilot-hud-btn" id="copilot-btn-tts" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleSpeechFeedback()" title="Toggle Voice Feedback">🔊</button>
               <button class="copilot-hud-btn copilot-btn-close" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.close()" title="Close Copilot">✕</button>
@@ -1878,10 +1877,9 @@
             </div>
           </div>
 
-          <!-- Video / Audio Waveform Canvas -->
+          <!-- Audio Waveform Canvas -->
           <div class="copilot-video-wrap">
-            <video id="copilot-video-feed" autoplay playsinline muted></video>
-            <canvas id="copilot-wave-canvas" width="300" height="170" style="display:none;"></canvas>
+            <canvas id="copilot-wave-canvas" width="300" height="170"></canvas>
             <div class="copilot-feed-overlay">
               <span class="copilot-live-pill" id="copilot-live-pill">🟢 LISTENING</span>
               <span class="copilot-qpu-brand">ANANTA COPILOT</span>

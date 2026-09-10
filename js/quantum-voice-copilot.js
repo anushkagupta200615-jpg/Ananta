@@ -1,6 +1,6 @@
 /**
- * Ananta Quantum Studio — Universal AI Voice & Video Camera Quantum Copilot
- * 
+ * Ananta Quantum Studio — Universal AI Voice Quantum Copilot
+ *
  * Features:
  *  - Immediate zero-latency startup on user click gesture.
  *  - Automatic switch to Composer tab (window.switchTab('simulator')) so the circuit
@@ -15,17 +15,15 @@
  *  - Automatic fresh start when user asks to "make a circuit with...".
  *  - CNOT connector redraw to ensure the vertical lines (• <--> ⊕) render with proper layout.
  *  - Chrome-safe TTS speech synthesis with window.speechSynthesis.resume().
- *  - Real-time webcam PIP video with animated audio waveform fallback.
+ *  - Animated audio waveform visualizer while listening.
  *  - Text command fallback input and 1-click test chips.
  */
 
 class QuantumVoiceCopilot {
   constructor() {
     this.isActive = false;
-    this.isCameraOn = false;
     this.isListening = false;
     this.speechSynthesisEnabled = true;
-    this.mediaStream = null;
     this.recognition = null;
     this.waveAnimId = null;
     this.wavePhase = 0;
@@ -180,10 +178,8 @@ class QuantumVoiceCopilot {
     this._setSubtitle('Listening! Say e.g. "Add H on 0", "Make GHZ", "CNOT 0 to 1", or "Make Bell state"');
     this._speak('Quantum Voice Copilot ready. What circuit shall I build?');
 
-    // 4. Start Camera asynchronously in background (never blocks voice/mic)
-    this.startCamera().catch(err => {
-      console.warn('[QuantumVoiceCopilot] Camera background init:', err);
-    });
+    // 4. Start the audio waveform visualizer
+    this._startWaveAnimation();
   }
 
   close() {
@@ -197,7 +193,7 @@ class QuantumVoiceCopilot {
     const btn = document.getElementById('btn-voice-camera');
     if (btn) btn.classList.remove('active');
 
-    this.stopCamera();
+    this._cancelWaveAnimation();
     this.stopListening();
   }
 
@@ -260,77 +256,6 @@ class QuantumVoiceCopilot {
         osc.stop(now + 0.38);
       }
     } catch (e) {}
-  }
-
-  async startCamera() {
-    const videoEl = document.getElementById('copilot-video-feed');
-    const canvas = document.getElementById('copilot-wave-canvas');
-
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('getUserMedia not supported');
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: 'user' },
-        audio: false
-      });
-
-      this.mediaStream = stream;
-      if (videoEl) {
-        videoEl.srcObject = stream;
-        videoEl.style.display = 'block';
-        videoEl.play().catch(() => {});
-      }
-      if (canvas) canvas.style.display = 'none';
-      this.isCameraOn = true;
-      this._updateCameraBtn(true);
-      this._cancelWaveAnimation();
-    } catch (err) {
-      console.warn('[QuantumVoiceCopilot] Webcam not available or permission denied:', err);
-      this.isCameraOn = false;
-      if (videoEl) {
-        videoEl.srcObject = null;
-        videoEl.style.display = 'none';
-      }
-      if (canvas) canvas.style.display = 'block';
-      this._updateCameraBtn(false);
-      this._startWaveAnimation();
-    }
-  }
-
-  stopCamera() {
-    if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(track => track.stop());
-      this.mediaStream = null;
-    }
-    const videoEl = document.getElementById('copilot-video-feed');
-    if (videoEl) {
-      videoEl.srcObject = null;
-      videoEl.style.display = 'none';
-    }
-    this.isCameraOn = false;
-    this._cancelWaveAnimation();
-    this._updateCameraBtn(false);
-  }
-
-  toggleCamera() {
-    if (this.isCameraOn) {
-      this.stopCamera();
-      const canvas = document.getElementById('copilot-wave-canvas');
-      if (canvas) canvas.style.display = 'block';
-      this._startWaveAnimation();
-    } else {
-      this.startCamera();
-    }
-  }
-
-  _updateCameraBtn(isOn) {
-    const btn = document.getElementById('copilot-btn-cam');
-    if (btn) {
-      btn.title = isOn ? 'Turn off camera (switch to waveform)' : 'Turn on camera';
-      btn.style.opacity = isOn ? '1' : '0.6';
-    }
   }
 
   _startWaveAnimation() {
