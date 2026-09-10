@@ -622,10 +622,10 @@ function parseVoiceLocally(transcript, currentCircuit) {
       const idx = text.indexOf(match[0]) + match[0].length;
       const afterText = text.slice(idx);
       // Extract all qubit references until next gate or punctuation
-      // e.g., "to q0 and q3", "on 0, 1, 2", "at q0"
-      const targetListMatch = afterText.match(/^\s*(?:to|on|at|in|qubit|wire|q)?\s*([q0-7\s,and]+)/i);
+      // e.g., "to q0 and q3", "on 0, 1, 2", "at q0", "to qubit 0", "on qubit 0 and qubit 3"
+      const targetListMatch = afterText.match(/^\s*(?:to|on|at|in|for)?\s*((?:(?:qubit|wire|q)\s*)?[0-7](?:\s*(?:,|and)\s*(?:(?:qubit|wire|q)\s*)?[0-7])*)/i);
       if (targetListMatch) {
-        const qMatches = targetListMatch[1].matchAll(/(?:qubit|wire|q)?\s*([0-7])/gi);
+        const qMatches = targetListMatch[1].matchAll(/([0-7])/g);
         for (const qm of qMatches) {
           const q = parseInt(qm[1], 10);
           operations.push({ step: null, gate, targets: [q], controls: [], params: {} });
@@ -654,7 +654,16 @@ function parseVoiceLocally(transcript, currentCircuit) {
   }
 
   if (operations.length === 0) {
-    operations.push({ step: 0, gate: 'H', targets: [0], controls: [], params: {} });
+    return {
+      num_qubits: numQubits,
+      reset_existing: false,
+      operations: [],
+      confidence: 0.2,
+      clarification_needed: `I didn't catch a gate or command in "${transcript}". Try something like "add H on qubit 0", "CNOT 0 to 1", or "make a Bell state".`,
+      explanation: null,
+      error_feedback: null,
+      teaching_tip: null
+    };
   }
 
   // Generate physics teaching tip based on gates placed
