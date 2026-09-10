@@ -65,7 +65,101 @@ async function getParsedBody(req) {
 // --------------------------------------------------------------------
 // Grok (xAI API) Caller
 // --------------------------------------------------------------------
-async function callGrokAPI(grokKey, systemPrompt, userText, model = 'grok-2-latest') {
+// ---------------------------------------------------------------------------
+// Model discovery.
+//
+// Hardcoded model ids rot: "grok-2-latest" and a fixed Gemini id both started
+// returning "model not found", which surfaced to users as a silent downgrade to
+// the offline engine. Ask each provider what it actually serves, pick the best
+// match, and cache it for the life of the warm instance. A provider renaming its
+// models no longer breaks anything.
+// ---------------------------------------------------------------------------
+const _modelCache = { gemini: null, grok: null };
+
+/** Ranks candidates: prefer fast "flash"/"mini" tiers, then the newest version. */
+function rankModel(name, preferred) {
+  const n = name.toLowerCase();
+  let score = 0;
+  for (const token of preferred) if (n.includes(token)) score += 100;
+  const version = n.match(/(\d+(?:\.\d+)?)/);
+  if (version) score += parseFloat(version[1]) * 10;
+  if (n.includes('preview') || n.includes('exp')) score -= 15;
+  if (n.includes('vision') || n.includes('embedding') || n.includes('image') || n.includes('tts')) score -= 500;
+  return score;
+}
+
+async function resolveGeminiModel(apiKey) {
+  if (_modelCache.gemini) return _modelCache.gemini;
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+  if (!res.ok) throw new Error(`Gemini ListModels HTTP ${res.status}`);
+
+  const data = await res.json();
+  const usable = (data.models || [])
+    .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+    .map(m => m.name.replace(/^models\//, ''));
+
+  if (!usable.length) throw new Error('Gemini key has no models supporting generateContent');
+
+  usable.sort((a, b) => rankModel(b, ['flash']) - rankModel(a, ['flash']));
+  _modelCache.gemini = usable[0];
+  console.log('[Gemini API] Using discovered model:', _modelCache.gemini);
+  return _modelCache.gemini;
+}
+
+async function resolveGrokModel(grokKey) {
+  if (_modelCache.grok) return _modelCache.grok;
+
+  const res = await fetch('https://api.x.ai/v1/models', {
+    headers: { 'Authorization': `Bearer ${grokKey.trim()}` }
+  });
+  if (!res.ok) throw new Error(`xAI ListModels HTTP ${res.status}`);
+
+  const data = await res.json();
+  const usable = (data.data || []).map(m => m.id).filter(Boolean);
+  if (!usable.length) throw new Error('xAI key exposes no usable models');
+
+  usable.sort((a, b) => rankModel(b, ['grok']) - rankModel(a, ['grok']));
+  _modelCache.grok = usable[0];
+  console.log('[Grok API] Using discovered model:', _modelCache.grok);
+  return _modelCache.grok;
+}
+
+/**
+ * Reports what each provider can actually do right now, by resolving a model
+ * rather than merely checking that a key string exists — the old check reported
+ * "available" even when every call was failing.
+ */
+async function probeProviders(req, body) {
+  const grokKey = getGrokKey(req, body);
+  const geminiKey = getApiKey(req);
+
+  const probe = async (key, resolver) => {
+    if (!key) return { available: false, model: null, error: 'no key configured' };
+    try {
+      return { available: true, model: await resolver(key), error: null };
+    } catch (err) {
+      return { available: false, model: null, error: err.message };
+    }
+  };
+
+  const [grok, gemini] = await Promise.all([
+    probe(grokKey, resolveGrokModel),
+    probe(geminiKey, resolveGeminiModel)
+  ]);
+
+  return {
+    providers: {
+      grok,
+      gemini,
+      deterministicQuantumAI: { available: true, model: 'quantum-nlp-v2', error: null }
+    },
+    activeProvider: grok.available ? grok.model : (gemini.available ? gemini.model : 'deterministic-quantum-ai')
+  };
+}
+
+async function callGrokAPI(grokKey, systemPrompt, userText, model = null) {
+  model = model || await resolveGrokModel(grokKey);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 18000);
   try {
@@ -99,7 +193,7 @@ async function callGrokAPI(grokKey, systemPrompt, userText, model = 'grok-2-late
     if (!content) throw new Error('Empty response from Grok');
     const cleaned = content.replace(/```json/gi, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(cleaned);
-    return { ok: true, result: parsed, source: 'grok-2' };
+    return { ok: true, result: parsed, source: model };
   } finally {
     clearTimeout(timeoutId);
   }
@@ -112,7 +206,8 @@ async function callGeminiDirect(apiKey, systemPrompt, userText) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 16000);
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const model = await resolveGeminiModel(apiKey);
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const fullPrompt = userText ? `${systemPrompt}\n\nUser input: "${userText}"` : systemPrompt;
 
     const response = await fetch(endpoint, {
@@ -136,7 +231,7 @@ async function callGeminiDirect(apiKey, systemPrompt, userText) {
 
     const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(cleaned);
-    return { ok: true, result: parsed, source: 'gemini-2.5-flash' };
+    return { ok: true, result: parsed, source: model };
   } finally {
     clearTimeout(timeoutId);
   }
@@ -162,11 +257,11 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
         return res.status(200).json(grokRes);
       } catch (err) {
         console.warn(`[Grok API] Call failed (${err.message}), evaluating Gemini / Local fallback...`);
-        providerErrors.push({ provider: 'grok-2', error: err.message });
+        providerErrors.push({ provider: 'grok', error: err.message });
       }
     } else if (requestedProvider === 'grok') {
       console.warn('[Grok API] Requested "grok" but no xAI key provided. Falling back to Gemini.');
-      providerErrors.push({ provider: 'grok-2', error: 'no xAI key configured' });
+      providerErrors.push({ provider: 'grok', error: 'no xAI key configured' });
     }
   }
 
@@ -177,7 +272,7 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
       return res.status(200).json(geminiRes);
     } catch (err) {
       console.warn(`[Gemini API] Call failed (${err.message}), evaluating fallbacks...`);
-      providerErrors.push({ provider: 'gemini-2.5-flash', error: err.message });
+      providerErrors.push({ provider: 'gemini', error: err.message });
       // If Grok key is available and wasn't tried yet:
       if (grokKey && requestedProvider !== 'gemini') {
         try {
@@ -185,12 +280,12 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
           return res.status(200).json(grokRes);
         } catch (grokErr) {
           console.warn(`[Grok API] Fallback call also failed (${grokErr.message})`);
-          providerErrors.push({ provider: 'grok-2', error: grokErr.message });
+          providerErrors.push({ provider: 'grok', error: grokErr.message });
         }
       }
     }
   } else if (requestedProvider !== 'local') {
-    providerErrors.push({ provider: 'gemini-2.5-flash', error: 'no Gemini key configured' });
+    providerErrors.push({ provider: 'gemini', error: 'no Gemini key configured' });
   }
 
   // 3. Guaranteed Deterministic Quantum AI Engine (100% Uptime HTTP 200)
@@ -233,17 +328,7 @@ async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const grokKey = getGrokKey(req, null);
-    const geminiKey = getApiKey(req);
-    return res.status(200).json({
-      status: 'ONLINE',
-      providers: {
-        grok: { available: Boolean(grokKey && grokKey.length > 5), model: 'grok-2-latest' },
-        gemini: { available: Boolean(geminiKey && geminiKey.length > 10), model: 'gemini-2.5-flash' },
-        deterministicQuantumAI: { available: true, model: 'quantum-nlp-v2' }
-      },
-      activeProvider: grokKey ? 'grok-2-latest' : (geminiKey ? 'gemini-2.5-flash' : 'deterministic-quantum-ai')
-    });
+    return res.status(200).json({ status: 'ONLINE', ...(await probeProviders(req, null)) });
   }
 
   if (req.method !== 'POST') {
@@ -256,17 +341,7 @@ async function handler(req, res) {
 
   // Task: provider-info / model status
   if (task === 'provider-info' || task === 'status') {
-    const grokKey = getGrokKey(req, body);
-    const geminiKey = getApiKey(req);
-    return res.status(200).json({
-      ok: true,
-      providers: {
-        grok: { available: Boolean(grokKey && grokKey.length > 5), model: 'grok-2-latest' },
-        gemini: { available: Boolean(geminiKey && geminiKey.length > 10), model: 'gemini-2.5-flash' },
-        deterministicQuantumAI: { available: true, model: 'quantum-nlp-v2' }
-      },
-      activeProvider: grokKey ? 'grok-2' : (geminiKey ? 'gemini-2.5-flash' : 'deterministic-quantum-ai')
-    });
+    return res.status(200).json({ ok: true, ...(await probeProviders(req, body)) });
   }
 
   if (!task || !payload) {
@@ -534,7 +609,8 @@ async function callGeminiAudioWithLocalFallback(apiKey, systemPrompt, audioBase6
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 18000);
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const audioModel = await resolveGeminiModel(apiKey);
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${audioModel}:generateContent?key=${apiKey}`;
       const cleanMime = mimeType ? mimeType.split(';')[0].trim() : 'audio/webm';
       const cleanData = audioBase64.replace(/^data:audio\/[a-z0-9]+;base64,/i, '');
 
@@ -566,7 +642,7 @@ async function callGeminiAudioWithLocalFallback(apiKey, systemPrompt, audioBase6
         const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (rawText) {
           const parsed = JSON.parse(rawText.replace(/```json/gi, '').replace(/```/g, '').trim());
-          return res.status(200).json({ ok: true, result: parsed, source: 'gemini-2.5-flash' });
+          return res.status(200).json({ ok: true, result: parsed, source: audioModel });
         }
       }
     } catch (err) {
