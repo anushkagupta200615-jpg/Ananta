@@ -337,6 +337,18 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // GET /api/resources — Live Community Resource Library (fetched from GitHub, cached)
+  if (pathname === '/api/resources' && req.method === 'GET') {
+    try {
+      const { getResourceLibrary } = require('../ananta-backend/utils/githubResources');
+      const forceRefresh = reqUrl.searchParams.get('refresh') === 'true';
+      const data = await getResourceLibrary({ forceRefresh });
+      return sendJson(res, 200, data);
+    } catch (err) {
+      return sendJson(res, 500, { error: err.message });
+    }
+  }
+
   // 4. POST /api/ai/audit
   if (pathname === '/api/ai/audit' && req.method === 'POST') {
     try {

@@ -400,6 +400,20 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // GET /api/resources — Live Community Resource Library (fetched from GitHub, cached)
+  if (pathname === '/api/resources' && req.method === 'GET') {
+    try {
+      const { getResourceLibrary } = require('./ananta-backend/utils/githubResources');
+      const forceRefresh = reqUrl.searchParams.get('refresh') === 'true';
+      const data = await getResourceLibrary({ forceRefresh });
+      logTransaction('GET', pathname, 200, Date.now() - reqStart, { totalItems: data.totalItems });
+      return sendJson(res, 200, data);
+    } catch (err) {
+      logTransaction('GET', pathname, 500, Date.now() - reqStart, { error: err.message });
+      return sendJson(res, 500, { error: err.message });
+    }
+  }
+
   // 3. GET /api/qpu/devices
   if (pathname === '/api/qpu/devices' && req.method === 'GET') {
     sendJson(res, 200, {

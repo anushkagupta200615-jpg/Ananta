@@ -1635,23 +1635,180 @@ document.addEventListener('DOMContentLoaded', () => {
   window.switchResearchMode = function(mode) {
     const papersSub = document.getElementById('research-papers-subview');
     const zooSub = document.getElementById('quantum-zoo-subview');
+    const librarySub = document.getElementById('resource-library-subview');
     const tabPapers = document.getElementById('tab-mode-papers');
     const tabZoo = document.getElementById('tab-mode-zoo');
+    const tabLibrary = document.getElementById('tab-mode-library');
+
+    [papersSub, zooSub, librarySub].forEach(el => { if (el) el.style.display = 'none'; });
+    [tabPapers, tabZoo, tabLibrary].forEach(el => { if (el) el.classList.remove('active'); });
 
     if (mode === 'zoo') {
-      if (papersSub) papersSub.style.display = 'none';
       if (zooSub) zooSub.style.display = 'block';
-      if (tabPapers) tabPapers.classList.remove('active');
       if (tabZoo) tabZoo.classList.add('active');
       renderZooLibrary();
+    } else if (mode === 'library') {
+      if (librarySub) librarySub.style.display = 'block';
+      if (tabLibrary) tabLibrary.classList.add('active');
+      window.loadResourceLibrary();
     } else {
       if (papersSub) papersSub.style.display = 'block';
-      if (zooSub) zooSub.style.display = 'none';
       if (tabPapers) tabPapers.classList.add('active');
-      if (tabZoo) tabZoo.classList.remove('active');
       renderResearchLibrary();
     }
   };
+
+  // ==========================================
+  // 8C. LIVE COMMUNITY RESOURCE LIBRARY (backend-fetched from GitHub)
+  // ==========================================
+  let resourceLibraryData = null;
+  let reslibActiveSource = 'all';
+  let reslibSearchQuery = '';
+  let reslibLoading = false;
+
+  window.loadResourceLibrary = async function(forceRefresh) {
+    const grid = document.getElementById('reslib-grid-container');
+    const counter = document.getElementById('reslib-results-count');
+    if (resourceLibraryData && !forceRefresh) {
+      renderResourceLibrary();
+      return;
+    }
+    if (reslibLoading) return;
+    reslibLoading = true;
+    if (counter) counter.textContent = forceRefresh ? 'Refreshing from GitHub...' : 'Loading live resource library...';
+    if (grid) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+          <h3 style="font-size: 16px; color: var(--text-white);">⚡ Fetching curated resources live from GitHub…</h3>
+          <p style="font-size: 13px; color: var(--text-dim); margin-top: 6px;">Parsing README links from the source repositories via the Ananta backend.</p>
+        </div>
+      `;
+    }
+    try {
+      const base = (window.anantaBackend && window.anantaBackend.baseUrl) || '';
+      const res = await fetch(`${base}/api/resources${forceRefresh ? '?refresh=true' : ''}`);
+      if (!res.ok) throw new Error(`Backend returned HTTP ${res.status}`);
+      const data = await res.json();
+      resourceLibraryData = data;
+      buildResourceLibrarySourcePills();
+      renderResourceLibrary();
+    } catch (err) {
+      console.error('[ResourceLibrary] Load failed:', err);
+      if (counter) counter.textContent = 'Could not reach the backend.';
+      if (grid) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+            <h3 style="font-size: 16px; color: var(--text-white);">⚠️ Resource library unavailable</h3>
+            <p style="font-size: 13px; color: var(--text-dim); margin-top: 6px;">${err.message}. Make sure the Ananta backend server is running, then hit Refresh.</p>
+          </div>
+        `;
+      }
+    } finally {
+      reslibLoading = false;
+    }
+  };
+
+  function buildResourceLibrarySourcePills() {
+    const wrap = document.getElementById('reslib-source-pills');
+    if (!wrap || !resourceLibraryData) return;
+    const sources = resourceLibraryData.sources || [];
+    wrap.innerHTML = `<button class="cat-pill${reslibActiveSource === 'all' ? ' active' : ''}" data-reslib-source="all" onclick="window.setResourceLibrarySource('all')">All Sources (<span>${resourceLibraryData.totalItems}</span>)</button>` +
+      sources.map(s => `
+        <button class="cat-pill${reslibActiveSource === s.id ? ' active' : ''}" data-reslib-source="${s.id}" onclick="window.setResourceLibrarySource('${s.id}')" title="${s.description || ''}">
+          ${s.label} (<span>${s.itemCount}</span>)${s.error ? ' ⚠️' : ''}
+        </button>
+      `).join('');
+  }
+
+  window.setResourceLibrarySource = function(sourceId) {
+    reslibActiveSource = sourceId;
+    document.querySelectorAll('#reslib-source-pills .cat-pill').forEach(pill => {
+      pill.classList.toggle('active', pill.getAttribute('data-reslib-source') === sourceId);
+    });
+    renderResourceLibrary();
+  };
+
+  window.filterResourceLibrary = function() {
+    const input = document.getElementById('reslib-search-input');
+    const clearBtn = document.getElementById('reslib-clear-search');
+    reslibSearchQuery = input ? input.value.trim() : '';
+    if (clearBtn) clearBtn.style.display = reslibSearchQuery ? 'inline-block' : 'none';
+    renderResourceLibrary();
+  };
+
+  window.clearResourceLibrarySearch = function() {
+    const input = document.getElementById('reslib-search-input');
+    if (input) input.value = '';
+    reslibSearchQuery = '';
+    const clearBtn = document.getElementById('reslib-clear-search');
+    if (clearBtn) clearBtn.style.display = 'none';
+    renderResourceLibrary();
+  };
+
+  function renderResourceLibrary() {
+    const grid = document.getElementById('reslib-grid-container');
+    const counter = document.getElementById('reslib-results-count');
+    if (!grid || !resourceLibraryData) return;
+
+    const sources = resourceLibraryData.sources || [];
+    let items = [];
+    sources.forEach(s => {
+      if (reslibActiveSource !== 'all' && s.id !== reslibActiveSource) return;
+      (s.items || []).forEach(it => items.push({ ...it, sourceLabel: s.label, repoUrl: s.repoUrl }));
+    });
+
+    if (reslibSearchQuery) {
+      const q = reslibSearchQuery.toLowerCase();
+      items = items.filter(it =>
+        (it.title && it.title.toLowerCase().includes(q)) ||
+        (it.category && it.category.toLowerCase().includes(q)) ||
+        (it.sourceLabel && it.sourceLabel.toLowerCase().includes(q))
+      );
+    }
+
+    if (counter) {
+      const totalFailed = sources.filter(s => s.error).length;
+      counter.textContent = `Showing ${items.length} of ${resourceLibraryData.totalItems} resources` +
+        (totalFailed ? ` (${totalFailed} source${totalFailed > 1 ? 's' : ''} temporarily unreachable)` : '');
+    }
+
+    if (items.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+          <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-white);">No matching resources found</h3>
+          <p style="font-size: 13px; color: var(--text-dim);">Try adjusting your search query or switching sources.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Cap rendered cards for performance; the counter above still reflects the true match count.
+    const MAX_RENDER = 300;
+    grid.innerHTML = '';
+    items.slice(0, MAX_RENDER).forEach(it => {
+      const card = document.createElement('div');
+      card.className = 'paper-card';
+      card.innerHTML = `
+        <div class="paper-top-row">
+          <span class="paper-badge badge-qml">${escapeHtml(it.sourceLabel)}</span>
+          <span class="paper-year">${escapeHtml(it.category)}</span>
+        </div>
+        <h3 class="paper-title">${escapeHtml(it.title)}</h3>
+        <div class="paper-actions-bar">
+          <a href="${it.url}" target="_blank" rel="noopener noreferrer" class="btn-paper-pdf">🔗 Open Resource ↗</a>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function escapeHtml(str) {
+    return (str || '').toString()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
   let activeZooSpeedup = 'all';
 
