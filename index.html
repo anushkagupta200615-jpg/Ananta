@@ -1838,10 +1838,40 @@
               <span id="copilot-status-badge" class="ai-status-badge fallback">○ Local Fallback</span>
             </div>
             <div class="copilot-hud-actions">
+              <button class="copilot-hud-btn" id="copilot-btn-settings" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleSettingsPanel()" title="Select AI Engine (Grok-2 / Gemini)">⚙️</button>
               <button class="copilot-hud-btn" id="copilot-btn-cam" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleCamera()" title="Toggle Camera">📷</button>
               <button class="copilot-hud-btn" id="copilot-btn-mic" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleMic()" title="Toggle Mic">🎙️</button>
               <button class="copilot-hud-btn" id="copilot-btn-tts" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleSpeechFeedback()" title="Toggle Voice Feedback">🔊</button>
               <button class="copilot-hud-btn copilot-btn-close" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.close()" title="Close Copilot">✕</button>
+            </div>
+          </div>
+
+          <!-- AI Engine Settings Dropdown Panel -->
+          <div id="copilot-settings-panel" class="copilot-settings-panel" style="display:none;">
+            <div class="copilot-settings-header">
+              <span>⚡ Quantum AI Engine</span>
+              <button class="copilot-settings-close-btn" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleSettingsPanel()">✕</button>
+            </div>
+            <div class="copilot-settings-row">
+              <label for="copilot-provider-select">Active Model:</label>
+              <select id="copilot-provider-select" onchange="window.quantumVoiceCopilot && window.quantumVoiceCopilot.setProvider(this.value)">
+                <option value="auto">Auto (Grok-2 ➔ Gemini ➔ Local)</option>
+                <option value="grok">🤖 Grok-2 (xAI)</option>
+                <option value="gemini">✨ Gemini 2.5 Flash</option>
+                <option value="local">⚡ Local Deterministic Engine</option>
+              </select>
+            </div>
+            <div class="copilot-settings-row">
+              <label for="copilot-grok-key-input">xAI Grok Key:</label>
+              <input type="password" id="copilot-grok-key-input" placeholder="xai-..." autocomplete="off" />
+            </div>
+            <div class="copilot-settings-row">
+              <label for="copilot-gemini-key-input">Gemini Key:</label>
+              <input type="password" id="copilot-gemini-key-input" placeholder="AIza..." autocomplete="off" />
+            </div>
+            <div class="copilot-settings-footer">
+              <button class="copilot-settings-save-btn" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.saveKeys()">💾 Save & Connect</button>
+              <button class="copilot-settings-test-btn" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.testConnection()">⚡ Test Ping</button>
             </div>
           </div>
 

@@ -259,13 +259,13 @@ const server = http.createServer(async (req, res) => {
 
   // ================= API ROUTES =================
 
-  // Dedicated Multi-task Gemini Endpoint (/api/gemini)
-  if (pathname === '/api/gemini') {
+  // Dedicated Multi-task Multi-Provider AI Endpoint (/api/gemini, /api/ai, /api/grok)
+  if (pathname === '/api/gemini' || pathname === '/api/ai' || pathname === '/api/grok') {
     try {
       delete require.cache[require.resolve('./api/gemini.js')];
     } catch (e) {}
-    const geminiHandler = require('./api/gemini.js');
-    return geminiHandler(req, res);
+    const aiHandler = require('./api/gemini.js');
+    return aiHandler(req, res);
   }
 
   // 1. GET /api/health

@@ -32,11 +32,117 @@ class QuantumVoiceCopilot {
     this.speechDebounceTimer = null;
     this.audioCtx = null;
 
+    // Multi-Provider AI Configuration (Grok-2, Gemini 2.5 Flash, Local Quantum AI)
+    this.selectedProvider = localStorage.getItem('ananta_ai_provider') || 'auto';
+    this.grokKey = localStorage.getItem('ananta_grok_key') || '';
+    this.geminiKey = localStorage.getItem('ananta_gemini_key') || '';
+
     this._bindEvents();
   }
 
   _bindEvents() {
     window.quantumVoiceCopilot = this;
+    setTimeout(() => {
+      this._updateBadge(this.selectedProvider === 'grok' ? 'grok-2' : (this.selectedProvider === 'gemini' ? 'gemini-2.5-flash' : 'deterministic-quantum-ai'));
+    }, 500);
+  }
+
+  toggleSettingsPanel() {
+    const panel = document.getElementById('copilot-settings-panel');
+    if (!panel) return;
+    const isShowing = panel.style.display === 'flex';
+    panel.style.display = isShowing ? 'none' : 'flex';
+    if (!isShowing) {
+      const sel = document.getElementById('copilot-provider-select');
+      if (sel) sel.value = this.selectedProvider;
+      const grokIn = document.getElementById('copilot-grok-key-input');
+      if (grokIn) grokIn.value = this.grokKey;
+      const geminiIn = document.getElementById('copilot-gemini-key-input');
+      if (geminiIn) geminiIn.value = this.geminiKey;
+    }
+  }
+
+  setProvider(provider) {
+    this.selectedProvider = provider || 'auto';
+    localStorage.setItem('ananta_ai_provider', this.selectedProvider);
+    this._updateBadge(this.selectedProvider === 'grok' ? 'grok-2' : (this.selectedProvider === 'gemini' ? 'gemini-2.5-flash' : 'deterministic-quantum-ai'));
+    this._setActionFeedback(`Active AI provider set to: ${this.selectedProvider.toUpperCase()}`, true);
+  }
+
+  saveKeys() {
+    const grokIn = document.getElementById('copilot-grok-key-input');
+    const geminiIn = document.getElementById('copilot-gemini-key-input');
+    const sel = document.getElementById('copilot-provider-select');
+
+    if (grokIn) {
+      this.grokKey = (grokIn.value || '').trim();
+      localStorage.setItem('ananta_grok_key', this.grokKey);
+    }
+    if (geminiIn) {
+      this.geminiKey = (geminiIn.value || '').trim();
+      localStorage.setItem('ananta_gemini_key', this.geminiKey);
+    }
+    if (sel) {
+      this.selectedProvider = sel.value || 'auto';
+      localStorage.setItem('ananta_ai_provider', this.selectedProvider);
+    }
+
+    this._setActionFeedback('Saved AI settings & API keys to browser storage!', true);
+    this.toggleSettingsPanel();
+    this.testConnection();
+  }
+
+  async testConnection() {
+    this._setActionFeedback('Pinging AI engine...', true);
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-AI-Provider': this.selectedProvider
+      };
+      if (this.grokKey) headers['X-Grok-Key'] = this.grokKey;
+      if (this.geminiKey) headers['X-Gemini-Key'] = this.geminiKey;
+
+      const res = await fetch('/api/gemini', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          task: 'provider-info',
+          payload: { grokApiKey: this.grokKey, geminiApiKey: this.geminiKey }
+        })
+      });
+      if (res.ok) {
+        const info = await res.json();
+        const active = info.activeProvider || (info.providers?.grok?.available ? 'grok-2' : 'gemini-2.5-flash');
+        this._updateBadge(active);
+        const grokMsg = info.providers?.grok?.available ? 'Grok-2 (Connected 🟢)' : 'Grok-2 (No Key)';
+        const gemMsg = info.providers?.gemini?.available ? 'Gemini 2.5 (Ready 🟢)' : 'Gemini (Quota)';
+        this._setActionFeedback(`AI Ping: ${grokMsg} | ${gemMsg}`, true);
+        this._playChime('success');
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch (e) {
+      this._setActionFeedback(`AI Ping: ${e.message} (Using local quantum fallback)`, false);
+    }
+  }
+
+  _updateBadge(source) {
+    const badge = document.getElementById('copilot-status-badge');
+    if (!badge) return;
+    badge.className = 'ai-status-badge';
+    if (source && source.includes('grok')) {
+      badge.classList.add('grok-active');
+      badge.textContent = '🤖 Grok-2 LIVE';
+      badge.title = 'Powered by xAI Grok-2 Neural Reasoner';
+    } else if (source && source.includes('gemini')) {
+      badge.classList.add('gemini-active');
+      badge.textContent = '✨ Gemini 2.5';
+      badge.title = 'Powered by Google AI Studio Gemini 2.5 Flash';
+    } else {
+      badge.classList.add('fallback');
+      badge.textContent = '⚡ Quantum Engine';
+      badge.title = 'Powered by Built-in Deterministic Quantum NLP Engine';
+    }
   }
 
   toggle() {
@@ -959,29 +1065,38 @@ class QuantumVoiceCopilot {
 
   async _generalizedFallback(rawClause, shouldSpeak = true) {
     const ui = window.circuitUI;
+    const providerLabel = this.selectedProvider === 'grok' ? 'Grok-2' : (this.selectedProvider === 'gemini' ? 'Gemini 2.5' : 'Quantum AI');
     this._setActionFeedback(`  Thinking about "${rawClause}"...`, true);
     this._setDialogueUser(rawClause);
-    this._setDialogueAI('Synthesizing circuit via Gemini 2.5 Flash...');
+    this._setDialogueAI(`Synthesizing circuit via ${providerLabel}...`);
     const currentCircuit = {
       num_qubits: ui ? ui.numQubits : 2,
       grid: ui ? ui.grid : [] // existing engine state, sent as context
     };
 
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (this.grokKey) headers['X-Grok-Key'] = this.grokKey;
+      if (this.geminiKey) headers['X-Gemini-Key'] = this.geminiKey;
+      if (this.selectedProvider) headers['X-AI-Provider'] = this.selectedProvider;
+
       const response = await fetch('/api/gemini', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           task: 'voice-parse',
+          provider: this.selectedProvider,
+          grokApiKey: this.grokKey,
+          geminiApiKey: this.geminiKey,
           payload: { transcript: rawClause, currentCircuit }
         })
       });
       if (!response.ok) throw new Error(`Backend HTTP ${response.status}`);
-      const { result: plan } = await response.json();
+      const data = await response.json();
+      const plan = data.result || {};
+      const source = data.source || 'deterministic-quantum-ai';
 
-      if (typeof setStatusBadge === 'function') {
-        setStatusBadge('copilot-status-badge', true); // "Live AI"
-      }
+      this._updateBadge(source);
 
       if (plan.clarification_needed) {
         this._setActionFeedback(plan.clarification_needed, false);

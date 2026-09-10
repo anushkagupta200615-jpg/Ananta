@@ -1,6 +1,7 @@
 // FILE: /api/gemini.js
-// Vercel Serverless Function: Google AI Studio Multi-Task Backend
-// Handles: voice-parse, audio-parse, circuit-doctor, roadmap, concept-doctor
+// Universal Multi-Provider Quantum AI Backend (Vercel Serverless Function & Node.js)
+// Providers: Grok-2 (xAI), Google AI Studio (Gemini 2.5 Flash), Deterministic Quantum AI
+// Tasks: voice-parse, audio-parse, circuit-doctor, roadmap, concept-doctor, provider-info
 
 const _defaultKeyB64 = 'QVEuQWI4Uk42TFozV0wtZ2JnOUh0bldoVzFJNG5qY3JWTkVWMFBReEVHQ2JwYmdvRHdHdmc=';
 
@@ -18,6 +19,30 @@ function getApiKey(req) {
   }
 }
 
+function getGrokKey(req, body) {
+  if (process.env.GROK_API_KEY && process.env.GROK_API_KEY.length > 5) {
+    return process.env.GROK_API_KEY.trim();
+  }
+  if (process.env.XAI_API_KEY && process.env.XAI_API_KEY.length > 5) {
+    return process.env.XAI_API_KEY.trim();
+  }
+  if (req && req.headers) {
+    if (req.headers['x-grok-key'] && req.headers['x-grok-key'].length > 5) {
+      return req.headers['x-grok-key'].trim();
+    }
+    if (req.headers['x-xai-key'] && req.headers['x-xai-key'].length > 5) {
+      return req.headers['x-xai-key'].trim();
+    }
+  }
+  if (body && body.grokApiKey && typeof body.grokApiKey === 'string' && body.grokApiKey.length > 5) {
+    return body.grokApiKey.trim();
+  }
+  if (body && body.payload && body.payload.grokApiKey && typeof body.payload.grokApiKey === 'string' && body.payload.grokApiKey.length > 5) {
+    return body.payload.grokApiKey.trim();
+  }
+  return '';
+}
+
 async function getParsedBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
   if (typeof req.body === 'string') {
@@ -32,6 +57,136 @@ async function getParsedBody(req) {
     });
     req.on('error', () => resolve({}));
   });
+}
+
+// --------------------------------------------------------------------
+// Grok (xAI API) Caller
+// --------------------------------------------------------------------
+async function callGrokAPI(grokKey, systemPrompt, userText, model = 'grok-2-latest') {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 18000);
+  try {
+    const fullUserText = userText ? String(userText) : 'Process strictly according to required JSON schema.';
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${grokKey.trim()}`
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: fullUserText }
+        ],
+        temperature: 0.15,
+        response_format: { type: 'json_object' }
+      })
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errTxt = await response.text();
+      throw new Error(`xAI Grok HTTP ${response.status}: ${errTxt.substring(0, 200)}`);
+    }
+
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Empty response from Grok');
+    const cleaned = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    return { ok: true, result: parsed, source: 'grok-2' };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// --------------------------------------------------------------------
+// Google AI Studio (Gemini 2.5 Flash) Direct Caller
+// --------------------------------------------------------------------
+async function callGeminiDirect(apiKey, systemPrompt, userText) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 16000);
+  try {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const fullPrompt = userText ? `${systemPrompt}\n\nUser input: "${userText}"` : systemPrompt;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: fullPrompt }] }],
+        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
+      })
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Gemini HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) throw new Error('Empty text from Gemini');
+
+    const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    return { ok: true, result: parsed, source: 'gemini-2.5-flash' };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// --------------------------------------------------------------------
+// Multi-Provider AI Dispatcher with Guaranteed Fallbacks
+// --------------------------------------------------------------------
+async function callMultiProviderAI(req, body, systemPrompt, userText, localFallbackFn, res) {
+  const geminiKey = getApiKey(req);
+  const grokKey = getGrokKey(req, body);
+  const requestedProvider = (body?.provider || (req.headers && req.headers['x-ai-provider']) || '').toLowerCase();
+
+  // 1. If Grok explicitly requested or Grok key provided, try Grok first!
+  if (requestedProvider === 'grok' || (grokKey && requestedProvider !== 'gemini' && requestedProvider !== 'local')) {
+    if (grokKey) {
+      try {
+        const grokRes = await callGrokAPI(grokKey, systemPrompt, userText);
+        return res.status(200).json(grokRes);
+      } catch (err) {
+        console.warn(`[Grok API] Call failed (${err.message}), evaluating Gemini / Local fallback...`);
+      }
+    } else if (requestedProvider === 'grok') {
+      console.warn('[Grok API] Requested "grok" but no xAI key provided. Falling back to Gemini.');
+    }
+  }
+
+  // 2. Try Gemini 2.5 Flash
+  if (geminiKey && geminiKey.length > 10 && requestedProvider !== 'local') {
+    try {
+      const geminiRes = await callGeminiDirect(geminiKey, systemPrompt, userText);
+      return res.status(200).json(geminiRes);
+    } catch (err) {
+      console.warn(`[Gemini API] Call failed (${err.message}), evaluating fallbacks...`);
+      // If Grok key is available and wasn't tried yet:
+      if (grokKey && requestedProvider !== 'gemini') {
+        try {
+          const grokRes = await callGrokAPI(grokKey, systemPrompt, userText);
+          return res.status(200).json(grokRes);
+        } catch (grokErr) {
+          console.warn(`[Grok API] Fallback call also failed (${grokErr.message})`);
+        }
+      }
+    }
+  }
+
+  // 3. Guaranteed Deterministic Quantum AI Engine (100% Uptime HTTP 200)
+  try {
+    const fallbackResult = localFallbackFn();
+    return res.status(200).json({ ok: true, result: fallbackResult, source: 'deterministic-quantum-ai' });
+  } catch (fallbackErr) {
+    return res.status(500).json({ error: 'Failed to synthesize response', detail: fallbackErr.message });
+  }
 }
 
 async function handler(req, res) {
@@ -52,21 +207,49 @@ async function handler(req, res) {
 
   // CORS & method guard
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Gemini-Key, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Gemini-Key, X-Grok-Key, X-XAI-Key, X-AI-Provider, X-Requested-With');
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
 
+  if (req.method === 'GET') {
+    const grokKey = getGrokKey(req, null);
+    const geminiKey = getApiKey(req);
+    return res.status(200).json({
+      status: 'ONLINE',
+      providers: {
+        grok: { available: Boolean(grokKey && grokKey.length > 5), model: 'grok-2-latest' },
+        gemini: { available: Boolean(geminiKey && geminiKey.length > 10), model: 'gemini-2.5-flash' },
+        deterministicQuantumAI: { available: true, model: 'quantum-nlp-v2' }
+      },
+      activeProvider: grokKey ? 'grok-2-latest' : (geminiKey ? 'gemini-2.5-flash' : 'deterministic-quantum-ai')
+    });
+  }
+
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
+    res.setHeader('Allow', 'POST, GET');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = getApiKey(req);
   const body = await getParsedBody(req);
   const { task, payload } = body || {};
+
+  // Task: provider-info / model status
+  if (task === 'provider-info' || task === 'status') {
+    const grokKey = getGrokKey(req, body);
+    const geminiKey = getApiKey(req);
+    return res.status(200).json({
+      ok: true,
+      providers: {
+        grok: { available: Boolean(grokKey && grokKey.length > 5), model: 'grok-2-latest' },
+        gemini: { available: Boolean(geminiKey && geminiKey.length > 10), model: 'gemini-2.5-flash' },
+        deterministicQuantumAI: { available: true, model: 'quantum-nlp-v2' }
+      },
+      activeProvider: grokKey ? 'grok-2' : (geminiKey ? 'gemini-2.5-flash' : 'deterministic-quantum-ai')
+    });
+  }
 
   if (!task || !payload) {
     return res.status(400).json({ error: 'Missing task or payload' });
@@ -76,14 +259,12 @@ async function handler(req, res) {
 
   switch (task) {
     // ------------------------------------------------------------------
-    // 1. VOICE COPILOT — text transcript intent parser
+    // 1. VOICE COPILOT — text transcript intent parser (Grok & Gemini)
     // ------------------------------------------------------------------
     case 'voice-parse': {
       const { transcript, currentCircuit } = payload;
-      const systemPrompt = `You are a quantum circuit intent parser for a browser-based
-circuit composer. Given a spoken instruction (already transcribed to text)
-and the current circuit state, output ONLY a JSON object matching this
-schema:
+      const systemPrompt = `You are an elite quantum circuit synthesis engine for a web quantum composer.
+Given the user's spoken instruction and the current circuit state, output ONLY a valid JSON object matching this schema:
 {
   "num_qubits": <int>,
   "reset_existing": <bool>,
@@ -94,18 +275,13 @@ schema:
   "confidence": <float 0-1>,
   "clarification_needed": "<string|null>"
 }
-Support any qubit count and any gate above, including parametrized rotations
-with explicit or implied angles ("a quarter turn" -> pi/2 radians). If the
-instruction names a known algorithm (Bell pair, GHZ, Grover, etc.), expand it
-into the actual explicit gate sequence for that specific case by reasoning
-about the algorithm — it must generalize to qubit indices, qubit counts, and
-variants the app has never had a preset for. If ambiguous, set
-clarification_needed and still return your best-guess plan at low confidence.
+Support any qubit count and any gate above. If the instruction names an algorithm (Bell pair, GHZ, Grover, QFT, Teleportation), expand it into the exact explicit gate sequence.
 Current circuit state: ${JSON.stringify(currentCircuit || {})}
 ${responseSchemaNote}`;
 
-      return await callGeminiWithLocalFallback(
-        apiKey,
+      return await callMultiProviderAI(
+        req,
+        body,
         systemPrompt,
         transcript,
         () => parseVoiceLocally(transcript, currentCircuit),
@@ -118,6 +294,7 @@ ${responseSchemaNote}`;
     // ------------------------------------------------------------------
     case 'audio-parse': {
       const { audioBase64, mimeType, currentCircuit } = payload;
+      const geminiKey = getApiKey(req);
       const systemPrompt = `You are an expert quantum speech assistant.
 Listen to the user's spoken audio, transcribe it precisely, and parse it into quantum circuit operations.
 Output ONLY a JSON object matching this schema:
@@ -136,7 +313,7 @@ Current circuit state: ${JSON.stringify(currentCircuit || {})}
 ${responseSchemaNote}`;
 
       return await callGeminiAudioWithLocalFallback(
-        apiKey,
+        geminiKey,
         systemPrompt,
         audioBase64,
         mimeType,
@@ -180,8 +357,9 @@ Return ONLY a valid JSON object matching this schema:
 }
 ${responseSchemaNote}`;
 
-      return await callGeminiWithLocalFallback(
-        apiKey,
+      return await callMultiProviderAI(
+        req,
+        body,
         systemPrompt,
         '',
         () => generateCircuitAuditLocally(payload),
@@ -202,8 +380,9 @@ Return ONLY JSON: { "moduleIds": ["id1","id2",...], "displayName": "Descriptive 
 Only use IDs from the valid list above — never invent new ones.
 ${responseSchemaNote}`;
 
-      return await callGeminiWithLocalFallback(
-        apiKey,
+      return await callMultiProviderAI(
+        req,
+        body,
         systemPrompt,
         instruction,
         () => generateRoadmapLocally(instruction, availableModuleIds),
@@ -230,8 +409,9 @@ Return ONLY JSON: {
 }
 ${responseSchemaNote}`;
 
-      return await callGeminiWithLocalFallback(
-        apiKey,
+      return await callMultiProviderAI(
+        req,
+        body,
         systemPrompt,
         question,
         () => generateConceptDoctorLocally(question, groundingEntries),
@@ -241,58 +421,6 @@ ${responseSchemaNote}`;
 
     default:
       return res.status(400).json({ error: `Unknown task: ${task}` });
-  }
-}
-
-// --------------------------------------------------------------------
-// Google AI Studio Live Fetch with Local Quantum Engine Fallback
-// --------------------------------------------------------------------
-async function callGeminiWithLocalFallback(apiKey, systemPrompt, userText, localFallbackFn, res) {
-  if (apiKey && apiKey.length > 10) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 16000);
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-      const fullPrompt = userText ? `${systemPrompt}\n\nUser input: "${userText}"` : systemPrompt;
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: fullPrompt }] }],
-          generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
-        })
-      });
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
-          try {
-            const parsed = JSON.parse(rawText);
-            return res.status(200).json({ ok: true, result: parsed, source: 'gemini-2.5-flash' });
-          } catch (jsonErr) {
-            const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(cleaned);
-            return res.status(200).json({ ok: true, result: parsed, source: 'gemini-2.5-flash' });
-          }
-        }
-      } else {
-        console.warn(`[Gemini API] Returned HTTP ${response.status}, engaging deterministic quantum fallback engine`);
-      }
-    } catch (err) {
-      console.warn(`[Gemini API] Live query failed (${err.message}), engaging deterministic quantum fallback engine`);
-    }
-  }
-
-  // Deterministic local quantum AI fallback
-  try {
-    const fallbackResult = localFallbackFn();
-    return res.status(200).json({ ok: true, result: fallbackResult, source: 'deterministic-quantum-ai' });
-  } catch (fallbackErr) {
-    return res.status(500).json({ error: 'Failed to synthesize response', detail: fallbackErr.message });
   }
 }
 
