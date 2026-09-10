@@ -202,6 +202,12 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  // Dedicated Multi-task Gemini Endpoint (/api/gemini)
+  if (pathname === '/api/gemini' || pathname === '/gemini') {
+    const geminiHandler = require('./gemini.js');
+    return geminiHandler(req, res);
+  }
+
   // 1. GET /api or /api/health
   if ((pathname === '/api' || pathname === '/api/health') && req.method === 'GET') {
     return sendJson(res, 200, {
