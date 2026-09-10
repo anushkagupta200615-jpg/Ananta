@@ -720,6 +720,48 @@ class QuantumVoiceCopilot {
     return data.result || {};
   }
 
+  /**
+   * Maps a backend capability id to the builder that constructs it. Keys are
+   * the registry ids in ananta-backend/utils/voiceIntent.js — keeping the two
+   * in step is the only coupling between them.
+   */
+  _buildNamedAlgorithm(id) {
+    const ui = window.circuitUI;
+    if (!ui) return null;
+
+    const builders = {
+      'bell': () => { this._buildBellVariant('phi_plus'); return 'Built a Bell pair.'; },
+      'ghz': () => { this._buildDynamicGHZ(3); return 'Built a 3-qubit GHZ state.'; },
+      'w-state': () => { this._buildWState(); return 'Built a W state.'; },
+      'teleportation': () => { this._buildTeleportation(); return 'Loaded the quantum teleportation protocol.'; },
+      'superdense': () => { this._buildSuperdenseCoding(); return 'Loaded superdense coding.'; },
+      'entanglement-swap': () => { this._buildEntanglementSwapping(); return 'Built entanglement swapping.'; },
+      'deutsch-jozsa': () => { this._buildDeutschJozsa(); return 'Built the Deutsch-Jozsa circuit.'; },
+      'bernstein-vazirani': () => { this._buildBernsteinVazirani(); return 'Built the Bernstein-Vazirani circuit.'; },
+      'simon': () => { this._buildSimon(); return "Built Simon's algorithm."; },
+      'grover': () => { this._buildGrover(); return 'Loaded Grover search.'; },
+      'qft': () => { this._buildDynamicQFT(ui.numQubits || 3, false); return `Built a ${ui.numQubits || 3}-qubit Quantum Fourier Transform.`; },
+      'qpe': () => { this._buildQPE(); return 'Built Quantum Phase Estimation.'; },
+      'adder': () => { this._buildQuantumAdder(); return 'Built the quantum adder.'; },
+      'bit-flip-code': () => { this._buildBitFlipCode(); return 'Built the 3-qubit bit-flip code.'; },
+      'phase-flip-code': () => { this._buildPhaseFlipCode(); return 'Built the 3-qubit phase-flip code.'; },
+      'swap-test': () => { this._buildSwapTest(); return 'Built the SWAP test.'; },
+      'qrng': () => { this._buildQRNG(); return 'Built a quantum random number generator.'; },
+      'vqe': () => { this._buildVQE(); return 'Loaded the VQE ansatz.'; },
+      'chsh': () => { this._buildCHSH(); return 'Loaded the CHSH Bell test.'; }
+    };
+
+    const build = builders[id];
+    if (!build) return null;
+
+    const summary = build();
+    setTimeout(() => {
+      if (ui.renderGrid) ui.renderGrid();
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
+    return summary;
+  }
+
   /** Executes whichever kind of turn the agent decided this was. */
   _applyAgentPlan(plan, shouldSpeak = true) {
     const spoken = plan.spoken_response || plan.clarification_needed || plan.error_feedback || '';
@@ -742,6 +784,22 @@ class QuantumVoiceCopilot {
       if (shouldSpeak && spoken) this._speak(spoken);
       this._rememberTurn('assistant', spoken || body);
       return plan.mode;
+    }
+
+    // A recognized algorithm is built by the client's own tested builder, so
+    // every capability in the backend registry is constructible without the
+    // backend having to describe it gate by gate.
+    if (plan.algorithm) {
+      const built = this._buildNamedAlgorithm(plan.algorithm);
+      if (built) {
+        this._setActionFeedback(spoken || built, true);
+        this._setDialogueAI(`${spoken || built}${tip}`);
+        this._playChime('success');
+        if (shouldSpeak) this._speak(spoken || built);
+        this._rememberTurn('assistant', spoken || built);
+        return 'build';
+      }
+      console.warn('[QuantumVoiceCopilot] No builder for algorithm id:', plan.algorithm);
     }
 
     if (plan.control) {

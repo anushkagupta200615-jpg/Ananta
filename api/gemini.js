@@ -149,6 +149,10 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
   const geminiKey = getApiKey(req);
   const grokKey = getGrokKey(req, body);
   const requestedProvider = (body?.provider || (req.headers && req.headers['x-ai-provider']) || '').toLowerCase();
+  // Provider failures used to vanish into server logs, leaving the UI showing
+  // "Quantum Engine" with no way to tell whether a key was missing, rejected or
+  // simply timed out. Collect them and report them with the fallback answer.
+  const providerErrors = [];
 
   // 1. If Grok explicitly requested or Grok key provided, try Grok first!
   if (requestedProvider === 'grok' || (grokKey && requestedProvider !== 'gemini' && requestedProvider !== 'local')) {
@@ -158,9 +162,11 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
         return res.status(200).json(grokRes);
       } catch (err) {
         console.warn(`[Grok API] Call failed (${err.message}), evaluating Gemini / Local fallback...`);
+        providerErrors.push({ provider: 'grok-2', error: err.message });
       }
     } else if (requestedProvider === 'grok') {
       console.warn('[Grok API] Requested "grok" but no xAI key provided. Falling back to Gemini.');
+      providerErrors.push({ provider: 'grok-2', error: 'no xAI key configured' });
     }
   }
 
@@ -171,6 +177,7 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
       return res.status(200).json(geminiRes);
     } catch (err) {
       console.warn(`[Gemini API] Call failed (${err.message}), evaluating fallbacks...`);
+      providerErrors.push({ provider: 'gemini-2.5-flash', error: err.message });
       // If Grok key is available and wasn't tried yet:
       if (grokKey && requestedProvider !== 'gemini') {
         try {
@@ -178,17 +185,25 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
           return res.status(200).json(grokRes);
         } catch (grokErr) {
           console.warn(`[Grok API] Fallback call also failed (${grokErr.message})`);
+          providerErrors.push({ provider: 'grok-2', error: grokErr.message });
         }
       }
     }
+  } else if (requestedProvider !== 'local') {
+    providerErrors.push({ provider: 'gemini-2.5-flash', error: 'no Gemini key configured' });
   }
 
   // 3. Guaranteed Deterministic Quantum AI Engine (100% Uptime HTTP 200)
   try {
     const fallbackResult = localFallbackFn();
-    return res.status(200).json({ ok: true, result: fallbackResult, source: 'deterministic-quantum-ai' });
+    return res.status(200).json({
+      ok: true,
+      result: fallbackResult,
+      source: 'deterministic-quantum-ai',
+      providerErrors
+    });
   } catch (fallbackErr) {
-    return res.status(500).json({ error: 'Failed to synthesize response', detail: fallbackErr.message });
+    return res.status(500).json({ error: 'Failed to synthesize response', detail: fallbackErr.message, providerErrors });
   }
 }
 

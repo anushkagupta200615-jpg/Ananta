@@ -14,32 +14,35 @@
  */
 
 const CAPABILITIES = [
+  // Each entry lists the real names people say for one capability, longest /
+  // most canonical first. Bare surnames and acronyms are included on purpose:
+  // people say "make grover", not "make grover search".
   // --- Entanglement & state preparation ---
-  { id: 'bell', kind: 'algorithm', terms: ['bell state', 'bell pair', 'epr pair', 'epr state'] },
+  { id: 'bell', kind: 'algorithm', terms: ['bell state', 'bell pair', 'epr pair', 'epr state', 'bell'] },
   { id: 'ghz', kind: 'algorithm', terms: ['ghz state', 'ghz', 'greenberger horne zeilinger', 'tripartite entanglement'] },
   { id: 'w-state', kind: 'algorithm', terms: ['w state', 'w superposition'] },
 
   // --- Protocols ---
-  { id: 'teleportation', kind: 'algorithm', terms: ['quantum teleportation', 'teleportation protocol', 'epr channel'] },
-  { id: 'superdense', kind: 'algorithm', terms: ['superdense coding', 'dense coding'] },
+  { id: 'teleportation', kind: 'algorithm', terms: ['quantum teleportation', 'teleportation protocol', 'teleportation', 'teleport', 'epr channel'] },
+  { id: 'superdense', kind: 'algorithm', terms: ['superdense coding', 'dense coding', 'superdense'] },
   { id: 'entanglement-swap', kind: 'algorithm', terms: ['entanglement swapping', 'swapping protocol'] },
 
   // --- Canonical algorithms ---
-  { id: 'deutsch-jozsa', kind: 'algorithm', terms: ['deutsch jozsa', 'deutsch algorithm'] },
-  { id: 'bernstein-vazirani', kind: 'algorithm', terms: ['bernstein vazirani', 'hidden string'] },
-  { id: 'simon', kind: 'algorithm', terms: ['simon algorithm', 'period finding'] },
-  { id: 'grover', kind: 'algorithm', terms: ['grover search', 'grover algorithm', 'quantum search', 'database search'] },
+  { id: 'deutsch-jozsa', kind: 'algorithm', terms: ['deutsch jozsa', 'deutsch algorithm', 'deutsch'] },
+  { id: 'bernstein-vazirani', kind: 'algorithm', terms: ['bernstein vazirani', 'hidden string', 'bernstein', 'vazirani'] },
+  { id: 'simon', kind: 'algorithm', terms: ['simon algorithm', 'period finding', 'simon'] },
+  { id: 'grover', kind: 'algorithm', terms: ['grover search', 'grover algorithm', 'quantum search', 'database search', 'grover'] },
   { id: 'qft', kind: 'algorithm', terms: ['quantum fourier transform', 'fourier transform', 'qft'] },
-  { id: 'qpe', kind: 'algorithm', terms: ['phase estimation', 'quantum phase estimation'] },
-  { id: 'adder', kind: 'algorithm', terms: ['quantum adder', 'half adder', 'quantum arithmetic'] },
+  { id: 'qpe', kind: 'algorithm', terms: ['phase estimation', 'quantum phase estimation', 'qpe'] },
+  { id: 'adder', kind: 'algorithm', terms: ['quantum adder', 'half adder', 'quantum arithmetic', 'adder'] },
 
   // --- Error correction & diagnostics ---
   { id: 'bit-flip-code', kind: 'algorithm', terms: ['bit flip code', 'repetition code', 'error correction'] },
   { id: 'phase-flip-code', kind: 'algorithm', terms: ['phase flip code'] },
   { id: 'swap-test', kind: 'algorithm', terms: ['swap test', 'state overlap', 'fidelity test'] },
-  { id: 'qrng', kind: 'algorithm', terms: ['random number generator', 'quantum random number', 'coin flip'] },
-  { id: 'vqe', kind: 'algorithm', terms: ['variational quantum eigensolver', 'vqe ansatz', 'ansatz'] },
-  { id: 'chsh', kind: 'algorithm', terms: ['chsh test', 'bell inequality', 'bell test'] },
+  { id: 'qrng', kind: 'algorithm', terms: ['random number generator', 'quantum random number', 'coin flip', 'qrng'] },
+  { id: 'vqe', kind: 'algorithm', terms: ['variational quantum eigensolver', 'vqe ansatz', 'ansatz', 'vqe'] },
+  { id: 'chsh', kind: 'algorithm', terms: ['chsh test', 'bell inequality', 'bell test', 'chsh'] },
 
   // --- Gates (short symbols are matched exactly, never fuzzily) ---
   { id: 'H', kind: 'gate', terms: ['hadamard', 'hadamard gate', 'h'] },

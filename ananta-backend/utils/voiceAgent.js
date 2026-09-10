@@ -122,6 +122,7 @@ BUILDING RULES
 - A controlled gate cannot share control and target; if asked, set error_feedback and explain why.
 - step is a 0-indexed column; null means "next free slot". reset_existing is true only when they ask for a NEW circuit.
 - For whole-circuit actions use "control" instead of operations: "clear" (wipe the circuit), "run" (execute the simulation), "add-qubit", "remove-qubit". Leave it null otherwise.
+- To build a named algorithm, set "algorithm" to its id and leave operations empty — the app has a correct, tested builder for each. Only emit raw operations for gate-level requests the ids do not cover. Valid ids: ${CAPABILITIES.filter(c => c.kind === 'algorithm').map(c => c.id).join(', ')}.
 
 VOICE STYLE
 - spoken_response is read aloud: one or two plain sentences, no markdown, no symbols like |0>, say "ket zero" instead.
@@ -131,6 +132,7 @@ Return ONLY this JSON object, no markdown fences:
 {
   "mode": "build" | "answer" | "explain" | "clarify",
   "control": <null | "clear" | "run" | "add-qubit" | "remove-qubit">,
+  "algorithm": <null | one of the algorithm ids listed above>,
   "num_qubits": <int, minimum wires needed>,
   "reset_existing": <bool>,
   "operations": [
@@ -155,11 +157,17 @@ USER SAID: "${transcript}"`;
 // simulator rather than from any language model.
 // ---------------------------------------------------------------------------
 
-const QUESTION_RE = /\b(what|why|how|which|is|are|does|do|can|explain|tell me|show me)\b/i;
+const QUESTION_RE = /\b(what|why|how|which|is|are|does|do|can|explain|tell me)\b/i;
 const ERROR_RE = /\b(error|failed|failing|broken|wrong|bug|crash|exception|not working)\b/i;
+const BUILD_VERB_RE = /\b(make|create|build|construct|draw|generate|add|place|put|insert|apply|wire|load|show me|give me)\b/i;
 
-function classifyIntent(text) {
+/**
+ * A build verb wins over question words, so "can you make QFT" and "show me a
+ * bell state" are requests to build, not questions to answer.
+ */
+function classifyIntent(text, hasCapability = false) {
   if (ERROR_RE.test(text)) return 'explain';
+  if (hasCapability && BUILD_VERB_RE.test(text)) return 'build';
   if (QUESTION_RE.test(text) || text.trim().endsWith('?')) return 'answer';
   return 'build';
 }
@@ -375,7 +383,28 @@ function respondDeterministically({ transcript, resolution, analysis, errorConte
     };
   }
 
-  const intent = errorContext ? 'explain' : classifyIntent(text);
+  // Every algorithm in the registry is buildable, because the client owns a
+  // builder for each capability id. Returning the id (rather than trying to
+  // emit raw gates here) means adding a capability to the registry makes it
+  // speakable without touching this file.
+  const algorithm = !errorContext && resolution.matches.find(m => m.kind === 'algorithm');
+  const intent = errorContext ? 'explain' : classifyIntent(text, !!algorithm);
+
+  if (intent === 'build' && algorithm) {
+    return {
+      mode: 'build',
+      algorithm: algorithm.id,
+      num_qubits: analysis.numQubits,
+      reset_existing: true,
+      operations: [],
+      spoken_response: `Building the ${algorithm.resolvedTo}.`,
+      display_text: `Constructed ${algorithm.resolvedTo}.`,
+      teaching_tip: null,
+      error_feedback: null,
+      clarification_needed: null,
+      confidence: algorithm.exact ? 0.95 : algorithm.score
+    };
+  }
 
   if (intent === 'explain') {
     const r = explainDeterministically(analysis, errorContext);
