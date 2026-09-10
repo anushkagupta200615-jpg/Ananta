@@ -286,12 +286,16 @@ async function handler(req, res) {
           if (settled) return settled;
 
           const plan = parseVoiceLocally(transcript, circuit);
+          const opSummary = (plan.operations || [])
+            .map(o => `${o.gate} on q${(o.targets || []).join(',')}`)
+            .join(', ');
           return {
             mode: plan.clarification_needed ? 'clarify' : 'build',
             num_qubits: plan.num_qubits,
             reset_existing: plan.reset_existing,
             operations: plan.operations || [],
-            spoken_response: plan.clarification_needed || plan.explanation || 'Done.',
+            spoken_response: plan.clarification_needed || plan.explanation ||
+              (opSummary ? `Placed ${opSummary}.` : 'Circuit updated.'),
             display_text: plan.explanation || plan.clarification_needed || '',
             teaching_tip: plan.teaching_tip || null,
             error_feedback: plan.error_feedback || null,
@@ -608,7 +612,9 @@ function parseVoiceLocally(transcript, currentCircuit) {
         { step: 1, gate: 'CNOT', targets: [1], controls: [0], params: {} }
       ],
       confidence: 1.0,
-      clarification_needed: null
+      clarification_needed: null,
+      explanation: 'Built a Bell pair: Hadamard on qubit 0, then CNOT onto qubit 1.',
+      teaching_tip: 'A Hadamard followed by a CNOT is the canonical way to create maximal two-qubit entanglement.'
     };
   }
 
@@ -622,7 +628,9 @@ function parseVoiceLocally(transcript, currentCircuit) {
         { step: 2, gate: 'CNOT', targets: [2], controls: [1], params: {} }
       ],
       confidence: 1.0,
-      clarification_needed: null
+      clarification_needed: null,
+      explanation: 'Built a 3-qubit GHZ state: Hadamard on qubit 0, then a CNOT chain across qubits 1 and 2.',
+      teaching_tip: 'GHZ states are maximally entangled across all three qubits at once — measuring any one collapses the rest.'
     };
   }
 

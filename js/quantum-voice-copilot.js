@@ -29,6 +29,9 @@ class QuantumVoiceCopilot {
     this.wavePhase = 0;
     this.speechDebounceTimer = null;
     this.audioCtx = null;
+    // Rolling dialogue memory so follow-ups ("do that again", "why?", "undo it")
+    // resolve against what was actually said and built earlier in the session.
+    this.conversationHistory = [];
 
     // Multi-Provider AI Configuration (Grok-2, Gemini 2.5 Flash, Local Quantum AI)
     this.selectedProvider = localStorage.getItem('ananta_ai_provider') || 'auto';
@@ -47,6 +50,15 @@ class QuantumVoiceCopilot {
       this._resolveVoice();
       window.speechSynthesis.addEventListener('voiceschanged', () => this._resolveVoice());
     }
+
+    // Keep the most recent runtime failure so the user can just ask "why did
+    // that fail?" and get it explained against the live circuit.
+    window.addEventListener('error', (e) => {
+      this._lastRuntimeError = `${e.message}${e.filename ? ` (${e.filename}:${e.lineno})` : ''}`;
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      this._lastRuntimeError = `Unhandled promise rejection: ${e.reason && e.reason.message ? e.reason.message : e.reason}`;
+    });
 
     setTimeout(() => {
       this._updateBadge(this.selectedProvider === 'grok' ? 'grok-2' : (this.selectedProvider === 'gemini' ? 'gemini-2.5-flash' : 'deterministic-quantum-ai'));
@@ -647,6 +659,147 @@ class QuantumVoiceCopilot {
   }
 
   // -------------------------------------------------------------
+  // Agent turn: one backend call handles building, questions and errors
+  // -------------------------------------------------------------
+
+  _rememberTurn(role, text) {
+    if (!text) return;
+    this.conversationHistory.push({ role, text: String(text).slice(0, 400) });
+    // Only recent turns matter for follow-ups, and the backend trims again.
+    if (this.conversationHistory.length > 12) {
+      this.conversationHistory = this.conversationHistory.slice(-12);
+    }
+  }
+
+  clearConversation() {
+    this.conversationHistory = [];
+    this._setActionFeedback('Conversation memory cleared.');
+  }
+
+  _circuitSnapshot() {
+    const ui = window.circuitUI;
+    if (!ui) return { num_qubits: 2, grid: [] };
+    return {
+      num_qubits: ui.numQubits,
+      grid: Array.isArray(ui.grid) ? ui.grid.map(row => [...row]) : []
+    };
+  }
+
+  /**
+   * Primary path. Sends the utterance, the live circuit and the recent
+   * conversation to the backend agent, which decides whether this turn builds
+   * something, answers a question, or explains an error.
+   */
+  async _runAgent(transcript, errorContext = null) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (this.grokKey) headers['X-Grok-Key'] = this.grokKey;
+    if (this.geminiKey) headers['X-Gemini-Key'] = this.geminiKey;
+    if (this.selectedProvider) headers['X-AI-Provider'] = this.selectedProvider;
+
+    const base = (window.anantaBackend && window.anantaBackend.baseUrl) || '';
+    const response = await fetch(`${base}/api/gemini`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        task: 'voice-agent',
+        provider: this.selectedProvider,
+        grokApiKey: this.grokKey,
+        geminiApiKey: this.geminiKey,
+        payload: {
+          transcript,
+          circuit: this._circuitSnapshot(),
+          history: this.conversationHistory,
+          errorContext
+        }
+      })
+    });
+
+    if (!response.ok) throw new Error(`Backend HTTP ${response.status}`);
+    const data = await response.json();
+    if (data.source) this._updateBadge(data.source);
+    return data.result || {};
+  }
+
+  /** Executes whichever kind of turn the agent decided this was. */
+  _applyAgentPlan(plan, shouldSpeak = true) {
+    const spoken = plan.spoken_response || plan.clarification_needed || plan.error_feedback || '';
+    const tip = plan.teaching_tip ? `\n💡 ${plan.teaching_tip}` : '';
+
+    if (plan.error_feedback) {
+      this._setActionFeedback(`⚠️ ${plan.error_feedback}`, false);
+      this._setDialogueAI(`⚠️ ${plan.error_feedback}${tip}`);
+      this._playChime('warn');
+      if (shouldSpeak) this._speak(plan.error_feedback);
+      this._rememberTurn('assistant', plan.error_feedback);
+      return 'error';
+    }
+
+    if (plan.mode === 'answer' || plan.mode === 'explain') {
+      const body = plan.display_text || spoken;
+      this._setActionFeedback(spoken || body, true);
+      this._setDialogueAI(`${body}${tip}`);
+      this._playChime('success');
+      if (shouldSpeak && spoken) this._speak(spoken);
+      this._rememberTurn('assistant', spoken || body);
+      return plan.mode;
+    }
+
+    if (plan.control) {
+      const ui = window.circuitUI;
+      if (ui) {
+        if (plan.control === 'clear') ui.clearCircuit();
+        else if (plan.control === 'run') ui.runInteractiveSimulation();
+        else if (plan.control === 'add-qubit') ui.addQubit();
+        else if (plan.control === 'remove-qubit') ui.removeQubit();
+      }
+      if (plan.operations && plan.operations.length) this._applyOperations(plan);
+      this._setActionFeedback(spoken, true);
+      this._setDialogueAI(`${spoken}${tip}`);
+      this._playChime('success');
+      if (shouldSpeak) this._speak(spoken);
+      this._rememberTurn('assistant', spoken);
+      return 'control';
+    }
+
+    if (plan.mode === 'clarify' || (!plan.operations || plan.operations.length === 0)) {
+      const ask = plan.clarification_needed || spoken || 'Could you say that another way?';
+      this._setActionFeedback(ask, false);
+      this._setDialogueAI(`${ask}${tip}`);
+      if (shouldSpeak) this._speak(ask);
+      this._rememberTurn('assistant', ask);
+      return 'clarify';
+    }
+
+    const placed = this._applyOperations(plan);
+    const summary = spoken || `Applied ${placed} operation${placed === 1 ? '' : 's'}.`;
+    this._setActionFeedback(summary, true);
+    this._setDialogueAI(`${summary}${tip}`);
+    this._playChime('success');
+    if (shouldSpeak) this._speak(summary);
+    this._rememberTurn('assistant', summary);
+    return 'build';
+  }
+
+  /**
+   * Public entry point for the error explainer: hand it anything that went
+   * wrong and the agent explains it against the live circuit.
+   */
+  async explainError(errorText) {
+    if (!errorText) return;
+    if (!this.isActive) this.open();
+    this._setDialogueUser(`Explain this error: ${String(errorText).slice(0, 200)}`);
+    this._setActionFeedback('Analyzing the error...', true);
+    this._rememberTurn('user', `Explain this error: ${errorText}`);
+
+    try {
+      const plan = await this._runAgent('Explain this error and how to fix it.', String(errorText));
+      this._applyAgentPlan(plan, true);
+    } catch (err) {
+      this._setActionFeedback(`Could not reach the AI engine: ${err.message}`, false);
+    }
+  }
+
+  // -------------------------------------------------------------
   // Phonetic term resolution (vocabulary owned by the backend registry)
   // -------------------------------------------------------------
 
@@ -832,6 +985,27 @@ class QuantumVoiceCopilot {
       if (!ui) {
         this._setActionFeedback('Circuit UI not loaded yet.', false);
         return;
+      }
+
+      // -----------------------------------------------------------------------
+      // PRIMARY PATH: the backend agent. It sees the live circuit and the recent
+      // conversation, so it can build, answer questions with real simulated
+      // numbers, or explain an error — and it resolves follow-ups like "do the
+      // same on qubit 1". The local pattern engine below is the offline fallback.
+      // -----------------------------------------------------------------------
+      this._rememberTurn('user', rawText);
+      if (this.selectedProvider !== 'offline') {
+        try {
+          this._updateStatus('🧠 THINKING...', 'speaking');
+          // If they're asking about a failure, hand over the last real error too.
+          const asksAboutError = /\b(error|failed|failing|broken|wrong|bug|crash|exception|not working)\b/i.test(text);
+          const plan = await this._runAgent(text, asksAboutError ? this._lastRuntimeError || null : null);
+          this._applyAgentPlan(plan, true);
+          return;
+        } catch (err) {
+          console.warn('[QuantumVoiceCopilot] Agent unreachable, using local engine:', err.message);
+          this._setActionFeedback('AI engine unreachable — using local engine.', false);
+        }
       }
 
       // If user says "make a circuit with..." or "create a circuit with..." or "draw circuit with...":
@@ -1249,6 +1423,42 @@ class QuantumVoiceCopilot {
       }
 
       // Auto-expand qubits if synthesis requires more wires
+      const placed = this._applyOperations(plan);
+      const skipped = [];
+
+      const explanation = plan.explanation || `Built ${placed} operation(s) from: "${rawClause}"`;
+      const tip = plan.teaching_tip ? `\n💡 Tip: ${plan.teaching_tip}` : '';
+      const fullDialogue = `${explanation}${tip}`;
+
+      this._setActionFeedback(explanation, skipped.length === 0);
+      this._setDialogueAI(fullDialogue);
+      this._playChime('success');
+      if (shouldSpeak) this._speak(explanation);
+      return explanation;
+    } catch (err) {
+      console.warn('[QuantumVoiceCopilot] Backend parse failed:', err);
+      if (typeof setStatusBadge === 'function') {
+        setStatusBadge('copilot-status-badge', false); // "Local Fallback"
+      }
+      this._setActionFeedback(
+        `Unrecognized: "${rawClause}". Try: "Add H on 0", "Make GHZ", "CNOT 0 to 1"`,
+        false
+      );
+      this._playChime('warn');
+      return null;
+    }
+  }
+
+  /**
+   * Applies a plan's operations to the circuit grid. Shared by the agent path
+   * and the legacy fallback so gate placement behaves identically either way.
+   */
+  _applyOperations(plan) {
+    const ui = window.circuitUI;
+    let placed = 0;
+    const skipped = [];
+
+    {
       if (ui && plan.num_qubits && plan.num_qubits > ui.numQubits) {
         while (ui.numQubits < Math.min(8, plan.num_qubits)) {
           ui.addQubit();
@@ -1256,7 +1466,6 @@ class QuantumVoiceCopilot {
       }
 
       if (plan.reset_existing && ui) ui.clearCircuit();
-      let placed = 0, skipped = [];
 
       if (plan.operations && Array.isArray(plan.operations)) {
         for (const op of plan.operations) {
@@ -1324,28 +1533,12 @@ class QuantumVoiceCopilot {
         if (ui && ui.renderGrid) ui.renderGrid();
         if (ui && ui.renderCnotConnectors) ui.renderCnotConnectors();
       }, 60);
-
-      const explanation = plan.explanation || `Built ${placed} operation(s) from: "${rawClause}"`;
-      const tip = plan.teaching_tip ? `\n💡 Tip: ${plan.teaching_tip}` : '';
-      const fullDialogue = `${explanation}${tip}`;
-
-      this._setActionFeedback(explanation, skipped.length === 0);
-      this._setDialogueAI(fullDialogue);
-      this._playChime('success');
-      if (shouldSpeak) this._speak(explanation);
-      return explanation;
-    } catch (err) {
-      console.warn('[QuantumVoiceCopilot] Backend parse failed:', err);
-      if (typeof setStatusBadge === 'function') {
-        setStatusBadge('copilot-status-badge', false); // "Local Fallback"
-      }
-      this._setActionFeedback(
-        `Unrecognized: "${rawClause}". Try: "Add H on 0", "Make GHZ", "CNOT 0 to 1"`,
-        false
-      );
-      this._playChime('warn');
-      return null;
     }
+
+    if (skipped.length) {
+      console.warn('[QuantumVoiceCopilot] Skipped unsupported gates:', skipped);
+    }
+    return placed;
   }
 
   _nextFreeColumnForPair(q1, q2) {

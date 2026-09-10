@@ -121,6 +121,7 @@ BUILDING RULES
 - Multi-qubit gates (CNOT, CZ, SWAP, Toffoli) use controls + targets together in ONE operation.
 - A controlled gate cannot share control and target; if asked, set error_feedback and explain why.
 - step is a 0-indexed column; null means "next free slot". reset_existing is true only when they ask for a NEW circuit.
+- For whole-circuit actions use "control" instead of operations: "clear" (wipe the circuit), "run" (execute the simulation), "add-qubit", "remove-qubit". Leave it null otherwise.
 
 VOICE STYLE
 - spoken_response is read aloud: one or two plain sentences, no markdown, no symbols like |0>, say "ket zero" instead.
@@ -129,6 +130,7 @@ VOICE STYLE
 Return ONLY this JSON object, no markdown fences:
 {
   "mode": "build" | "answer" | "explain" | "clarify",
+  "control": <null | "clear" | "run" | "add-qubit" | "remove-qubit">,
   "num_qubits": <int, minimum wires needed>,
   "reset_existing": <bool>,
   "operations": [
@@ -166,26 +168,34 @@ function normalizeDigitWords(text) {
   return text.split(/\s+/).map(w => DIGIT_WORDS[w.toLowerCase()] ?? w).join(' ');
 }
 
-/** Pulls a basis state like "11", "|01>", or "one one" out of a question. */
+/**
+ * Pulls a basis state like "11", "|01>", or "one one" out of a question.
+ * Returns { bits } on success, or { mismatch } when the user clearly named a
+ * bitstring but of the wrong width — worth saying out loud rather than
+ * silently answering a different question.
+ */
 function extractBasisState(text, numQubits) {
   const norm = normalizeDigitWords(text);
+  const candidates = [];
 
   const ket = norm.match(/\|\s*([01\s]+?)\s*(?:>|⟩)/);
-  if (ket) {
-    const bits = ket[1].replace(/\s+/g, '');
-    if (bits.length === numQubits) return bits;
-  }
+  if (ket) candidates.push(ket[1].replace(/\s+/g, ''));
 
   for (const token of norm.split(/\s+/)) {
     const bits = token.replace(/[^01]/g, '');
-    if (bits.length === numQubits && /^[01]+$/.test(bits)) return bits;
+    if (bits.length > 0 && /^[01]+$/.test(bits) && bits.length === token.length) candidates.push(bits);
   }
 
-  // "one one" style: consecutive single digits that together span the register
+  // "one one" style: consecutive single digits read out as separate words
   const singles = norm.split(/\s+/).filter(t => /^[01]$/.test(t));
-  if (singles.length === numQubits) return singles.join('');
+  if (singles.length > 1) candidates.push(singles.join(''));
 
-  return null;
+  const exact = candidates.find(c => c.length === numQubits);
+  if (exact) return { bits: exact };
+
+  // Report the fullest thing they said, not the first stray digit.
+  const near = candidates.filter(c => c.length > 0).sort((a, b) => b.length - a.length)[0];
+  return near ? { mismatch: near } : null;
 }
 
 function extractQubitIndex(text) {
@@ -236,12 +246,18 @@ function answerNumerically(text, analysis) {
 
   if (/\b(probability|chance|odds|likely|likelihood)\b/.test(lower)) {
     const basis = extractBasisState(lower, analysis.numQubits);
-    if (basis) {
-      const hit = analysis.allProbabilities.find(p => p.state === basis);
+    if (basis && basis.bits) {
+      const hit = analysis.allProbabilities.find(p => p.state === basis.bits);
       const p = hit ? hit.probability : 0;
       return {
-        spoken: `The probability of measuring ${basis.split('').join(' ')} is ${fmtPct(p)}.`,
-        display: `P(|${basis}>) = ${fmtNum(p, 6)}  (${fmtPct(p)})`
+        spoken: `The probability of measuring ${basis.bits.split('').join(' ')} is ${fmtPct(p)}.`,
+        display: `P(|${basis.bits}>) = ${fmtNum(p, 6)}  (${fmtPct(p)})`
+      };
+    }
+    if (basis && basis.mismatch) {
+      return {
+        spoken: `You asked about ${basis.mismatch.split('').join(' ')}, but this register has ${analysis.numQubits} qubits, so outcomes need ${analysis.numQubits} bits.`,
+        display: `"${basis.mismatch}" is ${basis.mismatch.length} bit${basis.mismatch.length === 1 ? '' : 's'}, but the register is ${analysis.numQubits} qubits wide. Valid outcomes look like |${'0'.repeat(analysis.numQubits)}>.`
       };
     }
     const top = analysis.probabilities.slice(0, 4)
@@ -256,7 +272,9 @@ function answerNumerically(text, analysis) {
 
   if (/\b(amplitude|phase)\b/.test(lower)) {
     const basis = extractBasisState(lower, analysis.numQubits);
-    const hit = basis ? analysis.allProbabilities.find(p => p.state === basis) : analysis.probabilities[0];
+    const hit = (basis && basis.bits)
+      ? analysis.allProbabilities.find(p => p.state === basis.bits)
+      : analysis.probabilities[0];
     if (hit) {
       const { re, im } = hit.amplitude;
       const mag = Math.sqrt(re * re + im * im);
@@ -330,6 +348,33 @@ function explainDeterministically(analysis, errorContext) {
  */
 function respondDeterministically({ transcript, resolution, analysis, errorContext }) {
   const text = resolution.text || transcript || '';
+
+  // Circuit controls come straight from the capability registry, so "clear the
+  // circuit", "wipe circuit", "start over" all resolve without extra patterns.
+  const control = !errorContext && resolution.matches.find(m => m.kind === 'control');
+  if (control) {
+    const spoken = {
+      clear: 'Circuit cleared. What shall we build?',
+      run: 'Running the simulation now.',
+      'add-qubit': 'Added a qubit to the register.',
+      'remove-qubit': 'Removed a qubit from the register.'
+    }[control.id];
+
+    return {
+      mode: 'build',
+      control: control.id,
+      num_qubits: analysis.numQubits,
+      reset_existing: false,
+      operations: [],
+      spoken_response: spoken || 'Done.',
+      display_text: spoken || 'Done.',
+      teaching_tip: null,
+      error_feedback: null,
+      clarification_needed: null,
+      confidence: 0.95
+    };
+  }
+
   const intent = errorContext ? 'explain' : classifyIntent(text);
 
   if (intent === 'explain') {
