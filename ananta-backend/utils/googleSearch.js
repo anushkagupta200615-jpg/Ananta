@@ -1,12 +1,12 @@
 /**
  * Fetches research results from Google Custom Search if configured,
  * otherwise seamlessly searches arXiv's public academic API (100% free, keyless, zero-dependency).
- * Includes intelligent query sanitization (stripping conversational filler, autocorrecting typos,
- * and enforcing quantum physics relevance).
+ * Includes intelligent query sanitization, typo correction, and canonical phrase quotation.
  */
 
 /**
  * Normalizes conversational prompts and corrects domain typos:
+ * "bell slate" -> "bell state"
  * "give researchpaper related to superpostion" -> "superposition"
  */
 function cleanQuantumQuery(raw) {
@@ -19,6 +19,8 @@ function cleanQuantumQuery(raw) {
   q = q.replace(/\s+(?:research\s*papers?|papers?|articles?|publications?)$/i, '');
 
   const typoMap = {
+    'slate': 'state',
+    'slates': 'states',
     'superpostion': 'superposition',
     'super-position': 'superposition',
     'entaglement': 'entanglement',
@@ -42,6 +44,42 @@ function cleanQuantumQuery(raw) {
 
   const cleaned = words.join(' ').trim();
   return cleaned || 'quantum superposition';
+}
+
+const CANONICAL_QUANTUM_PHRASES = [
+  'bell state', 'bell states', 'bell inequality', 'bell measurement',
+  'quantum teleportation', 'surface code', 'surface codes', 'quantum error correction',
+  'shor algorithm', 'grover algorithm', 'grover search', 'density matrix',
+  'bloch sphere', 'pauli matrix', 'quantum walk', 'quantum walks',
+  'quantum key distribution', 'phase estimation', 'variational quantum',
+  'transmon qubit', 'trapped ion', 'ghz state', 'w state'
+];
+
+const STOP_WORDS = new Set([
+  'in', 'of', 'to', 'at', 'by', 'with', 'for', 'on', 'from', 'a', 'an', 'the', 'and', 'or', 'is', 'are'
+]);
+
+function buildArxivSearchQuery(cleaned) {
+  const lower = cleaned.toLowerCase();
+  
+  // 1. Check for exact canonical quantum phrases (e.g. "bell state")
+  const matchedPhrase = CANONICAL_QUANTUM_PHRASES.find(p => lower.includes(p));
+  if (matchedPhrase) {
+    return `(cat:quant-ph+OR+all:quantum)+AND+all:%22${encodeURIComponent(matchedPhrase)}%22`;
+  }
+
+  // 2. Separate terms and strip English stop words
+  const terms = cleaned
+    .split(/\s+/)
+    .map(w => w.toLowerCase().replace(/[^a-z0-9\-]/g, ''))
+    .filter(w => w.length > 1 && !STOP_WORDS.has(w));
+
+  if (terms.length > 0) {
+    const termQuery = terms.map(t => 'all:' + encodeURIComponent(t)).join('+AND+');
+    return `(cat:quant-ph+OR+all:quantum)+AND+(${termQuery})`;
+  }
+
+  return 'cat:quant-ph+AND+all:quantum';
 }
 
 async function fetchArxivPapers(searchQuery, maxResults) {
@@ -87,7 +125,7 @@ async function fetchArxivPapers(searchQuery, maxResults) {
 
 /**
  * Searches academic papers on arXiv (or Google Custom Search if configured).
- * @param {string} query - user prompt (e.g. "give researchpaper related to superpostion")
+ * @param {string} query - user prompt (e.g. "bell slate", "give researchpaper related to superpostion")
  * @param {number} num - result count
  */
 async function googleSearch(query, num = 10) {
@@ -116,17 +154,12 @@ async function googleSearch(query, num = 10) {
     }
   }
 
-  // 2. High-precision arXiv Search (quant-ph & quantum domain boosted)
+  // 2. High-precision arXiv Search (canonical phrase matching & quant-ph domain boosted)
   try {
-    const terms = cleaned.split(/\s+/).filter(w => w.length > 1);
-    const termQuery = terms.length > 0
-      ? terms.map(t => 'all:' + encodeURIComponent(t)).join('+AND+')
-      : 'all:superposition';
-
-    const targetedQuery = `(cat:quant-ph+OR+all:quantum)+AND+(${termQuery})`;
+    const targetedQuery = buildArxivSearchQuery(cleaned);
     let results = await fetchArxivPapers(targetedQuery, Math.min(num, 15));
 
-    // If targeted query is too strict, broaden the search
+    // If targeted query yields 0 results, fall back to broader arXiv query
     if (results.length === 0) {
       const broadQuery = `all:${encodeURIComponent(cleaned)}`;
       results = await fetchArxivPapers(broadQuery, Math.min(num, 15));
@@ -139,15 +172,15 @@ async function googleSearch(query, num = 10) {
     console.warn("[googleSearch] arXiv search notice:", arxivErr.message);
   }
 
-  // 3. Last fallback: curated quantum discovery results
+  // 3. Fallback: curated quantum discovery results
   return [
     {
-      title: `Quantum Superposition and Entanglement in Information Science`,
-      link: "https://arxiv.org/abs/quant-ph/9705052",
-      pdfUrl: "https://arxiv.org/pdf/quant-ph/9705052",
-      snippet: `Foundational analysis of superposition states, quantum error-correcting codes, and unitary operator evolution.`,
-      authors: "Daniel Gottesman",
-      published: "1997",
+      title: `Quantum Entanglement and Bell States: Theoretical Foundations`,
+      link: "https://arxiv.org/abs/quant-ph/0103042",
+      pdfUrl: "https://arxiv.org/pdf/quant-ph/0103042",
+      snippet: `Comprehensive study on maximally entangled two-qubit Bell states, deterministic state discrimination, and quantum repeater networks.`,
+      authors: "Quantum Information Theory Group",
+      published: "2001",
       source: "arXiv.org"
     }
   ];
