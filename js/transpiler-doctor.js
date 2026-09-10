@@ -792,14 +792,43 @@ class TranspilerDoctor {
       `;
     }
 
-    const apiKey = (typeof window !== 'undefined' && window.ANANTA_CONFIG?.GEMINI_API_KEY) ? window.ANANTA_CONFIG.GEMINI_API_KEY : '';
     const srcCode = this.sourceCodeArea ? this.sourceCodeArea.value : '';
     const rawGatesCount = this.circuitAST ? this.circuitAST.length : 0;
     const optGatesCount = this.optimizedAST ? this.optimizedAST.length : 0;
     const gateSavings = rawGatesCount - optGatesCount;
 
+    // 1. First attempt: Live Full-Stack Backend Proxy to Google AI Studio
+    if (window.anantaBackend && typeof window.anantaBackend.callAiAudit === 'function') {
+      try {
+        console.log('[TranspilerDoctor] Requesting Live AI Clinical Audit via Ananta Backend...');
+        const res = await window.anantaBackend.callAiAudit({
+          code: srcCode,
+          framework: this.sourceFramework,
+          rawGates: rawGatesCount,
+          optGates: optGatesCount,
+          savings: gateSavings,
+          qubits: this.declaredNumQubits
+        });
+
+        if (res && res.audit) {
+          console.log('[TranspilerDoctor] Live AI Audit received successfully!', res.metadata);
+          this.renderAuditResults(res.audit, {
+            isLive: true,
+            provider: res.metadata?.provider || 'Google AI Studio (Gemini 2.5 Flash)',
+            model: res.metadata?.model || 'gemini-2.5-flash',
+            latencyMs: res.metadata?.latencyMs || 0
+          });
+          return;
+        }
+      } catch (backendErr) {
+        console.warn('[TranspilerDoctor] Backend AI proxy attempt failed, falling back to direct browser fetch:', backendErr.message);
+      }
+    }
+
+    // 2. Second attempt: Direct client-side fetch using window.ANANTA_CONFIG
+    const apiKey = (typeof window !== 'undefined' && window.ANANTA_CONFIG?.GEMINI_API_KEY) ? window.ANANTA_CONFIG.GEMINI_API_KEY : '';
     try {
-      if (!apiKey) throw new Error('NO_API_KEY');
+      if (!apiKey) throw new Error('NO_API_KEY_OR_BACKEND');
 
       const prompt = `You are the Principal Quantum Hardware Architect & Circuit Compiler Lead at Google Quantum AI and IBM Quantum.
 Perform an in-depth clinical audit and hardware noise prognosis for this quantum circuit written in ${this.sourceFramework.toUpperCase()}:
@@ -825,7 +854,8 @@ Return ONLY a valid JSON object matching this schema:
 }`;
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 16000);
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      const reqStart = performance.now();
 
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
       const response = await fetch(endpoint, {
@@ -848,12 +878,22 @@ Return ONLY a valid JSON object matching this schema:
       if (!rawText) throw new Error('EMPTY_RESPONSE');
 
       const audit = JSON.parse(rawText);
-      this.renderAuditResults(audit);
+      const latencyMs = Math.round(performance.now() - reqStart);
+      this.renderAuditResults(audit, {
+        isLive: true,
+        provider: 'Google AI Studio Direct (Gemini 2.5 Flash)',
+        model: 'gemini-2.5-flash',
+        latencyMs
+      });
     } catch (err) {
-      console.warn('[TranspilerDoctor] Falling back to local physics diagnostic audit:', err);
+      console.warn('[TranspilerDoctor] Falling back to local physics diagnostic audit:', err.message);
       // Construct rich deterministic physics report from AST
       const fallbackAudit = this.generateLocalFallbackAudit();
-      this.renderAuditResults(fallbackAudit);
+      this.renderAuditResults(fallbackAudit, {
+        isLive: false,
+        provider: 'Local Deterministic Physics Engine',
+        errorReason: err.message
+      });
     } finally {
       if (this.btnAiClinicalAudit) {
         this.btnAiClinicalAudit.disabled = false;
@@ -887,13 +927,26 @@ Return ONLY a valid JSON object matching this schema:
     };
   }
 
-  renderAuditResults(audit) {
+  renderAuditResults(audit, meta = {}) {
     if (!this.aiAuditContentEl) return;
+
+    const isLive = meta.isLive === true;
+    const badgeStyle = isLive
+      ? 'background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(52, 211, 153, 0.4); color: #34d399;'
+      : 'background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(251, 191, 36, 0.3); color: #fbbf24;';
+
+    const badgeLabel = isLive
+      ? `🟢 LIVE GOOGLE AI STUDIO (${meta.model || 'Gemini 2.5 Flash'}${meta.latencyMs ? ' · ' + meta.latencyMs + 'ms' : ''})`
+      : `⚠️ DETERMINISTIC AST FALLBACK (${meta.errorReason || 'Offline Mode'})`;
+
     this.aiAuditContentEl.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
         <div style="font-size: 15px; font-weight: 800; color: #ffffff;">
           🔬 Clinical Assessment: <span style="color: #38bdf8;">${audit.circuitName || 'Quantum Circuit Audit'}</span>
         </div>
+        <span style="font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; font-family: 'Roboto Mono', monospace; ${badgeStyle}">
+          ${badgeLabel}
+        </span>
       </div>
 
       <div class="ai-audit-grid">

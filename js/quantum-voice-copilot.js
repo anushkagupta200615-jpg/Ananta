@@ -923,7 +923,26 @@ class QuantumVoiceCopilot {
       }
     }
 
-    // Fallback: Never leave user in silence! Acknowledge what was heard and invite valid next command.
+    // Enhanced AI Copilot Fallback: If not a circuit command, query Live Google AI Studio (Gemini 2.5 Flash) via backend!
+    if (window.anantaBackend && typeof window.anantaBackend.callAiChat === 'function' && rawClause.length > 5) {
+      this._updateStatus('🤖 ASKING GOOGLE AI STUDIO...', 'speaking');
+      this._setActionFeedback(`Consulting Google AI Studio for: "${rawClause}"...`);
+      window.anantaBackend.callAiChat(rawClause, 'Ananta Quantum Circuit Studio')
+        .then(res => {
+          if (res && res.reply) {
+            this._setActionFeedback(`✨ Gemini 2.5 Flash: ${res.reply}`);
+            if (shouldSpeak) this._speak(res.reply);
+          }
+        })
+        .catch(() => {
+          this._setActionFeedback(`Unrecognized: "${rawClause}". Try: "Add H on 0", "Make GHZ", "CNOT 0 to 1"`, false);
+          this._playChime('warn');
+          if (shouldSpeak) this._speak(`I heard: ${rawClause}. What gate shall I place next? You can say: Add H on 0, or CNOT 0 to 1.`);
+        });
+      return 'AI_QUERY';
+    }
+
+    // Default Fallback
     this._setActionFeedback(`Unrecognized: "${rawClause}". Try: "Add H on 0", "Make GHZ", "CNOT 0 to 1"`, false);
     this._playChime('warn');
     if (shouldSpeak) this._speak(`I heard: ${rawClause}. What gate shall I place next? You can say: Add H on 0, or CNOT 0 to 1.`);

@@ -898,13 +898,46 @@ class TopicRoadmapManager {
 
   // Dynamic Pathway Synthesis via Google AI Studio Gemini 2.5 Flash
   async generateCustomRoadmapAI(userPrompt) {
-    const apiKey = (typeof window !== 'undefined' && window.ANANTA_CONFIG?.GEMINI_API_KEY) ? window.ANANTA_CONFIG.GEMINI_API_KEY : '';
-    if (!apiKey) {
-      console.info('[TopicRoadmap] No Gemini API key detected, using local adaptive engine.');
-      return null;
+    const moduleCatalog = this.modules.map(m => `- ${m.id}: ${m.number} ${m.title} (${m.level}, ${m.category}) - ${m.summary}`).join('\n');
+
+    // 1. Try Live Backend Proxy first
+    if (window.anantaBackend && typeof window.anantaBackend.callAiRoadmap === 'function') {
+      try {
+        console.log('[TopicRoadmap] Calling Live Backend AI Roadmap endpoint...');
+        const res = await window.anantaBackend.callAiRoadmap({ userPrompt, moduleCatalog });
+        if (res && res.success && res.roadmap) {
+          const parsed = res.roadmap;
+          const matchedModules = (parsed.moduleIds || [])
+            .map(id => this.modules.find(m => m.id === id))
+            .filter(Boolean);
+
+          if (matchedModules.length > 0) {
+            console.log('[TopicRoadmap] Live Google AI Studio roadmap received successfully via backend!');
+            return {
+              pattern: {
+                displayName: parsed.displayName || 'Custom AI-Generated Quantum Roadmap',
+                description: parsed.description || 'Personalized pathway synthesized by Google AI Studio.'
+              },
+              modules: matchedModules,
+              detectedLevel: parsed.detectedLevel || 'INTERMEDIATE',
+              levelRationale: parsed.levelRationale || 'Synthesized using Google AI Studio based on your prompt.',
+              score: 100,
+              isAiSynthesized: true,
+              aiProvider: `Google AI Studio (${res.metadata?.model || 'Gemini 2.5 Flash'} · ${res.metadata?.latencyMs || 0}ms)`
+            };
+          }
+        }
+      } catch (backendErr) {
+        console.warn('[TopicRoadmap] Backend AI roadmap proxy failed, attempting direct fetch:', backendErr.message);
+      }
     }
 
-    const moduleCatalog = this.modules.map(m => `- ${m.id}: ${m.number} ${m.title} (${m.level}, ${m.category}) - ${m.summary}`).join('\n');
+    // 2. Direct client-side fetch fallback
+    const apiKey = (typeof window !== 'undefined' && window.ANANTA_CONFIG?.GEMINI_API_KEY) ? window.ANANTA_CONFIG.GEMINI_API_KEY : '';
+    if (!apiKey) {
+      console.info('[TopicRoadmap] No Gemini API key or backend, using local adaptive engine.');
+      return null;
+    }
 
     const systemPrompt = `You are the Lead Quantum Curriculum Architect & Quantum Information Physicist for Ananta Quantum Studio.
 You must construct a personalized, mathematically rigorous learning pathway for a user based on their background, question, or request.
@@ -933,60 +966,66 @@ You MUST return ONLY a valid JSON object with the following schema:
 }`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: systemPrompt }]
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: systemPrompt }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: 'application/json'
           }
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: 'application/json'
-        }
-      })
-    });
-    clearTimeout(timeoutId);
+        })
+      });
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      throw new Error(`Google AI Studio returned HTTP ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`Google AI Studio returned HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) throw new Error('Empty response from Google AI Studio');
+
+      const parsed = JSON.parse(rawText);
+      if (!parsed.moduleIds || !Array.isArray(parsed.moduleIds) || parsed.moduleIds.length === 0) {
+        throw new Error('Invalid moduleIds structure in AI response');
+      }
+
+      const matchedModules = parsed.moduleIds
+        .map(id => this.modules.find(m => m.id === id))
+        .filter(Boolean);
+
+      if (matchedModules.length === 0) {
+        throw new Error('Could not resolve AI module IDs to existing curriculum');
+      }
+
+      return {
+        pattern: {
+          displayName: parsed.displayName || 'Custom AI-Generated Quantum Roadmap',
+          description: parsed.description || 'Personalized pathway synthesized by Google AI Studio.'
+        },
+        modules: matchedModules,
+        detectedLevel: parsed.detectedLevel || 'INTERMEDIATE',
+        levelRationale: parsed.levelRationale || 'Synthesized using Google AI Studio based on your prompt.',
+        score: 100,
+        isAiSynthesized: true,
+        aiProvider: 'Google AI Studio (Gemini 2.5 Flash Direct)'
+      };
+    } catch (directErr) {
+      clearTimeout(timeoutId);
+      console.warn('[TopicRoadmap] Direct Gemini API call failed, using local adaptive fallback:', directErr.message);
+      return null;
     }
-
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) throw new Error('Empty response from Google AI Studio');
-
-    const parsed = JSON.parse(rawText);
-    if (!parsed.moduleIds || !Array.isArray(parsed.moduleIds) || parsed.moduleIds.length === 0) {
-      throw new Error('Invalid moduleIds structure in AI response');
-    }
-
-    const matchedModules = parsed.moduleIds
-      .map(id => this.modules.find(m => m.id === id))
-      .filter(Boolean);
-
-    if (matchedModules.length === 0) {
-      throw new Error('Could not resolve AI module IDs to existing curriculum');
-    }
-
-    return {
-      pattern: {
-        displayName: parsed.displayName || 'Custom AI-Generated Quantum Roadmap',
-        description: parsed.description || 'Personalized pathway synthesized by Google AI Studio.'
-      },
-      modules: matchedModules,
-      detectedLevel: parsed.detectedLevel || 'INTERMEDIATE',
-      levelRationale: parsed.levelRationale || 'Synthesized using Google AI Studio based on your prompt.',
-      score: 100,
-      isAiSynthesized: true,
-      aiProvider: 'Google AI Studio (Gemini 2.5 Flash)'
-    };
   }
 
   // Loading skeleton while Google AI Studio synthesizes the pathway

@@ -224,6 +224,12 @@
     </div>
 
     <div class="nav-right">
+      <!-- Live Backend Server & Google AI Studio Status Pill -->
+      <button class="backend-status-pill status-online" id="btn-backend-status" onclick="window.toggleBackendConsole()" title="Live Backend Server & AI Studio Status (Click for Console)">
+        <span class="backend-pulse-dot dot-online" id="backend-status-dot"></span>
+        <span class="backend-status-text" id="backend-status-text">Backend: <strong>LIVE</strong></span>
+      </button>
+
       <!-- Theme Toggle (icon only on mobile) -->
       <button class="theme-switch-btn" id="btn-theme-toggle" title="Toggle Light / Dark Mode" onclick="window.toggleTheme()">
         <span id="theme-toggle-icon">☀️</span>
@@ -3815,6 +3821,8 @@ Key Advantage:
   </section>
 
   <!-- Script Pipeline -->
+  <script src="js/config.js"></script>
+  <script src="js/backend-client.js"></script>
   <script src="js/quantum-knowledge-data.js"></script>
   <script src="js/quantum-engine.js"></script>
   <script src="js/quantum-audio.js"></script>
