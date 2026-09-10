@@ -380,6 +380,11 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => window.algorithmLibrary.render(), 40);
     }
 
+    // Refresh Quantum Maze Simulation when entering Overview tab
+    if (tabKey === 'overview' && window.initQuantumMazeSim) {
+      setTimeout(() => window.initQuantumMazeSim(), 60);
+    }
+
     // Trigger LaTeX / Math typesetter on view change
     if (window.renderAllMath) {
       setTimeout(() => window.renderAllMath(), 60);
@@ -3287,9 +3292,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // 6-Milestone Interactive Roadmap Selection
+  // 6-Milestone Interactive Roadmap Selection (Guarded Fallback)
   window.selectMilestone = function(idx, shouldScroll = false) {
     const cards = document.querySelectorAll('.roadmap-card');
+    if (!cards || cards.length === 0) return;
     cards.forEach(c => {
       if (parseInt(c.dataset.milestone) === idx) {
         c.classList.add('active');
@@ -3319,11 +3325,12 @@ document.addEventListener('DOMContentLoaded', () => {
       progressBar.style.width = pct + '%';
     }
 
-    // Render interactive detailed deep-dive
-    renderMilestoneDetail(idx);
+    if (typeof renderMilestoneDetail === 'function') {
+      renderMilestoneDetail(idx);
+    }
   };
 
-  // Wire click events on roadmap cards
+  // Wire click events on roadmap cards if present
   document.querySelectorAll('.roadmap-card').forEach(card => {
     card.addEventListener('click', () => {
       const mId = parseInt(card.dataset.milestone);
@@ -3331,10 +3338,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Initialize Milestone 2 / 3 details on page load without scrolling the page
-  setTimeout(() => {
-    window.selectMilestone(2, false);
-  }, 100);
+  // Check and trigger Classical vs Quantum Maze Simulation if on overview
+  if (window.initQuantumMazeSim) {
+    setTimeout(() => {
+      window.initQuantumMazeSim();
+    }, 150);
+  }
 
   // Interactive 3D Mouse Parallax for Floating Quantum Processor Chip
   const chipScene = document.getElementById('chip-scene');

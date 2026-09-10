@@ -1097,6 +1097,554 @@ button.nav-dropdown-trigger.active {
   flex-wrap: wrap;
 }
 
+/* ==========================================================================
+   SECTION 3: Classical vs Quantum Maze Physics Arena (Harmonized Theme)
+   ========================================================================== */
+.qsite-maze-section,
+.qsite-maze-battle-section {
+  padding: 72px 32px;
+  background: var(--bg-main);
+  border-top: 1px solid var(--border-color);
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .qsite-maze-section,
+  .qsite-maze-battle-section {
+    padding: 48px 20px;
+  }
+}
+
+.qsite-maze-container,
+.maze-battle-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header matching Google Quantum AI Typography */
+.maze-battle-header {
+  text-align: left;
+  max-width: 860px;
+  margin: 0 0 36px 0;
+}
+
+.maze-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--google-blue);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.badge-pulse-glow {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--google-blue);
+  box-shadow: 0 0 6px var(--google-blue);
+  animation: pulse-indicator 2s infinite;
+}
+
+@keyframes pulse-indicator {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.maze-battle-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1.25;
+  letter-spacing: 1px;
+  font-weight: 400;
+  text-transform: uppercase;
+  color: var(--text-white);
+  margin: 0 0 16px 0;
+}
+
+@media (max-width: 768px) {
+  .maze-battle-title {
+    font-size: 24px;
+  }
+}
+
+.maze-battle-subtitle {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--text-dim);
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+/* Comparative Concept Ribbon */
+.maze-concept-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 24px;
+  background: var(--bg-card);
+  border-radius: 9999px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 28px;
+  box-shadow: var(--card-shadow);
+}
+
+@media (max-width: 768px) {
+  .maze-concept-ribbon {
+    flex-direction: column;
+    border-radius: 12px;
+    gap: 10px;
+    padding: 12px;
+  }
+}
+
+.concept-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.concept-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.classical-dot {
+  background: var(--google-red);
+  box-shadow: 0 0 8px var(--google-red);
+}
+
+.quantum-dot {
+  background: var(--google-green);
+  box-shadow: 0 0 8px var(--google-green);
+}
+
+.concept-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.concept-name {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.classical .concept-name {
+  color: var(--google-red);
+}
+
+.quantum .concept-name {
+  color: var(--google-green);
+}
+
+.concept-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.concept-separator {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-subtle);
+  letter-spacing: 1px;
+  padding: 0 6px;
+}
+
+/* Minimalist Control Capsule */
+.maze-controls-capsule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin-bottom: 36px;
+  box-shadow: var(--card-shadow);
+}
+
+.capsule-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.capsule-btn {
+  padding: 7px 14px;
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-white);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.capsule-btn:hover {
+  background: var(--border-color);
+  color: var(--text-white);
+}
+
+.capsule-btn.primary-action {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: none;
+  font-weight: 700;
+}
+
+.capsule-btn.primary-action:hover {
+  background: var(--btn-primary-hover);
+}
+
+.capsule-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+}
+
+.capsule-selectors {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.capsule-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.segmented-control {
+  display: flex;
+  background: var(--bg-main);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  gap: 2px;
+}
+
+.segment-btn {
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.segment-btn:hover {
+  color: var(--text-white);
+}
+
+.segment-btn.active {
+  background: var(--google-blue);
+  color: var(--btn-primary-text);
+  font-weight: 700;
+}
+
+/* Dual Specimen Stage Arena */
+.maze-arena-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: 100%;
+  max-width: 1180px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 960px) {
+  .maze-arena-container {
+    grid-template-columns: 1fr;
+    max-width: 540px;
+  }
+}
+
+.maze-specimen-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: var(--card-shadow);
+  transition: border-color 0.2s ease;
+}
+
+.maze-specimen-card.classical:hover {
+  border-color: var(--google-red);
+}
+
+.maze-specimen-card.quantum:hover {
+  border-color: var(--google-green);
+}
+
+.specimen-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.specimen-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.specimen-label {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.classical-label {
+  color: var(--google-red);
+}
+
+.quantum-label {
+  color: var(--google-green);
+}
+
+.specimen-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.specimen-pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.classical-pill {
+  background: rgba(242, 139, 130, 0.12);
+  border-color: rgba(242, 139, 130, 0.3);
+  color: var(--google-red);
+}
+
+.quantum-pill {
+  background: rgba(129, 201, 149, 0.12);
+  border-color: rgba(129, 201, 149, 0.3);
+  color: var(--google-green);
+}
+
+/* Canvas Stage */
+.specimen-canvas-stage {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--code-bg);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#classical-maze-canvas,
+#quantum-maze-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.stage-endpoints-legend {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-around;
+  background: var(--bg-card);
+  border-radius: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--border-color);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.legend-point {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.start-led {
+  background: var(--google-green);
+  box-shadow: 0 0 6px var(--google-green);
+}
+
+.goal-led {
+  background: var(--google-blue);
+  box-shadow: 0 0 6px var(--google-blue);
+}
+
+.classical-led {
+  background: var(--google-red);
+  box-shadow: 0 0 6px var(--google-red);
+}
+
+.quantum-led {
+  background: var(--google-green);
+  box-shadow: 0 0 6px var(--google-green);
+}
+
+/* Horizontal Telemetry Bar */
+.specimen-telemetry-bar {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.telemetry-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.stat-val {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.stat-val.highlight {
+  color: var(--google-green);
+}
+
+/* Minimalist Insights Deck */
+.maze-insights-grid {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.maze-insights-deck {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 1180px;
+}
+
+@media (max-width: 960px) {
+  .maze-insights-deck {
+    grid-template-columns: 1fr;
+  }
+}
+
+.insight-tile {
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  padding: 22px;
+  box-shadow: var(--card-shadow);
+  transition: border-color 0.2s ease;
+}
+
+.insight-tile:hover {
+  border-color: var(--border-darker);
+}
+
+.insight-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--google-blue);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.insight-tile h4 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-white);
+  margin: 0 0 8px 0;
+  line-height: 1.35;
+}
+
+.insight-tile p {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.maze-theory-card p {
+  font-size: 13px;
+  line-height: 1.65;
+  color: #94a3b8;
+  margin: 0;
+}
+
 /* 3. SECTION 3: Google Quantum AI 6-Milestone Interactive Roadmap (Screenshot 3) */
 .qsite-roadmap-section {
   padding: 120px 48px 100px;
@@ -1785,8 +2333,8 @@ button.nav-dropdown-trigger.active {
    ========================================================================== */
 
 .gqai-cards-container {
-  margin-top: 72px;
-  padding: 48px 32px 64px;
+  margin-top: 0;
+  padding: 72px 32px 64px;
   border-top: 1px solid var(--border-color);
 }
 
