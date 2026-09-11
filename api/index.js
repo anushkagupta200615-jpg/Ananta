@@ -469,6 +469,95 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // POST /api/transpiler/from-composer — dynamically convert ANY circuit from Composer into multi-framework code & optimize
+  if ((pathname === '/api/transpiler/from-composer' || pathname === '/api/transpiler/composer') && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const {
+        grid = null,
+        numQubits = 3,
+        qasm = '',
+        sourceFramework = 'qiskit',
+        targetFramework = 'cirq',
+        optimize = true
+      } = body || {};
+
+      const result = transpilerEngine.convertFromComposer({
+        grid,
+        numQubits,
+        qasm,
+        sourceFramework,
+        targetFramework,
+        optimize
+      });
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  // POST /api/transpiler/doctor — AI Circuit Doctor optimization & diagnostics
+  if (pathname === '/api/transpiler/doctor' && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const {
+        code = '',
+        sourceFramework = 'qiskit',
+        targetFramework = 'cirq',
+        grid = null,
+        numQubits = null
+      } = body || {};
+
+      const result = transpilerEngine.transpile({
+        code,
+        sourceFramework,
+        targetFramework,
+        optimize: true,
+        grid,
+        numQubits
+      });
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  // POST /api/transpiler/transpile — Universal 1:1 cross-framework transpilation
+  if ((pathname === '/api/transpiler/transpile' || pathname === '/api/transpiler') && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const {
+        code = '',
+        sourceFramework = 'qiskit',
+        targetFramework = 'cirq',
+        optimize = false,
+        grid = null,
+        numQubits = null
+      } = body || {};
+
+      const result = transpilerEngine.transpile({
+        code,
+        sourceFramework,
+        targetFramework,
+        optimize: Boolean(optimize),
+        grid,
+        numQubits
+      });
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  // GET /api/transpiler/status — Health check
+  if (pathname === '/api/transpiler/status' && req.method === 'GET') {
+    return sendJson(res, 200, {
+      success: true,
+      service: 'Universal Cross-Framework Quantum Transpiler & AI Circuit Doctor',
+      frameworks: ['qiskit', 'cirq', 'braket', 'pennylane', 'qasm', 'pyquil']
+    });
+  }
+
   // GET /api/resources — Live Community Resource Library (fetched from GitHub, cached)
   if (pathname === '/api/resources' && req.method === 'GET') {
     try {
@@ -815,6 +904,38 @@ Return ONLY a valid JSON object matching this schema:
     try {
       const jobResult = await ibmQuantum.getJobStatusAndResult(token, jobId);
       return sendJson(res, 200, jobResult);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  // ================= 8b. UNIVERSAL TRANSPILER & COMPOSER SYNCHRONIZER ENDPOINTS =================
+  if (pathname === '/api/transpiler/from-composer' && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const { grid = null, numQubits = 3, qasm = '', sourceFramework = 'qiskit', targetFramework = 'cirq', optimize = true } = body || {};
+      const result = transpilerEngine.convertFromComposer({ grid, numQubits, qasm, sourceFramework, targetFramework, optimize });
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  if (pathname === '/api/transpiler/transpile' && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const { code = '', sourceFramework = 'qiskit', targetFramework = 'cirq', optimize = false, grid = null, numQubits = null } = body || {};
+      const result = transpilerEngine.transpile({ code, sourceFramework, targetFramework, optimize: Boolean(optimize), grid, numQubits });
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  if (pathname === '/api/transpiler/doctor' && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const { code = '', sourceFramework = 'qiskit', targetFramework = 'cirq', grid = null, numQubits = null } = body || {};
+      const result = transpilerEngine.transpile({ code, sourceFramework, targetFramework, optimize: true, grid, numQubits });
+      return sendJson(res, 200, result);
     } catch (err) {
       return sendJson(res, 500, { success: false, error: err.message });
     }

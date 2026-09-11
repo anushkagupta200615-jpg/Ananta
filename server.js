@@ -764,6 +764,27 @@ User Question: "${message}"`;
     }
   }
 
+  // 6a2. POST /api/transpiler/from-composer (Load ANY circuit from Composer into Transpiler)
+  if (pathname === '/api/transpiler/from-composer' && req.method === 'POST') {
+    try {
+      const body = await parseRequestBody(req);
+      const { grid = null, numQubits = 3, qasm = '', sourceFramework = 'qiskit', targetFramework = 'cirq', optimize = true } = body || {};
+      const result = transpilerEngine.convertFromComposer({ grid, numQubits, qasm, sourceFramework, targetFramework, optimize });
+      sendJson(res, 200, result);
+      logTransaction('POST', pathname, 200, Date.now() - reqStart, {
+        source: sourceFramework,
+        target: targetFramework,
+        rawGates: result.rawGateCount
+      });
+      return;
+    } catch (err) {
+      console.error('[API /api/transpiler/from-composer Error]', err);
+      sendJson(res, 500, { success: false, error: err.message });
+      logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: err.message });
+      return;
+    }
+  }
+
   // 6b. POST /api/transpiler/transpile (Universal Cross-Framework 1:1 Transpilation)
   if (pathname === '/api/transpiler/transpile' && req.method === 'POST') {
     try {
