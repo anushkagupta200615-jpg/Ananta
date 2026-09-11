@@ -148,7 +148,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (panels[key]) panels[key].style.display = key === target ? 'block' : 'none';
     });
 
-    if (target === 'qbraid' && window.qbraidBridge) window.qbraidBridge.updateDeviceTelemetry();
+    if (target === 'qbraid' && window.qbraidBridge) {
+      window.qbraidBridge.updateDeviceTelemetry();
+      if (typeof window.qbraidBridge.fetchRecommendations === 'function') {
+        window.qbraidBridge.fetchRecommendations();
+      }
+    }
     else if (target === 'local' && window.localFrameworkBridge) window.localFrameworkBridge.refreshStatus();
     else if (target === 'ibm' && window.cloudQPUBridge) window.cloudQPUBridge.updateDeviceTelemetry();
   };
