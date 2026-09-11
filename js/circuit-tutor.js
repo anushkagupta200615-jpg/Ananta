@@ -364,10 +364,21 @@ class CircuitTutor {
             }
           });
         }
-        mathMetrics.concurrence = engine.getConcurrence ? engine.getConcurrence() : (engine.getEntanglementEntropy() > 0.1 ? 1.0 : 0.0);
-        mathMetrics.entropy = engine.getEntanglementEntropy ? engine.getEntanglementEntropy() : 0;
-        mathMetrics.purity = 1.0;
-        mathMetrics.entanglementClass = mathMetrics.concurrence > 0.1 ? 'Entangled Subsystem' : 'Separable State';
+        // Pull the real, fully general metrics straight from the engine
+        // (works for any circuit, any register size) instead of a partial
+        // reconstruction that used to hardcode purity to 1.0 always and
+        // collapse the real entanglement classification down to a crude
+        // binary "Entangled/Separable" label.
+        if (engine.getAdvancedEntanglementMetrics) {
+          const m = engine.getAdvancedEntanglementMetrics();
+          mathMetrics.concurrence = m.concurrence;
+          mathMetrics.entropy = m.vonNeumannEntropy;
+          mathMetrics.purity = m.purity;
+          mathMetrics.entanglementClass = m.entanglementClass;
+        } else {
+          mathMetrics.concurrence = engine.getEntanglementEntropy() > 0.1 ? 1.0 : 0.0;
+          mathMetrics.entropy = engine.getEntanglementEntropy ? engine.getEntanglementEntropy() : 0;
+        }
       }
 
       const deterministicErrors = this.detectDeterministicErrors(grid);
