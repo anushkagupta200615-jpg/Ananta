@@ -31,3 +31,9 @@ ananta-backend/data/.session_secret
 # .env, never commit it. .env.example is the committed template.
 .env
 .env.local
+
+# SIH Presentation slides and assets (Local only - do not push)
+sih_*.png
+scripts/generate_sih_feasibility_slides.py
+scripts/generate_feature_architecture_pdf.py
+

@@ -21569,42 +21569,126 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================================
-   FLOATING AI CIRCUIT DOCTOR & PEDAGOGICAL EXPLANATION WINDOW
+   AI CIRCUIT DOCTOR - SIDEBAR DOCK PANEL (UNOBSTRUCTED CANVAS)
    ========================================================================== */
 
-/* Floating Trigger Button (As sketched) */
-.floating-ai-doctor-btn {
-  position: absolute;
-  top: 14px;
-  right: 18px;
-  z-index: 105;
-  display: inline-flex;
+/* Hide floating overlay elements so canvas text and controls are never covered */
+.floating-ai-doctor-btn,
+.floating-ai-doctor-popup {
+  display: none !important;
+}
+
+/* Side Dock Card (Placed inside Left Sidebar .operations-dock) */
+.side-doctor-dock-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.75));
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.side-doctor-dock-card:hover {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9));
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 0 16px rgba(56, 189, 248, 0.12);
+}
+
+.side-doctor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  gap: 8px;
+}
+
+.side-doctor-meta {
+  display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  background: rgba(15, 23, 42, 0.9);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  border-radius: 9999px;
-  color: #f8fafc;
-  font-size: 13px;
+}
+
+.side-doctor-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.side-doctor-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.side-doctor-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: 0.02em;
+}
+
+.side-doctor-sub {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.side-doctor-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.side-doctor-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.side-doctor-summary {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #cbd5e1;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.side-doctor-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 10px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 8px;
+  color: #38bdf8;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(56, 189, 248, 0.15);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
+  transition: all 0.15s ease;
 }
 
-.floating-ai-doctor-btn:hover {
-  transform: translateY(-2px) scale(1.03);
-  border-color: rgba(56, 189, 248, 0.65);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), 0 0 22px rgba(56, 189, 248, 0.3);
-  background: rgba(23, 37, 84, 0.92);
+.side-doctor-action-btn:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #38bdf8;
+  color: #ffffff;
 }
 
-.floating-ai-doctor-btn:active {
-  transform: translateY(0) scale(0.98);
+.side-doctor-arrow {
+  font-size: 12px;
+  transition: transform 0.15s ease;
+}
+
+.side-doctor-action-btn:hover .side-doctor-arrow {
+  transform: translate(2px, 2px);
 }
 
 .doctor-badge-pulse {
