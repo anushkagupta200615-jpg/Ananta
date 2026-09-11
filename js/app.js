@@ -388,6 +388,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabKey === 'transpiler' && window.transpilerDoctor) {
       setTimeout(() => {
         window.transpilerDoctor.renderTargetCode();
+        // CodeMirror measures line layout using the container's actual
+        // rendered size; TranspilerDoctor is constructed once at page load
+        // while this view is still hidden (display:none), so both editors
+        // need an explicit .refresh() the first time the view becomes
+        // visible or they're stuck showing line numbers with no text.
+        const td = window.transpilerDoctor;
+        if (td.sourceCodeArea && td.sourceCodeArea.codeMirror) td.sourceCodeArea.codeMirror.refresh();
+        if (td.targetCodeArea && td.targetCodeArea.codeMirror) td.targetCodeArea.codeMirror.refresh();
       }, 50);
     }
 
