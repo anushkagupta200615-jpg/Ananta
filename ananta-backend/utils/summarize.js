@@ -40,10 +40,20 @@ async function summarizeText(text, focusTerm = null) {
     : `Provide an executive research summary of the following academic paper in 3-5 sentences. ` +
       `Cover the core problem/premise, the experimental or theoretical methodology, and the key findings.`;
 
-  // 1. Try Grok (xAI API) if configured
+  // This text is frequently the FULL extracted paper body now (not just an
+  // abstract), so the prompt must not mislabel it as one.
+  const sourceBlock = `Source Text:\n"""\n${proseText}\n"""`;
+
+  // 1. Try Grok (xAI API) if configured. Model id resolved dynamically via
+  // resolveGrokModel (ananta-backend/../api/gemini.js) - a hardcoded id like
+  // "grok-2-latest" silently 404s once xAI retires it, which is exactly what
+  // happened here before: every call fell straight through to the local
+  // extractive fallback with no visible error.
   const grokKey = process.env.GROK_API_KEY || process.env.XAI_API_KEY;
   if (grokKey && grokKey.length > 5) {
     try {
+      const { resolveGrokModel } = require('../../api/gemini.js');
+      const model = await resolveGrokModel(grokKey);
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 12000);
       const res = await fetch("https://api.x.ai/v1/chat/completions", {
@@ -53,10 +63,10 @@ async function summarizeText(text, focusTerm = null) {
           "Authorization": `Bearer ${grokKey.trim()}`
         },
         body: JSON.stringify({
-          model: "grok-2-latest",
+          model,
           messages: [
             { role: "system", content: "You are an elite quantum research scientist. Provide a coherent, concise executive summary." },
-            { role: "user", content: `${instruction}\n\nAbstract:\n"""\n${proseText}\n"""` }
+            { role: "user", content: `${instruction}\n\n${sourceBlock}` }
           ],
           temperature: 0.2,
           max_tokens: 500
@@ -75,29 +85,57 @@ async function summarizeText(text, focusTerm = null) {
     }
   }
 
-  // 2. Try Google Gemini (Gemini 2.5 Flash) if key available
+  // 2. Try Google Gemini if key available. Ranked candidate list resolved
+  // dynamically (same fix as above) - try the top few in case the
+  // best-ranked model is temporarily overloaded/out of quota for this key.
   const geminiKey = process.env.GEMINI_API_KEY;
 
   if (geminiKey && geminiKey.length > 10) {
     try {
-      const controller = new AbortController();
-      const tid = setTimeout(() => controller.abort(), 12000);
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${instruction}\n\nAbstract:\n"""\n${proseText}\n"""` }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 600 }
-        }),
-        signal: controller.signal
-      });
-      clearTimeout(tid);
+      const { resolveGeminiModels } = require('../../api/gemini.js');
+      const candidates = await resolveGeminiModels(geminiKey);
 
-      if (res.ok) {
-        const data = await res.json();
-        const geminiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (geminiText) return geminiText.trim();
+      for (const model of candidates.slice(0, 3)) {
+        try {
+          const controller = new AbortController();
+          const tid = setTimeout(() => controller.abort(), 12000);
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `${instruction}\n\n${sourceBlock}` }] }],
+              // Newer Gemini models spend hundreds of tokens on hidden
+              // "thinking" before ever writing the visible answer, and
+              // thinkingBudget:0 doesn't reliably suppress that for every
+              // model tier - a low maxOutputTokens (600) silently truncated
+              // the real answer mid-sentence once model resolution started
+              // picking one of those models. Generous headroom is the fix
+              // that holds regardless of whether a given model honors the
+              // thinking-budget hint.
+              generationConfig: { temperature: 0.2, maxOutputTokens: 8192, thinkingConfig: { thinkingBudget: 0 } }
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(tid);
+
+          if (res.ok) {
+            const data = await res.json();
+            const finishReason = data?.candidates?.[0]?.finishReason;
+            const geminiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            // MAX_TOKENS means the visible answer was cut off mid-sentence
+            // (the hidden "thinking" budget for this model/request ate more
+            // of the token budget than expected) - a truncated sentence is
+            // not a usable summary, so treat it as a miss and let the loop
+            // try the next candidate model rather than silently returning it.
+            if (geminiText && finishReason !== 'MAX_TOKENS') return geminiText.trim();
+            if (finishReason === 'MAX_TOKENS') {
+              console.warn(`[summarizeText] Gemini model ${model} truncated (MAX_TOKENS) - trying next candidate`);
+            }
+          }
+        } catch (modelErr) {
+          console.warn(`[summarizeText] Gemini model ${model} notice:`, modelErr.message);
+        }
       }
     } catch (gemErr) {
       console.warn("[summarizeText] Gemini attempt notice:", gemErr.message);

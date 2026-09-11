@@ -372,15 +372,17 @@ const server = http.createServer(async (req, res) => {
     try {
       let sourceText = text;
       let title = null;
+      let fullTextAvailable = Boolean(text);
       if (!sourceText && url) {
         const extracted = await extractTextFromUrl(url);
         sourceText = extracted.text;
         title = extracted.title;
+        fullTextAvailable = Boolean(extracted.fullTextAvailable);
       }
       const truncated = (sourceText || '').slice(0, 15000);
       const summary = await summarizeText(truncated);
-      logTransaction('POST', pathname, 200, Date.now() - reqStart, { title });
-      return sendJson(res, 200, { title, summary });
+      logTransaction('POST', pathname, 200, Date.now() - reqStart, { title, fullTextAvailable });
+      return sendJson(res, 200, { title, summary, fullTextAvailable });
     } catch (e) {
       return sendJson(res, 500, { error: e.message });
     }
