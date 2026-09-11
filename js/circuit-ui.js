@@ -2118,7 +2118,7 @@ class CircuitUI {
     // CNOT unconditionally - a column with 2 controls sharing a target is
     // a Toffoli, not a CNOT (mirrors the same fix in circuit-tutor.js's
     // detectDeterministicErrors, which used to mislabel Toffoli as CNOT).
-    let hasToffoli = false, hasCnot = false, hasSwap = false;
+    let hasToffoli = false, hasCnot = false, hasSwap = false, cnotCount = 0;
     if (this.grid && this.grid.length && this.grid[0]) {
       const numCols = this.grid[0].length;
       for (let col = 0; col < numCols; col++) {
@@ -2130,16 +2130,31 @@ class CircuitUI {
           else if (cell === 'SWAP') swapWires++;
         }
         if (hasTarget && controls === 2) hasToffoli = true;
-        else if (hasTarget && controls === 1) hasCnot = true;
+        else if (hasTarget && controls === 1) { hasCnot = true; cnotCount++; }
         if (swapWires >= 2) hasSwap = true;
       }
     }
     const entanglingGateNames = [hasToffoli && 'Toffoli', hasCnot && 'CNOT', hasSwap && 'SWAP'].filter(Boolean);
     const entanglingGatesLabel = entanglingGateNames.length > 0 ? entanglingGateNames.join(' / ') : 'multi-qubit';
 
-    const isStdBell = activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|110⟩') && !hasY && Math.abs(activeStates[0].probability - 0.5) < 0.15;
-    const isStdGHZ = activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|111⟩') && !hasY && Math.abs(activeStates[0].probability - 0.5) < 0.15;
-    const isRotatedEntangled = isEntangled && (hasY || hasX || hasZ);
+    // The canned Bell/GHZ narrative below is only accurate when THOSE are
+    // literally the only gates that ran - matching purely on the final
+    // measurement-probability pattern was wrong: an S gate only shifts
+    // phase (invisible to measurement probabilities) and an inert Toffoli
+    // whose controls never both reach |1> changes nothing either, so a
+    // circuit with H + CNOT + S + Toffoli could still land on exactly the
+    // canonical |000>+|110> Bell signature and get the exact same "Qubit 0
+    // was put into superposition with H, and CNOT entangled..." text with
+    // no mention of the other gates the user actually placed - which is
+    // exactly the "it's not changing no matter what I build" bug.
+    const hasS = this.grid && this.grid.some(row => row.some(c => c === 'S'));
+    const hasT = this.grid && this.grid.some(row => row.some(c => c === 'T'));
+    const hasOnlyBellGates = hasCnot && cnotCount === 1 && !hasToffoli && !hasSwap && !hasX && !hasY && !hasZ && !hasS && !hasT;
+    const hasOnlyGhzGates = hasCnot && cnotCount === 2 && !hasToffoli && !hasSwap && !hasX && !hasY && !hasZ && !hasS && !hasT;
+
+    const isStdBell = hasOnlyBellGates && activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|110⟩') && Math.abs(activeStates[0].probability - 0.5) < 0.15;
+    const isStdGHZ = hasOnlyGhzGates && activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|111⟩') && Math.abs(activeStates[0].probability - 0.5) < 0.15;
+    const isRotatedEntangled = isEntangled && (hasY || hasX || hasZ || hasS || hasT);
     const isSuperpos = activeStates.length > 1;
     const isGround = activeStates.length === 1 && (activeStates[0].state === '|000⟩' || activeStates[0].state === '|00⟩');
 
@@ -2243,12 +2258,15 @@ class CircuitUI {
       if (hasY) gateNames.push('Pauli-Y (Bit+Phase Flip)');
       if (hasX) gateNames.push('Pauli-X (Bit Flip)');
       if (hasZ) gateNames.push('Pauli-Z (Phase Flip)');
+      if (hasS) gateNames.push('S (90° Phase)');
+      if (hasT) gateNames.push('T (45° Phase)');
+      if (hasToffoli) gateNames.push('Toffoli');
       const statesStr = stateNames.join(' and ');
       if (begConcept) begConcept.textContent = 'Rotated Entangled Basis';
       if (begAction) begAction.textContent = '🔄 Transformed Entanglement';
       if (begIcon) begIcon.textContent = '🔀';
       if (begTitle) begTitle.textContent = `Rotated Entangled State: ${stateNames.join(' ↔ ')}`;
-      if (begDesc) begDesc.textContent = `The quantum entanglement was rotated by the ${gateNames.join(' & ')} gates! While quantum correlations remain active (Concurrence C = ${m.concurrence.toFixed(2)}), the computational basis was inverted into ${statesStr}. Observing one qubit still perfectly predicts the others in this new basis.`;
+      if (begDesc) begDesc.textContent = `The entangled Bell/GHZ pair was further transformed by the ${gateNames.join(' & ')} gate${gateNames.length > 1 ? 's' : ''}! While quantum correlations remain active (Concurrence C = ${m.concurrence.toFixed(2)}), the computational basis was inverted into ${statesStr}. Observing one qubit still perfectly predicts the others in this new basis.`;
       if (begApp) begApp.textContent = 'Quantum Dense Coding & Error Mitigation';
     } else if (isEntangled) {
       if (begConcept) begConcept.textContent = 'Multi-Qubit Entangled Subsystem';
