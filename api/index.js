@@ -13,15 +13,35 @@
 
 let DEFAULT_GEMINI_KEY = process.env.GEMINI_API_KEY || '';
 
-// If local config exists (e.g. local dev), load it
+// If local .env or config exists (e.g. local dev), load it
 if (!DEFAULT_GEMINI_KEY) {
   try {
     const fs = require('fs');
     const path = require('path');
-    const cfgPath = path.join(__dirname, '..', 'js', 'config.js');
-    if (fs.existsSync(cfgPath)) {
-      const match = fs.readFileSync(cfgPath, 'utf8').match(/GEMINI_API_KEY:\s*["']([^"']+)["']/);
-      if (match && match[1]) DEFAULT_GEMINI_KEY = match[1].trim();
+    const envPaths = [
+      path.join(__dirname, '..', '.env'),
+      path.join(__dirname, '..', 'ananta-backend', '.env')
+    ];
+    for (const envPath of envPaths) {
+      if (fs.existsSync(envPath)) {
+        const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('GEMINI_API_KEY=')) {
+            DEFAULT_GEMINI_KEY = trimmed.split('=')[1].trim().replace(/^["']|["']$/g, '');
+            break;
+          }
+        }
+      }
+      if (DEFAULT_GEMINI_KEY) break;
+    }
+
+    if (!DEFAULT_GEMINI_KEY) {
+      const cfgPath = path.join(__dirname, '..', 'js', 'config.js');
+      if (fs.existsSync(cfgPath)) {
+        const match = fs.readFileSync(cfgPath, 'utf8').match(/GEMINI_API_KEY:\s*["']([^"']+)["']/);
+        if (match && match[1]) DEFAULT_GEMINI_KEY = match[1].trim();
+      }
     }
   } catch (e) {}
 }

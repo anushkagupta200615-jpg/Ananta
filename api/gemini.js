@@ -3,6 +3,34 @@
 // Providers: Grok-2 (xAI), Google AI Studio (Gemini 2.5 Flash), Deterministic Quantum AI
 // Tasks: voice-parse, audio-parse, circuit-doctor, roadmap, concept-doctor, provider-info
 
+const fs = require('fs');
+const path = require('path');
+
+// Automatically read local .env if process.env.GEMINI_API_KEY is not already set
+if (!process.env.GEMINI_API_KEY) {
+  try {
+    const envPaths = [
+      path.join(__dirname, '..', '.env'),
+      path.join(__dirname, '..', 'ananta-backend', '.env')
+    ];
+    for (const p of envPaths) {
+      if (fs.existsSync(p)) {
+        const lines = fs.readFileSync(p, 'utf8').split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) continue;
+          const eq = trimmed.indexOf('=');
+          if (eq > 0) {
+            const k = trimmed.slice(0, eq).trim();
+            const v = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+            if (!process.env[k]) process.env[k] = v;
+          }
+        }
+      }
+    }
+  } catch (e) {}
+}
+
 const { resolveTranscript, sampleSuggestions } = require('../ananta-backend/utils/voiceIntent');
 const { prepareTurn } = require('../ananta-backend/utils/voiceAgent');
 

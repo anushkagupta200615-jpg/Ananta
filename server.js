@@ -15,6 +15,36 @@ const path = require('path');
 const PORT = process.env.PORT || 5500;
 const HOST = '127.0.0.1';
 
+// Load local .env files if present (never pushed to git)
+function loadLocalEnv() {
+  const envPaths = [
+    path.join(__dirname, '.env'),
+    path.join(__dirname, 'ananta-backend', '.env')
+  ];
+  for (const envPath of envPaths) {
+    if (fs.existsSync(envPath)) {
+      try {
+        const content = fs.readFileSync(envPath, 'utf8');
+        content.split('\n').forEach(line => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) return;
+          const eqIdx = trimmed.indexOf('=');
+          if (eqIdx > 0) {
+            const key = trimmed.slice(0, eqIdx).trim();
+            const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+            if (!process.env[key]) {
+              process.env[key] = val;
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('[Server] Could not read env file:', err.message);
+      }
+    }
+  }
+}
+loadLocalEnv();
+
 // Load or fallback Gemini API Key
 let GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 if (!GEMINI_API_KEY) {
@@ -541,6 +571,25 @@ const server = http.createServer(async (req, res) => {
       logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: err.message });
     }
     return;
+  }
+
+  // 3c. POST /api/gemini (Unified AI endpoint: circuit-doctor, roadmap, tutor, voice agent)
+  if (pathname === '/api/gemini' && req.method === 'POST') {
+    try {
+      const geminiHandler = require('./api/gemini');
+      const body = await parseRequestBody(req);
+      req.body = body;
+      res.status = (code) => { res.statusCode = code; return res; };
+      res.json = (data) => { sendJson(res, res.statusCode || 200, data); return res; };
+      await geminiHandler(req, res);
+      logTransaction('POST', pathname, res.statusCode || 200, Date.now() - reqStart, { task: body ? body.task : 'unknown' });
+      return;
+    } catch (err) {
+      console.error('[API /api/gemini Error]', err);
+      sendJson(res, 500, { success: false, error: err.message });
+      logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: err.message });
+      return;
+    }
   }
 
   // 4. POST /api/ai/audit (Live Google AI Studio Deep Audit for Transpiler Doctor)
