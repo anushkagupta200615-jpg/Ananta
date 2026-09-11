@@ -37,13 +37,6 @@ class CircuitTutor {
     this.btnAskEl = document.getElementById('btn-tutor-ask');
     this.autoAuditCheckbox = document.getElementById('tutor-auto-audit-toggle');
 
-    // Side AI Doctor & Tutor Components (Docked in left sidebar)
-    this.sideDoctorPanel = document.getElementById('side-ai-doctor-panel');
-    this.sideDoctorHealthPill = document.getElementById('side-doctor-health-pill');
-    this.sideDoctorPulseDot = document.getElementById('side-doctor-pulse-dot');
-    this.sideDoctorSummary = document.getElementById('side-doctor-summary');
-    this.sideDoctorSubStatus = document.getElementById('side-doctor-sub-status');
-
     // Legacy / Floating references (Guarded if elements are removed)
     this.floatingDoctorBtn = document.getElementById('floating-ai-doctor-btn');
     this.floatingDoctorPopup = document.getElementById('floating-ai-doctor-popup');
@@ -69,15 +62,6 @@ class CircuitTutor {
     if (this.autoAuditCheckbox) {
       this.autoAuditCheckbox.addEventListener('change', (e) => {
         this.autoAuditEnabled = e.target.checked;
-      });
-    }
-
-    // Connect side doctor panel click
-    if (this.sideDoctorPanel) {
-      this.sideDoctorPanel.addEventListener('click', (e) => {
-        if (window.circuitUI && typeof window.circuitUI.openAiTutor === 'function') {
-          window.circuitUI.openAiTutor();
-        }
       });
     }
   }
@@ -1128,7 +1112,7 @@ class CircuitTutor {
   }
 
   showAutoFixFeedback(msg) {
-    const pill = this.sideDoctorHealthPill || document.getElementById('side-doctor-health-pill') || this.floatingDoctorPill;
+    const pill = this.floatingDoctorPill || document.getElementById('tutor-health-badge');
     if (pill) {
       const oldHtml = pill.innerHTML;
       pill.innerHTML = `⚡ ${escapeHtml(msg || 'Fixed!')}`;
@@ -1145,40 +1129,6 @@ class CircuitTutor {
     const errs = data.errors || [];
     this.currentErrors = errs;
     const isHealthy = data.isHealthy !== false && errs.length === 0;
-
-    // 1. Update Side Doctor Panel (Docked in left sidebar)
-    const sidePill = this.sideDoctorHealthPill || document.getElementById('side-doctor-health-pill');
-    const sideDot = this.sideDoctorPulseDot || document.getElementById('side-doctor-pulse-dot');
-    const sideSummary = this.sideDoctorSummary || document.getElementById('side-doctor-summary');
-    const sideSub = this.sideDoctorSubStatus || document.getElementById('side-doctor-sub-status');
-
-    if (sidePill) {
-      sidePill.className = `doctor-health-pill-small ${isHealthy ? 'healthy' : 'warning'}`;
-      sidePill.innerHTML = isHealthy
-        ? '🟢 Sound'
-        : `⚠️ ${errs.length} Issue${errs.length > 1 ? 's' : ''}`;
-    }
-    if (sideDot) {
-      if (errs.length > 0) {
-        sideDot.classList.add('has-issues');
-      } else {
-        sideDot.classList.remove('has-issues');
-      }
-    }
-    if (sideSummary) {
-      if (errs.length === 0) {
-        sideSummary.textContent = `Circuit sound. ${data.circuitSummary || 'Unitary logic verified.'}`;
-        sideSummary.style.color = '#cbd5e1';
-      } else {
-        const first = errs[0];
-        const countMore = errs.length > 1 ? ` (+${errs.length - 1} more)` : '';
-        sideSummary.textContent = `⚠️ ${first.title || 'Diagnostic finding'}${countMore}: ${first.explanation || first.desc || ''}`;
-        sideSummary.style.color = '#fca5a5';
-      }
-    }
-    if (sideSub) {
-      sideSub.textContent = isHealthy ? 'Live Health Check' : `${errs.length} Pathology Detected`;
-    }
 
     // 2. Legacy / Trigger Button Badge & Pulse Dot (If still present in DOM)
     if (this.doctorCountBadge) {
