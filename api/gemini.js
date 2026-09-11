@@ -1372,6 +1372,8 @@ module.exports.getGrokKey = getGrokKey;
 module.exports.callGeminiDirect = callGeminiDirect;
 module.exports.callGrokAPI = callGrokAPI;
 module.exports.parseVoiceLocally = parseVoiceLocally;
+module.exports.resolveGeminiModels = resolveGeminiModels;
+module.exports.resolveGrokModel = resolveGrokModel;
 
 /**
  * One JSON answer from whichever provider is configured, or null when none is.

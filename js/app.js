@@ -1283,6 +1283,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Per-paper on-card AI Summary toggle
   window.__PAPER_AI_SUMMARY_CACHE = window.__PAPER_AI_SUMMARY_CACHE || {};
+
+  function renderPaperSummaryDrawer(drawer, paper, summaryText, fullTextAvailable, sourceLabel) {
+    const badgeText = fullTextAvailable
+      ? 'AI Synthesized — Full Paper Analyzed'
+      : 'AI Synthesized — Abstract Only (full text unavailable)';
+    const badgeColor = fullTextAvailable ? '#34d399' : '#fbbf24';
+    const clickHint = paper.pdfUrl ? '<span class="paper-ai-summary-open-hint">Click to open the real paper ↗</span>' : '';
+
+    drawer.innerHTML = `
+      <div class="paper-ai-summary-header">
+        <span>🧠 Executive Research Summary</span>
+        <span style="font-size: 10px; opacity: 0.85; color: ${badgeColor};">${sourceLabel || badgeText}</span>
+      </div>
+      <p class="paper-ai-summary-text">${summaryText}</p>
+      ${clickHint}
+    `;
+
+    // Clicking the summary box opens the paper's own real source URL
+    // (paper.pdfUrl, never a fixed/shared link) - it was previously only
+    // reachable via the small separate "View PDF" button.
+    if (paper.pdfUrl) {
+      drawer.style.cursor = 'pointer';
+      drawer.title = 'Open the real research paper';
+      drawer.onclick = () => window.open(paper.pdfUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      drawer.style.cursor = 'default';
+      drawer.onclick = null;
+    }
+  }
+
   window.togglePaperAiSummary = async function(paperId) {
     const drawer = document.getElementById(`paper-summary-drawer-${paperId}`);
     const btn = document.getElementById(`btn-aisummary-${paperId}`);
@@ -1297,45 +1327,43 @@ document.addEventListener('DOMContentLoaded', () => {
     drawer.style.display = 'block';
     if (btn) btn.innerHTML = '🧠 Hide Summary';
 
-    if (window.__PAPER_AI_SUMMARY_CACHE[paperId]) {
-      const cached = window.__PAPER_AI_SUMMARY_CACHE[paperId];
-      drawer.innerHTML = `
-        <div class="paper-ai-summary-header">
-          <span>🧠 Executive Research Summary</span>
-          <span style="font-size: 10px; opacity: 0.8;">Instant AI Cached</span>
-        </div>
-        <p class="paper-ai-summary-text">${cached}</p>
-      `;
-      return;
-    }
-
     const paper = (window.QUANTUM_RESEARCH_PAPERS || []).find(p => p.id === paperId);
     if (!paper) return;
+
+    if (window.__PAPER_AI_SUMMARY_CACHE[paperId]) {
+      const cached = window.__PAPER_AI_SUMMARY_CACHE[paperId];
+      renderPaperSummaryDrawer(drawer, paper, cached.summary, cached.fullTextAvailable, `Instant Cached — ${cached.fullTextAvailable ? 'Full Paper' : 'Abstract Only'}`);
+      return;
+    }
 
     drawer.innerHTML = `
       <div style="color: #34d399; font-size: 12px; display: flex; align-items: center; gap: 8px; padding: 4px 0;">
         <span style="display:inline-block; width:12px; height:12px; border:2px solid #34d399; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></span>
-        Synthesizing executive scientific summary...
+        ${paper.pdfUrl ? 'Fetching and reading the actual paper…' : 'Synthesizing executive scientific summary...'}
       </div>
     `;
 
     try {
+      // Fetch the REAL paper text (PDF/arXiv full body) whenever a source
+      // URL exists, instead of re-summarizing the same short abstract
+      // already shown on the card - that shortcut is why the "summary"
+      // used to look identical to the card text (there was nothing more
+      // in it to condense).
+      const requestBody = paper.pdfUrl
+        ? { url: paper.pdfUrl }
+        : { text: paper.abstract, title: paper.title };
+
       const res = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: paper.abstract, title: paper.title })
+        body: JSON.stringify(requestBody)
       });
       const data = await res.json();
       const summary = data.summary || paper.abstract;
-      window.__PAPER_AI_SUMMARY_CACHE[paperId] = summary;
+      const fullTextAvailable = Boolean(data.fullTextAvailable);
+      window.__PAPER_AI_SUMMARY_CACHE[paperId] = { summary, fullTextAvailable };
 
-      drawer.innerHTML = `
-        <div class="paper-ai-summary-header">
-          <span>🧠 Executive Research Summary</span>
-          <span style="font-size: 10px; opacity: 0.8;">AI Synthesized</span>
-        </div>
-        <p class="paper-ai-summary-text">${summary}</p>
-      `;
+      renderPaperSummaryDrawer(drawer, paper, summary, fullTextAvailable);
     } catch (err) {
       drawer.innerHTML = `
         <div class="paper-ai-summary-header" style="color: #f87171;">Summary Notice</div>

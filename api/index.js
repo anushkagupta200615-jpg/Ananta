@@ -326,14 +326,16 @@ module.exports = async function handler(req, res) {
     try {
       let sourceText = text;
       let title = null;
+      let fullTextAvailable = Boolean(text);
       if (!sourceText && url) {
         const extracted = await extractTextFromUrl(url);
         sourceText = extracted.text;
         title = extracted.title;
+        fullTextAvailable = Boolean(extracted.fullTextAvailable);
       }
       const truncated = (sourceText || '').slice(0, 15000);
       const summary = await summarizeText(truncated);
-      return sendJson(res, 200, { title, summary });
+      return sendJson(res, 200, { title, summary, fullTextAvailable });
     } catch (e) {
       return sendJson(res, 500, { error: e.message });
     }
@@ -904,38 +906,6 @@ Return ONLY a valid JSON object matching this schema:
     try {
       const jobResult = await ibmQuantum.getJobStatusAndResult(token, jobId);
       return sendJson(res, 200, jobResult);
-    } catch (err) {
-      return sendJson(res, 500, { success: false, error: err.message });
-    }
-  // ================= 8b. UNIVERSAL TRANSPILER & COMPOSER SYNCHRONIZER ENDPOINTS =================
-  if (pathname === '/api/transpiler/from-composer' && req.method === 'POST') {
-    try {
-      const body = await getParsedBody(req);
-      const { grid = null, numQubits = 3, qasm = '', sourceFramework = 'qiskit', targetFramework = 'cirq', optimize = true } = body || {};
-      const result = transpilerEngine.convertFromComposer({ grid, numQubits, qasm, sourceFramework, targetFramework, optimize });
-      return sendJson(res, 200, result);
-    } catch (err) {
-      return sendJson(res, 500, { success: false, error: err.message });
-    }
-  }
-
-  if (pathname === '/api/transpiler/transpile' && req.method === 'POST') {
-    try {
-      const body = await getParsedBody(req);
-      const { code = '', sourceFramework = 'qiskit', targetFramework = 'cirq', optimize = false, grid = null, numQubits = null } = body || {};
-      const result = transpilerEngine.transpile({ code, sourceFramework, targetFramework, optimize: Boolean(optimize), grid, numQubits });
-      return sendJson(res, 200, result);
-    } catch (err) {
-      return sendJson(res, 500, { success: false, error: err.message });
-    }
-  }
-
-  if (pathname === '/api/transpiler/doctor' && req.method === 'POST') {
-    try {
-      const body = await getParsedBody(req);
-      const { code = '', sourceFramework = 'qiskit', targetFramework = 'cirq', grid = null, numQubits = null } = body || {};
-      const result = transpilerEngine.transpile({ code, sourceFramework, targetFramework, optimize: true, grid, numQubits });
-      return sendJson(res, 200, result);
     } catch (err) {
       return sendJson(res, 500, { success: false, error: err.message });
     }
