@@ -107,6 +107,30 @@ class StateVector {
     return true;
   }
 
+  /**
+   * Toffoli (CCX): flips the target only when BOTH controls are |1>. Distinct
+   * from a single-control CNOT — a caller that only tracks "the last control
+   * seen" silently simulates the wrong gate for a real Toffoli.
+   */
+  applyToffoli(controlA, controlB, target) {
+    if (controlA === controlB || controlA === target || controlB === target) return false;
+    if (controlA >= this.numQubits || controlB >= this.numQubits || target >= this.numQubits) return false;
+
+    const aMask = this.maskFor(controlA);
+    const bMask = this.maskFor(controlB);
+    const tMask = this.maskFor(target);
+
+    for (let i = 0; i < this.numStates; i++) {
+      const j = i ^ tMask;
+      if ((i & aMask) && (i & bMask) && i < j) {
+        let tr = this.re[i]; let ti = this.im[i];
+        this.re[i] = this.re[j]; this.im[i] = this.im[j];
+        this.re[j] = tr; this.im[j] = ti;
+      }
+    }
+    return true;
+  }
+
   /** Basis-state probabilities, keyed by bitstring with qubit 0 leftmost. */
   probabilities() {
     const out = [];
@@ -182,25 +206,33 @@ function simulateGrid(grid, numQubits) {
   const numCols = grid[0] ? grid[0].length : 0;
 
   for (let col = 0; col < numCols; col++) {
-    let control = -1, target = -1, columnUsed = false;
+    const controls = [];
+    let target = -1, columnUsed = false;
     const swapWires = [];
 
     for (let q = 0; q < n; q++) {
       const cell = grid[q] ? grid[q][col] : null;
-      if (cell === 'CX_CTRL') control = q;
+      if (cell === 'CX_CTRL') controls.push(q);
       else if (cell === 'CX_TGT') target = q;
       else if (cell === 'SWAP') swapWires.push(q);
     }
 
-    if (control !== -1 && target !== -1) {
-      sv.applyCNOT(control, target);
+    // Two controls sharing a target is a Toffoli. Collapsing it to a single
+    // control (keeping only the last one seen) would silently simulate the
+    // wrong gate — a Toffoli only fires when BOTH controls are |1>.
+    if (controls.length === 2 && target !== -1) {
+      sv.applyToffoli(controls[0], controls[1], target);
       gateCount++;
       columnUsed = true;
-    } else if (control !== -1 || target !== -1) {
+    } else if (controls.length === 1 && target !== -1) {
+      sv.applyCNOT(controls[0], target);
+      gateCount++;
+      columnUsed = true;
+    } else if (controls.length > 0 || target !== -1) {
       issues.push({
         code: 'DANGLING_CNOT',
         column: col,
-        message: `The CNOT at time step ${col + 1} is missing its ${control === -1 ? 'control' : 'target'} wire, so it does nothing.`
+        message: `The controlled gate at time step ${col + 1} is missing its ${controls.length === 0 ? 'control' : 'target'} wire, so it does nothing.`
       });
     }
 
@@ -290,17 +322,19 @@ function readGateComposition(grid, numQubits) {
   const perWire = Array.from({ length: n }, () => []);
   const singleGateCounts = {};
   let cnotCount = 0;
+  let toffoliCount = 0;
   let swapCount = 0;
   let totalGates = 0;
 
   for (let col = 0; col < numCols; col++) {
-    let control = -1, target = -1;
+    const controls = [];
+    let target = -1;
     const swapWires = [];
 
     for (let q = 0; q < n; q++) {
       const cell = grid[q] ? grid[q][col] : null;
       if (!cell) continue;
-      if (cell === 'CX_CTRL') { control = q; continue; }
+      if (cell === 'CX_CTRL') { controls.push(q); continue; }
       if (cell === 'CX_TGT') { target = q; continue; }
       if (cell === 'SWAP') { swapWires.push(q); continue; }
       if (cell === 'M') { perWire[q].push('M'); continue; }
@@ -309,9 +343,17 @@ function readGateComposition(grid, numQubits) {
       totalGates++;
     }
 
-    if (control !== -1 && target !== -1) {
-      perWire[control].push(`CNOT→q${target}`);
-      perWire[target].push(`CNOT←q${control}`);
+    // Two controls sharing one target is a Toffoli, not a second CNOT —
+    // reporting it as "CNOT ×2" would describe the wrong gate.
+    if (controls.length === 2 && target !== -1) {
+      perWire[controls[0]].push(`Toffoli-ctrl→q${target}`);
+      perWire[controls[1]].push(`Toffoli-ctrl→q${target}`);
+      perWire[target].push(`Toffoli-tgt←q${controls[0]},q${controls[1]}`);
+      toffoliCount++;
+      totalGates++;
+    } else if (controls.length === 1 && target !== -1) {
+      perWire[controls[0]].push(`CNOT→q${target}`);
+      perWire[target].push(`CNOT←q${controls[0]}`);
       cnotCount++;
       totalGates++;
     }
@@ -324,7 +366,7 @@ function readGateComposition(grid, numQubits) {
   }
 
   const distinctSingleGates = Object.keys(singleGateCounts);
-  return { perWire, singleGateCounts, distinctSingleGates, cnotCount, swapCount, totalGates };
+  return { perWire, singleGateCounts, distinctSingleGates, cnotCount, toffoliCount, swapCount, totalGates };
 }
 
 /**
@@ -390,10 +432,13 @@ function describeCircuit(grid, numQubits) {
     const gateParts = composition.distinctSingleGates
       .map(g => `${GATE_NAMES[g] || g} (×${composition.singleGateCounts[g]})`);
     if (composition.cnotCount) gateParts.push(`CNOT (×${composition.cnotCount})`);
+    if (composition.toffoliCount) gateParts.push(`Toffoli (×${composition.toffoliCount})`);
     if (composition.swapCount) gateParts.push(`SWAP (×${composition.swapCount})`);
 
     summary = `Custom ${analysis.numQubits}-Qubit Circuit: ${composition.distinctSingleGates.concat(
-      composition.cnotCount ? ['CNOT'] : [], composition.swapCount ? ['SWAP'] : []
+      composition.cnotCount ? ['CNOT'] : [],
+      composition.toffoliCount ? ['Toffoli'] : [],
+      composition.swapCount ? ['SWAP'] : []
     ).join(', ')}`;
     purpose = `Applies ${gateParts.join(', ')} across a ${analysis.numQubits}-qubit register (depth ${analysis.depth}). ` +
       (analysis.entangled

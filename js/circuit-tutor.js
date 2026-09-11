@@ -342,24 +342,28 @@ class CircuitTutor {
     const n = numQubits || (grid ? grid.length : 1);
     const numCols = grid && grid[0] ? grid[0].length : 0;
     const singleGateCounts = {};
-    let cnotCount = 0, swapCount = 0, danglingIssue = null;
+    let cnotCount = 0, toffoliCount = 0, swapCount = 0, danglingIssue = null;
 
     const wireHasGate = new Array(n).fill(false);
     for (let col = 0; col < numCols; col++) {
-      let control = -1, target = -1;
+      const controls = [];
+      let target = -1;
       const swapWires = [];
       for (let q = 0; q < n; q++) {
         const cell = grid[q] ? grid[q][col] : null;
         if (!cell || cell === 'M') continue;
-        if (cell === 'CX_CTRL') { control = q; wireHasGate[q] = true; continue; }
+        if (cell === 'CX_CTRL') { controls.push(q); wireHasGate[q] = true; continue; }
         if (cell === 'CX_TGT') { target = q; wireHasGate[q] = true; continue; }
         if (cell === 'SWAP') { swapWires.push(q); wireHasGate[q] = true; continue; }
         singleGateCounts[cell] = (singleGateCounts[cell] || 0) + 1;
         wireHasGate[q] = true;
       }
-      if (control !== -1 && target !== -1) cnotCount++;
-      else if (control !== -1 || target !== -1) {
-        danglingIssue = `The CNOT at time step ${col + 1} is missing its ${control === -1 ? 'control' : 'target'} wire, so it does nothing.`;
+      // Two controls sharing a target is a Toffoli, not a second CNOT — must
+      // not be collapsed down to "the last control seen".
+      if (controls.length === 2 && target !== -1) toffoliCount++;
+      else if (controls.length === 1 && target !== -1) cnotCount++;
+      else if (controls.length > 0 || target !== -1) {
+        danglingIssue = `The controlled gate at time step ${col + 1} is missing its ${controls.length === 0 ? 'control' : 'target'} wire, so it does nothing.`;
       }
       if (swapWires.length === 2) swapCount++;
     }
@@ -371,7 +375,7 @@ class CircuitTutor {
     const entropy = parseFloat(mathMetrics?.entropy || 0);
     const entangled = concurrence > 0.1;
     const distinctGates = Object.keys(singleGateCounts);
-    const totalGates = distinctGates.reduce((s, g) => s + singleGateCounts[g], 0) + cnotCount + swapCount;
+    const totalGates = distinctGates.reduce((s, g) => s + singleGateCounts[g], 0) + cnotCount + toffoliCount + swapCount;
 
     if (danglingIssue) {
       return { summary: 'Incomplete Circuit', purpose: danglingIssue, entanglementAnalysis: 'Not applicable until the circuit above is fixed.', hasError: true };
@@ -395,8 +399,11 @@ class CircuitTutor {
     } else {
       const parts = distinctGates.map(g => `${GATE_NAMES[g] || g} (×${singleGateCounts[g]})`);
       if (cnotCount) parts.push(`CNOT (×${cnotCount})`);
+      if (toffoliCount) parts.push(`Toffoli (×${toffoliCount})`);
       if (swapCount) parts.push(`SWAP (×${swapCount})`);
-      const nameList = distinctGates.concat(cnotCount ? ['CNOT'] : [], swapCount ? ['SWAP'] : []).join(', ');
+      const nameList = distinctGates.concat(
+        cnotCount ? ['CNOT'] : [], toffoliCount ? ['Toffoli'] : [], swapCount ? ['SWAP'] : []
+      ).join(', ');
       summary = `Custom ${n}-Qubit Circuit: ${nameList}`;
       purpose = `Applies ${parts.join(', ')} across a ${n}-qubit register. ` +
         (entangled ? 'The resulting state is entangled — measuring one qubit affects the others.'

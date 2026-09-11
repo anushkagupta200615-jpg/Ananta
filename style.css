@@ -3636,6 +3636,7 @@ button.nav-dropdown-trigger.active {
 .gate-btn.btn-cyan .gate-key { color: #78d9ec; }
 .gate-btn.btn-sky .gate-key { color: #fdd663; }
 .gate-btn.btn-slate .gate-key { color: #81c995; }
+.gate-btn.btn-amber .gate-key { color: #fbbc04; }
 
 .palette-hint-bar {
   background: rgba(0, 240, 255, 0.08);
@@ -3799,6 +3800,23 @@ button.nav-dropdown-trigger.active {
   transform: scale(1.05);
 }
 
+/* Floating label that follows the pointer during a pointer-based gate drag */
+.gate-drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background: rgba(15, 17, 22, 0.92);
+  border: 1px solid #00f0ff;
+  color: #00f0ff;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.5);
+}
+
 .gate-slot.ready-to-place {
   border-color: #00f0ff;
   background: rgba(0, 240, 255, 0.06);
@@ -3885,6 +3903,7 @@ button.nav-dropdown-trigger.active {
 /* Gate Colors */
 .gate-chip.gate-h { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); border: 1px solid rgba(253, 186, 116, 0.4); }
 .gate-chip.gate-cx, .gate-cnot-ctrl, .gate-cnot-tgt { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: 1px solid #818cf8; }
+.gate-chip.gate-swap { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: 1px solid #fbbf24; }
 .gate-chip.gate-x { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: 1px solid rgba(252, 165, 165, 0.4); }
 .gate-chip.gate-y { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); border: 1px solid rgba(249, 168, 212, 0.4); }
 .gate-chip.gate-z { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border: 1px solid rgba(196, 181, 253, 0.4); }
