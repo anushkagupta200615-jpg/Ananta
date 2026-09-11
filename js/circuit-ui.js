@@ -773,6 +773,11 @@ class CircuitUI {
     this.updateQuantumIntelligenceDeck();
     this.updatePresetHighlight();
 
+    // Notify AI Circuit Tutor (SIH 26140) of circuit state change
+    if (window.circuitTutor) {
+      window.circuitTutor.onCircuitChanged();
+    }
+
     // Dynamically update Pauli Observables on left sidebar
     if (window._renderPauliGauges) {
       window._renderPauliGauges();
@@ -1822,11 +1827,13 @@ class CircuitUI {
     const btn3d = document.getElementById('btn-view-3d');
     const btnBeg = document.getElementById('btn-pedagogy-beginner');
     const btnAdv = document.getElementById('btn-pedagogy-advanced');
+    const btnTut = document.getElementById('btn-pedagogy-tutor');
 
     if (btn2d) btn2d.addEventListener('click', () => this.setDimensionMode('2d'));
     if (btn3d) btn3d.addEventListener('click', () => this.setDimensionMode('3d'));
     if (btnBeg) btnBeg.addEventListener('click', () => this.setPedagogyMode('beginner'));
     if (btnAdv) btnAdv.addEventListener('click', () => this.setPedagogyMode('advanced'));
+    if (btnTut) btnTut.addEventListener('click', () => this.setPedagogyMode('tutor'));
 
     // Interactive ambient cryogenic lighting on circuit canvas
     const canvas = document.querySelector('.circuit-canvas-white');
@@ -1886,21 +1893,39 @@ class CircuitUI {
     this.pedagogyMode = mode;
     const begPanel = document.getElementById('intel-beginner-panel');
     const advPanel = document.getElementById('intel-advanced-panel');
+    const tutPanel = document.getElementById('intel-tutor-panel');
     const btnBeg = document.getElementById('btn-pedagogy-beginner');
     const btnAdv = document.getElementById('btn-pedagogy-advanced');
+    const btnTut = document.getElementById('btn-pedagogy-tutor');
+
+    if (begPanel) begPanel.style.display = 'none';
+    if (advPanel) advPanel.style.display = 'none';
+    if (tutPanel) tutPanel.style.display = 'none';
+    if (btnBeg) btnBeg.classList.remove('active');
+    if (btnAdv) btnAdv.classList.remove('active');
+    if (btnTut) btnTut.classList.remove('active');
 
     if (mode === 'advanced') {
-      if (begPanel) begPanel.style.display = 'none';
       if (advPanel) advPanel.style.display = 'block';
-      if (btnBeg) btnBeg.classList.remove('active');
       if (btnAdv) btnAdv.classList.add('active');
+      this.updateQuantumIntelligenceDeck();
+    } else if (mode === 'tutor') {
+      if (tutPanel) tutPanel.style.display = 'block';
+      if (btnTut) btnTut.classList.add('active');
+      if (window.circuitTutor) {
+        window.circuitTutor.runAudit();
+      }
     } else {
-      if (advPanel) advPanel.style.display = 'none';
       if (begPanel) begPanel.style.display = 'block';
-      if (btnAdv) btnAdv.classList.remove('active');
       if (btnBeg) btnBeg.classList.add('active');
+      this.updateQuantumIntelligenceDeck();
     }
-    this.updateQuantumIntelligenceDeck();
+  }
+
+  openAiTutor() {
+    this.setPedagogyMode('tutor');
+    const deck = document.getElementById('quantum-intelligence-deck');
+    if (deck) deck.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   renderMathBox(elementId, latexStr) {

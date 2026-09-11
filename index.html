@@ -1103,6 +1103,9 @@
           </div>
 
           <div class="ribbon-actions">
+            <button class="tool-btn btn-ai-tutor" id="btn-open-ai-tutor" onclick="if(window.circuitUI) window.circuitUI.openAiTutor()" title="SIH 26140 AI Circuit Tutor & Error Doctor (Identify state, inspect circuit errors & explain physics)">
+              🎓 AI Circuit Tutor
+            </button>
             <button class="tool-btn btn-voice-camera" id="btn-voice-camera" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggle()" title="Live AI Voice Copilot (Speak to place gates and build circuits hands-free)">
               🎙️ Voice AI
             </button>
@@ -1405,12 +1408,15 @@
                   </button>
                 </div>
 
-                <div class="mode-pill-group" title="Switch between Beginner Intuition and Advanced Research depth">
+                <div class="mode-pill-group" title="Switch between Beginner Intuition, Advanced Research, and SIH AI Circuit Tutor & Error Doctor">
                   <button type="button" class="mode-pill-btn active" id="btn-pedagogy-beginner" onclick="window.circuitUI.setPedagogyMode('beginner')">
                     🎓 Beginner Intuition
                   </button>
                   <button type="button" class="mode-pill-btn" id="btn-pedagogy-advanced" onclick="window.circuitUI.setPedagogyMode('advanced')">
                     🔬 Advanced Research
+                  </button>
+                  <button type="button" class="mode-pill-btn" id="btn-pedagogy-tutor" onclick="window.circuitUI.setPedagogyMode('tutor')">
+                    🤖 AI Tutor &amp; Doctor
                   </button>
                 </div>
               </div>
@@ -1518,6 +1524,78 @@
                         <span class="qgauge-label">Bloch Radius $|\vec{r}_{q_0}|$:</span>
                         <strong class="qgauge-val val-coral" id="advanced-bloch-radius-val">0.000 (Origin)</strong>
                         <div class="qgauge-bar-track"><div class="qgauge-bar-fill fill-coral" id="gauge-bar-bloch-r" style="width: 0%;"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- AI Quantum Circuit Tutor & Error Doctor (SIH Problem Statement 26140) -->
+              <div class="intel-card intel-tutor-card" id="intel-tutor-panel" style="display: none;">
+                <div class="intel-card-header">
+                  <div class="intel-badge-row">
+                    <span class="intel-mode-tag tag-tutor">🤖 AI CIRCUIT TUTOR</span>
+                    <span class="intel-sih-tag">SIH 26140</span>
+                    <div class="tutor-health-pill healthy" id="tutor-health-badge">🟢 Circuit Healthy (100% Sound)</div>
+                  </div>
+                  <div class="tutor-header-actions">
+                    <label class="tutor-auto-toggle-label" title="Automatically evaluate circuit when gates are modified">
+                      <input type="checkbox" id="tutor-auto-audit-toggle" checked>
+                      <span>Live Audit</span>
+                    </label>
+                    <button type="button" class="tutor-btn-action" id="btn-tutor-analyze" title="Run instant quantum circuit diagnosis">
+                      ⚡ Analyze Circuit
+                    </button>
+                  </div>
+                </div>
+
+                <div class="tutor-main-grid">
+                  <!-- Section 1: What You Are Making -->
+                  <div class="tutor-section-card">
+                    <div class="tutor-sec-header">
+                      <span class="tutor-sec-icon">🎯</span>
+                      <h4 class="tutor-sec-title">Circuit Identity &amp; State</h4>
+                    </div>
+                    <div class="tutor-making-badge" id="tutor-making-title">Empty Circuit (Ground State |0...0⟩)</div>
+                    <p class="tutor-making-text" id="tutor-making-desc">
+                      All qubits reside in the lowest-energy computational ground state |0⟩. Click any gate on the left palette to begin constructing your quantum program.
+                    </p>
+                    <div class="tutor-entanglement-box">
+                      <span class="tutor-sub-label">Entanglement Analysis:</span>
+                      <p id="tutor-entanglement-desc">The quantum register is currently separable (unentangled product state with C = 0.00).</p>
+                    </div>
+                  </div>
+
+                  <!-- Section 2: Error Doctor & Diagnostic Findings -->
+                  <div class="tutor-section-card">
+                    <div class="tutor-sec-header">
+                      <span class="tutor-sec-icon">🩺</span>
+                      <h4 class="tutor-sec-title">Error Doctor Diagnostics</h4>
+                    </div>
+                    <div class="tutor-errors-list" id="tutor-errors-container">
+                      <div class="tutor-clean-state">
+                        <span class="tutor-clean-icon">✨</span>
+                        <div class="tutor-clean-text">
+                          <strong>Zero Pathologies Detected</strong>
+                          <p>No redundant gates, premature measurements, or idle qubit anomalies found. Unitary logic is completely sound!</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Section 3: Interactive Pedagogical Guidance & Chat -->
+                  <div class="tutor-section-card">
+                    <div class="tutor-sec-header">
+                      <span class="tutor-sec-icon">💡</span>
+                      <h4 class="tutor-sec-title">Tutor Guidance &amp; Socratic Q&amp;A</h4>
+                    </div>
+                    <p class="tutor-guidance-text" id="tutor-guidance-desc">
+                      Add a Hadamard gate to qubit q[0] to create a quantum superposition, then entangle it with a CNOT gate on qubit q[1].
+                    </p>
+                    <div class="tutor-qa-box">
+                      <div class="tutor-qa-input-row">
+                        <input type="text" id="tutor-question-input" class="tutor-qa-input" placeholder="Ask AI tutor about your circuit...">
+                        <button type="button" id="btn-tutor-ask" class="tutor-qa-submit">Ask</button>
                       </div>
                     </div>
                   </div>
@@ -3933,6 +4011,7 @@ Key Advantage:
   <script src="js/cryo-twin.js"></script>
   <script src="js/pqc-auditor.js"></script>
   <script src="js/quantum-voice-copilot.js"></script>
+  <script src="js/circuit-tutor.js"></script>
   <script src="js/quantum-maze-sim.js"></script>
   <script src="js/app.js"></script>
   <!-- KaTeX Auto-Render Engine -->

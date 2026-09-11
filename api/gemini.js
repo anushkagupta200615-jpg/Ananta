@@ -372,7 +372,18 @@ async function handler(req, res) {
   }
 
   const body = await getParsedBody(req);
-  const { task, payload } = body || {};
+  let task = body?.task;
+  let payload = body?.payload;
+
+  // Handle direct calls to /api/ai/tutor or /api/ai with flat body
+  const reqUrl = new URL(req.url, `http://${req.headers?.host || '127.0.0.1'}`);
+  if (!task && reqUrl.pathname.endsWith('/tutor')) {
+    task = 'circuit-tutor';
+    payload = body || {};
+  }
+  if (task && !payload) {
+    payload = body || {};
+  }
 
   // Task: provider-info / model status
   if (task === 'provider-info' || task === 'status') {
@@ -631,6 +642,81 @@ ${responseSchemaNote}`;
         systemPrompt,
         question,
         () => generateConceptDoctorLocally(question, groundingEntries),
+        res
+      );
+    }
+
+    // ------------------------------------------------------------------
+    // 5. CIRCUIT TUTOR — SIH Problem Statement 26140 Grounded AI Circuit Tutor
+    //    Identifies what the student is making, performs mathematical error
+    //    checking, detects pathologies (redundancies, premature collapse,
+    //    idle wires, ineffective CNOTs), and provides anti-hallucinatory guidance.
+    // ------------------------------------------------------------------
+    case 'circuit-tutor': {
+      const {
+        gridStructure,
+        numQubits,
+        activeDepth,
+        diracNotation,
+        probabilities,
+        mathMetrics,
+        deterministicErrors,
+        userQuestion
+      } = payload;
+
+      const systemPrompt = `You are the Principal Quantum Computing Professor & Interactive Circuit Tutor for Ananta Quantum Studio (SIH Problem Statement 26140).
+Your goal is to guide students building quantum circuits by providing:
+1. WHAT THEY ARE MAKING: Accurately identify the quantum state or algorithm being implemented.
+2. CIRCUIT PATHOLOGY & ERROR ANALYSIS: Identify mistakes (e.g. self-cancelling gates, premature measurement collapse, idle wires, ineffective CNOTs without superposition, depth bloat).
+3. PHYSICAL INTUITION & RECOMMENDATIONS: Grounded in real quantum physics (concurrence, entropy, statevector).
+
+STRICT ANTI-HALLUCINATION RULES:
+- Ground all statements STRICTLY in the provided circuit ground truth data below.
+- DO NOT invent gates, qubits, or state probabilities not present in the ground truth.
+- If the circuit is empty, tell the student to place gates to begin.
+- If errors are present, explain the physical reason (e.g. Born rule collapse, Clifford involution H^2 = I) and give a clear fix.
+
+GROUND TRUTH SIMULATOR DATA:
+- Register Size: ${numQubits || 3} Qubits, Active Depth: ${activeDepth || 0}
+- Circuit Wire Topology:
+${gridStructure || '(empty circuit)'}
+- Dirac Statevector: ${diracNotation || '|0...0>'}
+- Measurement Probabilities: ${JSON.stringify(probabilities || {})}
+- Quantum Physics Metrics:
+  * Concurrence C = ${mathMetrics?.concurrence ?? '0.00'}
+  * von Neumann Entropy S = ${mathMetrics?.entropy ?? '0.00'} ebits
+  * Subsystem Purity gamma = ${mathMetrics?.purity ?? '1.00'}
+  * Entanglement Classification: ${mathMetrics?.entanglementClass || 'Separable'}
+- Deterministic Static Analysis Findings:
+${JSON.stringify(deterministicErrors || [])}
+${userQuestion ? `- Student Question: "${userQuestion}"` : ''}
+
+You MUST return ONLY a valid JSON object matching this schema:
+{
+  "circuitSummary": "Concise title identifying what is being made (e.g., 'Bell State |Phi+> Preparation', 'Tripartite GHZ Entanglement', 'Custom Superposition Register', 'Ground State Baseline')",
+  "circuitPurpose": "2-3 clear sentences explaining what this quantum circuit computes and its practical quantum application.",
+  "isHealthy": <boolean: true if no severe errors, false if errors or inefficiencies exist>,
+  "healthBadge": "<e.g. 'Healthy Circuit (100% Sound)' or '2 Issues Detected' or 'Compilation Error'>",
+  "errors": [
+    {
+      "severity": "error" | "warning" | "optimization",
+      "title": "<short finding title>",
+      "location": "<e.g. Wire q[0] at step 2>",
+      "explanation": "<physical explanation of why this happens>",
+      "suggestedFix": "<concrete instruction to fix it>"
+    }
+  ],
+  "entanglementAnalysis": "1-2 sentences interpreting the concurrence and entanglement of the current state.",
+  "tutorGuidance": "2-3 sentences of direct teacher-to-student advice on what to explore next or how to fix issues."
+}
+${responseSchemaNote}`;
+
+      return await callMultiProviderAI(
+        req,
+        body,
+        systemPrompt,
+        userQuestion || 'Analyze my current quantum circuit, tell me what I am making, and detect any errors',
+        () => generateCircuitTutorLocally(payload),
         res
       );
     }
@@ -1051,6 +1137,66 @@ function generateCircuitAuditLocally(payload) {
     decoherenceRisks: `Physical qubit 0 carries primary phase-accumulation depth. T1 decay risk is within NISQ threshold boundaries (<0.8% error rate).`,
     qpuRecommendation: 'Recommended for execution on IBM Eagle r3 (Heavy-Hex) or Google Sycamore with dynamical decoupling.',
     clinicalPrescription: 'Apply XY4 Dynamical Decoupling and Zero-Noise Extrapolation (ZNE) before final readout measurement.'
+  };
+}
+
+function generateCircuitTutorLocally(payload) {
+  const numQubits = payload?.numQubits || 3;
+  const gridStructure = payload?.gridStructure || '';
+  const dirac = payload?.diracNotation || '|000⟩';
+  const mathMetrics = payload?.mathMetrics || {};
+  const deterministicErrors = Array.isArray(payload?.deterministicErrors) ? payload.deterministicErrors : [];
+  const concurrence = parseFloat(mathMetrics.concurrence || 0);
+  const entropy = parseFloat(mathMetrics.entropy || 0);
+
+  // Map deterministic errors into structured error findings
+  const errors = deterministicErrors.map(err => ({
+    severity: err.type === 'error' ? 'error' : (err.type === 'warning' ? 'warning' : 'optimization'),
+    title: err.title || 'Circuit Inefficiency',
+    location: err.location || 'Circuit grid',
+    explanation: err.desc || 'Operation affects circuit compilation depth or coherence.',
+    suggestedFix: err.fix || 'Review gate placement.'
+  }));
+
+  const isHealthy = !errors.some(e => e.severity === 'error');
+
+  // Identify what is being made based on circuit structure, concurrence, and Dirac notation
+  let summary = 'Custom Quantum Circuit';
+  let purpose = 'Unitary transformations applied to compute a quantum superposition across basis states.';
+
+  if (!gridStructure || gridStructure.trim() === '' || gridStructure.includes('(empty circuit)')) {
+    summary = 'Empty Circuit (Ground State |0...0⟩)';
+    purpose = 'All qubits reside in the computational ground state |0⟩ at 15 millikelvin. Add gates from the left palette to begin your quantum program.';
+  } else if (concurrence > 0.7 && dirac.includes('|000⟩') && dirac.includes('|110⟩')) {
+    summary = 'Bell State |Φ⁺⟩ Preparation (Bipartite Entanglement)';
+    purpose = 'Creates a maximally entangled bipartite Einstein-Podolsky-Rosen (EPR) pair (|00⟩ + |11⟩)/√2 using Hadamard and CNOT gates. Used in Quantum Key Distribution (QKD) and Teleportation.';
+  } else if (concurrence > 0.7 && dirac.includes('|000⟩') && dirac.includes('|111⟩')) {
+    summary = 'GHZ State (|000⟩ + |111⟩)/√2 (Tripartite Entanglement)';
+    purpose = 'Prepares a 3-qubit maximally entangled Greenberger-Horne-Zeilinger superposition. Used in quantum secret sharing and high-precision quantum metrology.';
+  } else if (concurrence > 0.1) {
+    summary = 'Multi-Qubit Entangled Subsystem';
+    purpose = `Controlled entangling unitaries generate non-local quantum correlations across the register (Concurrence C = ${concurrence.toFixed(2)}).`;
+  } else if (dirac.includes('+') && !dirac.includes('-')) {
+    summary = 'Uniform Superposition State';
+    purpose = 'Hadamard gates initialize quantum parallel exploration across computational basis states with equal probability amplitude. Essential prerequisite for Grover search and quantum phase estimation.';
+  }
+
+  const entanglementAnalysis = concurrence > 0.1
+    ? `Strong quantum entanglement detected with Concurrence C = ${concurrence.toFixed(2)} and von Neumann Entropy S = ${entropy.toFixed(2)} ebits. Subsystems cannot be classically separated.`
+    : 'The quantum register is currently separable (unentangled product state with C = 0.00). Each qubit can be described independently without EPR correlations.';
+
+  const tutorGuidance = errors.length > 0
+    ? `You have ${errors.length} diagnostic recommendation(s). Review the highlighted findings above to optimize circuit depth and avoid unwanted state collapse.`
+    : 'Your quantum circuit logic is sound and unitary! Try experimenting with relative phase (Phase S or T gates) or adding a CNOT to a third wire to observe entanglement scaling.';
+
+  return {
+    circuitSummary: summary,
+    circuitPurpose: purpose,
+    isHealthy,
+    healthBadge: errors.length === 0 ? 'Healthy Circuit (100% Sound)' : `${errors.length} Issue(s) Detected`,
+    errors,
+    entanglementAnalysis,
+    tutorGuidance
   };
 }
 
