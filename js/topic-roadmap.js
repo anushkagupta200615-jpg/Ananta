@@ -9,6 +9,7 @@ class TopicRoadmapManager {
   constructor() {
     this.container = typeof document !== 'undefined' ? document.getElementById('view-topic-roadmap') : null;
     this.currentCuratedModules = [];
+    this.generatedModules = [];
     this.activeModule = null;
     this.isDockedInSplit = false;
 
@@ -906,41 +907,59 @@ class TopicRoadmapManager {
   // Dynamic Pathway Synthesis via Google AI Studio Gemini 2.5 Flash
   // Dynamic Pathway Synthesis via /api/gemini Backend (Section 4.2)
   async generateCustomRoadmapAI(userPrompt) {
-    const availableModuleIds = this.modules.map(m => m.id);
+    // The catalogue goes to the backend as material the model may reuse, not as
+    // a list it must choose from — steps outside the curriculum are expected.
+    const catalog = this.modules.map(m => ({
+      id: m.id,
+      docId: m.docId,
+      title: m.title,
+      level: m.level,
+      timeEst: m.timeEst,
+      summary: m.summary,
+      category: m.category,
+      mathFormula: m.mathFormula,
+      intuition: m.intuition,
+      researchPaper: m.researchPaper,
+      circuitPreset: m.circuitPreset,
+      exerciseGoal: m.exerciseGoal
+    }));
+
     try {
-      const response = await fetch('/api/gemini', {
+      const base = (window.anantaBackend && window.anantaBackend.baseUrl) || '';
+      const response = await fetch(`${base}/api/roadmap/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          task: 'roadmap',
-          payload: { instruction: userPrompt, availableModuleIds }
-        })
+        body: JSON.stringify({ goal: userPrompt, catalog })
       });
       if (!response.ok) throw new Error(`Backend returned HTTP ${response.status}`);
-      const { result: parsed } = await response.json();
-      if (!parsed.moduleIds || !Array.isArray(parsed.moduleIds) || parsed.moduleIds.length === 0) {
-        throw new Error('Invalid moduleIds structure in AI response');
+      const parsed = await response.json();
+
+      if (parsed.unavailable || !Array.isArray(parsed.steps) || parsed.steps.length === 0) {
+        throw new Error(parsed.description || 'No roadmap steps returned');
       }
-      const matchedModules = parsed.moduleIds
-        .map(id => this.modules.find(m => m.id === id))
-        .filter(Boolean);
-      if (matchedModules.length === 0) throw new Error('Could not resolve AI module IDs');
+
+      // Generated steps are not in this.modules, so keep them somewhere the
+      // module reader can still find them when a card is opened.
+      this.generatedModules = parsed.steps;
 
       if (typeof setStatusBadge === 'function') {
-        setStatusBadge('roadmap-status-badge', true); // "Live AI"
+        setStatusBadge('roadmap-status-badge', parsed.source === 'generated');
       }
+
       return {
         pattern: {
-          displayName: parsed.displayName || 'Custom AI-Generated Quantum Roadmap',
-          description: parsed.description || parsed.reasoning || 'Personalized pathway synthesized by Gemini.',
-          modules: matchedModules
+          displayName: parsed.displayName || 'Custom Quantum Roadmap',
+          description: parsed.description || 'Personalised pathway.',
+          modules: parsed.steps
         },
-        modules: matchedModules,
-        detectedLevel: parsed.detectedLevel || 'INTERMEDIATE',
-        levelRationale: parsed.reasoning || parsed.levelRationale || 'Synthesized using Gemini based on your prompt.',
+        modules: parsed.steps,
+        detectedLevel: String(parsed.detectedLevel || 'Intermediate').toUpperCase(),
+        levelRationale: parsed.levelRationale || '',
         score: 100,
-        isAiSynthesized: true,
-        aiProvider: 'Google AI Studio (Gemini 2.5 Flash via /api/gemini)'
+        isAiSynthesized: parsed.source === 'generated',
+        aiProvider: parsed.source === 'generated'
+          ? 'Written for this request by the configured AI provider'
+          : 'Matched against the built-in curriculum (no AI provider configured)'
       };
     } catch (err) {
       console.info('[TopicRoadmap] Backend unavailable, using local adaptive engine.', err);
@@ -1484,7 +1503,10 @@ class TopicRoadmapManager {
 
   // Open specific module reader (with conditional side-by-side Circuit Designer)
   openModuleReader(moduleId) {
-    const mod = this.modules.find(m => m.id === moduleId);
+    // Generated steps live outside the authored curriculum, so look there too —
+    // otherwise clicking a generated card would silently do nothing.
+    const mod = this.modules.find(m => m.id === moduleId)
+      || (this.generatedModules || []).find(m => m.id === moduleId);
     if (!mod) return;
     this.activeModule = mod;
 

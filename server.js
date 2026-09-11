@@ -51,74 +51,12 @@ function logTransaction(method, endpoint, statusCode, durationMs, details = {}) 
   return entry;
 }
 
-// Physical Device Fleet Catalog
-const QPU_DEVICES = {
-  'ibm_brisbane': {
-    name: 'ibm_brisbane',
-    type: 'Superconducting Transmon (Eagle r3)',
-    qubits: 127,
-    status: 'Online',
-    queue: 14,
-    t1Median: 284,
-    t2Median: 168,
-    cnotErrorMedian: 0.0078,
-    readoutError: 0.019,
-    quantumVolume: 128,
-    clops: 2600
-  },
-  'ibm_kyoto': {
-    name: 'ibm_kyoto',
-    type: 'Superconducting Transmon (Eagle r3)',
-    qubits: 127,
-    status: 'Online',
-    queue: 8,
-    t1Median: 242,
-    t2Median: 134,
-    cnotErrorMedian: 0.0085,
-    readoutError: 0.021,
-    quantumVolume: 128,
-    clops: 2400
-  },
-  'ibm_sherbrooke': {
-    name: 'ibm_sherbrooke',
-    type: 'Superconducting Transmon (Eagle r3)',
-    qubits: 127,
-    status: 'Online',
-    queue: 11,
-    t1Median: 295,
-    t2Median: 175,
-    cnotErrorMedian: 0.0072,
-    readoutError: 0.016,
-    quantumVolume: 256,
-    clops: 2900
-  },
-  'ibm_osaka': {
-    name: 'ibm_osaka',
-    type: 'Superconducting Transmon (Eagle r3)',
-    qubits: 127,
-    status: 'Online',
-    queue: 6,
-    t1Median: 260,
-    t2Median: 145,
-    cnotErrorMedian: 0.0080,
-    readoutError: 0.018,
-    quantumVolume: 128,
-    clops: 2500
-  },
-  'simulator_mps': {
-    name: 'simulator_mps',
-    type: 'Matrix Product State Cloud Simulator',
-    qubits: 100,
-    status: 'Online (Instant)',
-    queue: 0,
-    t1Median: 999999,
-    t2Median: 999999,
-    cnotErrorMedian: 0.00001,
-    readoutError: 0.0001,
-    quantumVolume: 512,
-    clops: 10000
-  }
-};
+// IBM Quantum Hardware Bridge Utility
+const ibmQuantum = require('./ananta-backend/utils/ibmQuantum');
+let IBM_QUANTUM_TOKEN = process.env.IBM_QUANTUM_TOKEN || process.env.IBM_API_KEY || '';
+
+// Physical Device Fleet Catalog (Baseline Reference)
+const QPU_DEVICES = ibmQuantum.REFERENCE_QPU_DEVICES;
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -418,6 +356,27 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // POST /api/roadmap/generate — writes a learning roadmap for any request
+  if (pathname === '/api/roadmap/generate' && req.method === 'POST') {
+    const body = await parseRequestBody(req);
+    const { goal, catalog, refresh } = body || {};
+    if (!goal) return sendJson(res, 400, { error: 'goal is required' });
+
+    try {
+      const { generateRoadmap } = require('./ananta-backend/utils/roadmapGenerator');
+      const data = await generateRoadmap({
+        goal,
+        catalog: Array.isArray(catalog) ? catalog : [],
+        refresh: refresh === true
+      });
+      logTransaction('POST', pathname, 200, Date.now() - reqStart, { goal, steps: data.steps.length, source: data.source });
+      return sendJson(res, 200, data);
+    } catch (err) {
+      logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: err.message });
+      return sendJson(res, 500, { error: err.message });
+    }
+  }
+
   // POST /api/research/discover — live literature search for a plain-language topic
   // POST /api/research/brief    — the same, plus a cited AI synthesis
   if ((pathname === '/api/research/discover' || pathname === '/api/research/brief') && req.method === 'POST') {
@@ -464,14 +423,41 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 3. GET /api/qpu/devices
+  // 3. GET /api/qpu/devices (Live IBM Quantum Fleet Discovery & Real Telemetry)
   if (pathname === '/api/qpu/devices' && req.method === 'GET') {
-    sendJson(res, 200, {
-      success: true,
-      count: Object.keys(QPU_DEVICES).length,
-      devices: QPU_DEVICES
-    });
-    logTransaction('GET', pathname, 200, Date.now() - reqStart);
+    const token = req.headers['x-ibm-token'] || reqUrl.searchParams.get('token') || IBM_QUANTUM_TOKEN;
+    try {
+      const fleet = await ibmQuantum.getLiveBackends(token);
+      sendJson(res, 200, {
+        success: true,
+        ...fleet
+      });
+      logTransaction('GET', pathname, 200, Date.now() - reqStart, { isLive: fleet.isLive, count: fleet.count });
+    } catch (err) {
+      sendJson(res, 200, {
+        success: true,
+        isLive: false,
+        count: Object.keys(QPU_DEVICES).length,
+        devices: QPU_DEVICES,
+        notice: 'Showing baseline reference catalog: ' + err.message
+      });
+      logTransaction('GET', pathname, 200, Date.now() - reqStart, { fallback: true, error: err.message });
+    }
+    return;
+  }
+
+  // 3b. POST /api/qpu/auth (Verify IBM Quantum API Token & User Account)
+  if (pathname === '/api/qpu/auth' && req.method === 'POST') {
+    try {
+      const body = await parseRequestBody(req);
+      const token = body.token || body.apiToken || req.headers['x-ibm-token'] || IBM_QUANTUM_TOKEN;
+      const authRes = await ibmQuantum.validateToken(token);
+      sendJson(res, authRes.valid ? 200 : 401, authRes);
+      logTransaction('POST', pathname, authRes.valid ? 200 : 401, Date.now() - reqStart, { valid: authRes.valid });
+    } catch (err) {
+      sendJson(res, 500, { valid: false, error: err.message });
+      logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: err.message });
+    }
     return;
   }
 
@@ -665,7 +651,7 @@ User Question: "${message}"`;
     }
   }
 
-  // 7. POST /api/qpu/run (Physical QPU Hardware Execution & Realistic Noise Dispatch)
+  // 7. POST /api/qpu/run (Physical QPU Hardware Execution & Honest Simulation Dispatch)
   if (pathname === '/api/qpu/run' && req.method === 'POST') {
     try {
       const body = await parseRequestBody(req);
@@ -674,100 +660,94 @@ User Question: "${message}"`;
         shots = 1024,
         qasm = '',
         numQubits = 3,
-        idealProbabilities = null
-      } = body;
+        idealProbabilities = null,
+        mode = 'auto',
+        requireLive = false
+      } = body || {};
 
-      const device = QPU_DEVICES[backend] || QPU_DEVICES['ibm_brisbane'];
-      const jobId = 'job_' + backend + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+      const token = req.headers['x-ibm-token'] || body.token || body.apiToken || IBM_QUANTUM_TOKEN;
+      const isSimBackend = backend === 'simulator_mps';
+      const shouldAttemptLive = !isSimBackend && mode !== 'simulation' && Boolean(token);
 
-      // Simulate execution time factoring in device queue
-      const simulatedQueueWaitMs = Math.min(2500, Math.max(300, (device.queue || 1) * 60));
-      await new Promise(r => setTimeout(r, simulatedQueueWaitMs));
+      if (shouldAttemptLive) {
+        try {
+          console.log(`[Server] Submitting circuit to real IBM Quantum QPU (${backend})...`);
+          const job = await ibmQuantum.submitQpuJob({
+            apiToken: token,
+            backend,
+            qasm,
+            shots
+          });
 
-      // Calculate shot counts with hardware noise (T1 relaxation, T2 dephasing, Readout error)
-      const numStates = 1 << numQubits;
-      const noisyCounts = {};
-      const idealCounts = {};
+          // If job was dispatched, poll up to 3.5s for fast execution or simulators
+          let finalResult = job;
+          if (job.status !== 'COMPLETED') {
+            const pollStart = Date.now();
+            while (Date.now() - pollStart < 3500) {
+              await new Promise(r => setTimeout(r, 1000));
+              try {
+                const check = await ibmQuantum.getJobStatusAndResult(token, job.jobId);
+                if (check.status === 'COMPLETED' || check.status === 'ERROR' || check.status === 'CANCELLED') {
+                  finalResult = check;
+                  break;
+                }
+              } catch (pollErr) {
+                break;
+              }
+            }
+          }
 
-      for (let i = 0; i < numStates; i++) {
-        const bitstring = i.toString(2).padStart(numQubits, '0');
-        noisyCounts[bitstring] = 0;
-        idealCounts[bitstring] = 0;
+          sendJson(res, 200, {
+            ...finalResult,
+            executionTimeMs: Math.round(Date.now() - reqStart)
+          });
+          logTransaction('POST', pathname, 200, Date.now() - reqStart, {
+            jobId: job.jobId,
+            backend,
+            isRealHardware: true,
+            status: finalResult.status
+          });
+          return;
+        } catch (qpuErr) {
+          console.warn(`[Server] Real IBM Quantum QPU execution error: ${qpuErr.message}`);
+          if (requireLive || mode === 'hardware') {
+            sendJson(res, 502, {
+              success: false,
+              isRealHardware: true,
+              error: `IBM Quantum Hardware Execution Failed: ${qpuErr.message}`
+            });
+            logTransaction('POST', pathname, 502, Date.now() - reqStart, { error: qpuErr.message });
+            return;
+          }
+          // Transparently fall back to simulation with explicit reason
+          const simRes = ibmQuantum.runSimulatedNoise({ backend, shots, numQubits, idealProbabilities, qasm });
+          simRes.fallbackReason = qpuErr.message;
+          simRes.executionTimeMs = Math.round(Date.now() - reqStart);
+          sendJson(res, 200, simRes);
+          logTransaction('POST', pathname, 200, Date.now() - reqStart, { mode: 'fallback_simulation' });
+          return;
+        }
       }
 
-      const probs = (idealProbabilities && idealProbabilities.length === numStates)
-        ? idealProbabilities
-        : Array(numStates).fill(1 / numStates);
-
-      const t1Median = device.t1Median || 280;
-      const t2Median = device.t2Median || 160;
-      const roError = device.readoutError || 0.019;
-
-      // Realistic noise degradation
-      const circuitDurationUs = 0.035 * 6; // approximate circuit duration
-      const t1Decay = Math.exp(-circuitDurationUs / t1Median);
-      const t2Decay = Math.exp(-circuitDurationUs / t2Median);
-      const fidelityFactor = t1Decay * t2Decay;
-
-      for (let shot = 0; shot < shots; shot++) {
-        // Ideal sample
-        const rand = Math.random();
-        let cum = 0;
-        let idealSample = 0;
-        for (let i = 0; i < numStates; i++) {
-          cum += probs[i];
-          if (rand <= cum) {
-            idealSample = i;
-            break;
-          }
-        }
-        idealCounts[idealSample.toString(2).padStart(numQubits, '0')]++;
-
-        // Hardware noisy sample
-        let physicalSample = idealSample;
-        if (Math.random() > fidelityFactor) {
-          // Decoherence decay towards ground state |0...0> or random thermal state
-          physicalSample = (Math.random() < 0.7) ? 0 : Math.floor(Math.random() * numStates);
-        }
-
-        // Readout bit-flip errors
-        let bitArray = physicalSample.toString(2).padStart(numQubits, '0').split('');
-        for (let b = 0; b < numQubits; b++) {
-          if (Math.random() < roError) {
-            bitArray[b] = bitArray[b] === '0' ? '1' : '0';
-          }
-        }
-        const noisyBitstring = bitArray.join('');
-        noisyCounts[noisyBitstring] = (noisyCounts[noisyBitstring] || 0) + 1;
+      // If user required live hardware but has no token
+      if (requireLive || mode === 'hardware') {
+        sendJson(res, 401, {
+          success: false,
+          error: 'IBM Quantum API Token required for physical QPU hardware execution. Please enter your API token in the settings modal or set IBM_QUANTUM_TOKEN.'
+        });
+        logTransaction('POST', pathname, 401, Date.now() - reqStart, { error: 'No token' });
+        return;
       }
 
-      const resultPayload = {
-        success: true,
-        jobId,
-        backend: device.name,
-        backendType: device.type,
-        status: 'COMPLETED',
-        shots,
-        numQubits,
-        executionTimeMs: Math.round(Date.now() - reqStart),
-        deviceSpecs: {
-          qubits: device.qubits,
-          t1Median: device.t1Median,
-          t2Median: device.t2Median,
-          cnotError: device.cnotErrorMedian,
-          readoutError: device.readoutError,
-          fidelityScore: (fidelityFactor * (1 - roError) * 100).toFixed(2) + '%'
-        },
-        counts: noisyCounts,
-        idealCounts,
-        openqasm3: qasm || 'OPENQASM 3.0;\n// Executed by Ananta Cloud QPU Bridge'
-      };
-
-      sendJson(res, 200, resultPayload);
+      // Sandbox Mode: Local physics noise simulation with honest disclosure
+      const simRes = ibmQuantum.runSimulatedNoise({ backend, shots, numQubits, idealProbabilities, qasm });
+      simRes.executionTimeMs = Math.round(Date.now() - reqStart);
+      sendJson(res, 200, simRes);
       logTransaction('POST', pathname, 200, Date.now() - reqStart, {
-        jobId,
-        backend: device.name,
-        shots
+        jobId: simRes.jobId,
+        backend,
+        isRealHardware: false,
+        status: 'COMPLETED'
       });
       return;
     } catch (err) {
@@ -776,6 +756,31 @@ User Question: "${message}"`;
       logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: err.message });
       return;
     }
+  }
+
+  // 8. GET /api/qpu/job/:id (Poll Real IBM Quantum Job Status and Results)
+  if (pathname.startsWith('/api/qpu/job/') && req.method === 'GET') {
+    const jobId = pathname.replace('/api/qpu/job/', '').trim();
+    const token = req.headers['x-ibm-token'] || reqUrl.searchParams.get('token') || IBM_QUANTUM_TOKEN;
+    if (!jobId) {
+      return sendJson(res, 400, { error: 'Job ID is required in URL path' });
+    }
+    if (jobId.startsWith('sim_')) {
+      return sendJson(res, 200, { status: 'COMPLETED', jobId, executionMode: 'SIMULATED_PHYSICAL_NOISE' });
+    }
+    if (!token) {
+      return sendJson(res, 401, { error: 'IBM Quantum API Token required to query physical hardware job status' });
+    }
+
+    try {
+      const jobResult = await ibmQuantum.getJobStatusAndResult(token, jobId);
+      sendJson(res, 200, jobResult);
+      logTransaction('GET', pathname, 200, Date.now() - reqStart, { jobId, status: jobResult.status });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+      logTransaction('GET', pathname, 500, Date.now() - reqStart, { error: err.message });
+    }
+    return;
   }
 
   // ================= STATIC FILE SERVING =================
