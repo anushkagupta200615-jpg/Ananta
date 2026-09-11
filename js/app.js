@@ -2818,16 +2818,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const res = await fetch('/api/search', {
+      // Was /api/search (googleSearch.js): a strict all-words-must-match arXiv
+      // query that returns 0 hits for a full sentence, then silently falls back
+      // to treating the raw sentence as a bag-of-words match — which is how
+      // "i want research paper related to superposition" returned gravitational-
+      // wave papers. Routes through the same discovery pipeline the Literature
+      // Search tab uses instead: model-extracted subject, arXiv + Crossref,
+      // ranked, and dropped if it doesn't actually mention the topic.
+      const base = (window.anantaBackend && window.anantaBackend.baseUrl) || '';
+      const res = await fetch(`${base}/api/research/discover`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, num: 6 })
+        body: JSON.stringify({ topic: query, limit: 6 })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch search results');
 
-      lastPaperSearchResults = data.results || [];
-      lastSearchQuery = query;
+      lastPaperSearchResults = (data.papers || []).map(p => ({
+        title: p.title,
+        authors: p.authors,
+        published: p.year ? String(p.year) : (p.source || 'arXiv'),
+        snippet: p.abstract && p.abstract.length > 320 ? p.abstract.slice(0, 320) + '…' : (p.abstract || ''),
+        link: p.url,
+        pdfUrl: p.pdfUrl || p.url
+      }));
+      lastSearchQuery = data.query || query;
 
       if (!lastPaperSearchResults.length) {
         if (status) status.textContent = `No papers found for "${query}".`;
