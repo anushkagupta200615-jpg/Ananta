@@ -112,6 +112,38 @@ document.addEventListener('DOMContentLoaded', () => {
     window.cloudQPUBridge = cloudQPUBridge;
   }
 
+  let qbraidBridge = null;
+  if (window.QBraidBridge) {
+    qbraidBridge = new window.QBraidBridge(engine, circuitUI);
+    window.qbraidBridge = qbraidBridge;
+  }
+
+  let instructorPortal = null;
+  if (window.InstructorPortal) {
+    instructorPortal = new window.InstructorPortal();
+    window.instructorPortal = instructorPortal;
+  }
+
+  window.switchHardwareProvider = function(provider) {
+    const tabIbm = document.getElementById('tab-provider-ibm');
+    const tabQbraid = document.getElementById('tab-provider-qbraid');
+    const panelIbm = document.getElementById('hardware-panel-ibm');
+    const panelQbraid = document.getElementById('hardware-panel-qbraid');
+    if (provider === 'qbraid') {
+      if (tabQbraid) tabQbraid.classList.add('active');
+      if (tabIbm) tabIbm.classList.remove('active');
+      if (panelQbraid) panelQbraid.style.display = 'block';
+      if (panelIbm) panelIbm.style.display = 'none';
+      if (window.qbraidBridge) window.qbraidBridge.updateDeviceTelemetry();
+    } else {
+      if (tabIbm) tabIbm.classList.add('active');
+      if (tabQbraid) tabQbraid.classList.remove('active');
+      if (panelIbm) panelIbm.style.display = 'block';
+      if (panelQbraid) panelQbraid.style.display = 'none';
+      if (window.cloudQPUBridge) window.cloudQPUBridge.updateDeviceTelemetry();
+    }
+  };
+
   // 4 Killer Differentiating Studios
   let surfaceCodeStudio = null;
   if (window.SurfaceCodeStudio) {
@@ -198,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Groups for dropdown highlights
     const studioTabs = ['surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry', 'debugger', 'cryo-twin', 'pqc-auditor'];
     const algorithmTabs = ['algorithms', 'research'];
-    const learnTabs = ['intuition', 'challenges', 'docs', 'topic-roadmap'];
+    const learnTabs = ['intuition', 'challenges', 'docs', 'topic-roadmap', 'instructor'];
 
     // Undock circuit designer from topic roadmap reader when switching away
     if (tabKey !== 'topic-roadmap' && window.topicRoadmapManager && window.topicRoadmapManager.undockCircuitDesigner) {
@@ -383,6 +415,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Refresh Quantum Maze Simulation when entering Overview tab
     if (tabKey === 'overview' && window.initQuantumMazeSim) {
       setTimeout(() => window.initQuantumMazeSim(), 60);
+    }
+
+    // Refresh Instructor Portal when entering instructor tab
+    if (tabKey === 'instructor' && window.instructorPortal) {
+      setTimeout(() => window.instructorPortal.loadCohorts(), 50);
     }
 
     // Trigger LaTeX / Math typesetter on view change
