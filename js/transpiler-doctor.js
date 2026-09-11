@@ -5,6 +5,34 @@
  * and Hardware Architecture Topology SWAP routing.
  */
 
+/**
+ * Wraps a <textarea> with a real CodeMirror editor (syntax highlighting,
+ * line numbers, bracket matching) while exposing the exact same
+ * `.value` / `.oninput` interface the rest of this file already uses, so no
+ * other call site needs to change. Falls back to the plain textarea
+ * untouched if CodeMirror failed to load (e.g. offline/CDN blocked).
+ */
+function wrapWithCodeMirror(textareaEl) {
+  if (typeof CodeMirror === 'undefined' || !textareaEl) return textareaEl;
+  const cm = CodeMirror.fromTextArea(textareaEl, {
+    mode: 'python',
+    theme: 'dracula',
+    lineNumbers: true,
+    matchBrackets: true,
+    readOnly: textareaEl.hasAttribute('readonly'),
+    viewportMargin: Infinity
+  });
+  let inputHandler = null;
+  cm.on('change', () => { if (inputHandler) inputHandler(); });
+  return {
+    get value() { return cm.getValue(); },
+    set value(v) { cm.setValue(v || ''); },
+    set oninput(fn) { inputHandler = fn; },
+    get oninput() { return inputHandler; },
+    codeMirror: cm
+  };
+}
+
 class TranspilerDoctor {
   constructor() {
     this.sourceFramework = 'qiskit';
@@ -25,8 +53,8 @@ class TranspilerDoctor {
 
   initElements() {
     if (typeof document === 'undefined') return;
-    this.sourceCodeArea = document.getElementById('transpiler-source-code');
-    this.targetCodeArea = document.getElementById('transpiler-target-code');
+    this.sourceCodeArea = wrapWithCodeMirror(document.getElementById('transpiler-source-code'));
+    this.targetCodeArea = wrapWithCodeMirror(document.getElementById('transpiler-target-code'));
     this.sourceSelect = document.getElementById('transpiler-source-select');
     this.targetSelect = document.getElementById('transpiler-target-select');
     this.doctorResultsEl = document.getElementById('doctor-diagnostic-results');

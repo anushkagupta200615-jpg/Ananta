@@ -14029,6 +14029,16 @@ input:checked + .slider-round:before {
   transform: scale(0.97);
 }
 
+/* CodeMirror wraps the .code-textarea elements above (js/transpiler-doctor.js
+   wrapWithCodeMirror) - match the same dark editor look. */
+.code-editor-panel .CodeMirror {
+  flex-grow: 1;
+  height: 320px;
+  font-family: var(--font-mono, 'Roboto Mono', monospace);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
 .transpiler-center-actions {
   display: flex;
   flex-direction: column;

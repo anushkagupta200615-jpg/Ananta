@@ -11,6 +11,11 @@
  *  - POST /api/qpu/run
  */
 
+// Load .env for local dev/testing (no-op on Vercel, which has no .env file
+// and injects its own env vars directly; also a no-op if server.js already
+// loaded it earlier in this same process).
+try { require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') }); } catch (e) {}
+
 let DEFAULT_GEMINI_KEY = process.env.GEMINI_API_KEY || '';
 
 // If local .env or config exists (e.g. local dev), load it
@@ -58,6 +63,13 @@ let QBRAID_API_KEY = process.env.QBRAID_API_KEY || process.env.QBRAID_TOKEN || '
 const quizEngine = require('../ananta-backend/utils/quizEngine');
 const instructorStorage = require('../ananta-backend/utils/instructorStorage');
 const transpilerEngine = require('../ananta-backend/utils/transpilerEngine');
+
+// Real Authentication (shared with server.js so the two entry points cannot
+// drift out of sync on which routes are guarded - see authRoutes.js)
+const authRoutes = require('../ananta-backend/utils/authRoutes');
+
+// Real Multi-Framework Local Execution Bridge (Qiskit Aer / Cirq / PennyLane)
+const multiFrameworkClient = require('../ananta-backend/utils/multiFrameworkClient');
 
 // Physical Device Fleet Catalog (Baseline Reference)
 const QPU_DEVICES = ibmQuantum.REFERENCE_QPU_DEVICES;
@@ -178,6 +190,69 @@ module.exports = async function handler(req, res) {
   if (pathname === '/api/gemini' || pathname === '/gemini' || pathname === '/api/ai' || pathname === '/api/grok' || pathname === '/api/ai/tutor') {
     const geminiHandler = require('./gemini.js');
     return geminiHandler(req, res);
+  }
+
+  // ================= 0. AUTHENTICATION =================
+  // These routes and the instructor-route guard below were missing from
+  // this file entirely - real auth and instructor-data protection only
+  // existed in server.js's local-dev routing, so on the actual deployed
+  // Vercel site nobody could register a real account AND every
+  // /api/instructor/* endpoint was completely open to the public. Fixed by
+  // sharing the exact same handlers server.js uses (authRoutes.js).
+
+  if (pathname === '/api/auth/register' && req.method === 'POST') {
+    const body = await getParsedBody(req);
+    const { statusCode, body: json } = await authRoutes.handleRegister(body);
+    return sendJson(res, statusCode, json);
+  }
+  if (pathname === '/api/auth/login' && req.method === 'POST') {
+    const body = await getParsedBody(req);
+    const { statusCode, body: json } = await authRoutes.handleLogin(body);
+    return sendJson(res, statusCode, json);
+  }
+  if (pathname === '/api/auth/logout' && req.method === 'POST') {
+    const { statusCode, body: json } = await authRoutes.handleLogout(req.headers['authorization']);
+    return sendJson(res, statusCode, json);
+  }
+  if (pathname === '/api/auth/me' && req.method === 'GET') {
+    const { statusCode, body: json } = await authRoutes.handleMe(req.headers['authorization']);
+    return sendJson(res, statusCode, json);
+  }
+
+  // Guard every /api/instructor/* route below with the same real-session +
+  // role='instructor' check server.js uses - computed once here via the
+  // shared matcher list so it can never miss a route again.
+  const instructorAuthCheck = await authRoutes.checkInstructorAuth(pathname, req.method, req.headers['authorization']);
+  if (instructorAuthCheck && !instructorAuthCheck.ok) {
+    return sendJson(res, instructorAuthCheck.statusCode, { success: false, error: instructorAuthCheck.error });
+  }
+
+  // ================= REAL MULTI-FRAMEWORK EXECUTION =================
+  // (Qiskit Aer / Cirq / PennyLane - see ananta-backend/utils/multiFrameworkClient.js.
+  // On Vercel this honestly reports "no working Python interpreter" unless
+  // MULTIFRAMEWORK_SERVICE_URL points at a separately-deployed instance of
+  // ananta-backend/python/app.py - see that file's header for why serverless
+  // can't run this in-process.)
+  if (pathname === '/api/multiframework/status' && req.method === 'GET') {
+    try {
+      const probe = await multiFrameworkClient.probeFrameworks(['qiskit_aer', 'cirq', 'pennylane']);
+      return sendJson(res, 200, probe);
+    } catch (err) {
+      return sendJson(res, 503, { success: false, error: err.message });
+    }
+  }
+  if (pathname === '/api/multiframework/run' && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const { framework, qasm, numQubits, shots = 1024 } = body || {};
+      if (!framework || !qasm || !numQubits) {
+        return sendJson(res, 400, { success: false, error: 'framework, qasm, and numQubits are required' });
+      }
+      const result = await multiFrameworkClient.runOnFramework({ framework, qasm, numQubits, shots });
+      return sendJson(res, result.success ? 200 : 502, result);
+    } catch (err) {
+      return sendJson(res, 503, { success: false, error: err.message });
+    }
   }
 
   // ================= RESEARCH PAPER EXTRACTION ENDPOINTS =================
@@ -857,7 +932,7 @@ Return ONLY a valid JSON object matching this schema:
       const evalResult = quizEngine.evaluateSubmission({ answers, studentId, studentName });
       if (!evalResult.success) return sendJson(res, 400, evalResult);
 
-      instructorStorage.recordStudentProgress({
+      await instructorStorage.recordStudentProgress({
         studentId,
         studentName,
         cohortId,
@@ -875,7 +950,7 @@ Return ONLY a valid JSON object matching this schema:
   // 11a. GET /api/progress/summary
   if (pathname === '/api/progress/summary' && req.method === 'GET') {
     const studentId = reqUrl.searchParams.get('studentId') || 'std_curr_user';
-    const progress = instructorStorage.getStudentProgress(studentId);
+    const progress = await instructorStorage.getStudentProgress(studentId);
     return sendJson(res, 200, { success: true, ...progress });
   }
 
@@ -884,7 +959,7 @@ Return ONLY a valid JSON object matching this schema:
     try {
       const body = await getParsedBody(req);
       const { studentId, studentName, cohortId, challengeSolved, xpGained } = body || {};
-      const updated = instructorStorage.recordStudentProgress({
+      const updated = await instructorStorage.recordStudentProgress({
         studentId,
         studentName,
         cohortId,
@@ -899,7 +974,7 @@ Return ONLY a valid JSON object matching this schema:
 
   // 11c. GET /api/instructor/cohorts
   if (pathname === '/api/instructor/cohorts' && req.method === 'GET') {
-    const cohorts = instructorStorage.getCohorts();
+    const cohorts = await instructorStorage.getCohorts();
     return sendJson(res, 200, { success: true, count: cohorts.length, cohorts });
   }
 
@@ -907,7 +982,7 @@ Return ONLY a valid JSON object matching this schema:
   if (pathname === '/api/instructor/cohorts' && req.method === 'POST') {
     try {
       const body = await getParsedBody(req);
-      const newCohort = instructorStorage.createCohort(body);
+      const newCohort = await instructorStorage.createCohort({ ...body, ownerUserId: instructorAuthCheck.session.uid });
       return sendJson(res, 201, { success: true, cohort: newCohort });
     } catch (err) {
       return sendJson(res, 400, { success: false, error: err.message });
@@ -917,14 +992,14 @@ Return ONLY a valid JSON object matching this schema:
   // 11e. GET /api/instructor/cohort/:id/students
   if (pathname.startsWith('/api/instructor/cohort/') && pathname.endsWith('/students') && req.method === 'GET') {
     const cohortId = pathname.replace('/api/instructor/cohort/', '').replace('/students', '').trim();
-    const students = instructorStorage.getCohortStudents(cohortId);
+    const students = await instructorStorage.getCohortStudents(cohortId);
     return sendJson(res, 200, { success: true, cohortId, count: students.length, students });
   }
 
   // 11f. GET /api/instructor/analytics
   if (pathname === '/api/instructor/analytics' && req.method === 'GET') {
     const cohortId = reqUrl.searchParams.get('cohortId') || 'cohort_qc101';
-    const analytics = instructorStorage.getCohortAnalytics(cohortId);
+    const analytics = await instructorStorage.getCohortAnalytics(cohortId);
     return sendJson(res, 200, { success: true, ...analytics });
   }
 
@@ -932,7 +1007,7 @@ Return ONLY a valid JSON object matching this schema:
   if (pathname === '/api/instructor/assignments' && req.method === 'POST') {
     try {
       const body = await getParsedBody(req);
-      const newAsg = instructorStorage.createAssignment(body);
+      const newAsg = await instructorStorage.createAssignment(body);
       return sendJson(res, 201, { success: true, assignment: newAsg });
     } catch (err) {
       return sendJson(res, 400, { success: false, error: err.message });
@@ -942,7 +1017,7 @@ Return ONLY a valid JSON object matching this schema:
   // 11h. GET /api/instructor/export-gradebook
   if (pathname === '/api/instructor/export-gradebook' && req.method === 'GET') {
     const cohortId = reqUrl.searchParams.get('cohortId') || 'cohort_qc101';
-    const csvContent = instructorStorage.generateGradebookCSV(cohortId);
+    const csvContent = await instructorStorage.generateGradebookCSV(cohortId);
     const filename = `ananta_gradebook_${cohortId}_${Date.now()}.csv`;
 
     res.writeHead(200, {

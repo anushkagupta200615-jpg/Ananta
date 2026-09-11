@@ -388,6 +388,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabKey === 'transpiler' && window.transpilerDoctor) {
       setTimeout(() => {
         window.transpilerDoctor.renderTargetCode();
+        // CodeMirror measures line layout using the container's actual
+        // rendered size; TranspilerDoctor is constructed once at page load
+        // while this view is still hidden (display:none), so both editors
+        // need an explicit .refresh() the first time the view becomes
+        // visible or they're stuck showing line numbers with no text.
+        const td = window.transpilerDoctor;
+        if (td.sourceCodeArea && td.sourceCodeArea.codeMirror) td.sourceCodeArea.codeMirror.refresh();
+        if (td.targetCodeArea && td.targetCodeArea.codeMirror) td.targetCodeArea.codeMirror.refresh();
       }, 50);
     }
 
@@ -2894,13 +2902,17 @@ document.addEventListener('DOMContentLoaded', () => {
     'transpiler', 'vqe-chemistry', 'algorithms', 'research',
     'intuition', 'challenges', 'docs', 'login'
   ];
-  const isLoggedIn = updateNavUser();
+  updateNavUser();
   const hash = window.location.hash.replace('#', '');
 
+  // The app is freely explorable without signing in - real sign-in is only
+  // actually required server-side for instructor-only actions (cohort
+  // management, gradebooks, assignment dispatch), which already 401/403
+  // without a valid session regardless of what this client-side routing
+  // does. So there's no reason to gate the whole app behind a login screen;
+  // land everyone on Overview by default, same as any other tab.
   if (hash && validTabs.includes(hash)) {
     switchView(hash);
-  } else if (!isLoggedIn) {
-    switchView('login');
   } else {
     switchView('overview');
   }

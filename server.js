@@ -12,6 +12,11 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+// Load .env for local dev (DATABASE_URL, GEMINI_API_KEY, etc - see
+// .env.example). Vercel injects its own env vars directly and has no .env
+// file, so this is a silent no-op there.
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
 const PORT = process.env.PORT || 5500;
 const HOST = '127.0.0.1';
 
@@ -94,6 +99,7 @@ const multiFrameworkClient = require('./ananta-backend/utils/multiFrameworkClien
 
 // Real Authentication Service (scrypt password hashing + signed sessions)
 const authService = require('./ananta-backend/utils/authService');
+const authRoutes = require('./ananta-backend/utils/authRoutes');
 
 // Assessment & Instructor Subsystem
 const quizEngine = require('./ananta-backend/utils/quizEngine');
@@ -249,59 +255,35 @@ const server = http.createServer(async (req, res) => {
 
   // 0a. POST /api/auth/register
   if (pathname === '/api/auth/register' && req.method === 'POST') {
-    try {
-      const body = await parseRequestBody(req);
-      const result = authService.registerUser(body || {});
-      sendJson(res, 201, { success: true, ...result });
-      logTransaction('POST', pathname, 201, Date.now() - reqStart, { email: result.user.email });
-    } catch (err) {
-      const status = err.statusCode || 400;
-      sendJson(res, status, { success: false, error: err.message });
-      logTransaction('POST', pathname, status, Date.now() - reqStart, { error: err.message });
-    }
+    const body = await parseRequestBody(req);
+    const { statusCode, body: json } = await authRoutes.handleRegister(body);
+    sendJson(res, statusCode, json);
+    logTransaction('POST', pathname, statusCode, Date.now() - reqStart, { email: json?.user?.email });
     return;
   }
 
   // 0b. POST /api/auth/login
   if (pathname === '/api/auth/login' && req.method === 'POST') {
-    try {
-      const body = await parseRequestBody(req);
-      const result = authService.loginUser(body || {});
-      sendJson(res, 200, { success: true, ...result });
-      logTransaction('POST', pathname, 200, Date.now() - reqStart, { email: result.user.email });
-    } catch (err) {
-      const status = err.statusCode || 401;
-      sendJson(res, status, { success: false, error: err.message });
-      logTransaction('POST', pathname, status, Date.now() - reqStart, { error: err.message });
-    }
+    const body = await parseRequestBody(req);
+    const { statusCode, body: json } = await authRoutes.handleLogin(body);
+    sendJson(res, statusCode, json);
+    logTransaction('POST', pathname, statusCode, Date.now() - reqStart, { email: json?.user?.email });
     return;
   }
 
   // 0c. POST /api/auth/logout
   if (pathname === '/api/auth/logout' && req.method === 'POST') {
-    const token = (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '').trim();
-    const revoked = authService.revokeSessionToken(token);
-    sendJson(res, 200, { success: true, revoked });
-    logTransaction('POST', pathname, 200, Date.now() - reqStart, { revoked });
+    const { statusCode, body: json } = await authRoutes.handleLogout(req.headers['authorization']);
+    sendJson(res, statusCode, json);
+    logTransaction('POST', pathname, statusCode, Date.now() - reqStart, { revoked: json.revoked });
     return;
   }
 
   // 0d. GET /api/auth/me (session-restore / verify)
   if (pathname === '/api/auth/me' && req.method === 'GET') {
-    const check = authService.requireSession(req.headers['authorization']);
-    if (!check.ok) {
-      sendJson(res, check.statusCode, { success: false, error: check.error });
-      logTransaction('GET', pathname, check.statusCode, Date.now() - reqStart, { error: check.error });
-      return;
-    }
-    const user = authService.getUserById(check.session.uid);
-    if (!user) {
-      sendJson(res, 404, { success: false, error: 'Account no longer exists' });
-      logTransaction('GET', pathname, 404, Date.now() - reqStart, {});
-      return;
-    }
-    sendJson(res, 200, { success: true, user });
-    logTransaction('GET', pathname, 200, Date.now() - reqStart, { uid: user.id });
+    const { statusCode, body: json } = await authRoutes.handleMe(req.headers['authorization']);
+    sendJson(res, statusCode, json);
+    logTransaction('GET', pathname, statusCode, Date.now() - reqStart, { uid: json?.user?.id });
     return;
   }
 
@@ -1214,7 +1196,7 @@ Return ONLY a valid JSON object matching this schema:
       }
 
       // Persist progress to instructor database
-      instructorStorage.recordStudentProgress({
+      await instructorStorage.recordStudentProgress({
         studentId,
         studentName,
         cohortId,
@@ -1241,7 +1223,7 @@ Return ONLY a valid JSON object matching this schema:
   // 11a. GET /api/progress/summary (Learner Personal Progress)
   if (pathname === '/api/progress/summary' && req.method === 'GET') {
     const studentId = reqUrl.searchParams.get('studentId') || 'std_curr_user';
-    const progress = instructorStorage.getStudentProgress(studentId);
+    const progress = await instructorStorage.getStudentProgress(studentId);
     sendJson(res, 200, { success: true, ...progress });
     logTransaction('GET', pathname, 200, Date.now() - reqStart, { studentId });
     return;
@@ -1252,7 +1234,7 @@ Return ONLY a valid JSON object matching this schema:
     try {
       const body = await parseRequestBody(req);
       const { studentId, studentName, cohortId, challengeSolved, xpGained } = body || {};
-      const updated = instructorStorage.recordStudentProgress({
+      const updated = await instructorStorage.recordStudentProgress({
         studentId,
         studentName,
         cohortId,
@@ -1271,24 +1253,18 @@ Return ONLY a valid JSON object matching this schema:
 
   // Instructor-only routes below all require a valid signed session with
   // role='instructor' - verified server-side, not trusted from the client.
-  const isInstructorRoute = pathname === '/api/instructor/cohorts'
-    || (pathname.startsWith('/api/instructor/cohort/') && pathname.endsWith('/students'))
-    || pathname === '/api/instructor/analytics'
-    || pathname === '/api/instructor/assignments'
-    || pathname === '/api/instructor/export-gradebook';
-
-  if (isInstructorRoute) {
-    const authCheck = authService.requireRole(req.headers['authorization'], 'instructor');
-    if (!authCheck.ok) {
-      sendJson(res, authCheck.statusCode, { success: false, error: authCheck.error });
-      logTransaction(req.method, pathname, authCheck.statusCode, Date.now() - reqStart, { error: authCheck.error });
-      return;
-    }
+  // Shared with api/index.js via authRoutes.checkInstructorAuth so the two
+  // entry points cannot drift out of sync on which routes are guarded.
+  const instructorAuthCheck = await authRoutes.checkInstructorAuth(pathname, req.method, req.headers['authorization']);
+  if (instructorAuthCheck && !instructorAuthCheck.ok) {
+    sendJson(res, instructorAuthCheck.statusCode, { success: false, error: instructorAuthCheck.error });
+    logTransaction(req.method, pathname, instructorAuthCheck.statusCode, Date.now() - reqStart, { error: instructorAuthCheck.error });
+    return;
   }
 
   // 11c. GET /api/instructor/cohorts (List Active Classroom Cohorts)
   if (pathname === '/api/instructor/cohorts' && req.method === 'GET') {
-    const cohorts = instructorStorage.getCohorts();
+    const cohorts = await instructorStorage.getCohorts();
     sendJson(res, 200, { success: true, count: cohorts.length, cohorts });
     logTransaction('GET', pathname, 200, Date.now() - reqStart, { count: cohorts.length });
     return;
@@ -1298,7 +1274,7 @@ Return ONLY a valid JSON object matching this schema:
   if (pathname === '/api/instructor/cohorts' && req.method === 'POST') {
     try {
       const body = await parseRequestBody(req);
-      const newCohort = instructorStorage.createCohort(body);
+      const newCohort = await instructorStorage.createCohort({ ...body, ownerUserId: instructorAuthCheck.session.uid });
       sendJson(res, 201, { success: true, cohort: newCohort });
       logTransaction('POST', pathname, 201, Date.now() - reqStart, { code: newCohort.code });
       return;
@@ -1312,7 +1288,7 @@ Return ONLY a valid JSON object matching this schema:
   // 11e. GET /api/instructor/cohort/:id/students (Student Roster)
   if (pathname.startsWith('/api/instructor/cohort/') && pathname.endsWith('/students') && req.method === 'GET') {
     const cohortId = pathname.replace('/api/instructor/cohort/', '').replace('/students', '').trim();
-    const students = instructorStorage.getCohortStudents(cohortId);
+    const students = await instructorStorage.getCohortStudents(cohortId);
     sendJson(res, 200, { success: true, cohortId, count: students.length, students });
     logTransaction('GET', pathname, 200, Date.now() - reqStart, { cohortId, count: students.length });
     return;
@@ -1321,7 +1297,7 @@ Return ONLY a valid JSON object matching this schema:
   // 11f. GET /api/instructor/analytics (Classroom Metrics & Misconception Breakdown)
   if (pathname === '/api/instructor/analytics' && req.method === 'GET') {
     const cohortId = reqUrl.searchParams.get('cohortId') || 'cohort_qc101';
-    const analytics = instructorStorage.getCohortAnalytics(cohortId);
+    const analytics = await instructorStorage.getCohortAnalytics(cohortId);
     sendJson(res, 200, { success: true, ...analytics });
     logTransaction('GET', pathname, 200, Date.now() - reqStart, { cohortId, students: analytics.totalStudents });
     return;
@@ -1331,7 +1307,7 @@ Return ONLY a valid JSON object matching this schema:
   if (pathname === '/api/instructor/assignments' && req.method === 'POST') {
     try {
       const body = await parseRequestBody(req);
-      const newAsg = instructorStorage.createAssignment(body);
+      const newAsg = await instructorStorage.createAssignment(body);
       sendJson(res, 201, { success: true, assignment: newAsg });
       logTransaction('POST', pathname, 201, Date.now() - reqStart, { title: newAsg.title });
       return;
@@ -1345,7 +1321,7 @@ Return ONLY a valid JSON object matching this schema:
   // 11h. GET /api/instructor/export-gradebook (Direct Downloadable CSV Gradebook)
   if (pathname === '/api/instructor/export-gradebook' && req.method === 'GET') {
     const cohortId = reqUrl.searchParams.get('cohortId') || 'cohort_qc101';
-    const csvContent = instructorStorage.generateGradebookCSV(cohortId);
+    const csvContent = await instructorStorage.generateGradebookCSV(cohortId);
     const filename = `ananta_gradebook_${cohortId}_${Date.now()}.csv`;
 
     res.writeHead(200, {
