@@ -1186,17 +1186,6 @@ def circuit():
 
   // 2. Comprehensive Entanglement & Purity Quantifier
   getAdvancedEntanglementMetrics() {
-    // Real Tr(rho_q0^2) subsystem purity (not an inverse-participation-ratio
-    // over the full register, which is basis-dependent and doesn't measure
-    // entanglement at all - e.g. it wrongly reported 0.125 "purity" for a
-    // genuinely pure product state like H on every qubit).
-    const q0State = this.getSingleQubitReducedState(0);
-    const { purity, entropy: entropyQ0, schmidtRank } = QuantumCircuitEngine.purityAndEntropy2x2(
-      q0State.rho00, q0State.rho11, q0State.rho01_re, q0State.rho01_im
-    );
-    // Linear entropy of a single-qubit (dimension d=2) subsystem: d/(d-1) * (1-purity).
-    const linearEntropy = 2 * (1 - purity);
-
     // Real Wootters concurrence, generalized to ANY register size: check
     // every qubit pair and report the strongest pairwise entanglement link
     // found anywhere, instead of hardcoding the q0-q1 pair.
@@ -1212,6 +1201,23 @@ def circuit():
     const perQubitEntropy = Array.from({ length: this.numQubits }, (_, q) => this.getEntanglementEntropy(q));
     const entangledQubitCount = perQubitEntropy.filter((s) => s > 0.05).length;
     const maxEntropy = Math.max(0, ...perQubitEntropy);
+
+    // Purity/entropy/Schmidt rank reported as the register's headline
+    // numbers come from whichever qubit is ACTUALLY most entangled, not a
+    // qubit hardcoded to index 0. Reporting q0's numbers unconditionally
+    // was self-contradictory: a Bell pair built on q1/q2 with q0 left idle
+    // would show concurrence=1.00 (correctly the max over all pairs)
+    // alongside entropy=0.00 and purity=1.00 (q0's own, genuinely separable
+    // state) - concurrence and entropy flatly disagreeing about whether the
+    // register is entangled at all, because they were silently describing
+    // different qubits.
+    const representativeQubit = Math.max(0, perQubitEntropy.indexOf(maxEntropy));
+    const repState = this.getSingleQubitReducedState(representativeQubit);
+    const { purity, entropy: entropyRep, schmidtRank } = QuantumCircuitEngine.purityAndEntropy2x2(
+      repState.rho00, repState.rho11, repState.rho01_re, repState.rho01_im
+    );
+    // Linear entropy of a single-qubit (dimension d=2) subsystem: d/(d-1) * (1-purity).
+    const linearEntropy = 2 * (1 - purity);
 
     // After a projective measurement the register can still show per-qubit
     // entropy, but that is classical uncertainty about the outcome, not
@@ -1241,11 +1247,12 @@ def circuit():
     return {
       purity: parseFloat(purity.toFixed(4)),
       linearEntropy: parseFloat(linearEntropy.toFixed(4)),
-      vonNeumannEntropy: parseFloat(entropyQ0.toFixed(3)),
+      vonNeumannEntropy: parseFloat(entropyRep.toFixed(3)),
       concurrence: parseFloat(concurrence.toFixed(4)),
-      mutualInformation: parseFloat((2 * entropyQ0).toFixed(4)),
+      mutualInformation: parseFloat((2 * entropyRep).toFixed(4)),
       schmidtRank,
-      entanglementClass
+      entanglementClass,
+      representativeQubit
     };
   }
 

@@ -380,6 +380,15 @@ class CircuitTutor {
         auditResult = this.generateLocalFallback(payload);
       }
 
+      // The AI backend's JSON schema (circuitSummary/errors/tutorGuidance -
+      // see api/gemini.js's circuit-tutor prompt) never echoes mathMetrics
+      // back, so anything downstream that needs the REAL computed
+      // concurrence/entropy/entanglementClass (not the AI's own prose)
+      // must read it from here, not from auditResult - overwritten
+      // unconditionally so it's always the actual number just computed for
+      // this exact circuit, regardless of which path answered.
+      if (auditResult) auditResult.mathMetrics = mathMetrics;
+
       this.lastAuditResult = auditResult;
       this.renderAuditResults(auditResult);
 
@@ -460,27 +469,29 @@ class CircuitTutor {
       };
     }
 
-    const onlyH = distinctGates.length === 1 && distinctGates[0] === 'H' && swapCount === 0;
-    let summary, purpose;
-    if (onlyH && activeWires === 2 && singleGateCounts.H === 1 && cnotCount === 1) {
-      summary = 'Bell State Preparation (Bipartite Entanglement)';
-      purpose = 'A Hadamard puts one qubit into superposition, then a CNOT entangles it with the second qubit, producing a maximally entangled EPR pair. Used in quantum key distribution and teleportation.';
-    } else if (onlyH && activeWires === 3 && singleGateCounts.H === 1 && cnotCount === 2) {
-      summary = 'GHZ State (Tripartite Entanglement)';
-      purpose = 'A Hadamard followed by a chain of two CNOTs spreads superposition across all three qubits into a single maximally entangled state. Used in quantum secret sharing and metrology.';
-    } else {
-      const parts = distinctGates.map(g => `${GATE_NAMES[g] || g} (×${singleGateCounts[g]})`);
-      if (cnotCount) parts.push(`CNOT (×${cnotCount})`);
-      if (toffoliCount) parts.push(`Toffoli (×${toffoliCount})`);
-      if (swapCount) parts.push(`SWAP (×${swapCount})`);
-      const nameList = distinctGates.concat(
-        cnotCount ? ['CNOT'] : [], toffoliCount ? ['Toffoli'] : [], swapCount ? ['SWAP'] : []
-      ).join(', ');
-      summary = `Custom ${n}-Qubit Circuit: ${nameList}`;
-      purpose = `Applies ${parts.join(', ')} across a ${n}-qubit register. ` +
-        (entangled ? 'The resulting state is entangled — measuring one qubit affects the others.'
-                   : 'The resulting state is separable — each qubit can be described independently.');
-    }
+    // One description path for every circuit, driven entirely by the gates
+    // actually present and the real computed entanglementClass (Wootters
+    // concurrence + per-qubit entropy + monogamy, from
+    // quantum-engine.js's getAdvancedEntanglementMetrics - not a gate- or
+    // output-pattern lookup here). This used to special-case "exactly one H
+    // and exactly one CNOT on exactly 2 wires" as "Bell State Preparation"
+    // with a fixed sentence, which meant a circuit built any other way
+    // (extra phase gate, different gate order, wider register) fell through
+    // to generic "Custom Circuit" text even when it was still, physically,
+    // just as much a Bell pair.
+    const parts = distinctGates.map(g => `${GATE_NAMES[g] || g} (×${singleGateCounts[g]})`);
+    if (cnotCount) parts.push(`CNOT (×${cnotCount})`);
+    if (toffoliCount) parts.push(`Toffoli (×${toffoliCount})`);
+    if (swapCount) parts.push(`SWAP (×${swapCount})`);
+    const nameList = distinctGates.concat(
+      cnotCount ? ['CNOT'] : [], toffoliCount ? ['Toffoli'] : [], swapCount ? ['SWAP'] : []
+    ).join(', ');
+    const summary = `${n}-Qubit Circuit: ${nameList}`;
+    const entanglementClass = mathMetrics?.entanglementClass || (entangled ? 'Entangled Subsystem' : 'Separable Pure State');
+    const purpose = `Applies ${parts.join(', ')} across a ${n}-qubit register on ${activeWires} active wire${activeWires === 1 ? '' : 's'}. ` +
+      (entangled
+        ? `The resulting state is entangled (${entanglementClass}) — measuring one qubit changes what you'll find on the others.`
+        : 'The resulting state is separable — each qubit can be described independently.');
 
     const entanglementAnalysis = entangled
       ? `Entangled: Concurrence C = ${concurrence.toFixed(2)}, von Neumann Entropy S = ${entropy.toFixed(2)} ebits. Subsystems cannot be described independently.`
@@ -931,10 +942,21 @@ class CircuitTutor {
    */
   getHealthyConceptInfo(data) {
     const summary = (data.circuitSummary || '').toLowerCase();
-    if (summary.includes('bell') || summary.includes('entangle')) {
+    // Whether THIS circuit is genuinely entangled - and what kind - is
+    // decided from the real computed metrics (mathMetrics.entanglementClass,
+    // Wootters concurrence, per-qubit entropy), not by string-searching the
+    // AI's free-text summary for the word "bell". That string match was
+    // fragile in both directions: it would miss a genuine Bell pair the AI
+    // happened to describe as e.g. "EPR pair" instead of "bell", and it
+    // would fire on any unrelated mention of the word. mathMetrics is
+    // threaded onto every audit result unconditionally in runAudit(), so
+    // it's always the real number just computed for this exact circuit.
+    const concurrence = parseFloat(data.mathMetrics?.concurrence || 0);
+    const entanglementClass = data.mathMetrics?.entanglementClass || '';
+    if (concurrence > 0.05 || /entangl/i.test(entanglementClass)) {
       return {
-        title: 'Bipartite Bell State Synthesis & Non-Local Correlations',
-        explanation: 'Your circuit successfully synthesizes quantum entanglement, violating local realism and preparing states with maximum subsystem entropy S(ρ) = 1.000 ebits.',
+        title: entanglementClass || 'Entangled Quantum Subsystem',
+        explanation: `Your circuit produces real quantum entanglement: Wootters concurrence C = ${concurrence.toFixed(2)}, computed directly from the statevector (${entanglementClass || 'entangled'}).`,
         moduleId: 'module-07',
         moduleNum: 'Module 07',
         moduleTitle: 'Entanglement Entropy & Bell States',

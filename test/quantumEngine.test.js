@@ -224,3 +224,25 @@ test('4-qubit GHZ generalizes correctly (not hardcoded to 3 qubits): zero pairwi
   assert.ok(m.concurrence < 1e-3);
   assert.match(m.entanglementClass, /4-Partite GHZ-Type/);
 });
+
+/**
+ * getAdvancedEntanglementMetrics() used to compute purity/entropy/Schmidt
+ * rank from qubit 0's reduced state unconditionally, regardless of which
+ * qubits were actually entangled. A Bell pair built on q1/q2 with q0 left
+ * idle showed concurrence=1.00 (correctly the max over every pair) right
+ * next to entropy=0.00 and purity=1.00 (q0's own, genuinely separable
+ * state) - self-contradictory, since q0's numbers were being reported as
+ * if they described the whole register's entanglement.
+ */
+test('headline purity/entropy describe the actually-entangled qubit, not qubit 0 unconditionally', () => {
+  const QuantumCircuitEngine = loadEngine();
+  const engine = buildEngine(QuantumCircuitEngine, 3);
+  // Bell pair on q1-q2; q0 is left completely idle.
+  engine.apply1QGate('H', 1);
+  engine.applyCNOT(1, 2);
+  const m = engine.getAdvancedEntanglementMetrics();
+  assert.ok(Math.abs(m.concurrence - 1) < 1e-3, `expected concurrence ~1, got ${m.concurrence}`);
+  assert.ok(Math.abs(m.vonNeumannEntropy - 1) < 1e-3, `entropy must agree with concurrence, got ${m.vonNeumannEntropy}`);
+  assert.ok(Math.abs(m.purity - 0.5) < 1e-3, `purity must reflect the entangled qubit, got ${m.purity}`);
+  assert.equal(m.representativeQubit === 1 || m.representativeQubit === 2, true, 'representativeQubit must be one of the actually-entangled qubits, not the idle q0');
+});
