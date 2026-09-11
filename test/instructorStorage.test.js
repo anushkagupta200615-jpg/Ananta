@@ -7,9 +7,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, '..', 'ananta-backend', 'data');
+// Isolated scratch directory (not ananta-backend/data/) so running these
+// tests never touches the real committed seed files or local dev data.
+const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ananta-instructortest-'));
+process.env.ANANTA_DATA_DIR = DATA_DIR;
 const FILES = ['cohorts.json', 'students.json', 'assignments.json', 'submissions.json'].map((f) => path.join(DATA_DIR, f));
 
 function resetStore() {

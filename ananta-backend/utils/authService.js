@@ -32,7 +32,9 @@ const path = require('path');
 const crypto = require('crypto');
 const db = require('./db');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+// ANANTA_DATA_DIR lets tests point this at a scratch directory instead of
+// the real local data store (see instructorStorage.js for the same pattern).
+const DATA_DIR = process.env.ANANTA_DATA_DIR || path.join(__dirname, '..', 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SECRET_FILE = path.join(DATA_DIR, '.session_secret');
 const REVOKED_FILE = path.join(DATA_DIR, '.revoked_sessions.json');
