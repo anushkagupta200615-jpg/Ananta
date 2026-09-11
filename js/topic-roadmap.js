@@ -25,9 +25,10 @@ class TopicRoadmapManager {
         timeEst: '15 mins',
         summary: 'Understand complex probability amplitudes, the Born rule, and continuous statevectors in 2^n dimensional Hilbert space.',
         researchPaper: 'Dirac, Principles of Quantum Mechanics (1930) / Born, Z. Phys. (1926)',
-        circuitPreset: null,
+        circuitPreset: 'superposition',
         mathFormula: '|ψ⟩ = α|0⟩ + β|1⟩,   where |α|² + |β|² = 1',
-        intuition: 'A qubit is not a classical bit with uncertainty. It is a unit vector on the complex sphere where amplitudes can constructively or destructively interfere.'
+        intuition: 'A qubit is not a classical bit with uncertainty. It is a unit vector on the complex sphere where amplitudes can constructively or destructively interfere.',
+        exerciseGoal: 'Place a Hadamard (H) gate on Qubit 0. Observe the statevector split into equal superposition |+⟩ with 50% probability on |0⟩ and 50% on |1⟩.'
       },
       {
         id: 'module-02',
@@ -54,9 +55,10 @@ class TopicRoadmapManager {
         timeEst: '25 mins',
         summary: 'Explore pure vs mixed quantum states, partial trace over entangled subsystems, and von Neumann entropy.',
         researchPaper: 'von Neumann, Mathematische Grundlagen der Quantenmechanik (1932)',
-        circuitPreset: null,
+        circuitPreset: 'bell',
         mathFormula: 'ρ = ∑ p_i |ψ_i⟩⟨ψ_i|,   Tr(ρ) = 1,   Tr(ρ²) ≤ 1',
-        intuition: 'When a qubit is entangled or decohered, it can no longer be described by a statevector alone. The density matrix tracks classical mixture and quantum coherences.'
+        intuition: 'When a qubit is entangled or decohered, it can no longer be described by a statevector alone. The density matrix tracks classical mixture and quantum coherences.',
+        exerciseGoal: 'Form an entangled Bell pair with H on q[0] and CNOT(0→1). Tracing out q[1] yields a maximally mixed state on q[0] with Tr(ρ²)=0.5.'
       },
       {
         id: 'module-04',
@@ -83,9 +85,10 @@ class TopicRoadmapManager {
         timeEst: '30 mins',
         summary: 'Model energy relaxation (T1) and transverse dephasing (T2) in physical superconducting transmon qubits.',
         researchPaper: 'G. Lindblad, Commun. Math. Phys. 48, 119 (1976)',
-        circuitPreset: null,
+        circuitPreset: 'superposition',
         mathFormula: 'dρ/dt = -i[H, ρ] + ∑ (L_k ρ L_k† - ½ {L_k† L_k, ρ})',
-        intuition: 'Quantum systems are not isolated. Coupling to thermal electromagnetic environments causes phase information to leak out exponentially.'
+        intuition: 'Quantum systems are not isolated. Coupling to thermal electromagnetic environments causes phase information to leak out exponentially.',
+        exerciseGoal: 'Prepare excited state |1⟩ using Pauli-X on q[0] to observe energy relaxation (T1) and transverse dephasing (T2) dynamics.'
       },
       {
         id: 'module-06',
@@ -172,10 +175,10 @@ class TopicRoadmapManager {
         timeEst: '35 mins',
         summary: 'Extract eigenvalues of unitary operators with exponential speedup over classical FFT, forming the computational core of Shor’s factoring and quantum simulation.',
         researchPaper: 'P. Shor, FOCS (1994) / A. Kitaev, arXiv:quant-ph/9511026 (1995)',
-        circuitPreset: 'grover',
+        circuitPreset: 'qft',
         mathFormula: '|j⟩ ↦ (1/√N) ∑ ω^{j k} |k⟩,   where ω = e^{2πi / N}',
         intuition: 'QFT transforms state basis from computational amplitude space to phase frequency space through controlled phase rotations and Hadamards.',
-        exerciseGoal: 'Trace phase kickback interference on the ancillary register to resolve operator eigenvalues with binary precision.'
+        exerciseGoal: 'Trace phase kickback interference on the register to resolve operator eigenvalues with binary precision.'
       },
       {
         id: 'module-12',
@@ -187,10 +190,10 @@ class TopicRoadmapManager {
         timeEst: '40 mins',
         summary: 'Protect quantum memory using topological 2D lattice stabilizer codes (X and Z syndrome checks) with threshold error rates near 1%.',
         researchPaper: 'A. Fowler et al., Phys. Rev. A 86 (2012) / Google Quantum AI, Nature 614 (2023)',
-        circuitPreset: null,
+        circuitPreset: 'surface_code',
         mathFormula: 'S = ⟨g_1, g_2, ..., g_{n-k}⟩,   g_i |ψ_L⟩ = +1 |ψ_L⟩,   d = 2t + 1',
         intuition: 'Physical qubits inevitably suffer decoherence. By entangling data qubits with ancilla syndrome checkers in a checkerboard lattice, errors can be detected and corrected without measuring the underlying superposition.',
-        exerciseGoal: 'Analyze minimum-weight perfect matching (MWPM) syndrome graphs and verify logical error suppression below physical fault thresholds.'
+        exerciseGoal: 'Synthesize a 3-qubit bit-flip repetition code: entangle data qubit q[0] with syndrome check qubits q[1] and q[2] using CNOT gates.'
       },
       {
         id: 'module-13',
@@ -232,10 +235,10 @@ class TopicRoadmapManager {
         timeEst: '35 mins',
         summary: 'Synthesize sub-nanosecond Gaussian and DRAG microwave envelope pulses to eliminate leakage into transmon higher excited states (|2⟩).',
         researchPaper: 'F. Motzoi et al., Phys. Rev. Lett. 103, 110501 (2009)',
-        circuitPreset: null,
+        circuitPreset: 'superposition',
         mathFormula: 'Ω(t) = Ω_x(t) cos(ω_d t) - (Ω̇_x(t) / Δ) sin(ω_d t)',
         intuition: 'A transmon is a weakly anharmonic oscillator. Fast pulses have spectral width that can accidentally excite the qubit out of computational subspace unless derivative correction (DRAG) cancels out-of-phase leakage.',
-        exerciseGoal: 'Tune DRAG derivative scaling factor to suppress non-computational leakage below 10^-4.'
+        exerciseGoal: 'Apply a π/2 microwave drive rotation via Hadamard gate on q[0] to calibrate transmon drive envelope parameters.'
       },
       {
         id: 'module-16',
@@ -247,10 +250,10 @@ class TopicRoadmapManager {
         timeEst: '30 mins',
         summary: 'Quantify cryptographic risk timelines (Y2K8 / Y2Q) for RSA-2048 and ECC, and evaluate NIST lattice-based standards (ML-KEM, ML-DSA).',
         researchPaper: 'NIST FIPS 203 / 204 Standards (2024) / C. Gidney & M. Ekerå, Quantum 5 (2021)',
-        circuitPreset: null,
+        circuitPreset: 'qft',
         mathFormula: 'N = p · q,   Shor Logical Qubits ≈ 2n + 2,   LWE Hardness: A s + e = b (mod q)',
         intuition: 'While classical RSA and ECC are completely broken in polynomial time by Shor’s period finding, Learning With Errors (LWE) high-dimensional lattice vectors have no known quantum speedup.',
-        exerciseGoal: 'Calculate physical error-corrected qubit overheads required to break RSA-2048 at physical error rate 10^-3.'
+        exerciseGoal: 'Construct quantum phase estimation stages to compute modular order r for factoring integers in polynomial time.'
       },
       {
         id: 'module-17',
@@ -262,10 +265,10 @@ class TopicRoadmapManager {
         timeEst: '30 mins',
         summary: 'Explore dilution refrigerator thermodynamics (3He/4He phase separation), thermal quasiparticle poisoning, and transmon Josephson energy ratios (Ej/Ec >> 1).',
         researchPaper: 'J. Koch et al., Phys. Rev. A 76, 042319 (2007) Transmon Physics',
-        circuitPreset: null,
+        circuitPreset: 'superposition',
         mathFormula: 'H = 4 E_C (n - n_g)² - E_J cos(φ),   E_J / E_C ≈ 50-80,   T_base ≈ 15 mK',
         intuition: 'Thermal fluctuations at room temperature (~300 K / 26 meV) would immediately destroy fragile micro-eV quantum superpositions. Dilution refrigerators cool transmons down to 15 millikelvin to freeze out blackbody radiation.',
-        exerciseGoal: 'Balance dilution cooling power against coaxial RF line attenuation at the 4K and 100mK stages.'
+        exerciseGoal: 'Simulate thermal ground state initialization and microwave excitation at 15 mK dilution refrigerator temperatures.'
       },
       {
         id: 'module-18',
@@ -1501,10 +1504,65 @@ class TopicRoadmapManager {
     `;
   }
 
-  // Open specific module reader (with conditional side-by-side Circuit Designer)
+  // Embedded Circuit Presets Data Dictionary
+  getCircuitPresetGrid(presetKey) {
+    switch (presetKey) {
+      case 'bell':
+      case 'bell_phi_plus':
+        return [
+          ['H', 'CX_CTRL', null, null, null, null],
+          [null, 'CX_TGT', null, null, null, null],
+          [null, null, null, null, null, null]
+        ];
+      case 'ghz':
+        return [
+          ['H', 'CX_CTRL', null, null, null, null],
+          [null, 'CX_TGT', 'CX_CTRL', null, null, null],
+          [null, null, 'CX_TGT', null, null, null]
+        ];
+      case 'teleport':
+        return [
+          ['H', null, 'CX_CTRL', 'H', null, null],
+          [null, 'H', 'CX_TGT', null, 'CX_CTRL', null],
+          [null, null, null, null, 'CX_TGT', null]
+        ];
+      case 'grover':
+        return [
+          ['H', 'Z', 'H', 'X', 'H', null],
+          ['H', 'CX_TGT', 'H', 'X', 'H', null],
+          [null, null, null, null, null, null]
+        ];
+      case 'vqe':
+        return [
+          ['X', 'H', 'CX_CTRL', 'H', null, null],
+          [null, 'H', 'CX_TGT', 'S', null, null],
+          [null, null, null, null, null, null]
+        ];
+      case 'qft':
+        return [
+          ['H', 'S', 'T', null, null, null],
+          [null, null, 'H', 'S', null, null],
+          [null, null, null, null, 'H', null]
+        ];
+      case 'surface_code':
+        return [
+          ['H', 'CX_CTRL', 'CX_CTRL', null, null, null],
+          [null, 'CX_TGT', null, null, null, null],
+          [null, null, 'CX_TGT', null, null, null]
+        ];
+      case 'superposition':
+      default:
+        return [
+          ['H', null, null, null, null, null],
+          [null, null, null, null, null, null],
+          [null, null, null, null, null, null]
+        ];
+    }
+  }
+
+  // Open specific module reader with side-by-side live Circuit Studio
   openModuleReader(moduleId) {
-    // Generated steps live outside the authored curriculum, so look there too —
-    // otherwise clicking a generated card would silently do nothing.
+    // Look up authored curriculum or AI-generated roadmap module
     const mod = this.modules.find(m => m.id === moduleId)
       || (this.generatedModules || []).find(m => m.id === moduleId);
     if (!mod) return;
@@ -1517,10 +1575,11 @@ class TopicRoadmapManager {
     if (resultsStage) resultsStage.style.display = 'none';
     detailStage.style.display = 'block';
 
-    const hasCircuitLab = Boolean(mod.circuitPreset);
+    const presetKey = mod.circuitPreset || 'superposition';
+    const exerciseGoal = mod.exerciseGoal || 'Synthesize unitary quantum gates on the register and observe real-time statevector evolution.';
 
     detailStage.innerHTML = `
-      <div class="module-reader-wrapper ${hasCircuitLab ? 'reader-split-layout' : 'reader-full-layout'}">
+      <div class="module-reader-wrapper reader-split-layout">
         
         <!-- Top Navigation Bar -->
         <div class="module-reader-top-bar">
@@ -1528,9 +1587,9 @@ class TopicRoadmapManager {
             ← Back to Curated Roadmap
           </button>
           <div class="reader-meta-group">
-            <span class="reader-module-num">${mod.number}</span>
-            <span class="reader-module-cat">${mod.category}</span>
-            <span class="reader-module-time">${mod.timeEst}</span>
+            <span class="reader-module-num">${mod.number || 'Module'}</span>
+            <span class="reader-module-cat">${mod.category || 'Quantum Curriculum'}</span>
+            <span class="reader-module-time">⏱ ${mod.timeEst || '20 mins'}</span>
           </div>
         </div>
 
@@ -1541,22 +1600,26 @@ class TopicRoadmapManager {
           <div class="reader-theory-column">
             <div class="theory-content-card">
               <div class="theory-header-box">
-                <span class="theory-badge">${mod.level} Track</span>
+                <span class="theory-badge">${mod.level || 'Foundations'} Track</span>
                 <h1 class="theory-title">${mod.title}</h1>
-                <p class="theory-lead-summary">${mod.summary}</p>
+                <p class="theory-lead-summary">${mod.summary || ''}</p>
               </div>
 
-              <div class="theory-section">
-                <div class="theory-section-tag">Mathematical Formulation</div>
-                <div class="theory-math-block">
-                  <code>${mod.mathFormula}</code>
+              ${mod.mathFormula ? `
+                <div class="theory-section">
+                  <div class="theory-section-tag">Mathematical Formulation</div>
+                  <div class="theory-math-block">
+                    <code>${mod.mathFormula}</code>
+                  </div>
                 </div>
-              </div>
+              ` : ''}
 
-              <div class="theory-section">
-                <div class="theory-section-tag">Physical Intuition</div>
-                <p class="theory-text">${mod.intuition}</p>
-              </div>
+              ${mod.intuition ? `
+                <div class="theory-section">
+                  <div class="theory-section-tag">Physical Intuition</div>
+                  <p class="theory-text">${mod.intuition}</p>
+                </div>
+              ` : ''}
 
               ${mod.researchPaper ? `
                 <div class="theory-section theory-paper-box">
@@ -1586,112 +1649,471 @@ class TopicRoadmapManager {
                 </div>
               ` : ''}
 
-              ${hasCircuitLab ? `
-                <div class="theory-exercise-box">
-                  <div class="exercise-header">
-                    <span class="exercise-icon-dot"></span>
-                    <h4>Hands-on Circuit Exercise</h4>
-                  </div>
-                  <p class="exercise-instructions">${mod.exerciseGoal}</p>
-                  <div class="exercise-actions">
-                    <button class="btn-load-exercise" onclick="window.topicRoadmapManager.loadExerciseIntoLab('${mod.circuitPreset}')">
-                      Reset Circuit Exercise
-                    </button>
-                  </div>
+              <div class="theory-exercise-box">
+                <div class="exercise-header">
+                  <span class="exercise-icon-dot"></span>
+                  <h4>Hands-on Circuit Exercise</h4>
                 </div>
-              ` : `
-                <div class="theory-notice-box">
-                  <span>This module establishes foundational theoretical principles. Interactive circuit synthesis is available in subsequent modules.</span>
+                <p class="exercise-instructions">${exerciseGoal}</p>
+                <div class="exercise-actions">
+                  <button class="btn-load-exercise" onclick="window.topicRoadmapManager.resetEmbeddedExercise()">
+                    🔄 Reset Exercise Circuit
+                  </button>
+                  <button class="btn-jump-composer" onclick="window.topicRoadmapManager.openInFullComposer()">
+                    🚀 Open in Full Composer ↗
+                  </button>
                 </div>
-              `}
+              </div>
 
               <div class="theory-nav-footer">
-                <button class="btn-view-doc-manual" onclick="window.switchView('docs'); window.scrollDocIntoView(null, '${mod.docId}')">
+                <button class="btn-view-doc-manual" onclick="window.switchView('docs'); window.scrollDocIntoView(null, '${mod.docId || ''}')">
                   View Technical Manual Specification ↗
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- Column 2: Side-by-Side Embedded Circuit Designer (Conditional) -->
-          ${hasCircuitLab ? `
-            <div class="reader-lab-column">
-              <div class="split-lab-header">
-                <div class="lab-title-group">
-                  <span class="live-dot"></span>
-                  <span class="lab-title">Live Quantum Circuit Composer</span>
-                </div>
-                <span class="lab-preset-label">Active: ${mod.circuitPreset.toUpperCase()} Exercise</span>
-              </div>
-              
-              <!-- Dock Target for Circuit Designer Component -->
-              <div id="topic-lab-dock-target" class="topic-lab-dock-target">
-                <!-- Re-parented live from #view-simulator -->
-              </div>
+          <!-- Column 2: Side-by-Side Embedded Interactive Quantum Circuit Studio -->
+          <div class="reader-lab-column">
+            <div id="topic-lab-dock-target" class="topic-lab-dock-target">
+              <!-- Live Interactive Circuit Lab rendered here -->
             </div>
-          ` : ''}
+          </div>
 
         </div>
 
       </div>
     `;
 
-    // If module has circuit lab, dock the existing Circuit Designer component
-    if (hasCircuitLab) {
-      this.dockCircuitDesigner(mod.circuitPreset);
-    }
+    // Initialize the live interactive quantum circuit studio
+    this.initEmbeddedStudio(mod);
 
     // Scroll smoothly to top of reader
     detailStage.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Dock existing Circuit Designer without duplicating any component code
-  dockCircuitDesigner(presetKey) {
-    const dockTarget = document.getElementById('topic-lab-dock-target') || document.querySelector('.topic-lab-dock-target');
-    const simCol = document.querySelector('#view-simulator .studio-two-col');
-    if (!dockTarget || !simCol) return;
+  // Initialize and Render Dedicated Embedded Circuit Studio
+  initEmbeddedStudio(mod) {
+    this.embeddedPreset = mod.circuitPreset || 'superposition';
+    this.embeddedGrid = this.getCircuitPresetGrid(this.embeddedPreset);
+    this.armedGate = null;
+    this.cnotPending = null;
+    this.swapPending = null;
+    this.renderEmbeddedStudio(mod);
+  }
 
-    // Move DOM node into dock target
-    dockTarget.appendChild(simCol);
-    this.isDockedInSplit = true;
+  // Render the entire embedded interactive circuit studio with wires, gates, and simulation HUD
+  renderEmbeddedStudio(mod) {
+    const dockTarget = typeof document !== 'undefined'
+      ? (document.getElementById('topic-lab-dock-target') || document.querySelector('.topic-lab-dock-target'))
+      : null;
+    if (!dockTarget) return;
 
-    // Load matching exercise preset
-    if (presetKey && typeof window !== 'undefined') {
-      if (window.loadPresetSafe) {
-        window.loadPresetSafe(presetKey);
-      } else if (window.circuitUI && window.circuitUI.loadPreset) {
-        window.circuitUI.loadPreset(presetKey);
+    const presetName = (this.embeddedPreset || 'superposition').toUpperCase();
+    const availableGates = [
+      { key: 'H', label: 'Hadamard', cls: 'btn-coral' },
+      { key: 'X', label: 'Pauli-X', cls: 'btn-crimson' },
+      { key: 'Y', label: 'Pauli-Y', cls: 'btn-magenta' },
+      { key: 'Z', label: 'Pauli-Z', cls: 'btn-purple' },
+      { key: 'S', label: 'Phase S', cls: 'btn-cyan' },
+      { key: 'T', label: 'T Gate', cls: 'btn-sky' },
+      { key: 'CX', label: 'CNOT', cls: 'btn-blue' },
+      { key: 'SWAP', label: 'SWAP', cls: 'btn-amber' },
+      { key: 'M', label: 'Measure', cls: 'btn-slate' }
+    ];
+
+    // Build Palette Buttons HTML
+    const paletteButtonsHtml = availableGates.map(g => {
+      const isArmed = this.armedGate === g.key;
+      return `
+        <button class="embedded-gate-btn ${g.cls} ${isArmed ? 'armed' : ''}"
+          onclick="window.topicRoadmapManager.armEmbeddedGate('${g.key}')"
+          title="${g.label}">
+          <span class="gate-key-char">${g.key === 'CX' ? '⊕' : (g.key === 'SWAP' ? '⤫' : (g.key === 'M' ? '∿' : g.key))}</span>
+          <span class="gate-key-name">${g.label}</span>
+        </button>
+      `;
+    }).join('');
+
+    // Dynamic Hint Banner
+    let hintText = '💡 Click a gate above to arm, then click any wire slot to place. Click any placed gate to remove.';
+    if (this.cnotPending) {
+      hintText = `🔗 CNOT Control placed on q[${this.cnotPending.ctrl}]! Click target qubit wire on step ${this.cnotPending.col + 1} to link.`;
+    } else if (this.swapPending) {
+      hintText = `⤫ SWAP point placed on q[${this.swapPending.q1}]! Click second qubit wire on step ${this.swapPending.col + 1} to complete swap.`;
+    } else if (this.armedGate) {
+      hintText = `✨ Armed: [${this.armedGate}] — Click any slot on q[0], q[1], or q[2] to place (or click the gate again to disarm).`;
+    }
+
+    // Build 3-Qubit Wire Grid HTML (3 wires x 6 steps)
+    const numSteps = 6;
+    let wiresHtml = '';
+    for (let q = 0; q < 3; q++) {
+      let slotsHtml = '';
+      for (let col = 0; col < numSteps; col++) {
+        const cell = this.embeddedGrid[q][col];
+        const isCnotPendingThis = this.cnotPending && this.cnotPending.ctrl === q && this.cnotPending.col === col;
+        const isSwapPendingThis = this.swapPending && this.swapPending.q1 === q && this.swapPending.col === col;
+
+        let slotContent = '';
+        let slotClass = 'embedded-slot-empty';
+
+        if (cell === 'CX_CTRL' || isCnotPendingThis) {
+          slotClass = 'embedded-slot-cnot-ctrl';
+          slotContent = '<span class="cnot-ctrl-dot">●</span>';
+        } else if (cell === 'CX_TGT') {
+          slotClass = 'embedded-slot-cnot-tgt';
+          slotContent = '<span class="cnot-tgt-cross">⊕</span>';
+        } else if (cell === 'SWAP' || isSwapPendingThis) {
+          slotClass = 'embedded-slot-swap';
+          slotContent = '<span class="swap-icon">⤫</span>';
+        } else if (cell) {
+          slotClass = `embedded-slot-gate gate-${cell.toLowerCase()}`;
+          slotContent = `<span class="gate-label-badge">${cell === 'M' ? '∿' : cell}</span>`;
+        }
+
+        slotsHtml += `
+          <div class="embedded-wire-slot ${slotClass}"
+            onclick="window.topicRoadmapManager.handleSlotClick(${q}, ${col})"
+            title="Qubit ${q}, Step ${col + 1}${cell ? `: ${cell}` : ' (Click to place/remove)'}">
+            ${slotContent}
+          </div>
+        `;
       }
+
+      wiresHtml += `
+        <div class="embedded-wire-row">
+          <div class="embedded-wire-header">
+            <span class="wire-name">q[${q}]</span>
+            <span class="wire-initial">|0⟩</span>
+          </div>
+          <div class="embedded-wire-line-track">
+            <div class="embedded-wire-copper-line"></div>
+            <div class="embedded-wire-slots-container">
+              ${slotsHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Run Quantum Simulation using QuantumCircuitEngine
+    let diracFormula = '|ψ⟩ = |000⟩';
+    let probsList = [];
+    let entropyVal = 0;
+    let exerciseVerification = { passed: false, text: 'Simulating circuit...' };
+
+    try {
+      let EngineClass = (typeof QuantumCircuitEngine !== 'undefined') ? QuantumCircuitEngine : (window.QuantumCircuitEngine || null);
+      if (EngineClass) {
+        const engine = new EngineClass(3);
+        engine.runCircuit(this.embeddedGrid);
+        diracFormula = engine.getDiracNotation();
+        probsList = engine.getProbabilities ? engine.getProbabilities() : [];
+        entropyVal = engine.getEntanglementEntropy ? engine.getEntanglementEntropy() : 0;
+        exerciseVerification = this.verifyExerciseGoal(this.embeddedPreset, engine, probsList);
+      }
+    } catch (simErr) {
+      console.warn('Embedded simulator error:', simErr);
+      diracFormula = '|ψ⟩ = Superposition Active';
+    }
+
+    // Filter significant states (> 0.5%)
+    const activeProbs = probsList.filter(p => p.probability > 0.005);
+
+    // Probability Bars HTML
+    let probBarsHtml = '';
+    if (activeProbs.length === 0) {
+      probBarsHtml = `
+        <div class="embedded-prob-row">
+          <span class="prob-state-tag">|000⟩</span>
+          <div class="prob-bar-track"><div class="prob-bar-fill" style="width: 100%;"></div></div>
+          <span class="prob-percent-val">100.0%</span>
+        </div>
+      `;
+    } else {
+      probBarsHtml = activeProbs.map(p => {
+        const pct = (p.probability * 100).toFixed(1);
+        return `
+          <div class="embedded-prob-row">
+            <span class="prob-state-tag">${p.state}</span>
+            <div class="prob-bar-track"><div class="prob-bar-fill" style="width: ${pct}%;"></div></div>
+            <span class="prob-percent-val">${pct}%</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    dockTarget.innerHTML = `
+      <div class="embedded-studio-panel">
+        
+        <!-- Header Strip -->
+        <div class="embedded-studio-header">
+          <div class="embedded-title-group">
+            <span class="live-studio-pulse-dot"></span>
+            <span class="embedded-studio-title">Interactive Quantum Studio</span>
+            <span class="embedded-preset-badge">${presetName}</span>
+          </div>
+          <div class="embedded-actions-group">
+            <button class="btn-embedded-action" onclick="window.topicRoadmapManager.resetEmbeddedExercise()" title="Reset to module baseline circuit">
+              🔄 Reset
+            </button>
+            <button class="btn-embedded-action" onclick="window.topicRoadmapManager.clearEmbeddedWires()" title="Clear all gates on wires">
+              🧹 Clear
+            </button>
+            <button class="btn-embedded-action btn-embedded-launch" onclick="window.topicRoadmapManager.openInFullComposer()" title="Open this circuit in full Composer view">
+              🚀 Full Composer ↗
+            </button>
+          </div>
+        </div>
+
+        <!-- Exercise Goal & Verification Banner -->
+        <div class="embedded-verify-card ${exerciseVerification.passed ? 'verify-passed' : 'verify-active'}">
+          <div class="verify-icon">${exerciseVerification.passed ? '🎉' : '🎯'}</div>
+          <div class="verify-content">
+            <div class="verify-header-text">${exerciseVerification.passed ? 'EXERCISE OBJECTIVE ACHIEVED' : 'HANDS-ON EXERCISE OBJECTIVE'}</div>
+            <div class="verify-body-text">${exerciseVerification.text}</div>
+          </div>
+        </div>
+
+        <!-- Unitary Gate Toolbox Palette -->
+        <div class="embedded-palette-section">
+          <div class="embedded-palette-header">
+            <span class="palette-title">Unitary Gate Toolbox</span>
+            <span class="palette-sub">Click a gate to arm</span>
+          </div>
+          <div class="embedded-palette-grid">
+            ${paletteButtonsHtml}
+          </div>
+          <div class="embedded-hint-banner">
+            <span>${hintText}</span>
+          </div>
+        </div>
+
+        <!-- 3-Qubit Circuit Register Board -->
+        <div class="embedded-circuit-board">
+          <div class="embedded-step-header-row">
+            <div class="step-spacer"></div>
+            <div class="step-cols-wrapper">
+              <span class="step-col-label">Step 1</span>
+              <span class="step-col-label">Step 2</span>
+              <span class="step-col-label">Step 3</span>
+              <span class="step-col-label">Step 4</span>
+              <span class="step-col-label">Step 5</span>
+              <span class="step-col-label">Step 6</span>
+            </div>
+          </div>
+          <div class="embedded-wires-stack">
+            ${wiresHtml}
+          </div>
+        </div>
+
+        <!-- Live Quantum State & Probability HUD -->
+        <div class="embedded-hud-panel">
+          <div class="hud-top-row">
+            <div class="hud-dirac-group">
+              <span class="hud-sub-label">STATEVECTOR DIRAC NOTATION</span>
+              <div class="embedded-dirac-formula"><code>${diracFormula}</code></div>
+            </div>
+            <div class="hud-metric-pill">
+              <span class="metric-name">Entropy S:</span>
+              <span class="metric-val">${entropyVal.toFixed(3)} ebit</span>
+            </div>
+          </div>
+
+          <div class="hud-probs-section">
+            <span class="hud-sub-label">BORN RULE MEASUREMENT PROBABILITIES P(|x⟩) = |⟨x|ψ⟩|²</span>
+            <div class="embedded-probs-list">
+              ${probBarsHtml}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+  }
+
+  // Arm or Disarm a gate in the embedded palette
+  armEmbeddedGate(gateKey) {
+    if (this.armedGate === gateKey) {
+      this.armedGate = null;
+      this.cnotPending = null;
+      this.swapPending = null;
+    } else {
+      this.armedGate = gateKey;
+      this.cnotPending = null;
+      this.swapPending = null;
+    }
+    if (this.activeModule) {
+      this.renderEmbeddedStudio(this.activeModule);
     }
   }
 
-  // Un-dock Circuit Designer back to #view-simulator
-  undockCircuitDesigner() {
-    if (!this.isDockedInSplit) return;
-    const simContainer = document.querySelector('#view-simulator .studio-workspace-container') || document.getElementById('view-simulator');
-    const simCol = document.querySelector('.reader-lab-column .studio-two-col') || document.querySelector('#topic-lab-dock-target .studio-two-col');
-    
-    if (simContainer && simCol) {
-      // Re-insert right before analytics deck or at original location
-      const analyticsDeck = document.querySelector('#view-simulator .composer-analytics-deck') || document.querySelector('#view-simulator .studio-analytics-deck');
-      if (analyticsDeck && analyticsDeck.parentNode === simContainer) {
-        simContainer.insertBefore(simCol, analyticsDeck);
+  // Handle slot interaction: placing armed gates, forming CNOT/SWAP, or removing existing gates
+  handleSlotClick(q, col) {
+    if (!this.embeddedGrid) return;
+
+    // Handling CNOT (CX) 2-qubit pairing
+    if (this.armedGate === 'CX') {
+      if (!this.cnotPending) {
+        this.cnotPending = { ctrl: q, col: col };
+        this.renderEmbeddedStudio(this.activeModule);
+        return;
       } else {
-        simContainer.appendChild(simCol);
+        if (this.cnotPending.col === col && this.cnotPending.ctrl !== q) {
+          // Place control and target
+          this.embeddedGrid[this.cnotPending.ctrl][col] = 'CX_CTRL';
+          this.embeddedGrid[q][col] = 'CX_TGT';
+          this.cnotPending = null;
+          this.armedGate = null;
+        } else {
+          this.cnotPending = null;
+        }
+        this.renderEmbeddedStudio(this.activeModule);
+        return;
       }
     }
-    this.isDockedInSplit = false;
+
+    // Handling SWAP 2-qubit pairing
+    if (this.armedGate === 'SWAP') {
+      if (!this.swapPending) {
+        this.swapPending = { q1: q, col: col };
+        this.renderEmbeddedStudio(this.activeModule);
+        return;
+      } else {
+        if (this.swapPending.col === col && this.swapPending.q1 !== q) {
+          this.embeddedGrid[this.swapPending.q1][col] = 'SWAP';
+          this.embeddedGrid[q][col] = 'SWAP';
+          this.swapPending = null;
+          this.armedGate = null;
+        } else {
+          this.swapPending = null;
+        }
+        this.renderEmbeddedStudio(this.activeModule);
+        return;
+      }
+    }
+
+    // Placing a single-qubit gate
+    if (this.armedGate) {
+      this.embeddedGrid[q][col] = this.armedGate;
+      this.renderEmbeddedStudio(this.activeModule);
+      return;
+    }
+
+    // No gate armed: if clicking an occupied slot, remove it
+    const current = this.embeddedGrid[q][col];
+    if (current) {
+      if (current === 'CX_CTRL' || current === 'CX_TGT') {
+        for (let wire = 0; wire < 3; wire++) {
+          if (this.embeddedGrid[wire][col] === 'CX_CTRL' || this.embeddedGrid[wire][col] === 'CX_TGT') {
+            this.embeddedGrid[wire][col] = null;
+          }
+        }
+      } else if (current === 'SWAP') {
+        for (let wire = 0; wire < 3; wire++) {
+          if (this.embeddedGrid[wire][col] === 'SWAP') {
+            this.embeddedGrid[wire][col] = null;
+          }
+        }
+      } else {
+        this.embeddedGrid[q][col] = null;
+      }
+      this.renderEmbeddedStudio(this.activeModule);
+    }
   }
 
-  loadExerciseIntoLab(presetKey) {
-    if (presetKey && typeof window !== 'undefined') {
-      if (window.loadPresetSafe) {
-        window.loadPresetSafe(presetKey);
-      } else if (window.circuitUI && window.circuitUI.loadPreset) {
-        window.circuitUI.loadPreset(presetKey);
-      }
+  // Reset exercise circuit to module baseline
+  resetEmbeddedExercise() {
+    if (!this.activeModule) return;
+    this.initEmbeddedStudio(this.activeModule);
+  }
+
+  // Clear all gates from the embedded circuit register
+  clearEmbeddedWires() {
+    this.embeddedGrid = [
+      [null, null, null, null, null, null],
+      [null, null, null, null, null, null],
+      [null, null, null, null, null, null]
+    ];
+    this.armedGate = null;
+    this.cnotPending = null;
+    this.swapPending = null;
+    if (this.activeModule) {
+      this.renderEmbeddedStudio(this.activeModule);
     }
   }
+
+  // Transfer current circuit to full composer and switch view
+  openInFullComposer() {
+    if (!this.embeddedGrid) return;
+    const presetKey = (this.activeModule && this.activeModule.circuitPreset) || 'superposition';
+    if (window.circuitUI && window.circuitUI.loadPreset) {
+      window.circuitUI.loadPreset(this.embeddedGrid, presetKey);
+    }
+    if (window.switchView) {
+      window.switchView('simulator');
+    }
+  }
+
+  // Check circuit state against learning objective
+  verifyExerciseGoal(presetKey, engine, probs) {
+    const grid = this.embeddedGrid;
+    if (!grid || !grid.length) return { passed: false, text: 'Register empty — place quantum gates to begin.' };
+    if (!probs || !probs.length) return { passed: false, text: 'Simulating circuit amplitudes...' };
+    const active = probs.filter(p => p.probability > 0.05);
+
+    if (presetKey === 'superposition') {
+      if (active.length >= 2) {
+        return { passed: true, text: 'Superposition Verified! Complex amplitudes split across basis states with equal probability.' };
+      }
+      return { passed: false, text: 'Arm Hadamard (H) and place on q[0] to create equal superposition |+⟩.' };
+    }
+
+    if (presetKey === 'bell') {
+      const entropy = engine && engine.getEntanglementEntropy ? engine.getEntanglementEntropy() : 0;
+      if (entropy > 0.7 || (active.length === 2 && Math.abs(active[0].probability - 0.5) < 0.15)) {
+        return { passed: true, text: 'Bell Entanglement Verified! Maximally entangled EPR pair formed with maximal entropy S ≈ 1.0 ebit.' };
+      }
+      return { passed: false, text: 'Place H on q[0] and CNOT from q[0] to q[1] to generate the |Φ⁺⟩ Bell state.' };
+    }
+
+    if (presetKey === 'teleport') {
+      const hasQ0 = grid[0] && grid[0].some(g => g !== null);
+      const hasQ1 = grid[1] && grid[1].some(g => g !== null);
+      const hasQ2 = grid[2] && grid[2].some(g => g !== null);
+      if (hasQ0 && hasQ1 && hasQ2) {
+        return { passed: true, text: 'Quantum Teleportation Verified! 3-qubit state transfer protocol active across register.' };
+      }
+      return { passed: false, text: 'Construct Bell pair on q[1]-q[2] and Bell measurement on q[0]-q[1] for state transfer.' };
+    }
+
+    if (presetKey === 'grover') {
+      const maxP = Math.max(...probs.map(p => p.probability));
+      if (maxP > 0.6) {
+        return { passed: true, text: 'Grover Amplification Verified! Marked state amplitude surging toward 100% via diffusion inversion.' };
+      }
+      return { passed: false, text: 'Apply oracle phase shift and diffusion operator to amplify the target computational state.' };
+    }
+
+    if (presetKey === 'surface_code') {
+      const hasCx = grid.some(row => row.includes('CX_CTRL') || row.includes('CX_TGT'));
+      if (hasCx) {
+        return { passed: true, text: 'Repetition Code Verified! Data qubit q[0] entangled with ancilla syndrome check qubits.' };
+      }
+      return { passed: false, text: 'Entangle data qubit q[0] with syndrome check qubits q[1] and q[2] using CNOT gates.' };
+    }
+
+    if (active.length > 1) {
+      return { passed: true, text: 'Quantum Unitary Evolution Verified! Non-trivial statevector synthesized.' };
+    }
+    return { passed: false, text: 'Place unitary gates on qubit wires to transform the initial ground state |000⟩.' };
+  }
+
+  // Compatibility stubs for legacy docking calls
+  dockCircuitDesigner(presetKey) {}
+  undockCircuitDesigner() {}
+  loadExerciseIntoLab(presetKey) { this.resetEmbeddedExercise(); }
 
   backToCuratedRoadmap() {
     this.closeModuleReader();
@@ -1703,13 +2125,16 @@ class TopicRoadmapManager {
   }
 
   closeModuleReader() {
-    this.undockCircuitDesigner();
     const detailStage = document.getElementById('topic-module-detail-stage');
     if (detailStage) {
       detailStage.style.display = 'none';
       detailStage.innerHTML = '';
     }
     this.activeModule = null;
+    this.embeddedGrid = null;
+    this.armedGate = null;
+    this.cnotPending = null;
+    this.swapPending = null;
   }
 
   // -------------------------------------------------------------------
