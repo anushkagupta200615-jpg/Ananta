@@ -320,7 +320,7 @@ module.exports = async function handler(req, res) {
 
   if (pathname === '/api/summarize' && req.method === 'POST') {
     const body = await getParsedBody(req);
-    const { url, text } = body || {};
+    const { url, text, doi, title: titleHint, arxiv } = body || {};
     if (!url && !text) return sendJson(res, 400, { error: 'provide either url or text' });
 
     try {
@@ -329,7 +329,7 @@ module.exports = async function handler(req, res) {
       let fullTextAvailable = Boolean(text);
       let sourceUrl = url || null;
       if (!sourceText && url) {
-        const extracted = await extractTextFromUrl(url);
+        const extracted = await extractTextFromUrl(url, { doi, title: titleHint, arxiv });
         sourceText = extracted.text;
         title = extracted.title;
         fullTextAvailable = Boolean(extracted.fullTextAvailable);

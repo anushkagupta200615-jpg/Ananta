@@ -1284,29 +1284,50 @@ document.addEventListener('DOMContentLoaded', () => {
   // Per-paper on-card AI Summary toggle
   window.__PAPER_AI_SUMMARY_CACHE = window.__PAPER_AI_SUMMARY_CACHE || {};
 
-  function renderPaperSummaryDrawer(drawer, paper, summaryText, fullTextAvailable, sourceLabel) {
-    const badgeText = fullTextAvailable
-      ? 'AI Synthesized — Full Paper Analyzed'
-      : 'AI Synthesized — Abstract Only (full text unavailable)';
-    const badgeColor = fullTextAvailable ? '#34d399' : '#fbbf24';
-    const clickHint = paper.pdfUrl ? '<span class="paper-ai-summary-open-hint">Click to open the real paper ↗</span>' : '';
+  // Where a card should send the reader: an open-access copy the backend
+  // actually managed to read beats the stored link (17 of the stored PDF
+  // links are 404/403), and a DOI resolver always lands on the real record.
+  function bestPaperLink(paper, resolvedUrl) {
+    return resolvedUrl
+      || paper.pdfUrl
+      || (paper.doi ? `https://doi.org/${paper.doi}` : null);
+  }
+
+  function renderPaperSummaryDrawer(drawer, paper, info) {
+    const { summaryText, fullTextAvailable, aiUsed, aiModel, aiError, sourceChars, resolvedUrl, cachedLabel } = info;
+
+    // Say exactly what produced this text. Claiming "AI Synthesized" while
+    // quietly serving an offline extract of the same abstract is what made
+    // the feature look broken.
+    let badge;
+    let badgeColor;
+    if (aiUsed) {
+      badge = fullTextAvailable
+        ? `AI (${aiModel || 'model'}) — full paper read${sourceChars ? `, ${Math.round(sourceChars / 1000)}k chars` : ''}`
+        : `AI (${aiModel || 'model'}) — abstract only, no readable full text`;
+      badgeColor = fullTextAvailable ? '#34d399' : '#fbbf24';
+    } else {
+      badge = `Offline extract — AI unavailable${aiError ? `: ${String(aiError).slice(0, 90)}` : ''}`;
+      badgeColor = '#f87171';
+    }
+    if (cachedLabel) badge = `${cachedLabel} · ${badge}`;
+
+    const link = bestPaperLink(paper, resolvedUrl);
+    const clickHint = link ? '<span class="paper-ai-summary-open-hint">Click to open the real paper ↗</span>' : '';
 
     drawer.innerHTML = `
       <div class="paper-ai-summary-header">
         <span>🧠 Executive Research Summary</span>
-        <span style="font-size: 10px; opacity: 0.85; color: ${badgeColor};">${sourceLabel || badgeText}</span>
+        <span style="font-size: 10px; opacity: 0.85; color: ${badgeColor};">${badge}</span>
       </div>
       <p class="paper-ai-summary-text">${summaryText}</p>
       ${clickHint}
     `;
 
-    // Clicking the summary box opens the paper's own real source URL
-    // (paper.pdfUrl, never a fixed/shared link) - it was previously only
-    // reachable via the small separate "View PDF" button.
-    if (paper.pdfUrl) {
+    if (link) {
       drawer.style.cursor = 'pointer';
       drawer.title = 'Open the real research paper';
-      drawer.onclick = () => window.open(paper.pdfUrl, '_blank', 'noopener,noreferrer');
+      drawer.onclick = () => window.open(link, '_blank', 'noopener,noreferrer');
     } else {
       drawer.style.cursor = 'default';
       drawer.onclick = null;
@@ -1332,7 +1353,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.__PAPER_AI_SUMMARY_CACHE[paperId]) {
       const cached = window.__PAPER_AI_SUMMARY_CACHE[paperId];
-      renderPaperSummaryDrawer(drawer, paper, cached.summary, cached.fullTextAvailable, `Instant Cached — ${cached.fullTextAvailable ? 'Full Paper' : 'Abstract Only'}`);
+      renderPaperSummaryDrawer(drawer, paper, { ...cached, cachedLabel: 'Cached' });
       return;
     }
 
@@ -1349,9 +1370,12 @@ document.addEventListener('DOMContentLoaded', () => {
       // already shown on the card - that shortcut is why the "summary"
       // used to look identical to the card text (there was nothing more
       // in it to condense).
+      // Send the identifiers too: when the stored PDF link is dead or
+      // paywalled the backend uses the DOI/arXiv id to find an open-access
+      // copy instead of silently falling back to this same blurb.
       const requestBody = paper.pdfUrl
-        ? { url: paper.pdfUrl }
-        : { text: paper.abstract, title: paper.title };
+        ? { url: paper.pdfUrl, doi: paper.doi || null, title: paper.title, arxiv: paper.arxiv || null }
+        : { text: paper.abstract, title: paper.title, doi: paper.doi || null };
 
       const res = await fetch('/api/summarize', {
         method: 'POST',
@@ -1359,16 +1383,24 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(requestBody)
       });
       const data = await res.json();
-      const summary = data.summary || paper.abstract;
-      const fullTextAvailable = Boolean(data.fullTextAvailable);
-      window.__PAPER_AI_SUMMARY_CACHE[paperId] = { summary, fullTextAvailable };
-
-      renderPaperSummaryDrawer(drawer, paper, summary, fullTextAvailable);
+      const info = {
+        summaryText: data.summary || paper.abstract,
+        fullTextAvailable: Boolean(data.fullTextAvailable),
+        aiUsed: Boolean(data.aiUsed),
+        aiModel: data.aiModel || null,
+        aiError: data.aiError || null,
+        sourceChars: data.sourceChars || 0,
+        resolvedUrl: data.sourceUrl || null
+      };
+      window.__PAPER_AI_SUMMARY_CACHE[paperId] = info;
+      renderPaperSummaryDrawer(drawer, paper, info);
     } catch (err) {
-      drawer.innerHTML = `
-        <div class="paper-ai-summary-header" style="color: #f87171;">Summary Notice</div>
-        <p class="paper-ai-summary-text" style="color: #cbd5e1;">${paper.abstract}</p>
-      `;
+      renderPaperSummaryDrawer(drawer, paper, {
+        summaryText: paper.abstract,
+        fullTextAvailable: false,
+        aiUsed: false,
+        aiError: `request failed (${err.message})`
+      });
     }
   };
 

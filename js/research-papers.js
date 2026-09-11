@@ -19,7 +19,9 @@ const QUANTUM_RESEARCH_PAPERS = [
     abstract: 'The legendary paper that birthed the field of quantum computing. Feynman argues that classical computers cannot efficiently simulate quantum mechanical phenomena without an exponential slowdown, proposing instead that computation itself should be built from quantum mechanical elements.',
     doi: '10.1007/BF02650179',
     arxiv: null,
-    pdfUrl: 'https://web.eecs.umich.edu/~qstout/pap/Feynman82.pdf',
+    // Previous link (web.eecs.umich.edu/~qstout/pap/Feynman82.pdf) went 404;
+    // this mirror serves the real scan with an extractable text layer.
+    pdfUrl: 'https://s2.smu.edu/~mitch/class/5395/papers/feynman-quantum-1981.pdf',
     circuitPreset: 'superposition',
     bibtex: `@article{feynman1982simulating,
   title={Simulating physics with computers},
