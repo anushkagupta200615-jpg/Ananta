@@ -5,6 +5,7 @@
 
 const { resolveTranscript, sampleSuggestions } = require('../ananta-backend/utils/voiceIntent');
 const { prepareTurn } = require('../ananta-backend/utils/voiceAgent');
+const ragRetrieval = require('../ananta-backend/rag/ragRetrieval');
 
 /**
  * Credentials come from the environment or from the caller, never from source.
@@ -664,6 +665,27 @@ ${responseSchemaNote}`;
         userQuestion
       } = payload;
 
+      // Real RAG: when the student asks something, retrieve the actual
+      // semantically-nearest passages from the 80+-topic knowledge corpus
+      // (js/quantum-knowledge-data.js, embedded once by
+      // ananta-backend/rag/buildIndex.js) via cosine similarity over real
+      // Gemini embeddings - not keyword matching, not fabricated context.
+      // Silently contributes nothing if the index hasn't been built yet or
+      // no key is configured (ragRetrieval.retrieve returns []).
+      let ragContextBlock = '';
+      if (userQuestion) {
+        try {
+          const ragKey = getApiKey(req);
+          const hits = await ragRetrieval.retrieve(userQuestion, ragKey, 3);
+          if (hits.length) {
+            ragContextBlock = `\nRELEVANT KNOWLEDGE-BASE PASSAGES (retrieved by semantic similarity to the student's question - cite these if they answer it; ignore if irrelevant to a circuit-specific question):\n` +
+              hits.map((h, i) => `[${i + 1}] ${h.title} (similarity ${h.similarity.toFixed(2)}):\n${h.text}`).join('\n\n');
+          }
+        } catch (e) {
+          console.warn('[circuit-tutor] RAG retrieval skipped:', e.message);
+        }
+      }
+
       const systemPrompt = `You are the Principal Quantum Computing Professor & Interactive Circuit Tutor for Ananta Quantum Studio (SIH Problem Statement 26140).
 Your goal is to guide students building quantum circuits by providing:
 1. WHAT THEY ARE MAKING: Accurately identify the quantum state or algorithm being implemented.
@@ -675,6 +697,7 @@ STRICT ANTI-HALLUCINATION RULES:
 - DO NOT invent gates, qubits, or state probabilities not present in the ground truth.
 - If the circuit is empty, tell the student to place gates to begin.
 - If errors are present, explain the physical reason (e.g. Born rule collapse, Clifford involution H^2 = I) and give a clear fix.
+- If retrieved knowledge-base passages are provided below and the student's question is conceptual (not circuit-specific), ground your answer in them and reference the topic title. Never state a retrieved passage's content as if it applied to the student's circuit unless it actually does.
 
 GROUND TRUTH SIMULATOR DATA:
 - Register Size: ${numQubits || 3} Qubits, Active Depth: ${activeDepth || 0}
@@ -690,6 +713,7 @@ ${gridStructure || '(empty circuit)'}
 - Deterministic Static Analysis Findings:
 ${JSON.stringify(deterministicErrors || [])}
 ${userQuestion ? `- Student Question: "${userQuestion}"` : ''}
+${ragContextBlock}
 
 You MUST return ONLY a valid JSON object matching this schema:
 {

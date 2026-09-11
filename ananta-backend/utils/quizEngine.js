@@ -376,10 +376,39 @@ function evaluateSubmission({ answers = {}, studentId = 'student_anon', studentN
   };
 }
 
+/**
+ * Human-readable label + domain for a misconceptionKey, derived directly
+ * from the question that carries it in QUESTION_BANK - the single source of
+ * truth. This replaces what used to be a separate hardcoded
+ * "commonMisconceptions" list in instructorStorage.js that had no relation
+ * to what students had actually gotten wrong; that list is gone now, and
+ * instructor analytics instead aggregate real missedMisconceptions arrays
+ * recorded per submission (see evaluateSubmission above) and look up their
+ * label here.
+ */
+const MISCONCEPTION_INDEX = (() => {
+  const index = {};
+  for (const q of QUESTION_BANK) {
+    if (!q.misconceptionKey || index[q.misconceptionKey]) continue;
+    const domain = QUIZ_DOMAINS.find(d => d.id === q.topic);
+    const label = q.misconceptionKey
+      .split('_')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    index[q.misconceptionKey] = { label, topic: q.topic, domainName: domain ? domain.name : q.topic };
+  }
+  return index;
+})();
+
+function getMisconceptionInfo(key) {
+  return MISCONCEPTION_INDEX[key] || { label: key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '), topic: 'general', domainName: 'General' };
+}
+
 module.exports = {
   QUIZ_DOMAINS,
   QUESTION_BANK,
   getQuizCatalog,
   getQuizQuestions,
-  evaluateSubmission
+  evaluateSubmission,
+  getMisconceptionInfo
 };

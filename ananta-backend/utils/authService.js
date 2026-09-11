@@ -6,23 +6,31 @@
  * with genuine server-verified accounts:
  *   - Passwords hashed with scrypt (Node's built-in crypto, no native
  *     dependency), per-user random salt, timing-safe comparison.
- *   - Session tokens are self-contained and signed with HMAC-SHA256 using a
- *     secret generated once with crypto.randomBytes and persisted to disk
- *     (ananta-backend/data/.session_secret, gitignored) - never hardcoded.
- *   - A revocation list (also file-backed) lets /api/auth/logout actually
- *     invalidate a token before its natural expiry, since stateless tokens
- *     can't otherwise be revoked.
- *   - Basic in-memory login-attempt throttling per email to blunt trivial
- *     brute forcing.
+ *   - Session tokens are self-contained and signed with HMAC-SHA256.
+ *   - A revocation list lets /api/auth/logout actually invalidate a token
+ *     before its natural expiry, since stateless tokens can't otherwise be
+ *     revoked.
+ *   - Login-attempt throttling per email to blunt trivial brute forcing.
  *
- * Storage is a JSON file (ananta-backend/data/users.json), consistent with
- * how the rest of this backend already persists data (instructorStorage.js,
- * assignments.json, cohorts.json, etc) - no new database dependency.
+ * Storage is DUAL-MODE, decided by db.isConfigured() (i.e. whether
+ * DATABASE_URL is set):
+ *   - DB mode (ananta-backend/utils/db.js, a real Postgres connection -
+ *     Supabase in this project): the production path. Required on any
+ *     serverless host (Vercel) because the local filesystem there is
+ *     read-only outside /tmp and not shared across invocations, so a JSON
+ *     file can't durably hold real accounts.
+ *   - File mode (ananta-backend/data/users.json): local/offline dev only,
+ *     so `node server.js` still works with zero setup. Never the
+ *     production path - it's clearly a fallback, not a second "real" store.
+ *
+ * Every exported function is async now (even the file-mode path, wrapped in
+ * a resolved Promise) so callers never need to know which backend is live.
  */
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const db = require('./db');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
@@ -33,63 +41,51 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const SCRYPT_KEYLEN = 64;
 const MAX_LOGIN_ATTEMPTS = 8;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const VALID_ROLES = new Set(['explorer', 'instructor']);
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// --------------------------------------------------------------------
+// Session secret
+// --------------------------------------------------------------------
+let cachedSecret = null;
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-function loadSessionSecret() {
+function getSessionSecret() {
+  if (cachedSecret) return cachedSecret;
+  if (process.env.ANANTA_SESSION_SECRET) {
+    cachedSecret = process.env.ANANTA_SESSION_SECRET;
+    return cachedSecret;
+  }
+  if (db.isConfigured()) {
+    // A database is configured, implying a real (likely serverless)
+    // deployment. A filesystem-persisted secret would not survive across
+    // invocations there (or would be regenerated per cold start, silently
+    // invalidating every existing session) - fail loudly instead so the
+    // operator sets a real secret once, rather than sessions randomly
+    // breaking in production.
+    throw new Error(
+      'ANANTA_SESSION_SECRET must be set when DATABASE_URL is configured. ' +
+      'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))" ' +
+      'and set it in your deployment environment variables.'
+    );
+  }
   ensureDataDir();
   if (fs.existsSync(SECRET_FILE)) {
     const existing = fs.readFileSync(SECRET_FILE, 'utf8').trim();
-    if (existing) return existing;
+    if (existing) { cachedSecret = existing; return cachedSecret; }
   }
   const generated = crypto.randomBytes(32).toString('hex');
   fs.writeFileSync(SECRET_FILE, generated, { mode: 0o600 });
-  return generated;
+  cachedSecret = generated;
+  return cachedSecret;
 }
 
-// Env var takes precedence for real deployments; otherwise a real secret is
-// generated once and persisted locally - never a hardcoded literal.
-const SESSION_SECRET = process.env.ANANTA_SESSION_SECRET || loadSessionSecret();
-
-function loadUsers() {
-  ensureDataDir();
-  if (!fs.existsSync(USERS_FILE)) return [];
-  try {
-    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')) || [];
-  } catch (e) {
-    console.error('[AuthService] Corrupt users.json, refusing to overwrite. Error:', e.message);
-    throw new Error('User store is unreadable. Contact the server operator.');
-  }
-}
-
-function saveUsers(users) {
-  ensureDataDir();
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
-
-function loadRevoked() {
-  ensureDataDir();
-  if (!fs.existsSync(REVOKED_FILE)) return {};
-  try {
-    return JSON.parse(fs.readFileSync(REVOKED_FILE, 'utf8')) || {};
-  } catch (e) {
-    return {};
-  }
-}
-
-function saveRevoked(map) {
-  ensureDataDir();
-  // Prune expired entries so this file doesn't grow forever.
-  const now = Date.now();
-  const pruned = {};
-  for (const [jti, exp] of Object.entries(map)) {
-    if (exp > now) pruned[jti] = exp;
-  }
-  fs.writeFileSync(REVOKED_FILE, JSON.stringify(pruned));
-}
-
+// --------------------------------------------------------------------
+// Password hashing
+// --------------------------------------------------------------------
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.scryptSync(password, salt, SCRYPT_KEYLEN).toString('hex');
@@ -105,37 +101,31 @@ function verifyPassword(password, stored) {
   return crypto.timingSafeEqual(candidate, expected);
 }
 
+// --------------------------------------------------------------------
+// Session tokens (HMAC-signed, stateless payload + a revocation lookup)
+// --------------------------------------------------------------------
 function base64url(buf) {
   return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
-
 function base64urlDecode(str) {
   str = str.replace(/-/g, '+').replace(/_/g, '/');
   while (str.length % 4) str += '=';
   return Buffer.from(str, 'base64');
 }
-
 function sign(payload) {
   const json = JSON.stringify(payload);
-  const sig = crypto.createHmac('sha256', SESSION_SECRET).update(json).digest();
+  const sig = crypto.createHmac('sha256', getSessionSecret()).update(json).digest();
   return `${base64url(json)}.${base64url(sig)}`;
 }
-
 function issueSessionToken(user) {
   const now = Date.now();
   const payload = {
-    uid: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    jti: crypto.randomBytes(9).toString('hex'),
-    iat: now,
-    exp: now + SESSION_TTL_MS
+    uid: user.id, email: user.email, name: user.name, role: user.role,
+    jti: crypto.randomBytes(9).toString('hex'), iat: now, exp: now + SESSION_TTL_MS
   };
   return { token: sign(payload), payload };
 }
-
-function verifySessionToken(token) {
+function decodeAndVerifySignature(token) {
   if (!token || typeof token !== 'string' || !token.includes('.')) {
     return { valid: false, error: 'Malformed session token' };
   }
@@ -146,8 +136,7 @@ function verifySessionToken(token) {
   } catch (e) {
     return { valid: false, error: 'Malformed session payload' };
   }
-
-  const expectedSig = crypto.createHmac('sha256', SESSION_SECRET).update(JSON.stringify(payload)).digest();
+  const expectedSig = crypto.createHmac('sha256', getSessionSecret()).update(JSON.stringify(payload)).digest();
   const actualSig = base64urlDecode(sigPart);
   if (expectedSig.length !== actualSig.length || !crypto.timingSafeEqual(expectedSig, actualSig)) {
     return { valid: false, error: 'Invalid session signature' };
@@ -155,64 +144,169 @@ function verifySessionToken(token) {
   if (!payload.exp || Date.now() > payload.exp) {
     return { valid: false, error: 'Session expired' };
   }
-
-  const revoked = loadRevoked();
-  if (revoked[payload.jti]) {
-    return { valid: false, error: 'Session was logged out' };
-  }
-
   return { valid: true, payload };
 }
 
-function revokeSessionToken(token) {
-  const { valid, payload } = verifySessionToken(token);
-  if (!valid || !payload) return false;
-  const revoked = loadRevoked();
-  revoked[payload.jti] = payload.exp;
-  saveRevoked(revoked);
-  return true;
+// --------------------------------------------------------------------
+// Storage backend: DB (Supabase Postgres) when configured, else file
+// --------------------------------------------------------------------
+async function findUserByEmail(email) {
+  if (db.isConfigured()) {
+    await db.ensureMigrated();
+    const res = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    return res.rows[0] ? rowToUser(res.rows[0]) : null;
+  }
+  const users = loadUsersFile();
+  return users.find((u) => u.email === email) || null;
 }
 
-// --- Login-attempt throttling (in-memory, per server process) ---
-const loginAttempts = new Map(); // email -> { count, windowStart }
+async function findUserById(id) {
+  if (db.isConfigured()) {
+    await db.ensureMigrated();
+    const res = await db.query('SELECT * FROM users WHERE id = $1', [id]);
+    return res.rows[0] ? rowToUser(res.rows[0]) : null;
+  }
+  const users = loadUsersFile();
+  return users.find((u) => u.id === id) || null;
+}
 
-function checkLoginThrottle(email) {
+async function insertUser(user) {
+  if (db.isConfigured()) {
+    await db.ensureMigrated();
+    await db.query(
+      `INSERT INTO users (id, name, email, password_hash, role, created_at) VALUES ($1,$2,$3,$4,$5,$6)`,
+      [user.id, user.name, user.email, user.passwordHash, user.role, user.createdAt]
+    );
+    return;
+  }
+  const users = loadUsersFile();
+  users.push(user);
+  saveUsersFile(users);
+}
+
+function rowToUser(row) {
+  return {
+    id: row.id, name: row.name, email: row.email, passwordHash: row.password_hash,
+    role: row.role, createdAt: (row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at)
+  };
+}
+
+function loadUsersFile() {
+  ensureDataDir();
+  if (!fs.existsSync(USERS_FILE)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')) || [];
+  } catch (e) {
+    console.error('[AuthService] Corrupt users.json, refusing to overwrite. Error:', e.message);
+    throw new Error('User store is unreadable. Contact the server operator.');
+  }
+}
+function saveUsersFile(users) {
+  ensureDataDir();
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
+
+async function isSessionRevoked(jti) {
+  if (db.isConfigured()) {
+    await db.ensureMigrated();
+    const res = await db.query('SELECT 1 FROM revoked_sessions WHERE jti = $1 AND expires_at > now()', [jti]);
+    return res.rows.length > 0;
+  }
+  const revoked = loadRevokedFile();
+  return Boolean(revoked[jti]);
+}
+async function markSessionRevoked(jti, expiresAtMs) {
+  if (db.isConfigured()) {
+    await db.ensureMigrated();
+    await db.query(
+      `INSERT INTO revoked_sessions (jti, expires_at) VALUES ($1, to_timestamp($2 / 1000.0)) ON CONFLICT (jti) DO NOTHING`,
+      [jti, expiresAtMs]
+    );
+    return;
+  }
+  const revoked = loadRevokedFile();
+  revoked[jti] = expiresAtMs;
+  saveRevokedFile(revoked);
+}
+function loadRevokedFile() {
+  ensureDataDir();
+  if (!fs.existsSync(REVOKED_FILE)) return {};
+  try { return JSON.parse(fs.readFileSync(REVOKED_FILE, 'utf8')) || {}; } catch (e) { return {}; }
+}
+function saveRevokedFile(map) {
+  ensureDataDir();
   const now = Date.now();
-  const entry = loginAttempts.get(email);
-  if (!entry || now - entry.windowStart > LOGIN_WINDOW_MS) {
+  const pruned = {};
+  for (const [jti, exp] of Object.entries(map)) if (exp > now) pruned[jti] = exp;
+  fs.writeFileSync(REVOKED_FILE, JSON.stringify(pruned));
+}
+
+// --------------------------------------------------------------------
+// Login-attempt throttling
+// --------------------------------------------------------------------
+// DB mode: a real, durable, cross-instance-consistent counter row per
+// email - this is what actually works correctly on serverless, where an
+// in-memory Map is silently per-instance and gives no real protection.
+// File mode: in-memory Map, fine for a single long-lived local process.
+const memoryLoginAttempts = new Map();
+
+async function checkLoginThrottle(email) {
+  const now = Date.now();
+  if (db.isConfigured()) {
+    await db.ensureMigrated();
+    const res = await db.query('SELECT attempt_count, window_start FROM login_attempts WHERE email = $1', [email]);
+    const row = res.rows[0];
+    if (!row) return { blocked: false };
+    const windowStart = new Date(row.window_start).getTime();
+    if (now - windowStart > LOGIN_WINDOW_MS) return { blocked: false };
+    if (row.attempt_count >= MAX_LOGIN_ATTEMPTS) {
+      return { blocked: true, retryAfterMs: LOGIN_WINDOW_MS - (now - windowStart) };
+    }
     return { blocked: false };
   }
-  if (entry.count >= MAX_LOGIN_ATTEMPTS) {
-    const retryAfterMs = LOGIN_WINDOW_MS - (now - entry.windowStart);
-    return { blocked: true, retryAfterMs };
-  }
+  const entry = memoryLoginAttempts.get(email);
+  if (!entry || now - entry.windowStart > LOGIN_WINDOW_MS) return { blocked: false };
+  if (entry.count >= MAX_LOGIN_ATTEMPTS) return { blocked: true, retryAfterMs: LOGIN_WINDOW_MS - (now - entry.windowStart) };
   return { blocked: false };
 }
 
-function recordFailedLogin(email) {
+async function recordFailedLogin(email) {
   const now = Date.now();
-  const entry = loginAttempts.get(email);
-  if (!entry || now - entry.windowStart > LOGIN_WINDOW_MS) {
-    loginAttempts.set(email, { count: 1, windowStart: now });
-  } else {
-    entry.count += 1;
+  if (db.isConfigured()) {
+    await db.ensureMigrated();
+    await db.query(
+      `INSERT INTO login_attempts (email, attempt_count, window_start) VALUES ($1, 1, now())
+       ON CONFLICT (email) DO UPDATE SET
+         attempt_count = CASE WHEN login_attempts.window_start < now() - interval '${LOGIN_WINDOW_MS} milliseconds'
+                               THEN 1 ELSE login_attempts.attempt_count + 1 END,
+         window_start = CASE WHEN login_attempts.window_start < now() - interval '${LOGIN_WINDOW_MS} milliseconds'
+                              THEN now() ELSE login_attempts.window_start END`,
+      [email]
+    );
+    return;
   }
+  const entry = memoryLoginAttempts.get(email);
+  if (!entry || now - entry.windowStart > LOGIN_WINDOW_MS) memoryLoginAttempts.set(email, { count: 1, windowStart: now });
+  else entry.count += 1;
 }
 
-function clearLoginAttempts(email) {
-  loginAttempts.delete(email);
+async function clearLoginAttempts(email) {
+  if (db.isConfigured()) {
+    await db.ensureMigrated();
+    await db.query('DELETE FROM login_attempts WHERE email = $1', [email]);
+    return;
+  }
+  memoryLoginAttempts.delete(email);
 }
 
-// --- Public account operations ---
-
-const VALID_ROLES = new Set(['explorer', 'instructor']);
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+// --------------------------------------------------------------------
+// Public account operations
+// --------------------------------------------------------------------
 function publicUser(user) {
   return { id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt };
 }
 
-function registerUser({ name, email, password, role }) {
+async function registerUser({ name, email, password, role }) {
   const cleanEmail = String(email || '').trim().toLowerCase();
   const cleanName = String(name || '').trim();
   const cleanRole = VALID_ROLES.has(role) ? role : 'explorer';
@@ -221,10 +315,8 @@ function registerUser({ name, email, password, role }) {
   if (!EMAIL_RE.test(cleanEmail)) throw new Error('A valid email address is required');
   if (!password || String(password).length < 8) throw new Error('Password must be at least 8 characters');
 
-  const users = loadUsers();
-  if (users.some((u) => u.email === cleanEmail)) {
-    throw new Error('An account with this email already exists');
-  }
+  const existing = await findUserByEmail(cleanEmail);
+  if (existing) throw new Error('An account with this email already exists');
 
   const user = {
     id: 'user_' + crypto.randomBytes(8).toString('hex'),
@@ -234,57 +326,68 @@ function registerUser({ name, email, password, role }) {
     passwordHash: hashPassword(String(password)),
     createdAt: new Date().toISOString()
   };
-  users.push(user);
-  saveUsers(users);
+  await insertUser(user);
 
   const { token } = issueSessionToken(user);
   return { user: publicUser(user), token };
 }
 
-function loginUser({ email, password }) {
+async function loginUser({ email, password }) {
   const cleanEmail = String(email || '').trim().toLowerCase();
-  const throttle = checkLoginThrottle(cleanEmail);
+  const throttle = await checkLoginThrottle(cleanEmail);
   if (throttle.blocked) {
     const err = new Error(`Too many failed login attempts. Try again in ${Math.ceil(throttle.retryAfterMs / 1000)}s.`);
     err.statusCode = 429;
     throw err;
   }
 
-  const users = loadUsers();
-  const user = users.find((u) => u.email === cleanEmail);
+  const user = await findUserByEmail(cleanEmail);
   if (!user || !verifyPassword(String(password || ''), user.passwordHash)) {
-    recordFailedLogin(cleanEmail);
+    await recordFailedLogin(cleanEmail);
     const err = new Error('Invalid email or password');
     err.statusCode = 401;
     throw err;
   }
 
-  clearLoginAttempts(cleanEmail);
+  await clearLoginAttempts(cleanEmail);
   const { token } = issueSessionToken(user);
   return { user: publicUser(user), token };
 }
 
-function getUserById(uid) {
-  const users = loadUsers();
-  const user = users.find((u) => u.id === uid);
+async function getUserById(uid) {
+  const user = await findUserById(uid);
   return user ? publicUser(user) : null;
 }
 
+async function verifySessionToken(token) {
+  const sigCheck = decodeAndVerifySignature(token);
+  if (!sigCheck.valid) return sigCheck;
+  const revoked = await isSessionRevoked(sigCheck.payload.jti);
+  if (revoked) return { valid: false, error: 'Session was logged out' };
+  return sigCheck;
+}
+
+async function revokeSessionToken(token) {
+  const sigCheck = decodeAndVerifySignature(token);
+  if (!sigCheck.valid) return false;
+  await markSessionRevoked(sigCheck.payload.jti, sigCheck.payload.exp);
+  return true;
+}
+
 /**
- * Express/http-agnostic guard: pass the Authorization header value, get back
+ * Framework-agnostic guard: pass the Authorization header value, get back
  * either { ok: true, session } or { ok: false, statusCode, error }.
- * Callers decide what to do (e.g. server.js route handlers).
  */
-function requireSession(authorizationHeader) {
+async function requireSession(authorizationHeader) {
   const token = (authorizationHeader || '').replace(/^Bearer\s+/i, '').trim();
   if (!token) return { ok: false, statusCode: 401, error: 'Missing Authorization: Bearer <token> header' };
-  const { valid, payload, error } = verifySessionToken(token);
+  const { valid, payload, error } = await verifySessionToken(token);
   if (!valid) return { ok: false, statusCode: 401, error: error || 'Invalid session' };
   return { ok: true, session: payload };
 }
 
-function requireRole(authorizationHeader, role) {
-  const result = requireSession(authorizationHeader);
+async function requireRole(authorizationHeader, role) {
+  const result = await requireSession(authorizationHeader);
   if (!result.ok) return result;
   if (result.session.role !== role) {
     return { ok: false, statusCode: 403, error: `This action requires the '${role}' role` };

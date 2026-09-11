@@ -192,11 +192,52 @@ class MultiFrameworkWorker {
 
 const worker = new MultiFrameworkWorker();
 
+// --------------------------------------------------------------------
+// Remote HTTP mode: when MULTIFRAMEWORK_SERVICE_URL is set (pointing at a
+// separately-deployed instance of ananta-backend/python/app.py - see that
+// file's docstring for why this can't run in-process on Vercel), calls go
+// over HTTPS to that always-on service instead of spawning a local
+// subprocess. Local dev (server.js) has no reason to set this env var and
+// keeps using the fast local subprocess path above.
+// --------------------------------------------------------------------
+function remoteServiceUrl() {
+  const url = process.env.MULTIFRAMEWORK_SERVICE_URL;
+  return url ? url.replace(/\/+$/, '') : null;
+}
+
+async function remoteFetch(path, options = {}) {
+  const base = remoteServiceUrl();
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (process.env.MULTIFRAMEWORK_SERVICE_TOKEN) {
+    headers.Authorization = `Bearer ${process.env.MULTIFRAMEWORK_SERVICE_TOKEN}`;
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${base}${path}`, { ...options, headers, signal: controller.signal });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok && !json.success) {
+      return { success: false, error: json.detail || json.error || `Remote service HTTP ${res.status}` };
+    }
+    return json;
+  } catch (err) {
+    return { success: false, error: `Could not reach MULTIFRAMEWORK_SERVICE_URL (${base}): ${err.message}` };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function probeFrameworks(frameworks) {
+  if (remoteServiceUrl()) {
+    return remoteFetch('/frameworks', { method: 'GET' });
+  }
   return worker.send({ mode: 'probe', frameworks });
 }
 
 async function runOnFramework({ framework, qasm, numQubits, shots }) {
+  if (remoteServiceUrl()) {
+    return remoteFetch('/run', { method: 'POST', body: JSON.stringify({ framework, qasm, numQubits, shots }) });
+  }
   return worker.send({ mode: 'run', framework, qasm, numQubits, shots });
 }
 
