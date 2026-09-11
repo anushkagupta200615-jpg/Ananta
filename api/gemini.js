@@ -813,26 +813,28 @@ function parseVoiceLocally(transcript, currentCircuit) {
     else if (/\b(?:pauli\s*y|y\s*gate|\by\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'Y';
     else if (/\b(?:pauli\s*z|phase\s*flip|z\s*gate|\bz\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'Z';
     else if (/\b(?:phase\s*gate|\bs\s*gate\b|\bs\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'S';
-    else if (/\b(?:pi\s*over\s*8|t\s*gate|\bt\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'T';
+    else if (/\b(?:pi\s*over\s*8|teagate|tea\s*gate|tee\s*gate|tgate|t\s*gate|\bt\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'T';
     else if (/\b(?:meter|\bm\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'MEASURE';
 
     // 2. Destination step / time column (0-indexed)
     let toCol = null;
-    const destMatch = normText.match(/\b(?:to|into|towards)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|column\s*|slot\s*|position\s*)?([1-9])\b/i) ||
-                      normText.match(/\b(?:to|into)\s+t([1-9])\b/i);
-    if (destMatch) {
+    const destMatch = normText.match(/\b(?:to|into|towards|at)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|column\s*|slot\s*|position\s*)?([1-9])\b/i) ||
+                      normText.match(/\b(?:to|into|at)\s+t([1-9])\b/i) ||
+                      normText.match(/\bt([1-9])\b/i);
+    if (destMatch && destMatch[1]) {
       toCol = parseInt(destMatch[1], 10) - 1;
     }
 
-    // Relative movement (e.g. "shift forward 2 steps", "move right by 1")
+    // Relative movement (e.g. "shift forward 2 steps", "move right by 1", "from here to here")
     const relForward = normText.match(/\b(?:forward|right|ahead)\s+(?:by\s+)?([1-9])\b/i);
     const relBackward = normText.match(/\b(?:backward|left|back)\s+(?:by\s+)?([1-9])\b/i);
+    const isHereToHere = /\bhere\s+to\s+here\b/i.test(normText) || /\bfrom\s+here\s+to\s+there\b/i.test(normText);
 
     // 3. Source step / time column (0-indexed)
     let fromCol = null;
-    const srcMatch = normText.match(/\b(?:from|at|source)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|column\s*|slot\s*|position\s*)?([1-9])\b/i) ||
+    const srcMatch = normText.match(/\b(?:from|source)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|column\s*|slot\s*|position\s*)?([1-9])\b/i) ||
                      normText.match(/\b(?:t\s*=?\s*|step\s*|col\s*)([1-9])\s+(?:to|into)\b/i);
-    if (srcMatch) {
+    if (srcMatch && srcMatch[1]) {
       fromCol = parseInt(srcMatch[1], 10) - 1;
     }
 
@@ -981,7 +983,7 @@ function parseVoiceLocally(transcript, currentCircuit) {
     { pattern: /\b(?:pauli\s*y|y\s*gate|\by\b)\b/i, gate: 'Y' },
     { pattern: /\b(?:pauli\s*z|phase\s*flip|z\s*gate|\bz\b)\b/i, gate: 'Z' },
     { pattern: /\b(?:phase\s*gate|\bs\s*gate\b|\bs\b)\b/i, gate: 'S' },
-    { pattern: /\b(?:pi\s*over\s*8|t\s*gate|\bt\b)\b/i, gate: 'T' },
+    { pattern: /\b(?:pi\s*over\s*8|teagate|tea\s*gate|tee\s*gate|tgate|t\s*gate|\bt\b)\b/i, gate: 'T' },
     { pattern: /\b(?:measure|measurement|\bm\b)\b/i, gate: 'MEASURE' }
   ];
 
@@ -991,16 +993,32 @@ function parseVoiceLocally(transcript, currentCircuit) {
       // Find the substring after this gate mention
       const idx = text.indexOf(match[0]) + match[0].length;
       const afterText = text.slice(idx);
+
+      // Check for explicit time step e.g. "at t5", "at step 5", "at time 5", "to t5", "at t 5"
+      let stepIdx = null;
+      const stepM = afterText.match(/\b(?:at|in|to|on)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|column\s*)?([1-9])\b/i) ||
+                    afterText.match(/\bt([1-9])\b/i);
+      if (stepM && stepM[1]) {
+        stepIdx = parseInt(stepM[1], 10) - 1;
+      }
+
       // Extract all qubit references until next gate or punctuation
-      // e.g., "to q0 and q3", "on 0, 1, 2", "at q0", "to qubit 0", "on qubit 0 and qubit 3"
       const targetListMatch = afterText.match(/^\s*(?:to|on|at|in|for)?\s*((?:(?:qubit|wire|q)\s*)?[0-7](?:\s*(?:,|and)\s*(?:(?:qubit|wire|q)\s*)?[0-7])*)/i);
       if (targetListMatch) {
         const qMatches = targetListMatch[1].matchAll(/([0-7])/g);
+        let countQ = 0;
         for (const qm of qMatches) {
+          countQ++;
           const q = parseInt(qm[1], 10);
-          operations.push({ step: null, gate, targets: [q], controls: [], params: {} });
+          operations.push({ step: stepIdx, gate, targets: [q], controls: [], params: {} });
           numQubits = Math.max(numQubits, q + 1);
         }
+        if (countQ === 0 && stepIdx !== null) {
+          operations.push({ step: stepIdx, gate, targets: [0], controls: [], params: {} });
+        }
+      } else if (stepIdx !== null) {
+        // e.g. "add a teagate at t5" (without explicit qubit name) -> default to qubit 0 at stepIdx
+        operations.push({ step: stepIdx, gate, targets: [0], controls: [], params: {} });
       }
     }
   }
@@ -1282,6 +1300,7 @@ module.exports.getApiKey = getApiKey;
 module.exports.getGrokKey = getGrokKey;
 module.exports.callGeminiDirect = callGeminiDirect;
 module.exports.callGrokAPI = callGrokAPI;
+module.exports.parseVoiceLocally = parseVoiceLocally;
 
 /**
  * One JSON answer from whichever provider is configured, or null when none is.

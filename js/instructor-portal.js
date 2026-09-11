@@ -441,13 +441,6 @@ class InstructorPortal {
       this.renderInstructorAuthGate();
       return;
     }
-
-    const fallbackCohorts = [
-      { id: 'cohort_qc101', code: 'QC-101', name: 'Introduction to Quantum Information & Circuits', enrolledStudents: 24, classAverageScore: 91 },
-      { id: 'cohort_algo502', code: 'CS-502', name: 'Advanced Quantum Algorithms & Fault-Tolerance', enrolledStudents: 18, classAverageScore: 93 },
-      { id: 'cohort_hw301', code: 'PH-301', name: 'Quantum Hardware & Microwave Control Engineering', enrolledStudents: 16, classAverageScore: 89 }
-    ];
-
     try {
       const res = await fetch('/api/instructor/cohorts', { headers: this.authHeaders() });
       if (res.status === 401 || res.status === 403) {
@@ -457,71 +450,26 @@ class InstructorPortal {
         return;
       }
       const data = await res.json();
-      this.cohorts = (data.success && Array.isArray(data.cohorts) && data.cohorts.length) ? data.cohorts : fallbackCohorts;
+      if (!data.success || !Array.isArray(data.cohorts)) return;
+
+      this.cohorts = data.cohorts;
+      select.innerHTML = '';
+      this.cohorts.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = `${c.code}: ${c.name} (${c.enrolledStudents} Students)`;
+        if (c.id === this.selectedCohort) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      if (this.cohorts.length && !this.selectedCohort) {
+        this.selectedCohort = this.cohorts[0].id;
+      }
+
+      await this.loadCohortAnalytics(this.selectedCohort);
     } catch (e) {
-      console.warn('[InstructorPortal] Using realistic cohort registry fallback:', e.message);
-      this.cohorts = fallbackCohorts;
+      console.warn('[InstructorPortal] Cohorts notice:', e.message);
     }
-
-    select.innerHTML = '';
-    this.cohorts.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = `${c.code}: ${c.name} (${c.enrolledStudents || 24} Students)`;
-      if (c.id === this.selectedCohort) opt.selected = true;
-      select.appendChild(opt);
-    });
-
-    if (this.cohorts.length && !this.selectedCohort) {
-      this.selectedCohort = this.cohorts[0].id;
-    }
-
-    await this.loadCohortAnalytics(this.selectedCohort);
-  }
-
-  getRealisticCohortFallback(cohortId) {
-    const students = [
-      { name: 'Ananya Sharma', email: 'ananya.sharma@ananta.edu', challengesSolved: 8, quizzesCompleted: 5, avgScore: 96, totalXp: 1150, letterGrade: 'A+', lastActive: new Date().toISOString() },
-      { name: 'Priya Patel', email: 'priya.patel@ananta.edu', challengesSolved: 8, quizzesCompleted: 5, avgScore: 98, totalXp: 1220, letterGrade: 'A+', lastActive: new Date().toISOString() },
-      { name: 'Arjun Mehta', email: 'arjun.mehta@ananta.edu', challengesSolved: 7, quizzesCompleted: 4, avgScore: 92, totalXp: 930, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Rohan Verma', email: 'rohan.verma@ananta.edu', challengesSolved: 7, quizzesCompleted: 4, avgScore: 91, totalXp: 890, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Sneha Reddy', email: 'sneha.reddy@ananta.edu', challengesSolved: 7, quizzesCompleted: 4, avgScore: 94, totalXp: 960, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Diya Mukherjee', email: 'diya.mukherjee@ananta.edu', challengesSolved: 8, quizzesCompleted: 5, avgScore: 95, totalXp: 1110, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Pooja Iyer', email: 'pooja.iyer@ananta.edu', challengesSolved: 8, quizzesCompleted: 5, avgScore: 97, totalXp: 1200, letterGrade: 'A+', lastActive: new Date().toISOString() },
-      { name: 'Tanvi Deshmukh', email: 'tanvi.deshmukh@ananta.edu', challengesSolved: 7, quizzesCompleted: 4, avgScore: 93, totalXp: 920, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Shreya Banerjee', email: 'shreya.banerjee@ananta.edu', challengesSolved: 7, quizzesCompleted: 4, avgScore: 92, totalXp: 910, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Vikramaditya Singh', email: 'vikram.singh@ananta.edu', challengesSolved: 7, quizzesCompleted: 4, avgScore: 90, totalXp: 870, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Anika Bose', email: 'anika.bose@ananta.edu', challengesSolved: 8, quizzesCompleted: 5, avgScore: 95, totalXp: 1130, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Kavita Pillai', email: 'kavita.pillai@ananta.edu', challengesSolved: 7, quizzesCompleted: 4, avgScore: 92, totalXp: 900, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Ritu Agarwal', email: 'ritu.agarwal@ananta.edu', challengesSolved: 7, quizzesCompleted: 4, avgScore: 93, totalXp: 920, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Meera Chawla', email: 'meera.chawla@ananta.edu', challengesSolved: 8, quizzesCompleted: 4, avgScore: 94, totalXp: 990, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Gautam Menon', email: 'gautam.menon@ananta.edu', challengesSolved: 7, quizzesCompleted: 4, avgScore: 90, totalXp: 860, letterGrade: 'A', lastActive: new Date().toISOString() },
-      { name: 'Nikhil Saxena', email: 'nikhil.saxena@ananta.edu', challengesSolved: 7, quizzesCompleted: 4, avgScore: 89, totalXp: 840, letterGrade: 'B+', lastActive: new Date().toISOString() },
-      { name: 'Neha Kapoor', email: 'neha.kapoor@ananta.edu', challengesSolved: 7, quizzesCompleted: 4, avgScore: 89, totalXp: 850, letterGrade: 'B+', lastActive: new Date().toISOString() },
-      { name: 'Aditya Kulkarni', email: 'aditya.kulkarni@ananta.edu', challengesSolved: 6, quizzesCompleted: 4, avgScore: 88, totalXp: 810, letterGrade: 'B+', lastActive: new Date().toISOString() },
-      { name: 'Harish Krishnan', email: 'harish.krishnan@ananta.edu', challengesSolved: 6, quizzesCompleted: 4, avgScore: 88, totalXp: 800, letterGrade: 'B+', lastActive: new Date().toISOString() },
-      { name: 'Siddharth Rao', email: 'siddharth.rao@ananta.edu', challengesSolved: 6, quizzesCompleted: 4, avgScore: 87, totalXp: 790, letterGrade: 'B+', lastActive: new Date().toISOString() },
-      { name: 'Devendra Chouhan', email: 'devendra.c@ananta.edu', challengesSolved: 6, quizzesCompleted: 4, avgScore: 87, totalXp: 780, letterGrade: 'B+', lastActive: new Date().toISOString() },
-      { name: 'Kabir Joshi', email: 'kabir.joshi@ananta.edu', challengesSolved: 6, quizzesCompleted: 3, avgScore: 86, totalXp: 740, letterGrade: 'B+', lastActive: new Date().toISOString() },
-      { name: 'Aman Gupta', email: 'aman.gupta@ananta.edu', challengesSolved: 6, quizzesCompleted: 3, avgScore: 86, totalXp: 750, letterGrade: 'B', lastActive: new Date().toISOString() },
-      { name: 'Rahul Nambiar', email: 'rahul.nambiar@ananta.edu', challengesSolved: 6, quizzesCompleted: 3, avgScore: 85, totalXp: 730, letterGrade: 'B', lastActive: new Date().toISOString() }
-    ];
-
-    return {
-      success: true,
-      totalStudents: 24,
-      avgClassScore: 91,
-      totalChallengesSolved: 168,
-      totalQuizzesCompleted: 98,
-      gradeDistribution: { A: 16, B: 8, C: 0, D: 0, F: 0 },
-      commonMisconceptions: [
-        { concept: 'Phase Kickback in Controlled Gates', errorRate: '16.7%', count: 4, severity: 'Medium' },
-        { concept: 'Partial Trace & Mixed State Purity', errorRate: '12.5%', count: 3, severity: 'Low' },
-        { concept: 'Solovay-Kitaev Non-Clifford Gate Synthesis', errorRate: '14.2%', count: 3, severity: 'Medium' },
-        { concept: 'Grover Diffusion Phase Inversion', errorRate: '8.3%', count: 2, severity: 'Low' }
-      ],
-      students
-    };
   }
 
   async loadCohortAnalytics(cohortId) {
@@ -540,18 +488,13 @@ class InstructorPortal {
         return;
       }
       const data = await res.json();
-      if (data.success && data.totalStudents > 0) {
-        this.currentAnalytics = data;
-        this.renderAnalyticsUI(data);
-        return;
-      }
-    } catch (e) {
-      console.warn('[InstructorPortal] Using high-fidelity analytics fallback:', e.message);
-    }
+      if (!data.success) return;
 
-    const fallbackData = this.getRealisticCohortFallback(cohortId);
-    this.currentAnalytics = fallbackData;
-    this.renderAnalyticsUI(fallbackData);
+      this.currentAnalytics = data;
+      this.renderAnalyticsUI(data);
+    } catch (e) {
+      console.warn('[InstructorPortal] Analytics notice:', e.message);
+    }
   }
 
   renderAnalyticsUI(data) {

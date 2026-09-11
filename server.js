@@ -68,6 +68,7 @@ const authService = require('./ananta-backend/utils/authService');
 // Assessment & Instructor Subsystem
 const quizEngine = require('./ananta-backend/utils/quizEngine');
 const instructorStorage = require('./ananta-backend/utils/instructorStorage');
+const transpilerEngine = require('./ananta-backend/utils/transpilerEngine');
 
 // Physical Device Fleet Catalog (Baseline Reference)
 const QPU_DEVICES = ibmQuantum.REFERENCE_QPU_DEVICES;
@@ -94,7 +95,7 @@ function sendJson(res, statusCode, data, headers = {}) {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-Gemini-Key',
     ...headers
   });
   res.end(payload);
@@ -125,12 +126,13 @@ function parseRequestBody(req) {
 }
 
 // Call Google AI Studio (Gemini 2.5 Flash)
-async function callGeminiApi(prompt, systemInstruction = '', isJson = true) {
-  if (!GEMINI_API_KEY) {
+async function callGeminiApi(prompt, systemInstruction = '', isJson = true, overrideKey = '') {
+  const activeKey = overrideKey || GEMINI_API_KEY;
+  if (!activeKey) {
     throw new Error('GEMINI_API_KEY not configured on backend');
   }
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`;
   
   const payload = {
     contents: [
@@ -727,6 +729,88 @@ User Question: "${message}"`;
         error: err.message
       });
       logTransaction('POST', pathname, 502, Date.now() - reqStart, { error: err.message });
+      return;
+    }
+  }
+
+  // 6b. POST /api/transpiler/transpile (Universal Cross-Framework 1:1 Transpilation)
+  if (pathname === '/api/transpiler/transpile' && req.method === 'POST') {
+    try {
+      const body = await parseRequestBody(req);
+      const { code = '', sourceFramework = 'qiskit', targetFramework = 'cirq' } = body || {};
+      const result = transpilerEngine.transpile({ code, sourceFramework, targetFramework, optimize: false });
+      sendJson(res, 200, result);
+      logTransaction('POST', pathname, 200, Date.now() - reqStart, {
+        source: sourceFramework,
+        target: targetFramework,
+        rawGates: result.rawGateCount
+      });
+      return;
+    } catch (err) {
+      console.error('[API /api/transpiler/transpile Error]', err);
+      sendJson(res, 500, { success: false, error: err.message });
+      logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: err.message });
+      return;
+    }
+  }
+
+  // 6c. POST /api/transpiler/doctor (AI Circuit Doctor: Involutive Peephole & Deep QPU Noise Audit)
+  if (pathname === '/api/transpiler/doctor' && req.method === 'POST') {
+    try {
+      const body = await parseRequestBody(req);
+      const { code = '', sourceFramework = 'qiskit', targetFramework = 'cirq' } = body || {};
+      const result = transpilerEngine.transpile({ code, sourceFramework, targetFramework, optimize: true });
+
+      // Live Google AI Studio Deep Audit if API key is active
+      let aiAudit = null;
+      const clientKey = (req.headers['x-gemini-key'] || '').trim();
+      const apiKey = clientKey || GEMINI_API_KEY;
+      if (apiKey) {
+        try {
+          const prompt = `You are the Principal Quantum Hardware Architect & Compiler Lead at Google Quantum AI and IBM Quantum.
+Perform an in-depth clinical audit and hardware noise prognosis for this quantum circuit:
+Source Framework: ${sourceFramework}
+Target Framework: ${targetFramework}
+Raw Gates: ${result.rawGateCount}
+Optimized Gates: ${result.optimizedGateCount}
+Eliminated Redundant Gates: ${result.metrics.diff}
+
+Source Code:
+\`\`\`
+${code}
+\`\`\`
+
+Return ONLY a valid JSON object matching this schema:
+{
+  "circuitName": "Descriptive algorithm title",
+  "healthAssessment": "2-3 sentences evaluating circuit health, gate bloat, and compilation status.",
+  "gatePathology": "Specific explanation of which gates are redundant or unmerged.",
+  "decoherenceRisks": "Which physical qubits or operations carry highest risk of T1 decay or T2 dephasing on superconducting transmons.",
+  "qpuRecommendation": "Comparative analysis: performance on IBM Eagle (Heavy-Hex), Google Sycamore (2D Grid), and IonQ Forte (All-to-All).",
+  "clinicalPrescription": "Concrete next steps (e.g., Dynamical Decoupling sequence, Zero-Noise Extrapolation, KAK Cartan synthesis)."
+}`;
+          const aiRes = await callGeminiApi(prompt, '', true, apiKey);
+          aiAudit = JSON.parse(aiRes.text.replace(/```json/gi, '').replace(/```/g, '').trim());
+        } catch (aiErr) {
+          console.warn('[Server Transpiler Doctor AI] Gemini audit note:', aiErr.message);
+        }
+      }
+
+      sendJson(res, 200, {
+        ...result,
+        aiAudit,
+        provider: aiAudit ? 'Google AI Studio (Gemini 2.5 Flash)' : 'Ananta Deterministic Compiler Core'
+      });
+      logTransaction('POST', pathname, 200, Date.now() - reqStart, {
+        raw: result.rawGateCount,
+        optimized: result.optimizedGateCount,
+        hasAiAudit: !!aiAudit
+      });
+      return;
+    } catch (err) {
+      console.error('[API /api/transpiler/doctor Error]', err);
+      sendJson(res, 500, { success: false, error: err.message });
+      logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: err.message });
       return;
     }
   }

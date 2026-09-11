@@ -37,6 +37,7 @@ let QBRAID_API_KEY = process.env.QBRAID_API_KEY || process.env.QBRAID_TOKEN || '
 // Assessment & Instructor Subsystem
 const quizEngine = require('../ananta-backend/utils/quizEngine');
 const instructorStorage = require('../ananta-backend/utils/instructorStorage');
+const transpilerEngine = require('../ananta-backend/utils/transpilerEngine');
 
 // Physical Device Fleet Catalog (Baseline Reference)
 const QPU_DEVICES = ibmQuantum.REFERENCE_QPU_DEVICES;
@@ -552,6 +553,72 @@ User Question: "${message}"`;
         success: false,
         error: err.message
       });
+    }
+  }
+
+  // 6b. POST /api/transpiler/transpile (Universal Cross-Framework 1:1 Transpilation)
+  if (pathname === '/api/transpiler/transpile' && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const { code = '', sourceFramework = 'qiskit', targetFramework = 'cirq' } = body || {};
+      const result = transpilerEngine.transpile({ code, sourceFramework, targetFramework, optimize: false });
+      return sendJson(res, 200, result);
+    } catch (err) {
+      console.error('[Vercel API /api/transpiler/transpile Error]', err);
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  // 6c. POST /api/transpiler/doctor (AI Circuit Doctor: Involutive Peephole & Deep QPU Noise Audit)
+  if (pathname === '/api/transpiler/doctor' && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const { code = '', sourceFramework = 'qiskit', targetFramework = 'cirq' } = body || {};
+      const result = transpilerEngine.transpile({ code, sourceFramework, targetFramework, optimize: true });
+
+      // Live Google AI Studio Deep Audit if API key is active
+      let aiAudit = null;
+      const clientKey = (req.headers['x-gemini-key'] || '').trim();
+      const apiKey = clientKey || DEFAULT_GEMINI_KEY;
+      if (apiKey) {
+        try {
+          const prompt = `You are the Principal Quantum Hardware Architect & Compiler Lead at Google Quantum AI and IBM Quantum.
+Perform an in-depth clinical audit and hardware noise prognosis for this quantum circuit:
+Source Framework: ${sourceFramework}
+Target Framework: ${targetFramework}
+Raw Gates: ${result.rawGateCount}
+Optimized Gates: ${result.optimizedGateCount}
+Eliminated Redundant Gates: ${result.metrics.diff}
+
+Source Code:
+\`\`\`
+${code}
+\`\`\`
+
+Return ONLY a valid JSON object matching this schema:
+{
+  "circuitName": "Descriptive algorithm title",
+  "healthAssessment": "2-3 sentences evaluating circuit health, gate bloat, and compilation status.",
+  "gatePathology": "Specific explanation of which gates are redundant or unmerged.",
+  "decoherenceRisks": "Which physical qubits or operations carry highest risk of T1 decay or T2 dephasing on superconducting transmons.",
+  "qpuRecommendation": "Comparative analysis: performance on IBM Eagle (Heavy-Hex), Google Sycamore (2D Grid), and IonQ Forte (All-to-All).",
+  "clinicalPrescription": "Concrete next steps (e.g., Dynamical Decoupling sequence, Zero-Noise Extrapolation, KAK Cartan synthesis)."
+}`;
+          const aiRes = await callGeminiApi(prompt, '', true, apiKey);
+          aiAudit = JSON.parse(aiRes.text.replace(/```json/gi, '').replace(/```/g, '').trim());
+        } catch (aiErr) {
+          console.warn('[Vercel Transpiler Doctor AI] Gemini audit note:', aiErr.message);
+        }
+      }
+
+      return sendJson(res, 200, {
+        ...result,
+        aiAudit,
+        provider: aiAudit ? 'Google AI Studio (Gemini 2.5 Flash)' : 'Ananta Deterministic Compiler Core'
+      });
+    } catch (err) {
+      console.error('[Vercel API /api/transpiler/doctor Error]', err);
+      return sendJson(res, 500, { success: false, error: err.message });
     }
   }
 

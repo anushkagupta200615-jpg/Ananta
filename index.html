@@ -2167,22 +2167,22 @@
           <div class="arena-stats-dashboard">
             <div class="arena-stat-card">
               <span class="arena-stat-label">Enrolled Students</span>
-              <div class="arena-stat-val" id="kpi-total-students">24</div>
+              <div class="arena-stat-val" id="kpi-total-students">0</div>
               <span class="arena-stat-sub">Active Quantum Learners</span>
             </div>
             <div class="arena-stat-card">
               <span class="arena-stat-label">Class Average Score</span>
-              <div class="arena-stat-val arena-xp-val" id="kpi-avg-score">91%</div>
+              <div class="arena-stat-val arena-xp-val" id="kpi-avg-score">0%</div>
               <span class="arena-stat-sub">Automated Quiz &amp; Challenge Average</span>
             </div>
             <div class="arena-stat-card">
               <span class="arena-stat-label">Circuit Challenges Solved</span>
-              <div class="arena-stat-val" id="kpi-total-challenges">168</div>
+              <div class="arena-stat-val" id="kpi-total-challenges">0</div>
               <span class="arena-stat-sub">Cumulative Statevector Solves</span>
             </div>
             <div class="arena-stat-card">
               <span class="arena-stat-label">Quizzes Completed</span>
-              <div class="arena-stat-val arena-rank-val" id="kpi-total-quizzes">98</div>
+              <div class="arena-stat-val arena-rank-val" id="kpi-total-quizzes">0</div>
               <span class="arena-stat-sub">Auto-graded submissions</span>
             </div>
           </div>
@@ -2210,42 +2210,7 @@
                   </tr>
                 </thead>
                 <tbody id="instructor-roster-tbody">
-                  <tr>
-                    <td><strong>Ananya Sharma</strong><br><span style="font-size:11px; color:#64748b;">ananya.sharma@ananta.edu</span></td>
-                    <td><span class="badge-sub-pill">8 / 8 Solved</span></td>
-                    <td><span class="badge-sub-pill">5 Completed</span></td>
-                    <td><strong>96%</strong></td>
-                    <td><span class="xp-chip-small">+1150 XP</span></td>
-                    <td><span class="grade-badge grade-a">A+</span></td>
-                    <td style="font-size:12px; color:#64748b;">Today</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Priya Patel</strong><br><span style="font-size:11px; color:#64748b;">priya.patel@ananta.edu</span></td>
-                    <td><span class="badge-sub-pill">8 / 8 Solved</span></td>
-                    <td><span class="badge-sub-pill">5 Completed</span></td>
-                    <td><strong>98%</strong></td>
-                    <td><span class="xp-chip-small">+1220 XP</span></td>
-                    <td><span class="grade-badge grade-a">A+</span></td>
-                    <td style="font-size:12px; color:#64748b;">Today</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Arjun Mehta</strong><br><span style="font-size:11px; color:#64748b;">arjun.mehta@ananta.edu</span></td>
-                    <td><span class="badge-sub-pill">7 / 8 Solved</span></td>
-                    <td><span class="badge-sub-pill">4 Completed</span></td>
-                    <td><strong>92%</strong></td>
-                    <td><span class="xp-chip-small">+930 XP</span></td>
-                    <td><span class="grade-badge grade-a">A</span></td>
-                    <td style="font-size:12px; color:#64748b;">Today</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Rohan Verma</strong><br><span style="font-size:11px; color:#64748b;">rohan.verma@ananta.edu</span></td>
-                    <td><span class="badge-sub-pill">7 / 8 Solved</span></td>
-                    <td><span class="badge-sub-pill">4 Completed</span></td>
-                    <td><strong>91%</strong></td>
-                    <td><span class="xp-chip-small">+890 XP</span></td>
-                    <td><span class="grade-badge grade-a">A</span></td>
-                    <td style="font-size:12px; color:#64748b;">Today</td>
-                  </tr>
+                  <!-- Populated by instructor-portal.js -->
                 </tbody>
               </table>
             </div>
@@ -3411,49 +3376,71 @@ Key Advantage:
           <!-- Left: Source Editor -->
           <div class="code-editor-panel">
             <div class="editor-top-bar">
-              <span class="editor-title">Source Framework:</span>
-              <select class="clean-select" id="transpiler-source-select">
-                <option value="qiskit">IBM Qiskit (Python)</option>
-                <option value="cirq">Google Cirq (Python)</option>
-                <option value="braket">Amazon Braket (Python)</option>
-                <option value="pennylane">PennyLane (Python)</option>
-                <option value="qasm">OpenQASM 3.0</option>
-                <option value="pyquil">Rigetti PyQuil (Python)</option>
-              </select>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="editor-title">Source Framework:</span>
+                <select class="clean-select" id="transpiler-source-select">
+                  <option value="qiskit">IBM Qiskit (Python)</option>
+                  <option value="cirq">Google Cirq (Python)</option>
+                  <option value="braket">Amazon Braket (Python)</option>
+                  <option value="pennylane">PennyLane (Python)</option>
+                  <option value="qasm">OpenQASM 3.0</option>
+                  <option value="pyquil">Rigetti PyQuil (Python)</option>
+                </select>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <button type="button" class="editor-action-btn" id="btn-editor-format-source" onclick="if(window.transpilerDoctor) window.transpilerDoctor.formatSourceCode();" title="Format and indent source code">🧹 Format</button>
+                <button type="button" class="editor-action-btn" id="btn-editor-sync-composer" onclick="if(window.transpilerDoctor) window.transpilerDoctor.syncFromComposer();" title="Load current circuit from Circuit Composer">🔄 Load Composer</button>
+                <button type="button" class="editor-action-btn" id="btn-editor-clear-source" onclick="if(window.transpilerDoctor) window.transpilerDoctor.clearSourceCode();" title="Clear editor">✕ Clear</button>
+              </div>
             </div>
-            <textarea class="code-textarea" id="transpiler-source-code" spellcheck="false" placeholder="Enter or paste quantum circuit code..."></textarea>
+            <div class="code-editor-wrapper">
+              <div class="code-line-numbers" id="transpiler-source-linenums">1</div>
+              <textarea class="code-textarea" id="transpiler-source-code" spellcheck="false" placeholder="Enter or paste quantum circuit code..."></textarea>
+            </div>
           </div>
 
           <!-- Middle Action Controls -->
           <div class="transpiler-center-actions">
-            <button class="btn-transpile-execute" id="btn-transpile-direct" onclick="if(window.transpilerDoctor) window.transpilerDoctor.transpileDirect();" title="Transpile code directly (1:1 gate syntax conversion)">
+            <button class="btn-transpile-execute" id="btn-transpile-direct" onclick="if(window.transpilerDoctor) window.transpilerDoctor.transpileDirect();" title="Transpile code directly via Backend API (1:1 syntax conversion)">
               ➔ Universal Transpile ➔
             </button>
-            <button class="btn-doctor-execute" id="btn-run-doctor" onclick="if(window.transpilerDoctor) window.transpilerDoctor.transpileOptimized();" title="Analyze and optimize circuit with AI Circuit Doctor">
+            <button class="btn-doctor-execute" id="btn-run-doctor" onclick="if(window.transpilerDoctor) window.transpilerDoctor.transpileOptimized();" title="Analyze and optimize circuit via Live Backend AI Circuit Doctor">
               ⚡ Run Circuit Doctor
             </button>
+            <div class="transpiler-api-telemetry" id="transpiler-api-telemetry">
+              <span class="telemetry-pill-dot"></span>
+              <span id="transpiler-api-status-text">Live Backend API Ready</span>
+            </div>
           </div>
 
           <!-- Right: Target Editor -->
           <div class="code-editor-panel">
             <div class="editor-top-bar">
-              <span class="editor-title">Target Framework:</span>
-              <select class="clean-select" id="transpiler-target-select">
-                <option value="cirq">Google Cirq (Python)</option>
-                <option value="qiskit">IBM Qiskit (Python)</option>
-                <option value="braket">Amazon Braket (Python)</option>
-                <option value="pennylane">PennyLane (Python)</option>
-                <option value="qasm">OpenQASM 3.0</option>
-                <option value="pyquil">Rigetti PyQuil (Python)</option>
-              </select>
-              <div class="transpiler-mode-toggle" id="transpiler-mode-toggle">
-                <button type="button" class="btn-mode-toggle" id="btn-target-direct" onclick="if(window.transpilerDoctor) window.transpilerDoctor.setTargetMode('direct')" title="Show 1:1 Direct Translation">Direct</button>
-                <button type="button" class="btn-mode-toggle active" id="btn-target-optimized" onclick="if(window.transpilerDoctor) window.transpilerDoctor.setTargetMode('optimized')" title="Show AI Doctor Optimized Circuit">⚡ Doctor Optimized</button>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="editor-title">Target Framework:</span>
+                <select class="clean-select" id="transpiler-target-select">
+                  <option value="cirq">Google Cirq (Python)</option>
+                  <option value="qiskit">IBM Qiskit (Python)</option>
+                  <option value="braket">Amazon Braket (Python)</option>
+                  <option value="pennylane">PennyLane (Python)</option>
+                  <option value="qasm">OpenQASM 3.0</option>
+                  <option value="pyquil">Rigetti PyQuil (Python)</option>
+                </select>
               </div>
-              <button class="btn-copy-code" id="btn-copy-transpiled">Copy Code</button>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <div class="transpiler-mode-toggle" id="transpiler-mode-toggle">
+                  <button type="button" class="btn-mode-toggle" id="btn-target-direct" onclick="if(window.transpilerDoctor) window.transpilerDoctor.setTargetMode('direct')" title="Show 1:1 Direct Translation">Direct</button>
+                  <button type="button" class="btn-mode-toggle active" id="btn-target-optimized" onclick="if(window.transpilerDoctor) window.transpilerDoctor.setTargetMode('optimized')" title="Show AI Doctor Optimized Circuit">⚡ Doctor Optimized</button>
+                </div>
+                <button type="button" class="editor-action-btn" id="btn-toggle-edit-target" onclick="if(window.transpilerDoctor) window.transpilerDoctor.toggleTargetEditable();" title="Make transpiled code directly editable">✏️ Edit</button>
+                <button class="btn-copy-code" id="btn-copy-transpiled">Copy Code</button>
+              </div>
             </div>
             <div class="transpiler-status-pill optimized" id="transpiler-status-pill">⚡ AI Circuit Doctor Active: Redundant gates eliminated. Showing optimized circuit.</div>
-            <textarea class="code-textarea" id="transpiler-target-code" readonly spellcheck="false" placeholder="Transpiled code will appear here..."></textarea>
+            <div class="code-editor-wrapper">
+              <div class="code-line-numbers" id="transpiler-target-linenums">1</div>
+              <textarea class="code-textarea" id="transpiler-target-code" spellcheck="false" placeholder="Transpiled code will appear here..."></textarea>
+            </div>
           </div>
         </div>
 
