@@ -590,580 +590,93 @@ document.addEventListener('DOMContentLoaded', () => {
   window.updateNavUser = updateNavUser;
 
   // Render AWS Active Session state on #view-login if user is already authenticated
+  // Ananta has no accounts, sessions or auth backend. What used to live here
+  // was a simulated Google picker, an email/password form, a client-generated
+  // "OTP", and one-click "Root Administrator" / "Researcher" role presets —
+  // none of which verified anything. All any of it did was write a user object
+  // to localStorage. That is now what it honestly is: a local display name.
+  const SESSION_KEY = 'ananta_user';
+
   window.renderLoginSessionState = () => {
-    const userJson = localStorage.getItem('ananta_user');
     const sessionCard = document.getElementById('auth-active-session-box');
-    const credsBox = document.getElementById('auth-step-credentials');
-    const otpBox = document.getElementById('auth-step-otp');
+    const entryForm = document.getElementById('form-enter-studio');
+    const userJson = localStorage.getItem(SESSION_KEY);
 
     if (userJson && sessionCard) {
       try {
         const user = JSON.parse(userJson);
-        const nameEl = document.getElementById('session-user-name');
-        const emailEl = document.getElementById('session-user-email');
-        const roleEl = document.getElementById('session-user-role');
-        const avatarEl = document.getElementById('session-user-avatar');
-        const timeEl = document.getElementById('session-login-time');
+        const set = (id, value) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = value;
+        };
+        set('session-user-name', user.name || 'Quantum Explorer');
+        set('session-user-email', user.email || 'Local session — no account');
+        set('session-user-role', user.role || 'Explorer');
+        set('session-user-avatar', user.avatar || (user.name ? user.name.charAt(0).toUpperCase() : 'Q'));
 
-        if (nameEl) nameEl.textContent = user.name || 'Active Quantum User';
-        if (emailEl) emailEl.textContent = user.email || 'developer@ananta-quantum.io';
-        if (roleEl) roleEl.textContent = user.role || 'IAM Quantum Engineer';
-        if (avatarEl) avatarEl.textContent = user.avatar || (user.name ? user.name.charAt(0).toUpperCase() : 'Q');
+        const timeEl = document.getElementById('session-login-time');
         if (timeEl) {
           const date = user.loggedInAt ? new Date(user.loggedInAt) : new Date();
-          timeEl.textContent = 'Session active since ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          timeEl.textContent = 'Active since ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
         sessionCard.style.display = 'block';
-        if (credsBox) credsBox.style.display = 'none';
-        if (otpBox) otpBox.style.display = 'none';
+        if (entryForm) entryForm.style.display = 'none';
         return;
-      } catch (e) {}
-    }
-
-    if (sessionCard) sessionCard.style.display = 'none';
-    if (credsBox) credsBox.style.display = 'block';
-    if (otpBox) otpBox.style.display = 'none';
-  };
-
-  // Switch Account button on Active Session card reveals credentials form
-  window.switchAccountDirect = () => {
-    const sessionCard = document.getElementById('auth-active-session-box');
-    const credsBox = document.getElementById('auth-step-credentials');
-    const otpBox = document.getElementById('auth-step-otp');
-    if (sessionCard) sessionCard.style.display = 'none';
-    if (credsBox) credsBox.style.display = 'block';
-    if (otpBox) otpBox.style.display = 'none';
-  };
-
-  // 1-Click AWS Preset Account Access
-  window.loginWithPreset = (presetType) => {
-    let user;
-    if (presetType === 'root') {
-      user = {
-        name: 'Root Administrator',
-        email: 'root@ananta-quantum.aws',
-        role: 'Root Administrator',
-        roleType: 'root',
-        tier: 'Full Cryo-Array Admin Privileges',
-        avatar: '🛡️',
-        provider: 'root_auth'
-      };
-    } else if (presetType === 'researcher') {
-      user = {
-        name: 'Dr. Quantum Researcher',
-        email: 'researcher@ananta-quantum.io',
-        role: 'Lead Quantum Scientist',
-        roleType: 'iam',
-        tier: '54-Qubit Sycamore Lattice Access',
-        avatar: '🔬',
-        provider: 'iam_auth'
-      };
-    } else if (presetType === 'developer') {
-      user = {
-        name: 'Cirq Quantum Engineer',
-        email: 'dev@cirq-quantum.io',
-        role: 'Cirq Developer',
-        roleType: 'iam',
-        tier: 'Quantum Statevector Composer',
-        avatar: '⚛️',
-        provider: 'iam_auth'
-      };
-    } else {
-      user = {
-        name: 'Guest Explorer',
-        email: 'guest@ananta-quantum.io',
-        role: 'Sandbox Guest',
-        roleType: 'guest',
-        tier: 'Interactive Simulation Sandbox',
-        avatar: '🚀',
-        provider: 'guest'
-      };
-    }
-    completeLogin(user);
-  };
-
-  // AWS Identity Type Switcher (Root User vs IAM User)
-  window.switchIdentityType = (type) => {
-    const pillRoot = document.getElementById('pill-identity-root');
-    const pillIam = document.getElementById('pill-identity-iam');
-    const emailLabel = document.getElementById('label-auth-identifier');
-    const emailInput = document.getElementById('login-email');
-    const errBanner = document.getElementById('auth-error-banner');
-    if (errBanner) errBanner.style.display = 'none';
-
-    if (type === 'root') {
-      if (pillRoot) pillRoot.classList.add('active');
-      if (pillIam) pillIam.classList.remove('active');
-      if (emailLabel) emailLabel.textContent = 'Root User Email Address (Account Owner)';
-      if (emailInput) emailInput.placeholder = 'root-owner@ananta-quantum.aws';
-    } else {
-      if (pillIam) pillIam.classList.add('active');
-      if (pillRoot) pillRoot.classList.remove('active');
-      if (emailLabel) emailLabel.textContent = 'IAM User Email or Account Alias';
-      if (emailInput) emailInput.placeholder = 'quantum-developer@ananta-quantum.io';
-    }
-  };
-
-  const navLoginBtn = document.getElementById('nav-login-btn');
-  if (navLoginBtn) {
-    navLoginBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      switchView('login');
-    });
-  }
-
-  // Auth Tab Switcher (Sign In vs Create Account)
-  window.switchAuthTab = (tab) => {
-    const btnSignin = document.getElementById('tab-btn-signin');
-    const btnSignup = document.getElementById('tab-btn-signup');
-    const formSignin = document.getElementById('form-signin');
-    const formSignup = document.getElementById('form-signup');
-    const errBanner = document.getElementById('auth-error-banner');
-    const succBanner = document.getElementById('auth-success-banner');
-    if (errBanner) errBanner.style.display = 'none';
-    if (succBanner) succBanner.style.display = 'none';
-
-    if (tab === 'signin') {
-      if (btnSignin) btnSignin.classList.add('active');
-      if (btnSignup) btnSignup.classList.remove('active');
-      if (formSignin) formSignin.style.display = 'flex';
-      if (formSignup) formSignup.style.display = 'none';
-    } else {
-      if (btnSignup) btnSignup.classList.add('active');
-      if (btnSignin) btnSignin.classList.remove('active');
-      if (formSignup) formSignup.style.display = 'flex';
-      if (formSignin) formSignin.style.display = 'none';
-    }
-  };
-
-  // Google OAuth Dialog
-  window.openGoogleDialog = () => {
-    const modal = document.getElementById('google-modal');
-    if (modal) modal.classList.add('active');
-  };
-
-  window.closeGoogleDialog = () => {
-    const modal = document.getElementById('google-modal');
-    if (modal) modal.classList.remove('active');
-  };
-
-  window.selectGoogleAccount = (name, email) => {
-    window.closeGoogleDialog();
-    const user = {
-      name: name,
-      email: email,
-      role: 'Federated Google Researcher',
-      roleType: 'sso',
-      provider: 'google',
-      avatar: name.charAt(0).toUpperCase()
-    };
-    completeLogin(user);
-  };
-
-  window.promptCustomGoogleAccount = () => {
-    const email = window.prompt('Enter your Google / Gmail address:');
-    if (!email || !email.includes('@')) {
-      if (email !== null) alert('Please enter a valid email address.');
-      return;
-    }
-    const defaultName = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    const name = window.prompt('Enter your display name:', defaultName) || defaultName;
-    window.selectGoogleAccount(name, email);
-  };
-
-  let pendingAuthUser = null;
-  let currentOtp = null;
-  let resendTimer = null;
-  let countdownSeconds = 30;
-
-  // Live Password Strength Checker
-  window.checkPasswordStrength = (pass) => {
-    const fillBar = document.getElementById('strength-fill-bar');
-    const strengthText = document.getElementById('strength-text');
-    const ruleLen = document.getElementById('rule-len');
-    const ruleCase = document.getElementById('rule-case');
-    const ruleNum = document.getElementById('rule-num');
-    const ruleSym = document.getElementById('rule-sym');
-
-    const hasLen = pass.length >= 8;
-    const hasCase = /[a-z]/.test(pass) && /[A-Z]/.test(pass);
-    const hasNum = /[0-9]/.test(pass);
-    const hasSym = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pass);
-
-    if (ruleLen) {
-      ruleLen.className = hasLen ? 'pw-rule valid' : 'pw-rule';
-      ruleLen.textContent = (hasLen ? '✓' : '✕') + ' At least 8 characters';
-    }
-    if (ruleCase) {
-      ruleCase.className = hasCase ? 'pw-rule valid' : 'pw-rule';
-      ruleCase.textContent = (hasCase ? '✓' : '✕') + ' Uppercase & lowercase';
-    }
-    if (ruleNum) {
-      ruleNum.className = hasNum ? 'pw-rule valid' : 'pw-rule';
-      ruleNum.textContent = (hasNum ? '✓' : '✕') + ' At least one number';
-    }
-    if (ruleSym) {
-      ruleSym.className = hasSym ? 'pw-rule valid' : 'pw-rule';
-      ruleSym.textContent = (hasSym ? '✓' : '✕') + ' Special character';
-    }
-
-    let score = 0;
-    if (hasLen) score += 25;
-    if (hasCase) score += 25;
-    if (hasNum) score += 25;
-    if (hasSym) score += 25;
-
-    if (fillBar) fillBar.style.width = score + '%';
-
-    if (strengthText) {
-      if (score <= 25) {
-        strengthText.className = 'strength-text-weak';
-        strengthText.textContent = 'Weak';
-        if (fillBar) fillBar.style.background = '#ef4444';
-      } else if (score <= 75) {
-        strengthText.className = 'strength-text-medium';
-        strengthText.textContent = 'Moderate';
-        if (fillBar) fillBar.style.background = '#f59e0b';
-      } else {
-        strengthText.className = 'strength-text-strong';
-        strengthText.textContent = 'Strong ✓';
-        if (fillBar) fillBar.style.background = '#10b981';
+      } catch (e) {
+        console.warn('[Ananta] Could not read local session:', e.message);
       }
     }
-    return score >= 75; // Requires at least 3 out of 4 criteria
+
+    if (sessionCard) sessionCard.style.display = 'none';
+    if (entryForm) entryForm.style.display = 'flex';
   };
 
-  window.togglePasswordVisibility = (inputId, btnEl) => {
-    const input = document.getElementById(inputId);
-    if (input) {
-      const isPass = input.type === 'password';
-      input.type = isPass ? 'text' : 'password';
-      if (btnEl) btnEl.textContent = isPass ? '🔒' : '👁️';
-    }
+  // "Switch" simply clears the stored name and shows the entry field again.
+  window.switchAccountDirect = () => {
+    const sessionCard = document.getElementById('auth-active-session-box');
+    const entryForm = document.getElementById('form-enter-studio');
+    if (sessionCard) sessionCard.style.display = 'none';
+    if (entryForm) entryForm.style.display = 'flex';
   };
 
-  window.checkCapsActive = (e, warningId) => {
-    const warn = document.getElementById(warningId);
-    if (!warn) return;
-    if (e.getModifierState && e.getModifierState('CapsLock')) {
-      warn.style.display = 'inline-flex';
-    } else {
-      warn.style.display = 'none';
-    }
+  window.enterStudio = () => {
+    const nameInput = document.getElementById('studio-display-name');
+    const typed = nameInput ? nameInput.value.trim() : '';
+    const name = typed || 'Quantum Explorer';
+
+    completeLogin({
+      name,
+      email: 'Local session — no account',
+      role: 'Explorer',
+      roleType: 'local',
+      tier: 'Full Studio Access',
+      avatar: name.charAt(0).toUpperCase(),
+      provider: 'local'
+    });
   };
 
-  function showAuthError(msg) {
-    const errBanner = document.getElementById('auth-error-banner');
-    const succBanner = document.getElementById('auth-success-banner');
-    if (succBanner) succBanner.style.display = 'none';
-    if (errBanner) {
-      errBanner.textContent = msg;
-      errBanner.style.display = 'block';
-      errBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else {
-      alert(msg);
-    }
-  }
+  window.logoutUser = () => {
+    localStorage.removeItem(SESSION_KEY);
+    updateNavUser();
+    if (window.renderLoginSessionState) window.renderLoginSessionState();
+    switchView('login');
+    showAuthSuccess('Local session cleared.');
+  };
 
   function showAuthSuccess(msg) {
-    const errBanner = document.getElementById('auth-error-banner');
     const succBanner = document.getElementById('auth-success-banner');
-    if (errBanner) errBanner.style.display = 'none';
     if (succBanner) {
       succBanner.textContent = msg;
       succBanner.style.display = 'block';
     }
   }
 
-  // Generate random secure 6-digit OTP
-  function generate6DigitOtp() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  }
-
-  // Transition to OTP Verification Panel
-  function initiateOtpVerification(userObj) {
-    pendingAuthUser = userObj;
-    currentOtp = generate6DigitOtp();
-
-    const stepCreds = document.getElementById('auth-step-credentials');
-    const stepOtp = document.getElementById('auth-step-otp');
-    const targetEmail = document.getElementById('otp-target-email');
-    const toastOtp = document.getElementById('toast-otp-code');
-    const errBanner = document.getElementById('auth-error-banner');
-    if (errBanner) errBanner.style.display = 'none';
-
-    if (targetEmail) targetEmail.textContent = userObj.email;
-    if (toastOtp) toastOtp.textContent = currentOtp;
-
-    if (stepCreds) stepCreds.style.display = 'none';
-    if (stepOtp) stepOtp.style.display = 'block';
-
-    // Clear previous OTP inputs
-    for (let i = 1; i <= 6; i++) {
-      const el = document.getElementById('otp-' + i);
-      if (el) el.value = '';
-    }
-    const firstInput = document.getElementById('otp-1');
-    if (firstInput) firstInput.focus();
-
-    startResendCountdown();
-  }
-
-  function startResendCountdown() {
-    clearInterval(resendTimer);
-    countdownSeconds = 30;
-    const btnResend = document.getElementById('btn-resend-otp');
-    const cdSpan = document.getElementById('resend-countdown');
-    if (btnResend) btnResend.disabled = true;
-
-    resendTimer = setInterval(() => {
-      countdownSeconds--;
-      if (cdSpan) cdSpan.textContent = countdownSeconds + 's';
-      if (countdownSeconds <= 0) {
-        clearInterval(resendTimer);
-        if (btnResend) {
-          btnResend.disabled = false;
-          btnResend.textContent = 'Resend OTP Now';
-        }
-      }
-    }, 1000);
-  }
-
-  window.resendOtp = () => {
-    if (countdownSeconds > 0) return;
-    currentOtp = generate6DigitOtp();
-    const toastOtp = document.getElementById('toast-otp-code');
-    if (toastOtp) toastOtp.textContent = currentOtp;
-    showAuthSuccess('A fresh 6-digit OTP has been dispatched to your inbox!');
-    startResendCountdown();
-  };
-
-  window.autoFillOtp = () => {
-    if (!currentOtp) return;
-    for (let i = 0; i < 6; i++) {
-      const el = document.getElementById('otp-' + (i + 1));
-      if (el) el.value = currentOtp.charAt(i);
-    }
-    window.verifyOtpAndLogin();
-  };
-
-  window.cancelOtpFlow = () => {
-    clearInterval(resendTimer);
-    pendingAuthUser = null;
-    currentOtp = null;
-    const stepCreds = document.getElementById('auth-step-credentials');
-    const stepOtp = document.getElementById('auth-step-otp');
-    if (stepOtp) stepOtp.style.display = 'none';
-    if (stepCreds) stepCreds.style.display = 'block';
-  };
-
-  // Setup auto-tabbing and auto-paste for 6-digit OTP inputs
-  function setupOtpInputs() {
-    for (let i = 1; i <= 6; i++) {
-      const input = document.getElementById('otp-' + i);
-      if (input) {
-        input.addEventListener('input', (e) => {
-          if (input.value.length >= 1 && i < 6) {
-            const next = document.getElementById('otp-' + (i + 1));
-            if (next) next.focus();
-          }
-        });
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Backspace' && !input.value && i > 1) {
-            const prev = document.getElementById('otp-' + (i - 1));
-            if (prev) prev.focus();
-          } else if (e.key === 'Enter') {
-            window.verifyOtpAndLogin();
-          }
-        });
-        input.addEventListener('paste', (e) => {
-          e.preventDefault();
-          const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
-          if (/^\d{6}$/.test(pasteData)) {
-            for (let j = 0; j < 6; j++) {
-              const digitEl = document.getElementById('otp-' + (j + 1));
-              if (digitEl) digitEl.value = pasteData.charAt(j);
-            }
-            window.verifyOtpAndLogin();
-          }
-        });
-      }
-    }
-  }
-  setupOtpInputs();
-
-  // Verify OTP and complete login
-  window.verifyOtpAndLogin = () => {
-    let enteredCode = '';
-    for (let i = 1; i <= 6; i++) {
-      const el = document.getElementById('otp-' + i);
-      if (el) enteredCode += el.value.trim();
-    }
-
-    if (enteredCode.length < 6) {
-      showAuthError('Please enter all 6 digits of the OTP verification code.');
-      return;
-    }
-
-    if (enteredCode !== currentOtp) {
-      showAuthError('Invalid OTP code. Please check your simulated notification.');
-      return;
-    }
-
-    // OTP Successful: Finalize registration and session
-    if (pendingAuthUser) {
-      if (pendingAuthUser.isNewAccount) {
-        const accounts = JSON.parse(localStorage.getItem('ananta_registered_users') || '[]');
-        const idx = accounts.findIndex(a => a.email.toLowerCase() === pendingAuthUser.email.toLowerCase());
-        if (idx >= 0) {
-          accounts[idx] = pendingAuthUser;
-        } else {
-          accounts.push(pendingAuthUser);
-        }
-        localStorage.setItem('ananta_registered_users', JSON.stringify(accounts));
-      }
-
-      const sessionUser = {
-        name: pendingAuthUser.name,
-        email: pendingAuthUser.email,
-        role: pendingAuthUser.role || 'Quantum Scientist',
-        roleType: 'email_otp',
-        provider: 'email_otp',
-        avatar: pendingAuthUser.name.charAt(0).toUpperCase()
-      };
-      
-      window.cancelOtpFlow();
-      completeLogin(sessionUser);
-    }
-  };
-
-  let inAppIsSignUp = false;
-  window.toggleInAppMode = () => {
-    inAppIsSignUp = !inAppIsSignUp;
-    const title = document.getElementById('inapp-auth-title');
-    const subtitle = document.getElementById('inapp-auth-subtitle');
-    const nameField = document.getElementById('inapp-name-field');
-    const submitBtn = document.getElementById('btn-submit-signin');
-    const toggleText = document.getElementById('inapp-toggle-text');
-    const toggleLink = document.getElementById('inapp-toggle-link');
-    const errBanner = document.getElementById('auth-error-banner');
-    if (errBanner) errBanner.style.display = 'none';
-
-    if (inAppIsSignUp) {
-      if (title) title.textContent = 'Create Account';
-      if (subtitle) subtitle.textContent = 'Join Ananta Quantum Studio today.';
-      if (nameField) nameField.style.display = 'block';
-      if (submitBtn) submitBtn.textContent = 'Create Account';
-      if (toggleText) toggleText.textContent = 'Already have an account?';
-      if (toggleLink) toggleLink.textContent = 'Sign in';
-    } else {
-      if (title) title.textContent = 'Sign In';
-      if (subtitle) subtitle.textContent = 'Enter your account to access the Quantum Studio.';
-      if (nameField) nameField.style.display = 'none';
-      if (submitBtn) submitBtn.textContent = 'Sign In';
-      if (toggleText) toggleText.textContent = "Don't have an account?";
-      if (toggleLink) toggleLink.textContent = 'Create account';
-    }
-  };
-
-  // Direct, fast, friction-free sign-in
-  window.startSignInFlow = () => {
-    const emailInput = document.getElementById('login-email');
-    const passInput = document.getElementById('login-pass');
-    const nameInput = document.getElementById('signup-name');
-    const email = emailInput ? emailInput.value.trim() : '';
-    const pass = passInput ? passInput.value : '';
-
-    if (!email || !email.includes('@')) {
-      showAuthError('Please enter a valid email address.');
-      return;
-    }
-    if (!pass) {
-      showAuthError('Please enter your password.');
-      return;
-    }
-
-    const name = (nameInput && nameInput.value.trim()) || email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-    const user = {
-      name: name,
-      email: email,
-      role: inAppIsSignUp ? 'Quantum Developer' : 'Quantum Researcher',
-      avatar: name.charAt(0).toUpperCase(),
-      provider: 'email',
-      loggedInAt: new Date().toISOString()
-    };
-
-    completeLogin(user);
-  };
-
-  // Sign Up Flow (Checks for strong password, then sends OTP)
-  window.startSignUpFlow = () => {
-    const nameInput = document.getElementById('signup-name');
-    const emailInput = document.getElementById('signup-email');
-    const passInput = document.getElementById('signup-pass');
-    const name = nameInput ? nameInput.value.trim() : '';
-    const email = emailInput ? emailInput.value.trim() : '';
-    const pass = passInput ? passInput.value : '';
-
-    if (!name) {
-      showAuthError('Please enter your full name.');
-      return;
-    }
-    if (!email || !email.includes('@')) {
-      showAuthError('Please enter a valid email address.');
-      return;
-    }
-    
-    // Check Password Strength
-    const isStrong = window.checkPasswordStrength(pass);
-    if (!isStrong) {
-      showAuthError('Password must meet at least 3 security criteria.');
-      return;
-    }
-
-    // Proceed to OTP Verification before saving account
-    initiateOtpVerification({
-      name: name,
-      email: email,
-      password: pass,
-      role: 'Quantum Developer',
-      isNewAccount: true
-    });
-  };
-
-  window.startOtpLoginDirect = () => {
-    const emailInput = document.getElementById('login-email');
-    const email = emailInput && emailInput.value.trim() ? emailInput.value.trim() : window.prompt('Enter your email address to receive OTP:');
-    if (!email || !email.includes('@')) {
-      showAuthError('A valid email address is required for OTP login.');
-      return;
-    }
-    const name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    initiateOtpVerification({
-      name: name,
-      email: email,
-      password: '',
-      role: 'Direct OTP User',
-      isNewAccount: false
-    });
-  };
-
-  window.logoutUser = () => {
-    localStorage.removeItem('ananta_user');
-    updateNavUser();
-    if (window.renderLoginSessionState) window.renderLoginSessionState();
-    switchView('login');
-    showAuthSuccess('Signed out successfully. Session terminated.');
-  };
-
   const guestEntry = document.getElementById('btn-guest-entry');
   if (guestEntry) {
-    guestEntry.addEventListener('click', () => {
-      window.loginWithPreset('guest');
-    });
+    guestEntry.addEventListener('click', () => window.enterStudio());
   }
+
 
   // ==========================================
   // 5. Circuit Controls & Safe Preset Helpers
