@@ -8,6 +8,7 @@
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "pdf-parse": "^1.1.1",
     "pg": "^8.23.0"
   }

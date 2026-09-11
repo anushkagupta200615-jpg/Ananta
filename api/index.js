@@ -11,6 +11,11 @@
  *  - POST /api/qpu/run
  */
 
+// Load .env for local dev/testing (no-op on Vercel, which has no .env file
+// and injects its own env vars directly; also a no-op if server.js already
+// loaded it earlier in this same process).
+try { require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') }); } catch (e) {}
+
 let DEFAULT_GEMINI_KEY = process.env.GEMINI_API_KEY || '';
 
 // If local config exists (e.g. local dev), load it

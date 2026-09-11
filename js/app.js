@@ -2894,13 +2894,17 @@ document.addEventListener('DOMContentLoaded', () => {
     'transpiler', 'vqe-chemistry', 'algorithms', 'research',
     'intuition', 'challenges', 'docs', 'login'
   ];
-  const isLoggedIn = updateNavUser();
+  updateNavUser();
   const hash = window.location.hash.replace('#', '');
 
+  // The app is freely explorable without signing in - real sign-in is only
+  // actually required server-side for instructor-only actions (cohort
+  // management, gradebooks, assignment dispatch), which already 401/403
+  // without a valid session regardless of what this client-side routing
+  // does. So there's no reason to gate the whole app behind a login screen;
+  // land everyone on Overview by default, same as any other tab.
   if (hash && validTabs.includes(hash)) {
     switchView(hash);
-  } else if (!isLoggedIn) {
-    switchView('login');
   } else {
     switchView('overview');
   }

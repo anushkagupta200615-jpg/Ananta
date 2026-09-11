@@ -12,6 +12,11 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+// Load .env for local dev (DATABASE_URL, GEMINI_API_KEY, etc - see
+// .env.example). Vercel injects its own env vars directly and has no .env
+// file, so this is a silent no-op there.
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
 const PORT = process.env.PORT || 5500;
 const HOST = '127.0.0.1';
 

@@ -28,10 +28,11 @@
 git clone https://github.com/anushkagupta200615-jpg/Ananta.git
 cd Ananta
 npm install
+cp .env.example .env   # paste your real values in - see below
 node server.js
 ```
 
-Open `http://localhost:5500`. With zero environment variables set, everything runs in **local/offline mode**: auth and instructor data fall back to JSON files under `ananta-backend/data/` (gitignored), the AI tutor falls back to a grounded-but-non-LLM analysis, and multi-framework execution auto-discovers a local Python interpreter.
+Open `http://localhost:5500`. `.env` is gitignored - nothing pasted there ever gets committed. With it empty (or absent entirely), everything runs in **local/offline mode**: auth and instructor data fall back to JSON files under `ananta-backend/data/` (gitignored), the AI tutor falls back to a grounded-but-non-LLM analysis, and multi-framework execution auto-discovers a local Python interpreter.
 
 ## Environment variables
 
