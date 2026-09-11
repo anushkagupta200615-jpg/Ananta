@@ -12231,6 +12231,11 @@ input:checked + .slider-round:before {
   padding-bottom: 0;
 }
 
+.g-citations-list li.litsearch-highlight {
+  border-radius: 5px;
+  background: rgba(15, 98, 254, 0.08);
+}
+
 .cite-ref-idx {
   font-weight: 700;
   color: #c084fc;
@@ -12247,6 +12252,23 @@ input:checked + .slider-round:before {
 
 .g-arxiv-link:hover {
   text-decoration: underline;
+}
+
+.g-cite-group {
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.g-inline-cite {
+  color: #c084fc;
+  text-decoration: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.g-inline-cite:hover {
+  text-decoration: underline;
+  color: #d8b4fe;
 }
 
 /* Responsive Compendium */

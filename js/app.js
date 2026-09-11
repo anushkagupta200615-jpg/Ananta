@@ -2579,6 +2579,59 @@ document.addEventListener('DOMContentLoaded', () => {
     renderZooLibrary();
   };
 
+  /**
+   * The source data's citation numbers ("[ 82 , 125 ]" inline in each
+   * description) are keyed by a "number" field on each reference, not by the
+   * reference's own id — and every algorithm's own `citations` array ships
+   * empty, so the app's citation lookup (`a.citations.map(id => refs[id])`)
+   * silently resolved nothing for any of the 74 algorithms. This builds the
+   * number -> reference lookup once, lazily, from whatever is in the data.
+   */
+  let _zooRefsByNumber = null;
+  function getZooReferenceByNumber(refs) {
+    if (_zooRefsByNumber) return _zooRefsByNumber;
+    _zooRefsByNumber = {};
+    for (const key of Object.keys(refs)) {
+      const r = refs[key];
+      if (r && r.number != null) _zooRefsByNumber[String(r.number)] = r;
+    }
+    return _zooRefsByNumber;
+  }
+
+  /**
+   * Escapes the description, then turns every inline "[ 82 ]" / "[ 82 , 125 ]"
+   * marker into a clickable link to the actual reference — resolved from the
+   * data itself, not a fixed mapping — leaving any number the data doesn't
+   * define as plain text. $...$ math spans are left untouched here; KaTeX
+   * typesets them afterward, once this HTML is in the DOM.
+   */
+  function renderZooDescription(text, refsByNumber) {
+    const cited = new Map();
+    const html = escapeHtml(text).replace(/\[\s*([\d\s,]+?)\s*\]/g, (match, nums) => {
+      const parts = nums.split(',').map(s => s.trim()).filter(Boolean);
+      if (!parts.length) return match;
+
+      const links = parts.map(n => {
+        const ref = refsByNumber[n];
+        if (!ref) return n;
+        if (!cited.has(ref.id)) cited.set(ref.id, ref);
+        return `<a href="#zoo-ref-${ref.id}" class="g-inline-cite" onclick="window.focusZooReference('${ref.id}');return false;" title="${escapeHtml(ref.citation)}">${escapeHtml(n)}</a>`;
+      });
+      return `<sup class="g-cite-group">[${links.join(', ')}]</sup>`;
+    });
+    return { html, cited: [...cited.values()] };
+  }
+
+  window.focusZooReference = function(id) {
+    const el = document.getElementById(`zoo-ref-${id}`);
+    if (!el) return;
+    const details = el.closest('details');
+    if (details) details.open = true;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('litsearch-highlight');
+    setTimeout(() => el.classList.remove('litsearch-highlight'), 1600);
+  };
+
   function renderZooLibrary() {
     const zooGrid = document.getElementById('zoo-grid-container');
     const resultsCounter = document.getElementById('zoo-results-count');
@@ -2587,6 +2640,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoo = window.QUANTUM_ALGORITHM_ZOO;
     const algos = zoo.algorithms || [];
     const refs = zoo.references || {};
+    const refsByNumber = getZooReferenceByNumber(refs);
 
     const filtered = algos.filter(a => {
       // 1. Category check
@@ -2671,29 +2725,33 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       }
 
-      // Citations HTML with direct arXiv links
+      // Description: math rendered by KaTeX after insertion, inline [82] markers
+      // resolved to the real reference the data defines.
+      const { html: descHtml, cited: citedRefs } = renderZooDescription(a.description || '', refsByNumber);
+
+      // Citations HTML with direct arXiv links — built from what the
+      // description actually cites, since the data's own `citations` array is
+      // always empty and previously left this section permanently blank.
       let citationsHtml = '';
-      if (a.citations && a.citations.length > 0) {
-        const citedRefs = a.citations.map(cId => refs[cId]).filter(Boolean);
-        if (citedRefs.length > 0) {
-          citationsHtml = `
+      if (citedRefs.length > 0) {
+        const sorted = [...citedRefs].sort((x, y) => parseInt(x.number, 10) - parseInt(y.number, 10));
+        citationsHtml = `
             <details class="g-citations-accordion">
               <summary>
-                <span class="summary-left">📚 Peer-Reviewed Literature (${citedRefs.length})</span>
+                <span class="summary-left">📚 Peer-Reviewed Literature (${sorted.length})</span>
                 <span class="summary-toggle-icon">▾</span>
               </summary>
               <ul class="g-citations-list">
-                ${citedRefs.map(r => `
-                  <li>
+                ${sorted.map(r => `
+                  <li id="zoo-ref-${r.id}">
                     <span class="cite-ref-idx">[${r.number}]</span>
-                    <span class="cite-body-text">${r.citation}</span>
+                    <span class="cite-body-text">${escapeHtml(r.citation)}</span>
                     ${r.url ? `<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="g-arxiv-link">arXiv / Source ↗</a>` : ''}
                   </li>
                 `).join('')}
               </ul>
             </details>
           `;
-        }
       }
 
       // Clean category title
@@ -2705,15 +2763,30 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="g-speedup-pill ${speedupClass}">${a.speedup}</span>
         </div>
 
-        <h3 class="g-algo-name">${a.name}</h3>
-        <p class="g-algo-desc">${a.description}</p>
-        
+        <h3 class="g-algo-name">${escapeHtml(a.name)}</h3>
+        <p class="g-algo-desc">${descHtml}</p>
+
         ${implHtml}
         ${citationsHtml}
       `;
 
       zooGrid.appendChild(card);
     });
+
+    // The math in each description ($...$) is only typeset once it exists in
+    // the DOM; renderAllMath runs once at initial page load, before these
+    // cards exist, so without this every card would just show raw LaTeX
+    // source instead of rendered notation.
+    if (window.renderMathInElement) {
+      window.renderMathInElement(zooGrid, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false }
+        ],
+        ignoredTags: ['script', 'noscript', 'style', 'textarea', 'option'],
+        throwOnError: false
+      });
+    }
   }
 
   // BibTeX Modal Handlers
