@@ -28,13 +28,112 @@ async function fetchPdfText(pdfUrl) {
   }
 }
 
+/** OpenAlex ships abstracts as a position->word inverted index. */
+function reconstructInvertedAbstract(index) {
+  if (!index || typeof index !== 'object') return '';
+  const slots = [];
+  for (const [word, positions] of Object.entries(index)) {
+    for (const pos of positions || []) slots[pos] = word;
+  }
+  return slots.filter(Boolean).join(' ').trim();
+}
+
+async function fetchJsonSafe(url, timeoutMs = 9000) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Ananta-Quantum-Studio/1.0 (research reader; mailto:research@ananta.local)',
+          Accept: 'application/json'
+        },
+        signal: controller.signal
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Finds a legally readable copy of a paper whose own publisher link is
+ * paywalled, blocked or a scanned image.
+ *
+ * The three oldest papers in the library (Feynman 1982 on a university
+ * webserver that refuses datacenter IPs, Deutsch 1985 behind Royal Society,
+ * EPR 1935 behind APS) all failed the direct PDF fetch, so the summary fell
+ * back to the library's own one-paragraph blurb - which is why the "AI
+ * summary" looked identical to the card text. Open-access aggregators index
+ * mirrors and real publisher abstracts for exactly these cases.
+ *
+ * @returns {Promise<{text: string, title: string|null, pdfUrl: string|null, kind: string}|null>}
+ */
+async function resolveOpenAccessSource({ doi, title, arxiv } = {}) {
+  // 1. A declared arXiv id is the most reliable full text available.
+  if (arxiv) {
+    const id = String(arxiv).replace(/^arxiv:/i, '').trim();
+    const body = await fetchPdfText(`https://arxiv.org/pdf/${id}`);
+    if (body) return { text: body, title: null, pdfUrl: `https://arxiv.org/pdf/${id}`, kind: 'arxiv-pdf' };
+  }
+
+  // 2. OpenAlex: best open-access location + a reconstructable abstract.
+  let openAlex = null;
+  if (doi) openAlex = await fetchJsonSafe(`https://api.openalex.org/works/doi:${encodeURIComponent(doi)}`);
+  if (!openAlex && title) {
+    const search = await fetchJsonSafe(`https://api.openalex.org/works?filter=title.search:${encodeURIComponent(title)}&per-page=1`);
+    openAlex = search && Array.isArray(search.results) && search.results.length ? search.results[0] : null;
+  }
+
+  const oaPdf = openAlex?.best_oa_location?.pdf_url || openAlex?.open_access?.oa_url || null;
+  if (oaPdf) {
+    const body = await fetchPdfText(oaPdf);
+    if (body) return { text: body, title: openAlex?.title || null, pdfUrl: oaPdf, kind: 'openaccess-pdf' };
+  }
+
+  // 3. Semantic Scholar: another OA index, plus a one-line expert tldr.
+  let s2 = null;
+  if (doi) {
+    s2 = await fetchJsonSafe(`https://api.semanticscholar.org/graph/v1/paper/DOI:${encodeURIComponent(doi)}?fields=title,abstract,tldr,openAccessPdf`);
+  }
+  const s2Pdf = s2?.openAccessPdf?.url || null;
+  if (s2Pdf) {
+    const body = await fetchPdfText(s2Pdf);
+    if (body) return { text: body, title: s2?.title || null, pdfUrl: s2Pdf, kind: 'openaccess-pdf' };
+  }
+
+  // 4. No readable full text anywhere - fall back to the real publisher
+  // abstract, which is still far richer than the library's own blurb.
+  const openAlexAbstract = reconstructInvertedAbstract(openAlex?.abstract_inverted_index);
+  const parts = [];
+  if (s2?.abstract) parts.push(s2.abstract);
+  else if (openAlexAbstract) parts.push(openAlexAbstract);
+  if (s2?.tldr?.text) parts.push(`Key point: ${s2.tldr.text}`);
+
+  if (parts.length) {
+    return {
+      text: parts.join('\n\n'),
+      title: s2?.title || openAlex?.title || null,
+      pdfUrl: null,
+      kind: 'publisher-abstract'
+    };
+  }
+  return null;
+}
+
 /**
  * Downloads a web page or research paper and extracts readable text.
  * Uses native fetch and regex/HTML parsing. Special handling for arXiv abstracts and PDFs.
  * @param {string} url
- * @returns {Promise<{title: string, text: string}>}
+ * @param {{doi?: string, title?: string, arxiv?: string}} [meta] - used to find an
+ *        open-access copy when the supplied URL is paywalled, blocked or scanned.
+ * @returns {Promise<{title: string, text: string, fullTextAvailable: boolean, resolvedUrl?: string, sourceKind?: string}>}
  */
-async function extractTextFromUrl(url) {
+async function extractTextFromUrl(url, meta = {}) {
   if (!url || typeof url !== 'string') {
     throw new Error('Valid URL is required');
   }
@@ -81,14 +180,41 @@ async function extractTextFromUrl(url) {
   }
 
   // General web page extraction using native fetch
-  const response = await fetch(cleanUrl, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+  let response;
+  try {
+    response = await fetch(cleanUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      }
+    });
+  } catch (netErr) {
+    // The host refused us outright (several journal/university servers block
+    // datacenter IPs). An open-access mirror is the honest next try.
+    const oa = await resolveOpenAccessSource(meta);
+    if (oa) {
+      return {
+        title: oa.title || meta.title || 'Research Article',
+        text: oa.text.slice(0, MAX_EXTRACTED_CHARS),
+        fullTextAvailable: oa.kind !== 'publisher-abstract',
+        resolvedUrl: oa.pdfUrl || undefined,
+        sourceKind: oa.kind
+      };
     }
-  });
+    throw new Error(`Failed to reach URL (${netErr.message})`);
+  }
 
   if (!response.ok) {
+    const oa = await resolveOpenAccessSource(meta);
+    if (oa) {
+      return {
+        title: oa.title || meta.title || 'Research Article',
+        text: oa.text.slice(0, MAX_EXTRACTED_CHARS),
+        fullTextAvailable: oa.kind !== 'publisher-abstract',
+        resolvedUrl: oa.pdfUrl || undefined,
+        sourceKind: oa.kind
+      };
+    }
     throw new Error(`Failed to fetch URL (HTTP ${response.status})`);
   }
 
@@ -97,6 +223,19 @@ async function extractTextFromUrl(url) {
     const fallbackTitle = decodeURIComponent(cleanUrl.split('/').pop() || '').replace(/\.pdf$/i, '') || 'Research PDF Document';
     const pdfBody = await fetchPdfText(cleanUrl);
     if (!pdfBody) {
+      // Unreachable host, or a scanned image with no text layer (every paper
+      // from before ~1990 in this library). Look for an open-access mirror
+      // before giving up and letting the caller fall back to a blurb.
+      const oa = await resolveOpenAccessSource(meta);
+      if (oa) {
+        return {
+          title: oa.title || meta.title || fallbackTitle,
+          text: oa.text.slice(0, MAX_EXTRACTED_CHARS),
+          fullTextAvailable: oa.kind !== 'publisher-abstract',
+          resolvedUrl: oa.pdfUrl || undefined,
+          sourceKind: oa.kind
+        };
+      }
       throw new Error('Could not extract text from this PDF (unreachable, too large, or a scanned image with no text layer)');
     }
     // The PDF's own title (first non-empty line) usually reads better than a

@@ -20,18 +20,26 @@ function cleanAbstractBody(raw) {
 }
 
 /**
- * Summarizes research text using Grok-2, Gemini 2.5 Flash, Anthropic,
- * or a smart, structured local academic summarizer (100% free, zero key required).
+ * Summarizes research text with a real AI provider, falling back to a local
+ * extractive summarizer only when every provider genuinely fails.
  *
- * @param {string} text - text to summarize
+ * Returns the reason for any fallback so callers can tell the user the truth
+ * ("quota exhausted", "no key") instead of quietly handing back a reworded
+ * copy of the same abstract and calling it an AI summary.
+ *
+ * @param {string} text - text to summarize (often the full extracted paper)
  * @param {string} [focusTerm] - optional term for contextual explanation
- * @returns {Promise<string>}
+ * @returns {Promise<{summary: string, aiUsed: boolean, provider: string, model: string|null, reason: string|null}>}
  */
-async function summarizeText(text, focusTerm = null) {
-  if (!text || !text.trim()) return "No scientific content available to summarize.";
+async function summarizeTextDetailed(text, focusTerm = null) {
+  const empty = (msg) => ({ summary: msg, aiUsed: false, provider: 'none', model: null, reason: 'no input text' });
+  if (!text || !text.trim()) return empty('No scientific content available to summarize.');
 
-  const proseText = cleanAbstractBody(text).slice(0, 12000);
-  if (!proseText) return "Empty research document abstract.";
+  // Generous context: this is usually a full paper body now, and a bigger
+  // slice is what makes the summary describe the actual study rather than
+  // just its opening paragraph.
+  const proseText = cleanAbstractBody(text).slice(0, 40000);
+  if (!proseText) return empty('Empty research document abstract.');
 
   const instruction = focusTerm
     ? `The user searched for the term "${focusTerm}" inside this research paper. ` +
@@ -44,106 +52,42 @@ async function summarizeText(text, focusTerm = null) {
   // abstract), so the prompt must not mislabel it as one.
   const sourceBlock = `Source Text:\n"""\n${proseText}\n"""`;
 
-  // 1. Try Grok (xAI API) if configured. Model id resolved dynamically via
-  // resolveGrokModel (ananta-backend/../api/gemini.js) - a hardcoded id like
-  // "grok-2-latest" silently 404s once xAI retires it, which is exactly what
-  // happened here before: every call fell straight through to the local
-  // extractive fallback with no visible error.
-  const grokKey = process.env.GROK_API_KEY || process.env.XAI_API_KEY;
-  if (grokKey && grokKey.length > 5) {
-    try {
-      const { resolveGrokModel } = require('../../api/gemini.js');
-      const model = await resolveGrokModel(grokKey);
-      const controller = new AbortController();
-      const tid = setTimeout(() => controller.abort(), 12000);
-      const res = await fetch("https://api.x.ai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${grokKey.trim()}`
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: "You are an elite quantum research scientist. Provide a coherent, concise executive summary." },
-            { role: "user", content: `${instruction}\n\n${sourceBlock}` }
-          ],
-          temperature: 0.2,
-          max_tokens: 500
-        }),
-        signal: controller.signal
-      });
-      clearTimeout(tid);
+  // Provider calls live in aiProvider.js, which every entry point can
+  // require directly. This used to reach across into api/gemini.js, which
+  // resolves locally but NOT inside Vercel's per-function bundle: the
+  // require threw, the throw was swallowed, and production silently served
+  // the offline extractive summary for every paper while the status probe
+  // still reported "gemini available".
+  const { generateText } = require('./aiProvider');
 
-      if (res.ok) {
-        const data = await res.json();
-        const summary = data?.choices?.[0]?.message?.content;
-        if (summary) return summary.trim();
-      }
-    } catch (grokErr) {
-      console.warn("[summarizeText] Grok attempt notice:", grokErr.message);
-    }
+  try {
+    const out = await generateText({
+      prompt: `${instruction}\n\n${sourceBlock}`,
+      maxTokens: 8192,
+      temperature: 0.2,
+      timeoutMs: 22000
+    });
+    return { summary: out.text, aiUsed: true, provider: out.provider, model: out.model, reason: null };
+  } catch (aiErr) {
+    console.warn('[summarizeText] every AI provider failed:', aiErr.message);
+    return {
+      summary: localStructuredSummary(proseText, focusTerm),
+      aiUsed: false,
+      provider: 'offline-extractive',
+      model: null,
+      reason: aiErr.message
+    };
   }
+}
 
-  // 2. Try Google Gemini if key available. Ranked candidate list resolved
-  // dynamically (same fix as above) - try the top few in case the
-  // best-ranked model is temporarily overloaded/out of quota for this key.
-  const geminiKey = process.env.GEMINI_API_KEY;
-
-  if (geminiKey && geminiKey.length > 10) {
-    try {
-      const { resolveGeminiModels } = require('../../api/gemini.js');
-      const candidates = await resolveGeminiModels(geminiKey);
-
-      for (const model of candidates.slice(0, 3)) {
-        try {
-          const controller = new AbortController();
-          const tid = setTimeout(() => controller.abort(), 12000);
-          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
-          const res = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: `${instruction}\n\n${sourceBlock}` }] }],
-              // Newer Gemini models spend hundreds of tokens on hidden
-              // "thinking" before ever writing the visible answer, and
-              // thinkingBudget:0 doesn't reliably suppress that for every
-              // model tier - a low maxOutputTokens (600) silently truncated
-              // the real answer mid-sentence once model resolution started
-              // picking one of those models. Generous headroom is the fix
-              // that holds regardless of whether a given model honors the
-              // thinking-budget hint.
-              generationConfig: { temperature: 0.2, maxOutputTokens: 8192, thinkingConfig: { thinkingBudget: 0 } }
-            }),
-            signal: controller.signal
-          });
-          clearTimeout(tid);
-
-          if (res.ok) {
-            const data = await res.json();
-            const finishReason = data?.candidates?.[0]?.finishReason;
-            const geminiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            // MAX_TOKENS means the visible answer was cut off mid-sentence
-            // (the hidden "thinking" budget for this model/request ate more
-            // of the token budget than expected) - a truncated sentence is
-            // not a usable summary, so treat it as a miss and let the loop
-            // try the next candidate model rather than silently returning it.
-            if (geminiText && finishReason !== 'MAX_TOKENS') return geminiText.trim();
-            if (finishReason === 'MAX_TOKENS') {
-              console.warn(`[summarizeText] Gemini model ${model} truncated (MAX_TOKENS) - trying next candidate`);
-            }
-          }
-        } catch (modelErr) {
-          console.warn(`[summarizeText] Gemini model ${model} notice:`, modelErr.message);
-        }
-      }
-    } catch (gemErr) {
-      console.warn("[summarizeText] Gemini attempt notice:", gemErr.message);
-    }
-  }
-
-  // 3. Intelligent Structured Local Academic Summarizer (Zero-Key Guaranteed Fallback)
-  return localStructuredSummary(proseText, focusTerm);
+/**
+ * Back-compatible string-returning wrapper. Callers that only want the text
+ * (find-term snippets, topic synthesis) keep working unchanged.
+ * @returns {Promise<string>}
+ */
+async function summarizeText(text, focusTerm = null) {
+  const result = await summarizeTextDetailed(text, focusTerm);
+  return typeof result === 'string' ? result : result.summary;
 }
 
 /**
@@ -453,6 +397,7 @@ MANDATORY RULES:
 
 module.exports = {
   summarizeText,
+  summarizeTextDetailed,
   synthesizeTopic,
   localTopicSynthesis,
   cleanAbstractBody

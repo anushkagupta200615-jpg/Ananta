@@ -259,7 +259,7 @@ module.exports = async function handler(req, res) {
   const { googleSearch } = require('../ananta-backend/utils/googleSearch');
   const { extractTextFromUrl } = require('../ananta-backend/utils/extractText');
   const { findTermOccurrences } = require('../ananta-backend/utils/findTerm');
-  const { summarizeText } = require('../ananta-backend/utils/summarize');
+  const { summarizeText, summarizeTextDetailed } = require('../ananta-backend/utils/summarize');
 
   if (pathname === '/api/search' && req.method === 'POST') {
     const body = await getParsedBody(req);
@@ -320,22 +320,34 @@ module.exports = async function handler(req, res) {
 
   if (pathname === '/api/summarize' && req.method === 'POST') {
     const body = await getParsedBody(req);
-    const { url, text } = body || {};
+    const { url, text, doi, title: titleHint, arxiv } = body || {};
     if (!url && !text) return sendJson(res, 400, { error: 'provide either url or text' });
 
     try {
       let sourceText = text;
       let title = null;
       let fullTextAvailable = Boolean(text);
+      let sourceUrl = url || null;
       if (!sourceText && url) {
-        const extracted = await extractTextFromUrl(url);
+        const extracted = await extractTextFromUrl(url, { doi, title: titleHint, arxiv });
         sourceText = extracted.text;
         title = extracted.title;
         fullTextAvailable = Boolean(extracted.fullTextAvailable);
+        if (extracted.resolvedUrl) sourceUrl = extracted.resolvedUrl;
       }
-      const truncated = (sourceText || '').slice(0, 15000);
-      const summary = await summarizeText(truncated);
-      return sendJson(res, 200, { title, summary, fullTextAvailable });
+      const truncated = (sourceText || '').slice(0, 40000);
+      const detailed = await summarizeTextDetailed(truncated);
+      return sendJson(res, 200, {
+        title,
+        summary: detailed.summary,
+        fullTextAvailable,
+        sourceUrl,
+        sourceChars: (sourceText || '').length,
+        aiUsed: detailed.aiUsed,
+        aiProvider: detailed.provider,
+        aiModel: detailed.model,
+        aiError: detailed.reason
+      });
     } catch (e) {
       return sendJson(res, 500, { error: e.message });
     }
