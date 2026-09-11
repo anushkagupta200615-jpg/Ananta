@@ -149,8 +149,12 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  // Dedicated Multi-task Gemini Endpoint (/api/gemini, /api/ai, /api/grok)
-  if (pathname === '/api/gemini' || pathname === '/gemini' || pathname === '/api/ai' || pathname === '/api/grok') {
+  // Dedicated Multi-task Gemini Endpoint (/api/gemini, /api/ai, /api/grok, /api/ai/tutor)
+  // /api/ai/tutor was missing here (present only in server.js's local-dev
+  // routing), so on Vercel every Circuit Tutor request 404'd and silently
+  // fell back to the client's offline analysis - the AI-backed tutor never
+  // actually ran in production.
+  if (pathname === '/api/gemini' || pathname === '/gemini' || pathname === '/api/ai' || pathname === '/api/grok' || pathname === '/api/ai/tutor') {
     const geminiHandler = require('./gemini.js');
     return geminiHandler(req, res);
   }

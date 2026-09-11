@@ -1187,9 +1187,12 @@ function generateCircuitTutorLocally(payload) {
   }
 
   const isHealthy = !errors.some(e => e.severity === 'error');
-  const tutorGuidance = errors.length > 0
+  const tutorGuidance = answerCircuitQuestionLocally(payload?.userQuestion, {
+    summary, purpose, entanglementAnalysis, errors,
+    diracNotation: payload?.diracNotation, numQubits
+  }) || (errors.length > 0
     ? `You have ${errors.length} diagnostic recommendation(s). Review the highlighted findings above to optimize circuit depth and avoid unwanted state collapse.`
-    : 'Your quantum circuit logic is sound and unitary! Try experimenting with relative phase (Phase S or T gates) or adding a CNOT to a third wire to observe entanglement scaling.';
+    : 'Your quantum circuit logic is sound and unitary! Try experimenting with relative phase (Phase S or T gates) or adding a CNOT to a third wire to observe entanglement scaling.');
 
   return {
     circuitSummary: summary,
@@ -1200,6 +1203,74 @@ function generateCircuitTutorLocally(payload) {
     entanglementAnalysis,
     tutorGuidance
   };
+}
+
+// Real quantum-mechanical facts about each gate (textbook definitions, not
+// claims about the user's specific circuit) - mirrors js/circuit-tutor.js's
+// client-side GATE_EXPLANATIONS so the answer is consistent whether the
+// question is answered server-side (here, when no AI provider key is
+// configured) or client-side (when the network call fails outright).
+const GATE_EXPLANATIONS = {
+  H: 'Hadamard (H) creates an equal superposition: |0⟩ → (|0⟩+|1⟩)/√2. It\'s the standard way to start superposition, and combined with a CNOT it produces entanglement.',
+  X: 'Pauli-X is the quantum NOT gate: it flips |0⟩↔|1⟩ (a π rotation about the Bloch sphere\'s X-axis).',
+  Y: 'Pauli-Y rotates by π about the Bloch sphere\'s Y-axis: it flips the bit and applies a phase (i on |0⟩→|1⟩, -i on |1⟩→|0⟩).',
+  Z: 'Pauli-Z is a phase flip: it leaves |0⟩ unchanged and multiplies |1⟩ by -1. It has no effect on a qubit that isn\'t already in superposition.',
+  S: 'The Phase gate (S) applies a 90° (π/2) phase to |1⟩. It\'s the square root of Z (S² = Z).',
+  T: 'The T gate applies a 45° (π/4) phase to |1⟩. It\'s the square root of S (T² = S) and, alongside H and CNOT, is what makes a gate set universal for fault-tolerant computation.',
+  CX: 'CNOT (controlled-X) flips the target qubit only when the control qubit is |1⟩. It\'s the standard two-qubit entangling gate — a Hadamard followed by a CNOT produces a Bell pair.',
+  CNOT: 'CNOT (controlled-X) flips the target qubit only when the control qubit is |1⟩. It\'s the standard two-qubit entangling gate — a Hadamard followed by a CNOT produces a Bell pair.',
+  SWAP: 'SWAP exchanges the full quantum states (not just labels) of two qubits, including any superposition or entanglement they carry.',
+  TOFFOLI: 'The Toffoli gate (CCX) flips the target qubit only when BOTH control qubits are |1⟩ — a reversible AND gate, used in arithmetic circuits and some error-correcting codes.',
+  CCX: 'The Toffoli gate (CCX) flips the target qubit only when BOTH control qubits are |1⟩ — a reversible AND gate, used in arithmetic circuits and some error-correcting codes.',
+  M: 'Measurement collapses the qubit\'s superposition into a definite classical bit (0 or 1), with probabilities given by the Born rule |amplitude|². This is irreversible — any superposition or entanglement on that wire is destroyed.',
+  MEASURE: 'Measurement collapses the qubit\'s superposition into a definite classical bit (0 or 1), with probabilities given by the Born rule |amplitude|². This is irreversible — any superposition or entanglement on that wire is destroyed.'
+};
+
+// Answers the student's actual typed question using only data already
+// computed from the real circuit (summary/purpose/entanglementAnalysis/
+// errors came from describeCircuit() on the real grid) - this runs when no
+// AI provider is configured, so every claim must stay grounded in that real
+// data instead of a generic canned string that ignores what was asked.
+function answerCircuitQuestionLocally(question, { summary, purpose, entanglementAnalysis, errors, diracNotation, numQubits }) {
+  const q = (question || '').toLowerCase();
+  if (!q) return null;
+
+  const gateMatch = Object.keys(GATE_EXPLANATIONS).find((key) => new RegExp(`\\b${key.toLowerCase()}\\b`).test(q));
+  if (gateMatch && /what|explain|mean|do(es)?\b/.test(q)) {
+    return `${GATE_EXPLANATIONS[gateMatch]} (No AI provider key is configured on this server, so this is a reference definition rather than a comment generated specifically about your circuit by an LLM.)`;
+  }
+
+  if (/\b(right|correct|valid|proper|wrong|good|work(s|ing)?|mistake)\b/.test(q)) {
+    const errCount = errors.filter(e => e.severity === 'error').length;
+    const warnCount = errors.filter(e => e.severity === 'warning').length;
+    if (errCount > 0) {
+      const first = errors.find(e => e.severity === 'error');
+      return `Based on a real check of your circuit grid: no, there's ${errCount} genuine error to fix first — "${first.title}" at ${first.location}. ${first.explanation} Suggested fix: ${first.suggestedFix}`;
+    }
+    if (warnCount > 0) {
+      return `Your circuit is logically valid (every gate is well-formed and unitary), but there ${warnCount === 1 ? 'is' : 'are'} ${warnCount} efficiency warning${warnCount === 1 ? '' : 's'} — see the diagnostics above. It builds: ${summary}.`;
+    }
+    return `Yes — it's a valid, well-formed circuit: ${summary}. ${purpose}`;
+  }
+
+  if (/what\s+(is|does|am\s+i|have\s+i)|purpose|building/.test(q)) {
+    return `${summary}. ${purpose}`;
+  }
+
+  if (/entangl|correlat|separable|bell|ghz/.test(q)) {
+    return entanglementAnalysis;
+  }
+
+  if (/error|issue|bug|problem|fix/.test(q)) {
+    if (!errors.length) return 'No issues detected — the deterministic static analysis found no premature measurements, dangling controls, or idle wires.';
+    return errors.map(e => `[${e.severity.toUpperCase()}] ${e.title} (${e.location}): ${e.explanation} → ${e.suggestedFix}`).join(' | ');
+  }
+
+  if (/state|probabilit|outcome|measure|amplitude/.test(q)) {
+    return `The current statevector is ${diracNotation || '|0...0>'} across ${numQubits} qubits. ${entanglementAnalysis}`;
+  }
+
+  return `No AI provider key is configured on this server, so this offline mode can't parse that question freely — but here's what's grounded in your real circuit: ${summary}. ${purpose} ${errors.length ? `${errors.length} diagnostic(s) found — see above.` : 'No issues detected.'}`;
 }
 
 module.exports = handler;
