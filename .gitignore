@@ -9,6 +9,10 @@ Thumbs.db
 node_modules/
 
 # Local API Keys and secrets
+.env
+.env.*
+*.env
+*.local
 # js/config.js included for deployment
 
 # Python virtual environment & database

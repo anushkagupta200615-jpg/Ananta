@@ -84,6 +84,13 @@ class TranspilerDoctor {
     this.doctorGateDescEl = document.getElementById('doctor-gate-desc');
     this.doctorQvReqEl = document.getElementById('doctor-qv-req');
     this.doctorCancellationsCountEl = document.getElementById('doctor-cancellations-count');
+
+    // Code Editor & Live Backend Telemetry Elements
+    this.sourceLineNumsEl = document.getElementById('transpiler-source-linenums');
+    this.targetLineNumsEl = document.getElementById('transpiler-target-linenums');
+    this.apiTelemetryEl = document.getElementById('transpiler-api-telemetry');
+    this.apiStatusTextEl = document.getElementById('transpiler-api-status-text');
+    this.btnToggleEditTarget = document.getElementById('btn-toggle-edit-target');
   }
 
   setExplainerLevel(level = 'simple') {
@@ -237,10 +244,279 @@ class TranspilerDoctor {
     this.renderTargetCode();
   }
 
+  // Update line numbers for editor
+  updateLineNumbers(type = 'source') {
+    const area = type === 'source' ? this.sourceCodeArea : this.targetCodeArea;
+    const numsEl = type === 'source' ? this.sourceLineNumsEl : this.targetLineNumsEl;
+    if (!area || !numsEl) return;
+    const lineCount = (area.value || '').split('\n').length;
+    let numbers = '';
+    for (let i = 1; i <= lineCount; i++) {
+      numbers += i + '\n';
+    }
+    numsEl.textContent = numbers || '1\n';
+  }
+
+  // Synchronize scroll between textarea and line numbers
+  syncScroll(type = 'source') {
+    const area = type === 'source' ? this.sourceCodeArea : this.targetCodeArea;
+    const numsEl = type === 'source' ? this.sourceLineNumsEl : this.targetLineNumsEl;
+    if (area && numsEl) {
+      numsEl.scrollTop = area.scrollTop;
+    }
+  }
+
+  // Format and clean up source code indentation
+  formatSourceCode() {
+    if (!this.sourceCodeArea) return;
+    const text = this.sourceCodeArea.value;
+    if (!text.trim()) return;
+
+    const lines = text.split('\n');
+    const formatted = [];
+    let prevEmpty = false;
+    lines.forEach(l => {
+      const trimmedEnd = l.trimEnd();
+      if (!trimmedEnd.trim()) {
+        if (!prevEmpty) {
+          formatted.push('');
+          prevEmpty = true;
+        }
+      } else {
+        formatted.push(trimmedEnd);
+        prevEmpty = false;
+      }
+    });
+
+    this.sourceCodeArea.value = formatted.join('\n');
+    this.updateLineNumbers('source');
+    if (typeof showNotification === 'function') {
+      showNotification('Source code formatted successfully.', 'success');
+    }
+  }
+
+  // Sync circuit directly from Composer into Transpiler
+  syncFromComposer() {
+    if (!window.quantumComposer || !window.quantumComposer.circuit) {
+      if (typeof showNotification === 'function') {
+        showNotification('No active circuit found in Composer.', 'info');
+      }
+      return;
+    }
+
+    const composerCircuit = window.quantumComposer.circuit;
+    const numQ = window.quantumComposer.numQubits || 4;
+    this.declaredNumQubits = numQ;
+    const ast = [];
+
+    // Translate Composer grid columns to canonical AST
+    composerCircuit.forEach(col => {
+      if (Array.isArray(col)) {
+        col.forEach(cell => {
+          if (cell && cell.gate) {
+            const gName = cell.gate.toUpperCase();
+            if (['H', 'X', 'Y', 'Z', 'S', 'T'].includes(gName)) {
+              ast.push({ gate: gName, qubits: [cell.qubit], params: [] });
+            } else if (['CNOT', 'CX', 'CZ', 'SWAP'].includes(gName)) {
+              ast.push({ gate: (gName === 'CX' ? 'CNOT' : gName), qubits: [cell.qubit, cell.targetQubit !== undefined ? cell.targetQubit : (cell.qubit + 1)], params: [] });
+            } else if (['RZ', 'RY', 'RX', 'PHASE'].includes(gName)) {
+              ast.push({ gate: (gName === 'PHASE' ? 'RZ' : gName), qubits: [cell.qubit], params: [cell.angle !== undefined ? cell.angle : 0.785] });
+            }
+          }
+        });
+      }
+    });
+
+    if (ast.length === 0) {
+      if (typeof showNotification === 'function') {
+        showNotification('Composer circuit is empty. Place some gates in Composer first.', 'warning');
+      }
+      return;
+    }
+
+    this.circuitAST = ast;
+    this.renderSourceCode();
+    this.transpileOptimized();
+    if (typeof showNotification === 'function') {
+      showNotification(`Imported ${ast.length} gates from Composer!`, 'success');
+    }
+  }
+
+  // Clear source code editor
+  clearSourceCode() {
+    if (this.sourceCodeArea) {
+      this.sourceCodeArea.value = '';
+      this.updateLineNumbers('source');
+    }
+    if (this.targetCodeArea) {
+      this.targetCodeArea.value = '';
+      this.updateLineNumbers('target');
+    }
+    this.circuitAST = [];
+    this.optimizedAST = [];
+  }
+
+  // Toggle Target Code Editor Read/Write mode
+  toggleTargetEditable() {
+    if (!this.targetCodeArea) return;
+    const isReadOnly = this.targetCodeArea.readOnly;
+    this.targetCodeArea.readOnly = !isReadOnly;
+
+    if (this.btnToggleEditTarget) {
+      if (!isReadOnly) {
+        this.btnToggleEditTarget.innerHTML = '✏️ Edit';
+        this.btnToggleEditTarget.classList.remove('active');
+        this.targetCodeArea.style.border = 'none';
+      } else {
+        this.btnToggleEditTarget.innerHTML = '🔒 Lock';
+        this.btnToggleEditTarget.classList.add('active');
+        this.targetCodeArea.style.border = '1px dashed #3b82f6';
+      }
+    }
+  }
+
+  // Update center telemetry pill
+  setTelemetry(status = 'idle', text = '') {
+    if (!this.apiTelemetryEl) return;
+    this.apiTelemetryEl.className = 'transpiler-api-telemetry';
+    if (status === 'loading') {
+      this.apiTelemetryEl.classList.add('loading');
+    } else if (status === 'error') {
+      this.apiTelemetryEl.classList.add('error');
+    }
+    if (this.apiStatusTextEl) {
+      this.apiStatusTextEl.textContent = text;
+    }
+  }
+
+  // Apply real metrics from backend engine to DOM
+  applyBackendMetrics(data) {
+    if (!data) return;
+    const metrics = data.metrics || {};
+    const cancellations = data.cancellations || [];
+    const merges = data.merges || [];
+    const rawGateCount = data.rawGateCount ?? (this.circuitAST ? this.circuitAST.length : 0);
+    const optimizedGateCount = data.optimizedGateCount ?? (this.optimizedAST ? this.optimizedAST.length : 0);
+
+    if (this.doctorHealthScoreEl) {
+      const hs = metrics.healthScore !== undefined ? metrics.healthScore : 100;
+      this.doctorHealthScoreEl.textContent = `${hs}%`;
+      this.doctorHealthScoreEl.className = `doc-val ${hs >= 90 ? 'highlight-green' : (hs >= 70 ? 'highlight-yellow' : 'highlight-red')}`;
+    }
+    if (this.doctorHealthBadgeEl) {
+      const hs = metrics.healthScore !== undefined ? metrics.healthScore : 100;
+      if (hs >= 90) {
+        this.doctorHealthBadgeEl.className = 'doc-badge-status status-healthy';
+        this.doctorHealthBadgeEl.textContent = `Optimal (${hs}%)`;
+      } else if (hs >= 70) {
+        this.doctorHealthBadgeEl.className = 'doc-badge-status status-warning';
+        this.doctorHealthBadgeEl.textContent = `Mild Bloat (${hs}%)`;
+      } else {
+        this.doctorHealthBadgeEl.className = 'doc-badge-status status-critical';
+        this.doctorHealthBadgeEl.textContent = `Critical Sickness (${hs}%)`;
+      }
+    }
+    if (this.doctorHealthDescEl) {
+      const diff = metrics.diff !== undefined ? metrics.diff : (rawGateCount - optimizedGateCount);
+      this.doctorHealthDescEl.textContent = (diff > 0)
+        ? `${diff} redundant operations diagnosed & pruned`
+        : `Zero redundant operations detected`;
+    }
+    if (this.doctorTimeSavedEl) {
+      this.doctorTimeSavedEl.textContent = `+${metrics.totalSavedNs || 0} ns`;
+    }
+    if (this.doctorTimeDescEl) {
+      const savedNs = metrics.totalSavedNs || 0;
+      this.doctorTimeDescEl.textContent = (savedNs > 0)
+        ? `Saved ~${savedNs} ns of QPU decoherence time`
+        : `Superconducting transmon gate clock`;
+    }
+    if (this.doctorCoherenceGainEl) {
+      this.doctorCoherenceGainEl.textContent = `+${metrics.coherenceGain || '0.00'}% F`;
+    }
+    if (this.doctorCoherenceDescEl) {
+      this.doctorCoherenceDescEl.textContent = `Decoherence decay e^(-Δt/T₁) prevented`;
+    }
+    if (this.gateReductionEl) {
+      const diff = metrics.diff !== undefined ? metrics.diff : (rawGateCount - optimizedGateCount);
+      this.gateReductionEl.textContent = `${rawGateCount} → ${optimizedGateCount} gates (${diff > 0 ? '-' + diff : 'Optimal'})`;
+    }
+    if (this.doctorGateDescEl) {
+      const diff = metrics.diff !== undefined ? metrics.diff : (rawGateCount - optimizedGateCount);
+      this.doctorGateDescEl.textContent = diff > 0
+        ? `Pruned ${((diff / (rawGateCount || 1)) * 100).toFixed(1)}% of circuit gates`
+        : `Circuit is already maximally compressed`;
+    }
+    if (this.depthReductionEl) {
+      const rawDepth = metrics.rawDepth ?? 0;
+      const optDepth = metrics.optDepth ?? 0;
+      const depthDiff = metrics.depthDiff ?? 0;
+      this.depthReductionEl.textContent = `${rawDepth} → ${optDepth} layers (${depthDiff > 0 ? '-' + depthDiff : 'Optimal'})`;
+    }
+    if (this.entanglementEntropyEl) {
+      this.entanglementEntropyEl.textContent = metrics.entanglementEntropy || '0.000';
+    }
+    if (this.doctorQvReqEl) {
+      this.doctorQvReqEl.textContent = `QV ≥ ${metrics.qvReq || 4}`;
+    }
+    if (this.doctorCancellationsCountEl) {
+      this.doctorCancellationsCountEl.textContent = `${cancellations.length + merges.length} Applied`;
+    }
+    if (this.hwRoutingStatsEl) {
+      this.hwRoutingStatsEl.innerHTML = `
+        <div class="hw-chip-stat"><span>IBM Heavy-Hex:</span> <strong>+${metrics.heavyHexSwaps || 0} SWAP gates</strong></div>
+        <div class="hw-chip-stat"><span>Google Sycamore 2D:</span> <strong>+${metrics.sycamoreSwaps || 0} SWAP gates</strong></div>
+        <div class="hw-chip-stat"><span>IonQ All-to-All:</span> <strong>0 SWAP overhead</strong></div>
+      `;
+    }
+
+    if (this.doctorResultsEl) {
+      let diagHtml = '';
+      if (cancellations.length > 0 || merges.length > 0) {
+        diagHtml += `<div class="doctor-badge-title">✅ Optimization Opportunities Applied (via Backend Engine):</div>`;
+        cancellations.forEach(c => {
+          diagHtml += `
+            <div class="doctor-finding-card-item finding-cancel">
+              <div class="doctor-finding-top">
+                <span class="finding-title">✂️ ${c.title} on ${c.qubit}</span>
+                <span class="finding-pill-saved">+${c.savedNs} ns saved</span>
+              </div>
+              <span class="finding-math">${c.math}</span>
+              <span class="finding-explanation">${c.reason} (${c.fidelitySaved})</span>
+            </div>
+          `;
+        });
+        merges.forEach(m => {
+          diagHtml += `
+            <div class="doctor-finding-card-item finding-merge">
+              <div class="doctor-finding-top">
+                <span class="finding-title">🔄 ${m.title} on ${m.qubit}</span>
+                <span class="finding-pill-saved">+${m.savedNs} ns saved</span>
+              </div>
+              <span class="finding-math">${m.math}</span>
+              <span class="finding-explanation">${m.reason} (${m.fidelitySaved})</span>
+            </div>
+          `;
+        });
+      } else {
+        diagHtml += `
+          <div class="doctor-finding-card-item finding-clean">
+            <div class="doctor-finding-top">
+              <span class="finding-title">✨ Peak Quantum Health</span>
+            </div>
+            <span class="finding-explanation">Circuit is already maximally compressed with zero redundant gates. Unitary execution is optimal.</span>
+          </div>
+        `;
+      }
+      this.doctorResultsEl.innerHTML = diagHtml;
+    }
+  }
+
   // Generate source framework code from canonical AST
   renderSourceCode() {
     if (!this.sourceCodeArea) return;
     this.sourceCodeArea.value = this.generateCode(this.sourceFramework, this.circuitAST, false, true);
+    this.updateLineNumbers('source');
   }
 
   // Generate target framework code according to active targetMode
@@ -252,6 +528,7 @@ class TranspilerDoctor {
       : this.circuitAST;
 
     this.targetCodeArea.value = this.generateCode(this.targetFramework, astToRender, isOpt, false);
+    this.updateLineNumbers('target');
 
     // Sync mode toggle buttons if present
     if (this.btnModeDirect) this.btnModeDirect.classList.toggle('active', !isOpt);
@@ -277,20 +554,127 @@ class TranspilerDoctor {
     }
   }
 
-  setTargetMode(mode = 'direct') {
+  setTargetMode(mode = 'direct', shouldRender = true) {
     this.targetMode = mode;
-    this.renderTargetCode();
+    if (shouldRender) {
+      this.renderTargetCode();
+    } else {
+      const isOpt = (mode === 'optimized');
+      if (this.btnModeDirect) this.btnModeDirect.classList.toggle('active', !isOpt);
+      if (this.btnModeOptimized) this.btnModeOptimized.classList.toggle('active', isOpt);
+    }
   }
 
-  // Direct 1:1 Transpilation action
-  transpileDirect() {
+  // Direct 1:1 Transpilation action (Live Backend API + Local Fallback)
+  async transpileDirect() {
+    const code = this.sourceCodeArea ? this.sourceCodeArea.value : '';
+    this.setTelemetry('loading', 'Transpiling via Backend API...');
+    const t0 = performance.now();
+
+    try {
+      const resp = await fetch('/api/transpiler/transpile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          sourceFramework: this.sourceFramework,
+          targetFramework: this.targetFramework
+        })
+      });
+
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      const elapsed = Math.round(performance.now() - t0);
+      this.setTelemetry('success', `Live API 200 OK (${elapsed}ms)`);
+
+      if (data && data.transpiledCode) {
+        if (this.targetCodeArea) {
+          this.targetCodeArea.value = data.transpiledCode;
+          this.updateLineNumbers('target');
+        }
+        if (this.statusPillEl) {
+          this.statusPillEl.className = 'transpiler-status-pill direct';
+          this.statusPillEl.innerHTML = `➔ <strong>Direct 1:1 Transpilation:</strong> Backend syntax conversion (${data.rawGateCount} gates). Click <em>⚡ Run Circuit Doctor</em> to optimize.`;
+        }
+        this.setTargetMode('direct', false);
+        return;
+      }
+    } catch (err) {
+      console.warn('[Transpiler] Direct API fetch fallback:', err.message);
+      this.setTelemetry('error', `Local fallback (${err.message})`);
+    }
+
+    // Fallback to client-side compiler
     this.parseSourceCode();
     this.optimize();
     this.setTargetMode('direct');
   }
 
-  // Circuit Doctor Optimization action
-  transpileOptimized() {
+  // Circuit Doctor Optimization action (Live Backend AI Doctor API + Fallback)
+  async transpileOptimized() {
+    const code = this.sourceCodeArea ? this.sourceCodeArea.value : '';
+    this.setTelemetry('loading', 'Running AI Circuit Doctor via Backend...');
+    const t0 = performance.now();
+
+    try {
+      const resp = await fetch('/api/transpiler/doctor', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Gemini-Key': (window.ANANTA_CONFIG?.GEMINI_API_KEY || '')
+        },
+        body: JSON.stringify({
+          code,
+          sourceFramework: this.sourceFramework,
+          targetFramework: this.targetFramework
+        })
+      });
+
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      const elapsed = Math.round(performance.now() - t0);
+      this.setTelemetry('success', `Doctor API 200 OK (${elapsed}ms)`);
+
+      if (data && data.transpiledCode) {
+        if (this.targetCodeArea) {
+          this.targetCodeArea.value = data.transpiledCode;
+          this.updateLineNumbers('target');
+        }
+
+        // Populate metrics from backend
+        if (data.metrics) {
+          this.applyBackendMetrics(data);
+        }
+
+        if (this.statusPillEl) {
+          const diff = (data.metrics && data.metrics.diff !== undefined) ? data.metrics.diff : (data.rawGateCount - data.optimizedGateCount);
+          this.statusPillEl.className = 'transpiler-status-pill optimized';
+          if (diff > 0) {
+            this.statusPillEl.innerHTML = `⚡ <strong>AI Circuit Doctor Active:</strong> ${diff} redundant gates eliminated (${data.rawGateCount} → ${data.optimizedGateCount} gates). Showing optimized circuit.`;
+          } else {
+            this.statusPillEl.innerHTML = `✨ <strong>AI Circuit Doctor Active:</strong> Circuit is already maximally compressed (${data.optimizedGateCount} gates).`;
+          }
+        }
+
+        if (data.aiAudit) {
+          if (this.aiAuditPanelEl) this.aiAuditPanelEl.style.display = 'block';
+          this.renderAuditResults(data.aiAudit, {
+            isLive: true,
+            provider: data.provider || 'Google AI Studio (Gemini 2.5 Flash)',
+            model: 'Gemini 2.5 Flash',
+            latencyMs: elapsed
+          });
+        }
+
+        this.setTargetMode('optimized', false);
+        return;
+      }
+    } catch (err) {
+      console.warn('[Transpiler Doctor] Doctor API fetch fallback:', err.message);
+      this.setTelemetry('error', `Local fallback (${err.message})`);
+    }
+
+    // Fallback to client-side compiler
     this.parseSourceCode();
     this.optimize();
     this.setTargetMode('optimized');
@@ -1225,9 +1609,21 @@ class TranspilerDoctor {
     }
     if (this.sourceCodeArea) {
       this.sourceCodeArea.oninput = () => {
+        this.updateLineNumbers('source');
         this.parseSourceCode();
         this.optimize();
         this.renderTargetCode();
+      };
+      this.sourceCodeArea.onscroll = () => {
+        this.syncScroll('source');
+      };
+    }
+    if (this.targetCodeArea) {
+      this.targetCodeArea.oninput = () => {
+        this.updateLineNumbers('target');
+      };
+      this.targetCodeArea.onscroll = () => {
+        this.syncScroll('target');
       };
     }
 
