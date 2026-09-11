@@ -160,17 +160,63 @@ function queryTerms(query) {
 }
 
 /**
- * Reduces whatever the user said to the subject they actually want. Typo
- * correction comes from the shared quantum query cleaner; the conversational
- * scaffolding falls away as stop words.
+ * Offline subject extraction: strip typos, then drop function words.
+ *
+ * This only succeeds for phrasings whose filler happens to appear in
+ * STOP_WORDS — "i am curious regarding entanglement" survives as "curious
+ * entanglement", and non-English passes through untouched. It is therefore the
+ * fallback, not the primary path; extractTopic prefers the model.
  */
-function extractTopic(rawTopic) {
+function extractTopicHeuristically(rawTopic) {
   const cleaned = cleanQuantumQuery(rawTopic);
   const terms = queryTerms(cleaned);
-  // If the request was nothing but filler, keep the original words rather than
-  // searching for an empty string.
   const query = terms.length ? terms.join(' ') : cleaned;
-  return { query, terms: terms.length ? terms : queryTerms(rawTopic) };
+  return { query, terms: terms.length ? terms : queryTerms(rawTopic), method: 'heuristic' };
+}
+
+const topicCache = new Map();
+
+/**
+ * Reduces whatever the user said, in whatever language or phrasing, to the
+ * subject to search for. The model does the understanding; the word-list
+ * heuristic is only used when no provider is configured or the call fails.
+ */
+async function extractTopic(rawTopic) {
+  const raw = String(rawTopic || '').trim();
+  const cacheKey = raw.toLowerCase();
+  if (topicCache.has(cacheKey)) return topicCache.get(cacheKey);
+
+  const fallback = extractTopicHeuristically(raw);
+  let result = fallback;
+
+  try {
+    const { askJson } = require('../../api/gemini');
+    const answer = await askJson(
+      `Extract the scientific subject someone wants literature about, from their request.\n\n` +
+      `Rules:\n` +
+      `- Return only the subject as search keywords, not a sentence.\n` +
+      `- Drop conversational wrapping ("I want to know about", "could you dig up something on").\n` +
+      `- Translate to English if the request is in another language.\n` +
+      `- Correct obvious misspellings of technical terms.\n` +
+      `- Keep it to the essential terms, typically one to four words.\n` +
+      `- If there is no discernible subject, return an empty string.\n\n` +
+      `Request: ${JSON.stringify(raw)}\n\n` +
+      `Return only JSON: {"subject": "<keywords>"}`
+    );
+
+    const subject = answer && typeof answer.subject === 'string' ? answer.subject.trim() : '';
+    if (subject) {
+      result = { query: subject, terms: queryTerms(subject), method: 'model' };
+      // A model that returns nothing usable should not beat the heuristic.
+      if (!result.terms.length) result = fallback;
+    }
+  } catch (err) {
+    console.warn('[researchArchive] Subject extraction fell back to heuristic:', err.message);
+  }
+
+  topicCache.set(cacheKey, result);
+  if (topicCache.size > 200) topicCache.delete(topicCache.keys().next().value);
+  return result;
 }
 
 /**
@@ -271,7 +317,7 @@ async function discoverPapers({ topic, limit = 20, refresh = false } = {}) {
   const rawTopic = String(topic || '').trim();
   if (!rawTopic) throw new Error('topic is required');
 
-  const { query, terms } = extractTopic(rawTopic);
+  const { query, terms, method } = await extractTopic(rawTopic);
   const cacheKey = `${query}::${limit}`;
   if (!refresh) {
     const cached = readCache(cacheKey);
@@ -307,6 +353,7 @@ async function discoverPapers({ topic, limit = 20, refresh = false } = {}) {
   const value = {
     topic: rawTopic,
     query,
+    queryMethod: method,
     papers: merged,
     totalFound: merged.length,
     sources: settled.map(({ id, label, count, error }) => ({ id, label, count, error })),
@@ -342,4 +389,4 @@ async function briefTopic({ topic, limit = 12, refresh = false } = {}) {
   }
 }
 
-module.exports = { discoverPapers, briefTopic, SOURCES, scorePaper, dedupe, extractTopic };
+module.exports = { discoverPapers, briefTopic, SOURCES, scorePaper, dedupe, extractTopic, extractTopicHeuristically };

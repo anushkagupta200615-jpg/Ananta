@@ -1,4 +1,3 @@
-const _defaultGeminiKey = 'QVEuQWI4Uk42TFozV0wtZ2JnOUh0bldoVzFJNG5qY3JWTkVWMFBReEVHQ2JwYmdvRHdHdmc=';
 
 /**
  * Strips raw metadata headers (Title:, Authors:, arXiv Identifier:, etc.)
@@ -77,12 +76,7 @@ async function summarizeText(text, focusTerm = null) {
   }
 
   // 2. Try Google Gemini (Gemini 2.5 Flash) if key available
-  let geminiKey = process.env.GEMINI_API_KEY;
-  if (!geminiKey) {
-    try {
-      geminiKey = Buffer.from(_defaultGeminiKey, 'base64').toString('utf8');
-    } catch (e) {}
-  }
+  const geminiKey = process.env.GEMINI_API_KEY;
 
   if (geminiKey && geminiKey.length > 10) {
     try {
@@ -380,12 +374,7 @@ MANDATORY RULES:
   }
 
   // 2. Try Google Gemini (Gemini 2.5 Flash)
-  let geminiKey = process.env.GEMINI_API_KEY;
-  if (!geminiKey) {
-    try {
-      geminiKey = Buffer.from(_defaultGeminiKey, 'base64').toString('utf8');
-    } catch (e) {}
-  }
+  const geminiKey = process.env.GEMINI_API_KEY;
 
   if (geminiKey && geminiKey.length > 10) {
     try {

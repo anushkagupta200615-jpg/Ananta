@@ -8,11 +8,12 @@
  *  4. Real-time Diagnostics & Telemetry Console UI
  */
 
-// Ensure global configuration exists even if config.js was not bundled
+// Ensure global configuration exists even if config.js was not bundled.
+// No key is embedded: this file is served to every visitor, so credentials stay
+// in server environment variables and AI calls go through /api/gemini.
 if (typeof window.ANANTA_CONFIG === 'undefined') {
-  const _k = 'QVEuQWI4Uk42TFozV0wtZ2JnOUh0bldoVzFJNG5qY3JWTkVWMFBReEVHQ2JwYmdvRHdHdmc=';
   window.ANANTA_CONFIG = {
-    GEMINI_API_KEY: (typeof localStorage !== 'undefined' && localStorage.getItem('ananta_gemini_key')) || (typeof atob === 'function' ? atob(_k) : ''),
+    GEMINI_API_KEY: (typeof localStorage !== 'undefined' && localStorage.getItem('ananta_gemini_key')) || '',
     OPENAI_API_KEY: "",
     DEFAULT_PROVIDER: "gemini"
   };

@@ -6,8 +6,12 @@
 const { resolveTranscript, sampleSuggestions } = require('../ananta-backend/utils/voiceIntent');
 const { prepareTurn } = require('../ananta-backend/utils/voiceAgent');
 
-const _defaultKeyB64 ='QVEuQWI4Uk42TFozV0wtZ2JnOUh0bldoVzFJNG5qY3JWTkVWMFBReEVHQ2JwYmdvRHdHdmc=';
-
+/**
+ * Credentials come from the environment or from the caller, never from source.
+ * Returning '' when nothing is configured is deliberate: the provider probe then
+ * reports "no key configured" honestly and the deterministic engine takes over,
+ * instead of a committed key silently answering for everybody.
+ */
 function getApiKey(req) {
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
     return process.env.GEMINI_API_KEY.trim();
@@ -15,11 +19,7 @@ function getApiKey(req) {
   if (req && req.headers && req.headers['x-gemini-key'] && req.headers['x-gemini-key'].length > 10) {
     return req.headers['x-gemini-key'].trim();
   }
-  try {
-    return Buffer.from(_defaultKeyB64, 'base64').toString('utf8');
-  } catch (e) {
-    return '';
-  }
+  return '';
 }
 
 function getGrokKey(req, body) {
@@ -962,3 +962,29 @@ function generateCircuitAuditLocally(payload) {
 
 module.exports = handler;
 module.exports.default = handler;
+
+// Reusable pieces for other backend modules, so provider selection, key
+// resolution and model discovery live in exactly one place.
+module.exports.getApiKey = getApiKey;
+module.exports.getGrokKey = getGrokKey;
+module.exports.callGeminiDirect = callGeminiDirect;
+module.exports.callGrokAPI = callGrokAPI;
+
+/**
+ * One JSON answer from whichever provider is configured, or null when none is.
+ * Callers are expected to have a working non-AI path — this never throws for
+ * "no key", only for a provider that was tried and genuinely failed.
+ */
+module.exports.askJson = async function askJson(systemPrompt) {
+  const geminiKey = getApiKey(null);
+  if (geminiKey) {
+    const res = await callGeminiDirect(geminiKey, systemPrompt, '');
+    return res.result;
+  }
+  const grokKey = getGrokKey(null, null);
+  if (grokKey) {
+    const res = await callGrokAPI(grokKey, systemPrompt, '');
+    return res.result;
+  }
+  return null;
+};
