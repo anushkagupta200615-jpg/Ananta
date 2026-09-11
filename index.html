@@ -184,7 +184,7 @@
               <div class="dropdown-rich-info">
                 <div class="dropdown-rich-title-line">
                   <span class="dropdown-rich-title">Full Curriculum & Docs</span>
-                  <span class="dropdown-badge badge-learn">ALL 10 MODULES</span>
+                  <span class="dropdown-badge badge-learn">ALL 18 MODULES</span>
                 </div>
                 <span class="dropdown-rich-desc">Complete end-to-end curriculum from Hilbert space to VQE & FTQC</span>
               </div>
@@ -1406,6 +1406,44 @@
 
           <!-- Right: Circuit Canvas -->
           <div class="circuit-canvas-white">
+
+            <!-- Floating AI Doctor Trigger Button (As sketched) -->
+            <button type="button" class="floating-ai-doctor-btn" id="floating-ai-doctor-btn" onclick="window.circuitTutor && window.circuitTutor.toggleFloatingDoctor()" title="Open AI Circuit Doctor & Diagnostic Explanation">
+              <span class="doctor-badge-pulse" id="doctor-pulse-dot"></span>
+              <span class="doctor-btn-icon">🩺</span>
+              <span class="doctor-btn-label">AI Doctor</span>
+              <span class="doctor-btn-badge" id="doctor-count-badge" style="display: none;">1</span>
+            </button>
+
+            <!-- Floating AI Doctor Explanation Window (As sketched) -->
+            <div class="floating-ai-doctor-popup" id="floating-ai-doctor-popup" style="display: none;">
+              <div class="floating-doctor-header">
+                <div class="floating-doctor-title-box">
+                  <span class="doctor-header-icon">🩺</span>
+                  <div class="doctor-header-text">
+                    <h3 class="floating-doctor-title">AI Circuit Doctor</h3>
+                    <span class="floating-doctor-sub">Pedagogical Circuit Explanation</span>
+                  </div>
+                </div>
+                <div class="floating-doctor-header-actions">
+                  <div class="doctor-health-pill-small healthy" id="floating-doctor-health-pill">🟢 Sound</div>
+                  <button type="button" class="btn-doctor-win-ctrl btn-doctor-minimize" onclick="window.circuitTutor && window.circuitTutor.minimizeFloatingDoctor()" title="Minimize">_</button>
+                  <button type="button" class="btn-doctor-win-ctrl btn-doctor-close" onclick="window.circuitTutor && window.circuitTutor.closeFloatingDoctor()" title="Close">✕</button>
+                </div>
+              </div>
+
+              <div class="floating-doctor-body" id="floating-doctor-content">
+                <!-- Rendered dynamically by CircuitTutor into 4 structured sections -->
+              </div>
+
+              <div class="floating-doctor-footer">
+                <form class="doctor-ask-form" onsubmit="event.preventDefault(); window.circuitTutor && window.circuitTutor.askFloatingQuestion();">
+                  <input type="text" id="floating-doctor-input" class="floating-doctor-input" placeholder="Ask AI Doctor about this circuit...">
+                  <button type="submit" class="floating-doctor-submit">Ask ⚡</button>
+                </form>
+              </div>
+            </div>
+
             <!-- Guided Algorithm Tour Banner -->
             <div id="guided-algo-tour-bar" class="guided-algo-tour-bar" style="display: none;">
               <div class="tour-header-row">
@@ -3992,20 +4030,76 @@ Key Advantage:
             </div>
           </div>
 
-          <!-- Section 2: qBraid Backend Selection -->
+          <!-- Section 1.5: Smart Hardware Recommendation for User's Active Circuit -->
+          <div id="qbraid-smart-recommendation-container" class="qpu-recommendation-card" style="display: none;">
+            <!-- Populated dynamically by qbraid-bridge.js -->
+          </div>
+
+          <!-- Section 2: qBraid Multi-Provider Fleet Discovery & Filters -->
           <div class="qpu-config-section">
             <div class="qpu-section-title-row">
-              <strong>qBraid Target Device / Processor</strong>
-              <span style="font-size:11px; color:#64748b;">Multi-architecture quantum hardware</span>
+              <strong>Quantum Hardware Ecosystem (28+ Processors)</strong>
+              <span id="qbraid-fleet-count-badge" class="qpu-badge-count">28 Devices Available</span>
             </div>
+
+            <!-- Provider Filter Pills -->
+            <div class="qbraid-filter-pills-row" id="qbraid-provider-pills">
+              <button type="button" class="qbraid-pill active" data-provider="all">All (28)</button>
+              <button type="button" class="qbraid-pill" data-provider="ionq">IonQ (4)</button>
+              <button type="button" class="qbraid-pill" data-provider="aws">AWS Braket (3)</button>
+              <button type="button" class="qbraid-pill" data-provider="quera">QuEra & Pasqal (2)</button>
+              <button type="button" class="qbraid-pill" data-provider="rigetti">Rigetti (3)</button>
+              <button type="button" class="qbraid-pill" data-provider="ibm">IBM Quantum (5)</button>
+              <button type="button" class="qbraid-pill" data-provider="oqc">OQC (2)</button>
+              <button type="button" class="qbraid-pill" data-provider="iqm">IQM (2)</button>
+              <button type="button" class="qbraid-pill" data-provider="quantinuum">Quantinuum (2)</button>
+              <button type="button" class="qbraid-pill" data-provider="simulator">Simulators (5)</button>
+            </div>
+
+            <!-- Search & Sort Controls -->
+            <div class="qbraid-search-sort-row">
+              <div class="qbraid-search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="qbraid-search-input" placeholder="Search 28+ devices (e.g. Forte, Aquila, Torino, Braket)..." />
+                <button type="button" id="qbraid-search-clear" style="display:none;">✕</button>
+              </div>
+              <div class="qbraid-sort-box">
+                <label for="qbraid-sort-select">Sort:</label>
+                <select id="qbraid-sort-select" class="qbraid-sort-dropdown">
+                  <option value="recommended">⭐ Recommended First</option>
+                  <option value="qubits">⚡ Qubits (High to Low)</option>
+                  <option value="fidelity">🎯 2Q Fidelity (High to Low)</option>
+                  <option value="queue">⏱️ Shortest Queue</option>
+                </select>
+              </div>
+            </div>
+
             <select id="qbraid-backend-select" class="backend-select-dropdown">
               <!-- Populated dynamically by qbraid-bridge.js -->
             </select>
           </div>
 
-          <!-- Section 3: qBraid Device Telemetry -->
+          <!-- Section 3: Telemetry & Transpilation View Tabs -->
+          <div class="qbraid-view-tabs-row">
+            <button type="button" class="qbraid-view-tab active" id="tab-qbraid-telemetry">Hardware Telemetry</button>
+            <button type="button" class="qbraid-view-tab" id="tab-qbraid-transpile">Native Transpiled Code</button>
+          </div>
+
+          <!-- Section 3a: Device Telemetry Card -->
           <div class="device-telemetry-card" id="qbraid-telemetry-card">
             <!-- Populated dynamically by qbraid-bridge.js -->
+          </div>
+
+          <!-- Section 3b: Transpiled Code Card -->
+          <div class="device-telemetry-card" id="qbraid-transpile-card" style="display: none;">
+            <div class="transpile-header-row">
+              <div>
+                <strong id="transpile-target-name">Target Code Preview</strong>
+                <span id="transpile-format-label" style="font-size:11px; color:#94a3b8; margin-left:6px;"></span>
+              </div>
+              <button type="button" class="btn-copy-transpiled" id="btn-copy-transpiled">📋 Copy Code</button>
+            </div>
+            <pre id="transpile-code-preview" class="transpile-code-block"></pre>
           </div>
 
           <!-- Section 4: qBraid Execution Dispatch -->

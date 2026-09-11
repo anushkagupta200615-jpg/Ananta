@@ -15,13 +15,18 @@
  * no-ops a write; a query issued while unconfigured throws.
  */
 
-const { Pool } = require('pg');
+let Pool = null;
+try {
+  Pool = require('pg').Pool;
+} catch (e) {
+  // pg not installed, database falls back to unconfigured
+}
 
 let pool = null;
 let migrated = false;
 
 function isConfigured() {
-  return Boolean(process.env.DATABASE_URL);
+  return Boolean(process.env.DATABASE_URL && Pool);
 }
 
 function getPool() {

@@ -295,50 +295,163 @@ class TranspilerDoctor {
     }
   }
 
-  // Sync circuit directly from Composer into Transpiler
-  syncFromComposer() {
-    if (!window.quantumComposer || !window.quantumComposer.circuit) {
-      if (typeof showNotification === 'function') {
-        showNotification('No active circuit found in Composer.', 'info');
+  // Sync circuit directly from Composer into Transpiler for ANY arbitrary circuit
+  async syncFromComposer() {
+    this.setTelemetry('loading', 'Fetching circuit from Composer...');
+
+    // 1. Discover active circuit from window.circuitUI or window.quantumComposer
+    let grid = null;
+    let numQ = 3;
+    let qasm = '';
+
+    if (window.circuitUI && Array.isArray(window.circuitUI.grid)) {
+      grid = window.circuitUI.grid;
+      numQ = window.circuitUI.numQubits || (grid.length || 3);
+      if (window.engine && typeof window.engine.toQASM === 'function') {
+        try { qasm = window.engine.toQASM(grid); } catch (e) {}
       }
-      return;
+    } else if (window.quantumComposer && Array.isArray(window.quantumComposer.circuit)) {
+      grid = window.quantumComposer.circuit;
+      numQ = window.quantumComposer.numQubits || 4;
     }
 
-    const composerCircuit = window.quantumComposer.circuit;
-    const numQ = window.quantumComposer.numQubits || 4;
+    // 2. Count active gates in grid to verify content
+    let activeGatesCount = 0;
+    if (grid && Array.isArray(grid)) {
+      for (let r = 0; r < grid.length; r++) {
+        if (Array.isArray(grid[r])) {
+          for (let c = 0; c < grid[r].length; c++) {
+            const cell = grid[r][c];
+            if (cell && cell !== 'CX_CTRL' && cell !== 'CZ_CTRL') {
+              activeGatesCount++;
+            }
+          }
+        }
+      }
+    }
+
+    // 3. Attempt Live Backend Conversion via /api/transpiler/from-composer
+    try {
+      const resp = await fetch('/api/transpiler/from-composer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grid,
+          numQubits: numQ,
+          qasm,
+          sourceFramework: this.sourceFramework,
+          targetFramework: this.targetFramework,
+          optimize: (this.targetMode === 'optimized')
+        })
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data && data.success) {
+          this.declaredNumQubits = data.numQubits || numQ;
+          this.circuitAST = data.ast || [];
+          this.optimizedAST = data.optimizedAST || [];
+
+          if (this.sourceCodeArea) {
+            this.sourceCodeArea.value = data.sourceCode || '';
+            this.updateLineNumbers('source');
+          }
+          if (this.targetCodeArea) {
+            this.targetCodeArea.value = data.targetCode || '';
+            this.updateLineNumbers('target');
+          }
+
+          if (data.metrics) {
+            this.applyBackendMetrics(data);
+          }
+
+          this.setTelemetry('success', `Live Backend: Imported ${data.rawGateCount} gates (${data.numQubits}Q)`);
+          if (typeof showNotification === 'function') {
+            showNotification(`✓ Loaded ${data.rawGateCount} gates across ${data.numQubits} qubits from Composer!`, 'success');
+          }
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('[Transpiler] Backend from-composer sync notice, using local fallback:', err.message);
+    }
+
+    // 4. Robust Client-Side Fallback: Translate grid to canonical AST
     this.declaredNumQubits = numQ;
     const ast = [];
 
-    // Translate Composer grid columns to canonical AST
-    composerCircuit.forEach(col => {
-      if (Array.isArray(col)) {
-        col.forEach(cell => {
-          if (cell && cell.gate) {
-            const gName = cell.gate.toUpperCase();
-            if (['H', 'X', 'Y', 'Z', 'S', 'T'].includes(gName)) {
-              ast.push({ gate: gName, qubits: [cell.qubit], params: [] });
-            } else if (['CNOT', 'CX', 'CZ', 'SWAP'].includes(gName)) {
-              ast.push({ gate: (gName === 'CX' ? 'CNOT' : gName), qubits: [cell.qubit, cell.targetQubit !== undefined ? cell.targetQubit : (cell.qubit + 1)], params: [] });
-            } else if (['RZ', 'RY', 'RX', 'PHASE'].includes(gName)) {
-              ast.push({ gate: (gName === 'PHASE' ? 'RZ' : gName), qubits: [cell.qubit], params: [cell.angle !== undefined ? cell.angle : 0.785] });
-            }
-          }
-        });
-      }
-    });
+    if (grid && Array.isArray(grid)) {
+      const numCols = (grid[0] && Array.isArray(grid[0])) ? grid[0].length : 0;
+      for (let col = 0; col < numCols; col++) {
+        const cxControls = [];
+        let cxTarget = -1;
+        const czControls = [];
+        let czTarget = -1;
+        const swapWires = [];
 
-    if (ast.length === 0) {
-      if (typeof showNotification === 'function') {
-        showNotification('Composer circuit is empty. Place some gates in Composer first.', 'warning');
+        for (let q = 0; q < numQ; q++) {
+          const cell = (grid[q] && grid[q][col] !== undefined) ? grid[q][col] : null;
+          if (!cell) continue;
+
+          if (typeof cell === 'object' && cell.gate) {
+            const g = String(cell.gate).toUpperCase();
+            const target = cell.targetQubit !== undefined ? cell.targetQubit : (q + 1);
+            if (g === 'CX' || g === 'CNOT') ast.push({ gate: 'CNOT', qubits: [q, target], params: [] });
+            else if (g === 'CZ') ast.push({ gate: 'CZ', qubits: [q, target], params: [] });
+            else if (g === 'SWAP') ast.push({ gate: 'SWAP', qubits: [q, target], params: [] });
+            else if (['RX', 'RY', 'RZ'].includes(g)) ast.push({ gate: g, qubits: [q], params: [cell.angle || 0.785] });
+            else ast.push({ gate: g, qubits: [q], params: [] });
+            continue;
+          }
+
+          const str = String(cell).toUpperCase();
+          if (str === 'CX_CTRL') cxControls.push(q);
+          else if (str === 'CX_TGT') cxTarget = q;
+          else if (str === 'CZ_CTRL') czControls.push(q);
+          else if (str === 'CZ_TGT') czTarget = q;
+          else if (str === 'SWAP') swapWires.push(q);
+        }
+
+        if (cxControls.length === 2 && cxTarget !== -1) {
+          ast.push({ gate: 'CCX', qubits: [cxControls[0], cxControls[1], cxTarget], params: [] });
+        } else if (cxControls.length === 1 && cxTarget !== -1) {
+          ast.push({ gate: 'CNOT', qubits: [cxControls[0], cxTarget], params: [] });
+        }
+        if (czControls.length >= 1 && czTarget !== -1) {
+          ast.push({ gate: 'CZ', qubits: [czControls[0], czTarget], params: [] });
+        }
+        if (swapWires.length === 2) {
+          ast.push({ gate: 'SWAP', qubits: [swapWires[0], swapWires[1]], params: [] });
+        }
+
+        for (let q = 0; q < numQ; q++) {
+          const cell = (grid[q] && grid[q][col] !== undefined) ? grid[q][col] : null;
+          if (!cell || typeof cell === 'object') continue;
+          const g = String(cell).toUpperCase();
+          if (['CX_CTRL', 'CX_TGT', 'CZ_CTRL', 'CZ_TGT', 'SWAP'].includes(g)) continue;
+
+          if (['H', 'X', 'Y', 'Z', 'S', 'T'].includes(g)) {
+            ast.push({ gate: g, qubits: [q], params: [] });
+          } else if (g === 'RX' || g === 'RY' || g === 'RZ') {
+            ast.push({ gate: g, qubits: [q], params: [0.785] });
+          }
+        }
       }
-      return;
     }
 
     this.circuitAST = ast;
     this.renderSourceCode();
-    this.transpileOptimized();
+    this.optimize();
+    this.renderTargetCode();
+
+    const gateCount = ast.length;
+    this.setTelemetry('idle', `Imported ${gateCount} gates (${numQ}Q) from Composer`);
     if (typeof showNotification === 'function') {
-      showNotification(`Imported ${ast.length} gates from Composer!`, 'success');
+      if (gateCount > 0) {
+        showNotification(`✓ Imported ${gateCount} gates from Composer!`, 'success');
+      } else {
+        showNotification(`Composer circuit loaded (${numQ} Qubits initialized). Place gates in Composer to see live conversions.`, 'info');
+      }
     }
   }
 
@@ -1666,6 +1779,21 @@ class TranspilerDoctor {
 
     const presetQft = document.getElementById('btn-sample-qft');
     if (presetQft) presetQft.onclick = () => this.loadSampleCircuit('qft');
+
+    const btnSyncComposer = document.getElementById('btn-editor-sync-composer');
+    if (btnSyncComposer) {
+      btnSyncComposer.onclick = () => this.syncFromComposer();
+    }
+
+    const btnFormatSource = document.getElementById('btn-editor-format-source');
+    if (btnFormatSource) {
+      btnFormatSource.onclick = () => this.formatSourceCode();
+    }
+
+    const btnClearSource = document.getElementById('btn-editor-clear-source');
+    if (btnClearSource) {
+      btnClearSource.onclick = () => this.clearSourceCode();
+    }
 
     const btnAiClinical = document.getElementById('btn-ai-clinical-audit');
     if (btnAiClinical) {

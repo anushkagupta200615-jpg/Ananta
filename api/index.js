@@ -471,6 +471,95 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // POST /api/transpiler/from-composer — dynamically convert ANY circuit from Composer into multi-framework code & optimize
+  if ((pathname === '/api/transpiler/from-composer' || pathname === '/api/transpiler/composer') && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const {
+        grid = null,
+        numQubits = 3,
+        qasm = '',
+        sourceFramework = 'qiskit',
+        targetFramework = 'cirq',
+        optimize = true
+      } = body || {};
+
+      const result = transpilerEngine.convertFromComposer({
+        grid,
+        numQubits,
+        qasm,
+        sourceFramework,
+        targetFramework,
+        optimize
+      });
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  // POST /api/transpiler/doctor — AI Circuit Doctor optimization & diagnostics
+  if (pathname === '/api/transpiler/doctor' && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const {
+        code = '',
+        sourceFramework = 'qiskit',
+        targetFramework = 'cirq',
+        grid = null,
+        numQubits = null
+      } = body || {};
+
+      const result = transpilerEngine.transpile({
+        code,
+        sourceFramework,
+        targetFramework,
+        optimize: true,
+        grid,
+        numQubits
+      });
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  // POST /api/transpiler/transpile — Universal 1:1 cross-framework transpilation
+  if ((pathname === '/api/transpiler/transpile' || pathname === '/api/transpiler') && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const {
+        code = '',
+        sourceFramework = 'qiskit',
+        targetFramework = 'cirq',
+        optimize = false,
+        grid = null,
+        numQubits = null
+      } = body || {};
+
+      const result = transpilerEngine.transpile({
+        code,
+        sourceFramework,
+        targetFramework,
+        optimize: Boolean(optimize),
+        grid,
+        numQubits
+      });
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  // GET /api/transpiler/status — Health check
+  if (pathname === '/api/transpiler/status' && req.method === 'GET') {
+    return sendJson(res, 200, {
+      success: true,
+      service: 'Universal Cross-Framework Quantum Transpiler & AI Circuit Doctor',
+      frameworks: ['qiskit', 'cirq', 'braket', 'pennylane', 'qasm', 'pyquil']
+    });
+  }
+
   // GET /api/resources — Live Community Resource Library (fetched from GitHub, cached)
   if (pathname === '/api/resources' && req.method === 'GET') {
     try {
@@ -827,9 +916,40 @@ Return ONLY a valid JSON object matching this schema:
   // 9a. GET /api/qbraid/devices
   if (pathname === '/api/qbraid/devices' && req.method === 'GET') {
     const apiKey = req.headers['x-qbraid-key'] || reqUrl.searchParams.get('key') || QBRAID_API_KEY;
+    const filters = {
+      provider: reqUrl.searchParams.get('provider') || 'all',
+      architecture: reqUrl.searchParams.get('architecture') || 'all',
+      minQubits: reqUrl.searchParams.get('minQubits') || '0',
+      status: reqUrl.searchParams.get('status') || 'all',
+      search: reqUrl.searchParams.get('search') || ''
+    };
     try {
-      const fleet = await qbraidClient.getLiveBackends(apiKey);
-      return sendJson(res, 200, { success: true, ...fleet });
+      const fleet = await qbraidClient.getLiveBackends(apiKey, filters);
+      return sendJson(res, 200, fleet);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  // 9a2. POST /api/qbraid/recommend
+  if (pathname === '/api/qbraid/recommend' && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const { qasm = '', numQubits = 3, depth = 5, circuitType = 'general', shots = 1024, preference = 'balanced' } = body || {};
+      const rec = qbraidClient.recommendHardware({ qasm, numQubits, depth, circuitType, shots, preference });
+      return sendJson(res, 200, rec);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  // 9a3. POST /api/qbraid/transpile
+  if (pathname === '/api/qbraid/transpile' && req.method === 'POST') {
+    try {
+      const body = await getParsedBody(req);
+      const { qasm = '', backend = 'qbraid_sdk_simulator', format = 'auto' } = body || {};
+      const transpiled = qbraidClient.transpileCircuit({ qasm, backend, format });
+      return sendJson(res, 200, transpiled);
     } catch (err) {
       return sendJson(res, 500, { success: false, error: err.message });
     }

@@ -148,7 +148,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (panels[key]) panels[key].style.display = key === target ? 'block' : 'none';
     });
 
-    if (target === 'qbraid' && window.qbraidBridge) window.qbraidBridge.updateDeviceTelemetry();
+    if (target === 'qbraid' && window.qbraidBridge) {
+      window.qbraidBridge.updateDeviceTelemetry();
+      if (typeof window.qbraidBridge.fetchRecommendations === 'function') {
+        window.qbraidBridge.fetchRecommendations();
+      }
+    }
     else if (target === 'local' && window.localFrameworkBridge) window.localFrameworkBridge.refreshStatus();
     else if (target === 'ibm' && window.cloudQPUBridge) window.cloudQPUBridge.updateDeviceTelemetry();
   };
@@ -387,13 +392,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Refresh Transpiler View
     if (tabKey === 'transpiler' && window.transpilerDoctor) {
       setTimeout(() => {
-        window.transpilerDoctor.renderTargetCode();
+        const td = window.transpilerDoctor;
+        if (td.sourceCodeArea && !td.sourceCodeArea.value.trim() && window.circuitUI) {
+          td.syncFromComposer();
+        } else {
+          td.renderTargetCode();
+        }
         // CodeMirror measures line layout using the container's actual
         // rendered size; TranspilerDoctor is constructed once at page load
         // while this view is still hidden (display:none), so both editors
         // need an explicit .refresh() the first time the view becomes
         // visible or they're stuck showing line numbers with no text.
-        const td = window.transpilerDoctor;
         if (td.sourceCodeArea && td.sourceCodeArea.codeMirror) td.sourceCodeArea.codeMirror.refresh();
         if (td.targetCodeArea && td.targetCodeArea.codeMirror) td.targetCodeArea.codeMirror.refresh();
       }, 50);
@@ -450,6 +459,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Dropdown toggle on click/tap for accessibility & touch devices
   const dropdownItems = document.querySelectorAll('.nav-dropdown-item');
+
+  function closeAllDropdowns() {
+    dropdownItems.forEach(g => {
+      g.classList.remove('is-open');
+      g.classList.add('just-closed');
+      const t = g.querySelector('.nav-dropdown-trigger');
+      if (t) t.setAttribute('aria-expanded', 'false');
+      setTimeout(() => g.classList.remove('just-closed'), 350);
+    });
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+  }
+
   dropdownItems.forEach(group => {
     const trigger = group.querySelector('.nav-dropdown-trigger');
     if (trigger) {
@@ -458,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isOpen = group.classList.contains('is-open');
         // Close all other dropdowns
         dropdownItems.forEach(g => {
-          g.classList.remove('is-open');
+          g.classList.remove('is-open', 'just-closed');
           const t = g.querySelector('.nav-dropdown-trigger');
           if (t) t.setAttribute('aria-expanded', 'false');
         });
@@ -468,24 +491,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
+
+    group.addEventListener('mouseleave', () => {
+      group.classList.remove('just-closed');
+    });
   });
 
   // Close dropdowns on outside click or Escape key
   document.addEventListener('click', () => {
-    dropdownItems.forEach(g => {
-      g.classList.remove('is-open');
-      const t = g.querySelector('.nav-dropdown-trigger');
-      if (t) t.setAttribute('aria-expanded', 'false');
-    });
+    closeAllDropdowns();
   });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      dropdownItems.forEach(g => {
-        g.classList.remove('is-open');
-        const t = g.querySelector('.nav-dropdown-trigger');
-        if (t) t.setAttribute('aria-expanded', 'false');
-      });
+      closeAllDropdowns();
     }
   });
 
@@ -495,8 +514,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const tab = item.getAttribute('data-tab');
       if (tab) {
         e.preventDefault();
-        // Close any open dropdowns
-        dropdownItems.forEach(g => g.classList.remove('is-open'));
+        // Immediately close dropdowns and blur active element so it never stays stuck
+        closeAllDropdowns();
         switchView(tab);
       }
     });

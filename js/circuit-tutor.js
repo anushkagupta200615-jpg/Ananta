@@ -20,6 +20,7 @@ class CircuitTutor {
     if (typeof document !== 'undefined') {
       this.initDOM();
       this.bindEvents();
+      setTimeout(() => this.runAudit(), 700);
     }
   }
 
@@ -35,6 +36,15 @@ class CircuitTutor {
     this.btnAnalyzeEl = document.getElementById('btn-tutor-analyze');
     this.btnAskEl = document.getElementById('btn-tutor-ask');
     this.autoAuditCheckbox = document.getElementById('tutor-auto-audit-toggle');
+
+    // Floating AI Doctor & Tutor Components
+    this.floatingDoctorBtn = document.getElementById('floating-ai-doctor-btn');
+    this.floatingDoctorPopup = document.getElementById('floating-ai-doctor-popup');
+    this.floatingDoctorContent = document.getElementById('floating-doctor-content');
+    this.floatingDoctorPill = document.getElementById('floating-doctor-health-pill');
+    this.floatingDoctorInput = document.getElementById('floating-doctor-input');
+    this.doctorCountBadge = document.getElementById('doctor-count-badge');
+    this.doctorPulseDot = document.getElementById('doctor-pulse-dot');
   }
 
   bindEvents() {
@@ -54,6 +64,39 @@ class CircuitTutor {
         this.autoAuditEnabled = e.target.checked;
       });
     }
+
+    // Make floating doctor draggable via header
+    const header = this.floatingDoctorPopup ? this.floatingDoctorPopup.querySelector('.floating-doctor-header') : null;
+    if (header && this.floatingDoctorPopup) {
+      let isDragging = false;
+      let startX = 0, startY = 0, origLeft = 0, origTop = 0;
+      header.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button') || e.target.closest('.doctor-health-pill-small')) return;
+        isDragging = true;
+        const rect = this.floatingDoctorPopup.getBoundingClientRect();
+        startX = e.clientX;
+        startY = e.clientY;
+        origLeft = rect.left;
+        origTop = rect.top;
+        this.floatingDoctorPopup.style.right = 'auto';
+        this.floatingDoctorPopup.style.left = `${origLeft}px`;
+        this.floatingDoctorPopup.style.top = `${origTop}px`;
+        this.floatingDoctorPopup.style.position = 'fixed';
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        this.floatingDoctorPopup.style.left = `${Math.max(10, origLeft + dx)}px`;
+        this.floatingDoctorPopup.style.top = `${Math.max(10, origTop + dy)}px`;
+      });
+
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+    }
   }
 
   /**
@@ -64,22 +107,55 @@ class CircuitTutor {
     if (!this.autoAuditEnabled) return;
     clearTimeout(this.auditDebounceTimer);
     this.auditDebounceTimer = setTimeout(() => {
-      // If tutor panel is currently visible, run live audit
-      const isVisible = this.tutorPanel && this.tutorPanel.style.display !== 'none';
-      if (isVisible) {
-        this.runAudit();
-      }
-    }, 800);
+      this.runAudit();
+    }, 600);
   }
 
   togglePanel() {
-    if (!this.circuitUI) this.circuitUI = window.circuitUI;
-    if (this.circuitUI && this.circuitUI.setPedagogyMode) {
-      this.circuitUI.setPedagogyMode('tutor');
+    this.toggleFloatingDoctor();
+  }
+
+  toggleFloatingDoctor() {
+    if (!this.floatingDoctorPopup) this.initDOM();
+    if (!this.floatingDoctorPopup) return;
+    const isHidden = this.floatingDoctorPopup.style.display === 'none' || !this.floatingDoctorPopup.style.display;
+    if (isHidden) {
+      this.openFloatingDoctor();
+    } else {
+      this.closeFloatingDoctor();
     }
-    const deck = document.getElementById('quantum-intelligence-deck');
-    if (deck) deck.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  openFloatingDoctor() {
+    if (!this.floatingDoctorPopup) this.initDOM();
+    if (this.floatingDoctorPopup) {
+      this.floatingDoctorPopup.style.display = 'flex';
+      this.floatingDoctorPopup.classList.remove('minimized');
+    }
     this.runAudit();
+  }
+
+  closeFloatingDoctor() {
+    if (!this.floatingDoctorPopup) this.initDOM();
+    if (this.floatingDoctorPopup) {
+      this.floatingDoctorPopup.style.display = 'none';
+    }
+  }
+
+  minimizeFloatingDoctor() {
+    if (!this.floatingDoctorPopup) this.initDOM();
+    if (this.floatingDoctorPopup) {
+      this.floatingDoctorPopup.classList.toggle('minimized');
+    }
+  }
+
+  askFloatingQuestion() {
+    if (!this.floatingDoctorInput) this.initDOM();
+    if (!this.floatingDoctorInput) return;
+    const q = this.floatingDoctorInput.value.trim();
+    if (!q) return;
+    this.floatingDoctorInput.value = '';
+    this.runAudit(q);
   }
 
   /**
@@ -113,6 +189,11 @@ class CircuitTutor {
         } else if (measureCol !== -1 && cell && cell !== '') {
           errors.push({
             type: 'error',
+            errorType: 'premature_measurement',
+            qubit: q,
+            measureCol: measureCol,
+            gateCol: c,
+            gate: cell,
             title: `Premature Measurement on Wire q[${q}]`,
             location: `Wire q[${q}], column t=${c + 1}`,
             desc: `Qubit q[${q}] was measured at t=${measureCol + 1}, but gate '${cell}' was placed afterward at t=${c + 1}. Projective Born measurement irreversibly collapses the superposition into a classical bit, destroying quantum advantage.`,
@@ -138,6 +219,10 @@ class CircuitTutor {
           if (lastG === cell) {
             errors.push({
               type: 'warning',
+              errorType: 'self_inverse',
+              qubit: q,
+              cols: [lastC, c],
+              gate: cell,
               title: `Self-Cancelling Redundancy (${cell}² = I) on Wire q[${q}]`,
               location: `Wire q[${q}], columns t=${lastC + 1} and t=${c + 1}`,
               desc: `Consecutive '${cell}' gates on wire q[${q}] undo each other identically (${cell} · ${cell} = I). This adds unneeded circuit depth and burns qubit coherence time without changing the output state.`,
@@ -155,13 +240,7 @@ class CircuitTutor {
     }
 
     // 3. Ineffective CNOT/Toffoli (a control wire never leaves ground state
-    // |0> before this gate, so it can never fire). Must collect ALL controls
-    // in the column, not just the last one seen - a Toffoli has two, and a
-    // single ctrlQ variable overwritten in the scan loop silently dropped
-    // the first one, mislabeling every Toffoli in this diagnostic as a
-    // plain "CNOT" (same class of bug already fixed in runCircuitUpToCol,
-    // computeTotalUnitary, and the QASM/code exporters elsewhere in this
-    // codebase - this check was missed in that pass).
+    // |0> before this gate, so it can never fire).
     for (let c = 0; c < numCols; c++) {
       const controls = [];
       let tgtQ = -1;
@@ -170,9 +249,6 @@ class CircuitTutor {
         if (grid[q][c] === 'CX_TGT') tgtQ = q;
       }
       if (controls.length > 0 && tgtQ !== -1) {
-        // A Toffoli only flips its target when BOTH controls are |1> at
-        // once - any single grounded control is enough to disable it, so
-        // report every control with no prior gate on its wire, not just one.
         const grounded = controls.filter((ctrlQ) => grid[ctrlQ].slice(0, c).filter((g) => g && g !== '').length === 0);
         if (grounded.length > 0) {
           const gateName = controls.length === 2 ? 'Toffoli' : 'CNOT';
@@ -180,6 +256,12 @@ class CircuitTutor {
           const plural = grounded.length > 1;
           errors.push({
             type: 'warning',
+            errorType: 'ineffective_cnot',
+            col: c,
+            controls: controls,
+            target: tgtQ,
+            grounded: grounded,
+            gateName: gateName,
             title: `Ineffective ${gateName} (Control Wire${plural ? 's' : ''} ${groundedList} in Ground State |0⟩)`,
             location: controls.length === 2
               ? `Column t=${c + 1} (Toffoli: controls q[${controls[0]}], q[${controls[1]}] → target q[${tgtQ}])`
@@ -198,6 +280,8 @@ class CircuitTutor {
         if (qGates.length === 0) {
           errors.push({
             type: 'info',
+            errorType: 'idle_qubit',
+            qubit: q,
             title: `Idle Qubit Wire q[${q}]`,
             location: `Wire q[${q}]`,
             desc: `Qubit q[${q}] has no operations placed on it. It will remain in state |0⟩ throughout the simulation.`,
@@ -212,6 +296,8 @@ class CircuitTutor {
     if (activeCols.size > 10) {
       errors.push({
         type: 'warning',
+        errorType: 'high_depth',
+        depth: activeCols.size,
         title: `High Circuit Depth (${activeCols.size} steps)`,
         location: `Entire register`,
         desc: `Circuit depth exceeds 10 unitary time slices. On superconducting transmon hardware (T₁ ≈ 50 µs), long depth introduces significant phase accumulation errors and depolarizing noise.`,
@@ -524,6 +610,7 @@ class CircuitTutor {
   generateLocalFallback(payload) {
     const deterministicErrors = payload.deterministicErrors || [];
     const errors = deterministicErrors.map(err => ({
+      ...err,
       severity: err.type === 'error' ? 'error' : (err.type === 'warning' ? 'warning' : 'optimization'),
       title: err.title || 'Circuit Inefficiency',
       location: err.location || 'Circuit grid',
@@ -540,7 +627,14 @@ class CircuitTutor {
         };
 
     if (described.hasError) {
-      errors.unshift({ severity: 'error', title: 'Incomplete Gate', location: 'Circuit grid', explanation: described.purpose, suggestedFix: 'Complete or remove the incomplete gate.' });
+      errors.unshift({
+        severity: 'error',
+        errorType: 'incomplete_gate',
+        title: 'Incomplete Gate',
+        location: 'Circuit grid',
+        explanation: described.purpose,
+        suggestedFix: 'Complete or remove the incomplete gate.'
+      });
     }
 
     let tutorGuidance;
@@ -551,8 +645,8 @@ class CircuitTutor {
     }
     if (!tutorGuidance) {
       tutorGuidance = errors.length > 0
-        ? `You have ${errors.length} diagnostic recommendation(s). Review the highlighted findings above to optimize circuit depth and avoid unwanted state collapse.`
-        : 'Your quantum circuit logic is sound and unitary! Try experimenting with relative phase (Phase S or T gates) or adding a CNOT to a third wire to observe entanglement scaling.';
+        ? `You have ${errors.length} diagnostic recommendation(s). Review the 4-section breakdown below to optimize circuit fidelity and prevent unwanted state collapse.`
+        : 'Your quantum circuit logic is sound and unitary! Superposition amplitudes and entanglement correlations evolve with full fidelity.';
     }
 
     return {
@@ -561,24 +655,833 @@ class CircuitTutor {
       isHealthy: !errors.some(e => e.severity === 'error'),
       healthBadge: errors.length === 0 ? 'Healthy Circuit (100% Sound)' : `${errors.length} Issue(s) Detected`,
       errors,
+      diracNotation: payload.diracNotation || '|000⟩',
+      mathMetrics: payload.mathMetrics || {},
       entanglementAnalysis: described.entanglementAnalysis,
       tutorGuidance
     };
   }
 
+  /**
+   * Maps circuit pathologies to the foundational concept and
+   * links directly to one of the 18 master curriculum roadmap modules.
+   */
+  getWeakConceptInfo(err, circuitSummary) {
+    const type = err.errorType || '';
+    const title = (err.title || '').toLowerCase();
+    const desc = (err.desc || err.explanation || '').toLowerCase();
+
+    // 1. Premature Measurement -> Module 01 (Hilbert Space, Superposition & Born Rule)
+    if (type === 'premature_measurement' || title.includes('measurement') || desc.includes('born') || desc.includes('collapse')) {
+      return {
+        title: 'Projective Born Rule Measurement & Wavefunction Collapse',
+        explanation: 'In quantum mechanics, measurement is an irreversible projection, not a passive read. Measuring observable M forces continuous state |ψ⟩ = α|0⟩ + β|1⟩ to randomly collapse into basis eigenstate |0⟩ or |1⟩ with probability |α|² or |β|², destroying all phase information. In standard quantum circuit architecture, measurements are strictly deferred to the terminal column (Deferred Measurement Principle).',
+        moduleId: 'module-01',
+        moduleNum: 'Module 01',
+        moduleTitle: 'Hilbert Space & Statevector Superposition',
+        moduleSummary: 'Master the projective Born rule, wavefunction collapse, and why measurements belong at terminal circuit columns.',
+        moduleLevel: 'Beginner'
+      };
+    }
+
+    // 2. Self-Cancelling Redundancy -> Module 02 (Gate Unitaries & Matrix Evolution)
+    if (type === 'self_inverse' || title.includes('self-cancelling') || title.includes('redundancy') || desc.includes('undo each other')) {
+      return {
+        title: 'Unitary Invertibility & Involutory Gate Operators (U² = I)',
+        explanation: 'Every quantum logic gate is represented by a unitary operator U obeying U† U = I. Involutory gates (such as Pauli X, Y, Z and Hadamard H) are their own Hermitian adjoints (U = U†), meaning U² = I. Placing consecutive identical self-inverse gates cancels out the transformation identically into an identity matrix I, needlessly burning transmon coherence time (T₁, T₂) without executing any computation.',
+        moduleId: 'module-02',
+        moduleNum: 'Module 02',
+        moduleTitle: 'Gate Unitaries & Matrix Evolution',
+        moduleSummary: 'Explore unitary matrix evolution, involutory gates, and algebraic matrix identities.',
+        moduleLevel: 'Beginner'
+      };
+    }
+
+    // 3. Ineffective CNOT / Toffoli -> Module 07 (Entanglement Entropy & Bell States)
+    if (type === 'ineffective_cnot' || title.includes('ineffective') || title.includes('cnot') || title.includes('toffoli')) {
+      return {
+        title: 'Controlled Unitaries & Entanglement Generation',
+        explanation: 'Controlled operations (CNOT, Toffoli) transform |c⟩|t⟩ ↦ |c⟩|t ⊕ c⟩. When the control qubit rests in classical ground state |0⟩, the target qubit remains completely unaffected and the tensor state remains separable (|0⟩ ⊗ |0⟩ = |00⟩). To generate genuine quantum entanglement and non-local correlations, the control qubit must first be initialized in superposition (e.g. via H|0⟩ = |+⟩).',
+        moduleId: 'module-07',
+        moduleNum: 'Module 07',
+        moduleTitle: 'Entanglement Entropy & Bell States',
+        moduleSummary: 'Master Bell states, EPR pairs, and how controlled operations generate non-local entanglement.',
+        moduleLevel: 'Intermediate'
+      };
+    }
+
+    // 4. High Depth -> Module 05 (Decoherence & Lindblad Master Equation)
+    if (type === 'high_depth' || title.includes('depth') || desc.includes('decoherence') || desc.includes('transmon')) {
+      return {
+        title: 'Decoherence, T₁ Energy Relaxation & T₂ Dephasing',
+        explanation: 'Physical superconducting qubits are open quantum systems coupled to thermal environments. As circuit depth increases, transmon qubits undergo energy relaxation (T₁ ≈ 50 µs) and transverse phase dephasing (T₂ ≈ 70 µs). Circuit depth must be minimized and gates parallelized to ensure gate sequences execute well within hardware coherence bounds.',
+        moduleId: 'module-05',
+        moduleNum: 'Module 05',
+        moduleTitle: 'Decoherence & Lindblad Master Equation',
+        moduleSummary: 'Model transmon T1/T2 noise, Lindblad jump operators, and circuit depth compilation limits.',
+        moduleLevel: 'Advanced'
+      };
+    }
+
+    // 5. Idle Qubit -> Module 06 (OpenQASM 3.0 & Compilation)
+    if (type === 'idle_qubit' || title.includes('idle')) {
+      return {
+        title: 'Register Allocation & Hardware Compilation',
+        explanation: 'In quantum processors, unentangled idle qubits occupy physical cryogenic channels without contributing to computational parallelism. Hardware transpilers optimize wire allocation to either eliminate idle registers or schedule dynamical decoupling pulses (XY4 / CPMG) to protect them from environmental drift.',
+        moduleId: 'module-06',
+        moduleNum: 'Module 06',
+        moduleTitle: 'OpenQASM 3.0 & Google Cirq AST Compilation',
+        moduleSummary: 'Learn how compilers allocate registers, route couplings, and compile hardware-native gate topologies.',
+        moduleLevel: 'Intermediate'
+      };
+    }
+
+    // 6. Incomplete Gate -> Module 06
+    if (type === 'incomplete_gate' || title.includes('incomplete') || desc.includes('missing')) {
+      return {
+        title: 'Multi-Qubit Unitary Operators & Syntax',
+        explanation: 'Multi-qubit operations require both control and target indices to form a well-defined 4×4 or 8×8 unitary matrix in SU(2^N). An incomplete gate cannot compile to hardware assembly (OpenQASM 3.0 / Cirq).',
+        moduleId: 'module-06',
+        moduleNum: 'Module 06',
+        moduleTitle: 'OpenQASM 3.0 & Google Cirq AST Compilation',
+        moduleSummary: 'Master multi-qubit AST representation and unitary decomposition.',
+        moduleLevel: 'Intermediate'
+      };
+    }
+
+    // Fallback Concept -> Module 02
+    return {
+      title: 'Unitary State Evolution & Quantum Circuit Design',
+      explanation: 'Quantum circuits apply sequences of unitary gates to evolve an initial ground state |0...0⟩ into a target statevector with desired measurement amplitudes.',
+      moduleId: 'module-02',
+      moduleNum: 'Module 02',
+      moduleTitle: 'Gate Unitaries & Matrix Evolution',
+      moduleSummary: 'Review foundational single-qubit and multi-qubit unitary operations.',
+      moduleLevel: 'Beginner'
+    };
+  }
+
+  /**
+   * Generates grounded physical and mathematical explanation of
+   * how the specific mistake impairs the quantum state output.
+   */
+  getOutputImpact(err, data) {
+    const type = err.errorType || '';
+    const title = (err.title || '').toLowerCase();
+    const desc = (err.desc || err.explanation || '').toLowerCase();
+
+    if (type === 'premature_measurement' || title.includes('measurement') || desc.includes('born')) {
+      return {
+        title: 'Irreversible Wavefunction Collapse & Phase Destruction',
+        explanation: 'Projective Born measurement forces the continuous statevector |ψ⟩ = α|0⟩ + β|1⟩ to collapse onto a classical basis state. All quantum superposition is eradicated, and off-diagonal density matrix elements (coherences ⟨X⟩, ⟨Y⟩) drop to zero. Gates placed afterward operate purely on classical bits, rendering any intended quantum interference or algorithmic speedup impossible.',
+        stateStatus: 'status-danger',
+        stateLabel: 'Collapsed (Classical)',
+        entropyStatus: 'status-danger',
+        entropyLabel: '0.000 ebits (Destroyed)',
+        compStatus: 'status-danger',
+        compLabel: '0% Quantum Advantage',
+        mathSnippet: '|ψ⟩ = α|0⟩ + β|1⟩  --[Measure]-->  |0⟩ (prob |α|²) or |1⟩ (prob |β|²);  Tr(ρ²) = 1,  ⟨X⟩ = 0,  ⟨Y⟩ = 0'
+      };
+    }
+
+    if (type === 'self_inverse' || title.includes('self-cancelling') || title.includes('redundancy')) {
+      const g = err.gate || 'U';
+      return {
+        title: `Null Computation (Identity Transformation ${g}² = I)`,
+        explanation: `Applying two consecutive identical '${g}' operations evaluates identically to the identity gate (${g} · ${g} = I). The statevector remains completely unaffected by these two steps. On physical NISQ quantum hardware, these superfluous pulses burn valuable transmon coherence time (T₁, T₂) and accumulate gate infidelity (depolarizing noise) without executing any algorithmic logic.`,
+        stateStatus: 'status-warning',
+        stateLabel: 'Unchanged (No-Op)',
+        entropyStatus: 'status-neutral',
+        entropyLabel: 'No New Entanglement',
+        compStatus: 'status-warning',
+        compLabel: 'Redundant Depth (+2 Steps)',
+        mathSnippet: `${g} · ${g} = I  ⇒  |ψ_final⟩ = I |ψ_initial⟩ = |ψ_initial⟩  (Zero net phase or amplitude shift)`
+      };
+    }
+
+    if (type === 'ineffective_cnot' || title.includes('ineffective')) {
+      return {
+        title: 'Separable Output State & Zero Entanglement Generated',
+        explanation: 'Because the control qubit wire rests strictly in ground state |0⟩, the conditional target flip condition is never met. The CNOT gate acts as a non-operative identity: CNOT|0⟩|ψ⟩ = |0⟩|ψ⟩. No bipartite quantum correlations or Bell entanglement are synthesized, meaning entanglement entropy S(ρ_A) remains exactly 0.000 ebits.',
+        stateStatus: 'status-warning',
+        stateLabel: 'Separable Product State',
+        entropyStatus: 'status-danger',
+        entropyLabel: '0.000 ebits (Unentangled)',
+        compStatus: 'status-warning',
+        compLabel: 'Target Gate Inactive',
+        mathSnippet: 'CNOT |0⟩|t⟩ = |0⟩ |t ⊕ 0⟩ = |0⟩|t⟩  ⇒  Concurrence C = 0.000,  Von Neumann Entropy S = 0'
+      };
+    }
+
+    if (type === 'high_depth' || title.includes('depth')) {
+      return {
+        title: 'Accelerated Decoherence & Gate Infidelity Accumulation',
+        explanation: `With a circuit depth of ${err.depth || 10}+ unitary time slices, cumulative gate duration approaches or exceeds the qubit's dephasing time T₂. Environmental noise leads to exponential state purity decay (Tr(ρ²) < 1.0) and phase drift, causing the measured output probability distribution to deviate significantly from theoretical expectation values.`,
+        stateStatus: 'status-warning',
+        stateLabel: 'High Decoherence Risk',
+        entropyStatus: 'status-warning',
+        entropyLabel: 'Spurious Mixed Entropy',
+        compStatus: 'status-danger',
+        compLabel: 'Degraded State Fidelity',
+        mathSnippet: 'ρ(t) = (1 - e^{-t/T₁}) |0⟩⟨0| + e^{-t/T₂} ρ_offdiag  (Decoherence dampens quantum amplitudes)'
+      };
+    }
+
+    if (type === 'idle_qubit' || title.includes('idle')) {
+      return {
+        title: 'Tensor Factorization Without Computational Contribution',
+        explanation: `Wire q[${err.qubit ?? 0}] remains in state |0⟩ and factors out cleanly as |ψ_total⟩ = |0⟩ ⊗ |ψ_subsystem⟩. While this does not corrupt other wires, it wastes register capacity and increases quantum memory overhead.`,
+        stateStatus: 'status-neutral',
+        stateLabel: 'Static Ground State |0⟩',
+        entropyStatus: 'status-neutral',
+        entropyLabel: 'Separable |0⟩ Tensor Factor',
+        compStatus: 'status-neutral',
+        compLabel: 'Underutilized Register',
+        mathSnippet: '|ψ_system⟩ = |0⟩_{idle} ⊗ |ψ⟩_{active}  (No quantum interference generated on this wire)'
+      };
+    }
+
+    // Default impact
+    return {
+      title: 'Deviated Statevector Trajectory',
+      explanation: 'The current gate arrangement alters the unitary trajectory in Hilbert space, producing a statevector that deviates from intended algorithmic probability distributions.',
+      stateStatus: 'status-warning',
+      stateLabel: 'Altered Amplitudes',
+      entropyStatus: 'status-neutral',
+      entropyLabel: 'Modified Correlations',
+      compStatus: 'status-warning',
+      compLabel: 'Suboptimal Evolution',
+      mathSnippet: 'U_actual ≠ U_intended  (Statevector probabilities deviate from target algorithm)'
+    };
+  }
+
+  /**
+   * Actionable step-by-step instructions to fix the circuit.
+   */
+  getFixSteps(err) {
+    const type = err.errorType || '';
+    const title = (err.title || '').toLowerCase();
+    const desc = (err.desc || err.explanation || '').toLowerCase();
+
+    if (type === 'premature_measurement' || title.includes('measurement') || desc.includes('born')) {
+      const q = err.qubit ?? 0;
+      const mCol = (err.measureCol ?? 0) + 1;
+      const gCol = (err.gateCol ?? 0) + 1;
+      return [
+        {
+          title: `Relocate Measurement Gate on Wire q[${q}]`,
+          desc: `Remove the premature Measure gate at step t=${mCol} and reposition it at the very end of wire q[${q}] after gate '${err.gate || 'U'}' at step t=${gCol}.`
+        },
+        {
+          title: 'Preserve Coherent Unitary Evolution',
+          desc: 'Ensure all superposition, phase rotations, and entangling CNOT gates execute while qubits remain in coherent quantum states before any projective readout occurs.'
+        },
+        {
+          title: 'Re-Verify Amplitudes & Observables',
+          desc: 'Check the real-time Statevector and Pauli Observable panels to observe true quantum probabilities without premature wavefunction collapse.'
+        }
+      ];
+    }
+
+    if (type === 'self_inverse' || title.includes('self-cancelling') || title.includes('redundancy')) {
+      const q = err.qubit ?? 0;
+      const g = err.gate || 'U';
+      const c1 = err.cols ? err.cols[0] + 1 : 1;
+      const c2 = err.cols ? err.cols[1] + 1 : 2;
+      return [
+        {
+          title: `Remove Both Redundant '${g}' Gates`,
+          desc: `Delete the consecutive identical '${g}' gates on wire q[${q}] at columns t=${c1} and t=${c2}. Because ${g}² = I, removing them preserves the exact mathematical state.`
+        },
+        {
+          title: 'Shorten Transmon Circuit Depth',
+          desc: 'Eliminating the two time steps shortens hardware pulse execution time and prevents unnecessary T₁ decoherence and calibration noise.'
+        },
+        {
+          title: 'Substitute With Target Rotation If Desired',
+          desc: `If an actual rotation was intended, replace '${g}' with a phase rotation (S, T, or Rz) to create a non-identity relative phase shift.`
+        }
+      ];
+    }
+
+    if (type === 'ineffective_cnot' || title.includes('ineffective')) {
+      const groundedStr = (err.grounded || []).map(q => `q[${q}]`).join(', ') || 'the control wire';
+      const c = (err.col ?? 0) + 1;
+      return [
+        {
+          title: `Initialize Superposition on Control Wire (${groundedStr})`,
+          desc: `Place a Hadamard (H) gate on wire ${groundedStr} prior to step t=${c}. This prepares state |+⟩ = (|0⟩ + |1⟩)/√2.`
+        },
+        {
+          title: 'Activate Conditional Target Flip',
+          desc: 'When the control enters |+⟩, the CNOT/Toffoli operates across both basis states simultaneously, synthesizing true EPR entanglement (|00⟩ + |11⟩)/√2.'
+        },
+        {
+          title: 'Verify Entanglement Entropy',
+          desc: 'Watch the Subsystem Entanglement Entropy jump from 0.000 to 1.000 ebits in the diagnostics panel.'
+        }
+      ];
+    }
+
+    if (type === 'high_depth' || title.includes('depth')) {
+      return [
+        {
+          title: 'Run Universal Circuit Transpiler',
+          desc: 'Click the Transpiler & AI Doctor button to merge adjacent rotations and cancel commutative commuting gates.'
+        },
+        {
+          title: 'Parallelize Independent Single-Qubit Gates',
+          desc: 'Slide gates on independent qubit wires into identical time step columns to reduce horizontal circuit depth.'
+        },
+        {
+          title: 'Inspect Coherence Budget (T₁ / T₂)',
+          desc: 'Keep total gate duration below 10-15 steps to ensure physical superconducting transmons retain >95% state purity.'
+        }
+      ];
+    }
+
+    if (type === 'idle_qubit' || title.includes('idle')) {
+      const q = err.qubit ?? 0;
+      return [
+        {
+          title: `Assign Logic to Wire q[${q}]`,
+          desc: `Place single-qubit gates (H, X) or entangling CNOT targets onto wire q[${q}] to include it in the computation.`
+        },
+        {
+          title: 'Or Reduce Active Register Size',
+          desc: "If extra qubits are not required, click the '−' button in the qubit header to scale down the register to active wires only."
+        }
+      ];
+    }
+
+    return [
+      {
+        title: 'Review Gate Placement & Matrix Logic',
+        desc: err.suggestedFix || err.fix || 'Inspect the gate coordinates on the circuit grid.'
+      },
+      {
+        title: 'Check Statevector Probabilities',
+        desc: 'Observe the live probability distribution bars to ensure amplitudes match theoretical goals.'
+      }
+    ];
+  }
+
+  /**
+   * Identifies concept and curriculum module for healthy sound circuits.
+   */
+  getHealthyConceptInfo(data) {
+    const summary = (data.circuitSummary || '').toLowerCase();
+    if (summary.includes('bell') || summary.includes('entangle')) {
+      return {
+        title: 'Bipartite Bell State Synthesis & Non-Local Correlations',
+        explanation: 'Your circuit successfully synthesizes quantum entanglement, violating local realism and preparing states with maximum subsystem entropy S(ρ) = 1.000 ebits.',
+        moduleId: 'module-07',
+        moduleNum: 'Module 07',
+        moduleTitle: 'Entanglement Entropy & Bell States',
+        moduleSummary: 'Deepen your mastery of EPR pairs, CHSH inequalities, and Schmidt rank decompositions.',
+        moduleLevel: 'Intermediate'
+      };
+    }
+    if (summary.includes('teleport')) {
+      return {
+        title: 'Quantum Teleportation & Bell State Measurement',
+        explanation: 'Your circuit implements pre-shared EPR entanglement and Bell-basis measurement to transfer arbitrary qubit state information across channels.',
+        moduleId: 'module-08',
+        moduleNum: 'Module 08',
+        moduleTitle: 'Quantum Teleportation Protocol',
+        moduleSummary: 'Explore classical feed-forward Pauli corrections and state reconstruction fidelity.',
+        moduleLevel: 'Advanced'
+      };
+    }
+    if (summary.includes('grover')) {
+      return {
+        title: 'Grover Search & Amplitude Amplification',
+        explanation: 'Your circuit leverages phase inversion and diffusion operators to quadratically amplify target state amplitudes.',
+        moduleId: 'module-09',
+        moduleNum: 'Module 09',
+        moduleTitle: 'Grover Search & Amplitude Amplification',
+        moduleSummary: 'Study phase oracles, geometric diffusion reflections, and search scaling O(√N).',
+        moduleLevel: 'Advanced'
+      };
+    }
+    if (summary.includes('qft') || summary.includes('fourier')) {
+      return {
+        title: 'Quantum Fourier Transform & Phase Estimation',
+        explanation: 'Your circuit maps computational basis states into phase frequency domains using controlled phase rotations and Hadamards.',
+        moduleId: 'module-11',
+        moduleNum: 'Module 11',
+        moduleTitle: 'Quantum Fourier Transform & Phase Estimation (QPE)',
+        moduleSummary: 'Understand eigenvalue estimation, modular phase kickback, and Shor’s period finding.',
+        moduleLevel: 'Advanced'
+      };
+    }
+    return {
+      title: 'Unitary Evolution & Superposition in Hilbert Space',
+      explanation: 'Your circuit preserves norm and maintains coherent superposition across all active wires in the Hilbert space.',
+      moduleId: 'module-02',
+      moduleNum: 'Module 02',
+      moduleTitle: 'Gate Unitaries & Matrix Evolution',
+      moduleSummary: 'Learn single-qubit rotations (H, X, Y, Z, S, T) and multi-qubit Kronecker expansions.',
+      moduleLevel: 'Beginner'
+    };
+  }
+
+  /**
+   * Automatically repairs circuit pathology directly on canvas.
+   */
+  autoFixError(errIndex) {
+    const err = this.currentErrors && this.currentErrors[errIndex];
+    if (!err) return;
+
+    const ui = this.circuitUI || window.circuitUI;
+    if (!ui || !ui.grid) return;
+
+    let fixed = false;
+    let feedbackMsg = '';
+
+    if (err.errorType === 'premature_measurement' || (err.title && err.title.includes('Measurement'))) {
+      const q = err.qubit !== undefined ? err.qubit : 0;
+      let mCol = -1;
+      for (let c = 0; c < ui.numCols; c++) {
+        if (ui.grid[q][c] === 'M' || ui.grid[q][c] === 'MEASURE') {
+          mCol = c;
+          break;
+        }
+      }
+      if (mCol !== -1) {
+        ui.grid[q][mCol] = '';
+      }
+      let lastGateCol = -1;
+      for (let c = 0; c < ui.numCols; c++) {
+        if (ui.grid[q][c] && ui.grid[q][c] !== '') {
+          lastGateCol = c;
+        }
+      }
+      const targetCol = Math.min(ui.numCols - 1, lastGateCol >= 0 ? lastGateCol + 1 : ui.numCols - 1);
+      ui.grid[q][targetCol] = 'M';
+      fixed = true;
+      feedbackMsg = `Repositioned Measurement gate on wire q[${q}] to terminal step t=${targetCol + 1}.`;
+    } else if (err.errorType === 'self_inverse' || (err.title && err.title.includes('Self-Cancelling'))) {
+      const q = err.qubit !== undefined ? err.qubit : 0;
+      const cols = err.cols || [];
+      if (cols.length === 2) {
+        ui.grid[q][cols[0]] = '';
+        ui.grid[q][cols[1]] = '';
+        fixed = true;
+        feedbackMsg = `Removed self-cancelling ${err.gate || ''} gates on wire q[${q}] at columns t=${cols[0] + 1} and t=${cols[1] + 1}.`;
+      }
+    } else if (err.errorType === 'ineffective_cnot' || (err.title && err.title.includes('Ineffective'))) {
+      const grounded = err.grounded || (err.controls ? [err.controls[0]] : [0]);
+      const col = err.col || 1;
+      grounded.forEach(ctrlQ => {
+        let placed = false;
+        for (let c = 0; c < col; c++) {
+          if (!ui.grid[ctrlQ][c] || ui.grid[ctrlQ][c] === '') {
+            ui.grid[ctrlQ][c] = 'H';
+            placed = true;
+            break;
+          }
+        }
+        if (!placed && col > 0) {
+          ui.grid[ctrlQ][0] = 'H';
+        }
+      });
+      fixed = true;
+      feedbackMsg = `Placed Hadamard (H) gate on control wire to prepare superposition and activate entanglement.`;
+    } else if (err.errorType === 'idle_qubit') {
+      const q = err.qubit !== undefined ? err.qubit : 0;
+      if (ui.numQubits > 2 && typeof ui.removeQubit === 'function') {
+        ui.removeQubit(q);
+        fixed = true;
+        feedbackMsg = `Removed idle wire q[${q}] to streamline register.`;
+      } else {
+        ui.grid[q][0] = 'H';
+        fixed = true;
+        feedbackMsg = `Initialized wire q[${q}] with Hadamard (H) gate.`;
+      }
+    }
+
+    if (fixed) {
+      if (typeof ui.renderGrid === 'function') ui.renderGrid();
+      if (typeof ui.updateSimulation === 'function') ui.updateSimulation();
+      if (typeof ui.renderCnotConnectors === 'function') ui.renderCnotConnectors();
+
+      this.showAutoFixFeedback(feedbackMsg);
+      setTimeout(() => this.runAudit(), 350);
+    }
+  }
+
+  /**
+   * Flashes and locates the error on the circuit canvas wires.
+   */
+  highlightErrorLocation(locStr, qubit, col) {
+    document.querySelectorAll('.error-pulse-highlight, .slot-error-highlight').forEach(el => {
+      el.classList.remove('error-pulse-highlight', 'slot-error-highlight');
+    });
+
+    if (qubit >= 0 && col >= 0) {
+      const slot = document.getElementById(`slot-${qubit}-${col}`);
+      if (slot) {
+        slot.classList.add('slot-error-highlight');
+        slot.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        setTimeout(() => slot.classList.remove('slot-error-highlight'), 3500);
+        return;
+      }
+    }
+
+    if (qubit >= 0) {
+      const row = document.querySelector(`.circuit-wire-row[data-qubit="${qubit}"]`);
+      if (row) {
+        row.classList.add('error-pulse-highlight');
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setTimeout(() => row.classList.remove('error-pulse-highlight'), 3500);
+        return;
+      }
+    }
+
+    const qMatch = String(locStr).match(/q\[(\d+)\]/i);
+    if (qMatch) {
+      const q = parseInt(qMatch[1], 10);
+      const row = document.querySelector(`.circuit-wire-row[data-qubit="${q}"]`);
+      if (row) {
+        row.classList.add('error-pulse-highlight');
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        setTimeout(() => row.classList.remove('error-pulse-highlight'), 3500);
+      }
+    }
+  }
+
+  showAutoFixFeedback(msg) {
+    const pill = this.floatingDoctorPill || document.getElementById('floating-doctor-health-pill');
+    if (pill) {
+      const oldHtml = pill.innerHTML;
+      pill.innerHTML = `⚡ ${escapeHtml(msg || 'Fixed!')}`;
+      pill.className = 'doctor-health-pill-small healthy auto-fixed';
+      setTimeout(() => {
+        if (pill) pill.innerHTML = oldHtml;
+      }, 3200);
+    }
+  }
+
   renderAuditResults(data) {
     if (!data) return;
 
-    // 1. Health Badge
+    const errs = data.errors || [];
+    this.currentErrors = errs;
+    const isHealthy = data.isHealthy !== false && errs.length === 0;
+
+    // 1. Update Trigger Button Badge & Pulse Dot
+    if (this.doctorCountBadge) {
+      if (errs.length > 0) {
+        this.doctorCountBadge.textContent = String(errs.length);
+        this.doctorCountBadge.style.display = 'inline-flex';
+      } else {
+        this.doctorCountBadge.style.display = 'none';
+      }
+    }
+    if (this.doctorPulseDot) {
+      if (errs.length > 0) {
+        this.doctorPulseDot.classList.add('has-issues');
+      } else {
+        this.doctorPulseDot.classList.remove('has-issues');
+      }
+    }
+
+    // 2. Update Floating Popup Header Health Pill
+    if (this.floatingDoctorPill) {
+      this.floatingDoctorPill.className = `doctor-health-pill-small ${isHealthy ? 'healthy' : 'warning'}`;
+      this.floatingDoctorPill.innerHTML = isHealthy
+        ? '🟢 Sound'
+        : `⚠️ ${errs.length} Issue${errs.length > 1 ? 's' : ''}`;
+    }
+
+    // 3. Render Floating Doctor Window (Strict 4 Sections)
+    if (this.floatingDoctorContent) {
+      let contentHtml = '';
+
+      if (data.tutorGuidance) {
+        contentHtml += `
+          <div class="doctor-guidance-banner">
+            <div class="guidance-banner-header">
+              <span class="guidance-banner-icon">💡</span>
+              <strong class="guidance-banner-title">AI Doctor Guidance</strong>
+            </div>
+            <p class="guidance-banner-text">${escapeHtml(data.tutorGuidance)}</p>
+          </div>
+        `;
+      }
+
+      if (isHealthy) {
+        const algoConcept = this.getHealthyConceptInfo(data);
+        contentHtml += `
+          <div class="doctor-diagnosis-card healthy-card">
+            <!-- 1) Mistake Made / Health Status -->
+            <div class="doctor-sec-block sec-mistake healthy">
+              <div class="sec-header-row">
+                <span class="sec-num-bubble">1</span>
+                <div class="sec-title-wrap">
+                  <span class="sec-subtitle">Mistake Made</span>
+                  <h4 class="sec-main-title">Zero Pathologies Detected (100% Sound)</h4>
+                </div>
+                <span class="sec-sev-badge sev-healthy">🟢 OPTIMAL</span>
+              </div>
+              <div class="sec-body-box">
+                <div class="sec-meta-line">
+                  <span class="sec-meta-pin">📍 Active Register:</span>
+                  <span class="sec-meta-val">${escapeHtml(data.circuitSummary || 'Unitary Register')}</span>
+                </div>
+                <p class="sec-explanation-text">
+                  Your quantum circuit logic is completely sound! All operations preserve quantum state norm (⟨ψ|ψ⟩ = 1.0). No premature projective collapses, dangling controls, or redundant self-inverse gates were found.
+                </p>
+              </div>
+            </div>
+
+            <!-- 2) How It Affects The Output -->
+            <div class="doctor-sec-block sec-impact healthy">
+              <div class="sec-header-row">
+                <span class="sec-num-bubble">2</span>
+                <div class="sec-title-wrap">
+                  <span class="sec-subtitle">How It Affects The Output</span>
+                  <h4 class="sec-main-title">Deterministic Unitary State Evolution</h4>
+                </div>
+              </div>
+              <div class="sec-body-box">
+                <p class="sec-explanation-text">
+                  Amplitudes are coherently superposed. The circuit synthesizes statevector <strong>${escapeHtml(data.diracNotation || '|000⟩')}</strong> with full quantum phase fidelity.
+                </p>
+                <div class="sec-impact-telemetry">
+                  <div class="telemetry-pill status-healthy">
+                    <span class="telemetry-label">State Purity</span>
+                    <span class="telemetry-value">Tr(ρ²) = 1.000</span>
+                  </div>
+                  <div class="telemetry-pill status-healthy">
+                    <span class="telemetry-label">Entanglement Status</span>
+                    <span class="telemetry-value">${escapeHtml(data.mathMetrics?.entanglementClass || (data.mathMetrics?.concurrence > 0.1 ? 'Entangled Subsystem' : 'Separable State'))}</span>
+                  </div>
+                  <div class="telemetry-pill status-healthy">
+                    <span class="telemetry-label">Quantum Speedup</span>
+                    <span class="telemetry-value">Active Coherence</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3) Potential Weak Concepts / Curriculum Study -->
+            <div class="doctor-sec-block sec-concept">
+              <div class="sec-header-row">
+                <span class="sec-num-bubble">3</span>
+                <div class="sec-title-wrap">
+                  <span class="sec-subtitle">Potential Weak Concepts</span>
+                  <h4 class="sec-main-title">${escapeHtml(algoConcept.title)}</h4>
+                </div>
+                <span class="concept-module-badge">${escapeHtml(algoConcept.moduleNum)}</span>
+              </div>
+              <div class="sec-body-box">
+                <p class="sec-explanation-text">${escapeHtml(algoConcept.explanation)}</p>
+                <div class="sec-module-launcher-card">
+                  <div class="launcher-card-header">
+                    <span class="launcher-tag">RECOMMENDED MASTER MODULE</span>
+                    <span class="launcher-mod-level">${escapeHtml(algoConcept.moduleLevel || 'Curriculum')}</span>
+                  </div>
+                  <div class="launcher-title">${escapeHtml(algoConcept.moduleNum)}: ${escapeHtml(algoConcept.moduleTitle)}</div>
+                  <p class="launcher-desc">${escapeHtml(algoConcept.moduleSummary)}</p>
+                  <button type="button" class="btn-open-curriculum-module" onclick="window.openRoadmapModule('${algoConcept.moduleId}')" title="Study this concept in the interactive module lab">
+                    <span class="btn-module-icon">📖</span>
+                    <span class="btn-module-label">Open ${escapeHtml(algoConcept.moduleNum)} & Interactive Studio</span>
+                    <span class="btn-module-arrow">➔</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4) Steps To Fix The Circuit / Next Experiments -->
+            <div class="doctor-sec-block sec-fix healthy">
+              <div class="sec-header-row">
+                <span class="sec-num-bubble">4</span>
+                <div class="sec-title-wrap">
+                  <span class="sec-subtitle">Steps To Fix The Circuit</span>
+                  <h4 class="sec-main-title">Next Recommended Experiments</h4>
+                </div>
+              </div>
+              <div class="sec-body-box">
+                <div class="fix-steps-numbered-list">
+                  <div class="fix-step-item">
+                    <span class="fix-step-circle">1</span>
+                    <div class="fix-step-details">
+                      <strong class="fix-step-name">Inject Relative Phase (S or T Gate)</strong>
+                      <p class="fix-step-instruction">Place a Phase S or T gate on a wire in superposition to rotate the statevector azimuthally along the Bloch sphere equator.</p>
+                    </div>
+                  </div>
+                  <div class="fix-step-item">
+                    <span class="fix-step-circle">2</span>
+                    <div class="fix-step-details">
+                      <strong class="fix-step-name">Observe Entanglement Scaling</strong>
+                      <p class="fix-step-instruction">Add a CNOT connecting to a third wire to transition from bipartite Bell states to tripartite GHZ entanglement (|000⟩ + |111⟩)/√2.</p>
+                    </div>
+                  </div>
+                  <div class="fix-step-item">
+                    <span class="fix-step-circle">3</span>
+                    <div class="fix-step-details">
+                      <strong class="fix-step-name">Inspect Pauli Observables ⟨X⟩, ⟨Y⟩, ⟨Z⟩</strong>
+                      <p class="fix-step-instruction">Switch on the Pauli Legend on the left control dock to analyze real-time expectation value projections.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        contentHtml += errs.map((err, idx) => {
+          const sevClass = err.severity === 'error' ? 'sev-error' : (err.severity === 'warning' ? 'sev-warning' : 'sev-info');
+          const sevIcon = err.severity === 'error' ? '🔴' : (err.severity === 'warning' ? '🟡' : 'ℹ️');
+          const sevLabel = err.severity === 'error' ? 'ERROR' : (err.severity === 'warning' ? 'WARNING' : 'OPTIMIZATION');
+          const impact = this.getOutputImpact(err, data);
+          const concept = this.getWeakConceptInfo(err, data.circuitSummary);
+          const fixSteps = this.getFixSteps(err);
+
+          return `
+            <div class="doctor-diagnosis-card">
+              ${errs.length > 1 ? `
+                <div class="doctor-issue-counter">
+                  <span class="counter-badge">Issue ${idx + 1} of ${errs.length}</span>
+                </div>
+              ` : ''}
+
+              <!-- 1) Mistake Made -->
+              <div class="doctor-sec-block sec-mistake">
+                <div class="sec-header-row">
+                  <span class="sec-num-bubble">1</span>
+                  <div class="sec-title-wrap">
+                    <span class="sec-subtitle">Mistake Made</span>
+                    <h4 class="sec-main-title">${escapeHtml(err.title || 'Circuit Pathology')}</h4>
+                  </div>
+                  <span class="sec-sev-badge ${sevClass}">${sevIcon} ${sevLabel}</span>
+                </div>
+                <div class="sec-body-box">
+                  <div class="sec-meta-line">
+                    <span class="sec-meta-pin">📍 Location:</span>
+                    <span class="sec-meta-val">${escapeHtml(err.location || 'Circuit Canvas')}</span>
+                  </div>
+                  <p class="sec-explanation-text">${escapeHtml(err.explanation || err.desc || '')}</p>
+                </div>
+              </div>
+
+              <!-- 2) How It Affects The Output -->
+              <div class="doctor-sec-block sec-impact">
+                <div class="sec-header-row">
+                  <span class="sec-num-bubble">2</span>
+                  <div class="sec-title-wrap">
+                    <span class="sec-subtitle">How It Affects The Output</span>
+                    <h4 class="sec-main-title">${escapeHtml(impact.title)}</h4>
+                  </div>
+                </div>
+                <div class="sec-body-box">
+                  <p class="sec-explanation-text">${impact.explanation}</p>
+                  <div class="sec-impact-telemetry">
+                    <div class="telemetry-pill ${impact.stateStatus}">
+                      <span class="telemetry-label">Wavefunction State</span>
+                      <span class="telemetry-value">${escapeHtml(impact.stateLabel)}</span>
+                    </div>
+                    <div class="telemetry-pill ${impact.entropyStatus}">
+                      <span class="telemetry-label">Entanglement Entropy</span>
+                      <span class="telemetry-value">${escapeHtml(impact.entropyLabel)}</span>
+                    </div>
+                    <div class="telemetry-pill ${impact.compStatus}">
+                      <span class="telemetry-label">Algorithmic Advantage</span>
+                      <span class="telemetry-value">${escapeHtml(impact.compLabel)}</span>
+                    </div>
+                  </div>
+                  ${impact.mathSnippet ? `
+                    <div class="sec-math-callout">
+                      <span class="math-callout-tag">Mathematical Mechanism:</span>
+                      <code>${escapeHtml(impact.mathSnippet)}</code>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+
+              <!-- 3) Potential Weak Concepts -->
+              <div class="doctor-sec-block sec-concept">
+                <div class="sec-header-row">
+                  <span class="sec-num-bubble">3</span>
+                  <div class="sec-title-wrap">
+                    <span class="sec-subtitle">Potential Weak Concepts</span>
+                    <h4 class="sec-main-title">${escapeHtml(concept.title)}</h4>
+                  </div>
+                  <span class="concept-module-badge">${escapeHtml(concept.moduleNum)}</span>
+                </div>
+                <div class="sec-body-box">
+                  <p class="sec-explanation-text">${escapeHtml(concept.explanation)}</p>
+
+                  <!-- Direct button opening specific module of our 18 roadmap modules -->
+                  <div class="sec-module-launcher-card">
+                    <div class="launcher-card-header">
+                      <span class="launcher-tag">RECOMMENDED CURRICULUM MODULE</span>
+                      <span class="launcher-mod-level">${escapeHtml(concept.moduleLevel || 'Core Curriculum')}</span>
+                    </div>
+                    <div class="launcher-title">${escapeHtml(concept.moduleNum)}: ${escapeHtml(concept.moduleTitle)}</div>
+                    <p class="launcher-desc">${escapeHtml(concept.moduleSummary)}</p>
+                    <button type="button" class="btn-open-curriculum-module" onclick="window.openRoadmapModule('${concept.moduleId}')" title="Study this concept in Module Reader with interactive circuit studio">
+                      <span class="btn-module-icon">📖</span>
+                      <span class="btn-module-label">Study in ${escapeHtml(concept.moduleNum)}: ${escapeHtml(concept.moduleTitle)}</span>
+                      <span class="btn-module-arrow">➔</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4) Steps To Fix The Circuit -->
+              <div class="doctor-sec-block sec-fix">
+                <div class="sec-header-row">
+                  <span class="sec-num-bubble">4</span>
+                  <div class="sec-title-wrap">
+                    <span class="sec-subtitle">Steps To Fix The Circuit</span>
+                    <h4 class="sec-main-title">Prescribed Action Plan</h4>
+                  </div>
+                </div>
+                <div class="sec-body-box">
+                  <div class="fix-steps-numbered-list">
+                    ${fixSteps.map((step, sIdx) => `
+                      <div class="fix-step-item">
+                        <span class="fix-step-circle">${sIdx + 1}</span>
+                        <div class="fix-step-details">
+                          <strong class="fix-step-name">${escapeHtml(step.title)}</strong>
+                          <p class="fix-step-instruction">${escapeHtml(step.desc)}</p>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+
+                  <!-- Extra Features: Auto-Fix Circuit + Highlight on Canvas -->
+                  <div class="doctor-action-buttons-row">
+                    <button type="button" class="btn-doctor-action btn-doctor-autofix" onclick="window.circuitTutor && window.circuitTutor.autoFixError(${idx})" title="Directly repair this gate placement on the canvas">
+                      <span class="btn-act-icon">⚡</span>
+                      <span class="btn-act-text">Auto-Fix Circuit</span>
+                    </button>
+                    <button type="button" class="btn-doctor-action btn-doctor-highlight" onclick="window.circuitTutor && window.circuitTutor.highlightErrorLocation('${escapeHtml(err.location)}', ${err.qubit ?? -1}, ${err.gateCol ?? err.col ?? -1})" title="Locate and pulse on the circuit canvas">
+                      <span class="btn-act-icon">🎯</span>
+                      <span class="btn-act-text">Highlight on Canvas</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      this.floatingDoctorContent.innerHTML = contentHtml;
+    }
+
+    // 4. Update Legacy Elements (for backward compatibility)
     if (this.healthBadgeEl) {
-      const isHealthy = data.isHealthy !== false && (!data.errors || data.errors.length === 0);
       this.healthBadgeEl.className = `tutor-health-pill ${isHealthy ? 'healthy' : 'warning'}`;
       this.healthBadgeEl.innerHTML = isHealthy
         ? '🟢 Circuit Healthy (100% Sound)'
-        : `⚠️ ${data.healthBadge || `${data.errors.length} Issue(s) Detected`}`;
+        : `⚠️ ${data.healthBadge || `${errs.length} Issue(s) Detected`}`;
     }
 
-    // 2. What You Are Making
     if (this.makingTitleEl) {
       this.makingTitleEl.textContent = data.circuitSummary || 'Custom Quantum Circuit';
     }
@@ -586,9 +1489,7 @@ class CircuitTutor {
       this.makingDescEl.textContent = data.circuitPurpose || 'Unitary evolution of quantum state.';
     }
 
-    // 3. Errors Container
     if (this.errorsContainerEl) {
-      const errs = data.errors || [];
       if (errs.length === 0) {
         this.errorsContainerEl.innerHTML = `
           <div class="tutor-clean-state">
@@ -623,12 +1524,10 @@ class CircuitTutor {
       }
     }
 
-    // 4. Entanglement Assessment
     if (this.entanglementDescEl) {
       this.entanglementDescEl.textContent = data.entanglementAnalysis || 'Evaluating subsystem entropy.';
     }
 
-    // 5. Tutor Guidance
     if (this.guidanceDescEl) {
       this.guidanceDescEl.textContent = data.tutorGuidance || 'Continue exploring quantum algorithms.';
     }
@@ -643,8 +1542,25 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-// Instantiate globally
+// Global curriculum module launcher
 if (typeof window !== 'undefined') {
+  window.openRoadmapModule = function(moduleId) {
+    if (window.switchView) {
+      window.switchView('topic-roadmap');
+    } else if (window.switchTab) {
+      window.switchTab('topic-roadmap');
+    }
+    setTimeout(() => {
+      if (window.topicRoadmapManager && typeof window.topicRoadmapManager.openModuleReader === 'function') {
+        window.topicRoadmapManager.openModuleReader(moduleId);
+        const detailStage = document.getElementById('topic-module-detail-stage');
+        if (detailStage) {
+          detailStage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }, 120);
+  };
+
   window.addEventListener('DOMContentLoaded', () => {
     window.circuitTutor = new CircuitTutor(window.circuitUI);
   });
