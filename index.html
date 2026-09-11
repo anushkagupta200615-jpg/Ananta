@@ -3614,6 +3614,35 @@ Key Advantage:
     </div>
   </div>
 
+  <!-- Full Paper Reader Modal: opens on clicking a result card, fetches the -->
+  <!-- actual paper text (not just its abstract) and summarizes that.       -->
+  <div class="bibtex-modal-backdrop" id="paper-reader-modal" style="display:none;">
+    <div class="bibtex-modal-dialog" style="max-width: 880px; width: 94%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="bibtex-modal-header">
+        <h3 id="paper-reader-title" style="margin:0; font-size: 16px; line-height: 1.4;">Loading…</h3>
+        <button class="btn-close-modal" onclick="window.closePaperReader()">✕</button>
+      </div>
+      <div class="bibtex-modal-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 18px;">
+        <div id="paper-reader-meta" style="font-size: 12px; color: var(--text-dim);"></div>
+        <div id="paper-reader-status" style="font-size: 13px; color: #38bdf8;"></div>
+
+        <section id="paper-reader-summary-section" style="display:none;">
+          <h4 style="margin: 0 0 8px; font-size: 13px; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px;">🧠 AI Summary (of the actual paper, not just the abstract)</h4>
+          <p id="paper-reader-summary" style="font-size: 14px; line-height: 1.7; color: var(--text-white); white-space: pre-wrap;"></p>
+        </section>
+
+        <section>
+          <h4 style="margin: 0 0 8px; font-size: 13px; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px;">📄 Extracted Paper Text</h4>
+          <pre id="paper-reader-fulltext" style="white-space: pre-wrap; font-family: var(--font-mono, monospace); font-size: 12px; line-height: 1.6; color: #cbd5e1; max-height: 340px; overflow-y: auto; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 8px; margin: 0;"></pre>
+        </section>
+      </div>
+      <div class="bibtex-modal-footer">
+        <a id="paper-reader-source-link" href="#" target="_blank" rel="noopener noreferrer" style="font-size: 12px; color: #38bdf8; margin-right: auto;">View original source ↗</a>
+        <button class="btn-cancel-oauth" onclick="window.closePaperReader()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Interactive Gate Educational Mechanism Floating Card -->
   <div class="gate-edu-card" id="gate-edu-card" style="display: none;">
     <div class="gate-edu-header">

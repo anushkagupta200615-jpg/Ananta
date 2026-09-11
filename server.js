@@ -231,9 +231,9 @@ const server = http.createServer(async (req, res) => {
     const { url } = body || {};
     if (!url) return sendJson(res, 400, { error: 'url is required' });
     try {
-      const { title, text } = await extractTextFromUrl(url);
-      logTransaction('POST', pathname, 200, Date.now() - reqStart, { url, title, length: text.length });
-      return sendJson(res, 200, { url, title, length: text.length, text });
+      const { title, text, fullTextAvailable } = await extractTextFromUrl(url);
+      logTransaction('POST', pathname, 200, Date.now() - reqStart, { url, title, length: text.length, fullTextAvailable });
+      return sendJson(res, 200, { url, title, length: text.length, text, fullTextAvailable: Boolean(fullTextAvailable) });
     } catch (e) {
       logTransaction('POST', pathname, 500, Date.now() - reqStart, { error: e.message });
       return sendJson(res, 500, { error: 'Could not fetch/parse that URL: ' + e.message });

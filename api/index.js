@@ -170,8 +170,8 @@ module.exports = async function handler(req, res) {
     const { url } = body || {};
     if (!url) return sendJson(res, 400, { error: 'url is required' });
     try {
-      const { title, text } = await extractTextFromUrl(url);
-      return sendJson(res, 200, { url, title, length: text.length, text });
+      const { title, text, fullTextAvailable } = await extractTextFromUrl(url);
+      return sendJson(res, 200, { url, title, length: text.length, text, fullTextAvailable: Boolean(fullTextAvailable) });
     } catch (e) {
       return sendJson(res, 500, { error: 'Could not fetch/parse that URL: ' + e.message });
     }
