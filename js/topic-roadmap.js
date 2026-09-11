@@ -1424,7 +1424,7 @@ class TopicRoadmapManager {
 
       <div class="curated-bottom-actions">
         <p>Want to explore the entire curriculum without topic filtering?</p>
-        <button class="btn-primary-action btn-view-full-roadmap" onclick="window.switchView('docs')">
+        <button class="btn-view-full-roadmap" onclick="window.switchView('docs')">
           Browse Full Learning Roadmap (All 10 Modules) →
         </button>
       </div>
@@ -1498,7 +1498,7 @@ class TopicRoadmapManager {
     const hasCircuitLab = Boolean(mod.circuitPreset);
 
     detailStage.innerHTML = `
-      <div class="module-reader-wrapper">
+      <div class="module-reader-wrapper ${hasCircuitLab ? 'reader-split-layout' : 'reader-full-layout'}">
         
         <!-- Top Navigation Bar -->
         <div class="module-reader-top-bar">
@@ -1513,7 +1513,7 @@ class TopicRoadmapManager {
         </div>
 
         <!-- Split Content Area -->
-        <div class="module-reader-body ${hasCircuitLab ? 'reader-split-layout' : 'reader-full-layout'}">
+        <div class="module-reader-body">
           
           <!-- Column 1: Educational Theory & Exercise Instructions -->
           <div class="reader-theory-column">
@@ -2031,7 +2031,7 @@ class TopicRoadmapManager {
 
       <div class="curated-bottom-actions">
         <p>Want to explore all 18 core modules in a single comprehensive syllabus?</p>
-        <button class="btn-primary-action btn-view-full-roadmap" type="button" onclick="window.topicRoadmapManager.loadTopicById('full-curriculum')">
+        <button class="btn-view-full-roadmap" type="button" onclick="window.topicRoadmapManager.loadTopicById('full-curriculum')">
           Browse Full Master Learning Roadmap (All 18 Modules) →
         </button>
       </div>

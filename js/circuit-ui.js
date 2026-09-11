@@ -701,17 +701,11 @@ class CircuitUI {
     this.updateEntanglementBadge(probs);
 
     // Update Export Code
-    if (window.updateExportCode) {
-      window.updateExportCode();
-    } else {
-      if (this.qiskitCodeBlock && !window.isUserEditingExportCode) {
-        const qCode = this.engine.toQiskit(this.grid);
-        if ('value' in this.qiskitCodeBlock) this.qiskitCodeBlock.value = qCode;
-        this.qiskitCodeBlock.textContent = qCode;
-      }
-      if (this.qasmCodeBlock) {
-        this.qasmCodeBlock.textContent = this.engine.toQASM(this.grid);
-      }
+    if (this.qiskitCodeBlock) {
+      this.qiskitCodeBlock.textContent = this.engine.toQiskit(this.grid);
+    }
+    if (this.qasmCodeBlock) {
+      this.qasmCodeBlock.textContent = this.engine.toQASM(this.grid);
     }
 
 
@@ -1076,10 +1070,9 @@ class CircuitUI {
     const copyQiskitBtn = document.getElementById('btn-copy-qiskit');
     if (copyQiskitBtn) {
       copyQiskitBtn.addEventListener('click', () => {
-        const text = (this.qiskitCodeBlock && 'value' in this.qiskitCodeBlock) ? this.qiskitCodeBlock.value : (this.qiskitCodeBlock ? this.qiskitCodeBlock.textContent : '');
-        navigator.clipboard.writeText(text);
+        navigator.clipboard.writeText(this.qiskitCodeBlock.textContent);
         copyQiskitBtn.textContent = 'Copied!';
-        setTimeout(() => copyQiskitBtn.textContent = 'Copy Code', 2000);
+        setTimeout(() => copyQiskitBtn.textContent = 'Copy Python', 2000);
       });
     }
 

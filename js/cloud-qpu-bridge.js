@@ -11,7 +11,7 @@ class CloudQPUBridge {
     this.circuitUI = circuitUI;
 
     // Load saved token or fallback
-    this.apiToken = localStorage.getItem('ananta_ibm_token') || 'Your api key';
+    this.apiToken = localStorage.getItem('ananta_ibm_token') || 'Qp3YGpZ_tnsetYrdMwSaRM10o2nhzzuo0r5Z_QkJgbdD';
     this.selectedBackend = 'ibm_brisbane';
     this.isJobRunning = false;
     this.lastJobResults = null;

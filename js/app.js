@@ -142,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
     topicRoadmapManager = new window.TopicRoadmapManager();
     window.topicRoadmapManager = topicRoadmapManager;
   }
-  window.knowledgeGraphManager = new KnowledgeGraphManager();
 
   // ── Quantum Hardware & Security Studios ─────────────────────
   let quantumDebugger = null;
@@ -199,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Groups for dropdown highlights
     const studioTabs = ['surface-code', 'pulse-studio', 'transpiler', 'vqe-chemistry', 'debugger', 'cryo-twin', 'pqc-auditor'];
     const algorithmTabs = ['algorithms', 'research'];
-    const learnTabs = ['intuition', 'challenges', 'docs', 'topic-roadmap', 'knowledge-graph'];
+    const learnTabs = ['intuition', 'challenges', 'docs', 'topic-roadmap'];
 
     // Undock circuit designer from topic roadmap reader when switching away
     if (tabKey !== 'topic-roadmap' && window.topicRoadmapManager && window.topicRoadmapManager.undockCircuitDesigner) {
@@ -381,11 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => window.algorithmLibrary.render(), 40);
     }
 
-    // Refresh Knowledge Graph View
-    if (tabKey === 'knowledge-graph' && window.knowledgeGraphManager) {
-      setTimeout(() => {
-        window.knowledgeGraphManager.render();
-      }, 50);
     // Refresh Quantum Maze Simulation when entering Overview tab
     if (tabKey === 'overview' && window.initQuantumMazeSim) {
       setTimeout(() => window.initQuantumMazeSim(), 60);
@@ -1422,93 +1416,34 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(renderPauliGauges, 600);
 
   // ==========================================
-  // 8. Framework Code Export Tabs (Cirq / Qiskit / PennyLane / QASM)
+  // 8. Framework Code Export Tabs (Qiskit / QASM / PennyLane)
   // ==========================================
   const exportTabBtns = document.querySelectorAll('.export-tab-btn');
   const exportCodeEl = document.getElementById('qiskit-code');
   const exportCopyBtn = document.getElementById('btn-copy-qiskit');
-  const exportResetBtn = document.getElementById('btn-reset-code');
   const exportFrameworkLabel = document.getElementById('export-framework-label');
   let activeExportTab = 'cirq';
 
-  // Track per-framework custom user edits so user typing is not wiped out
-  const userEditedCode = { cirq: null, qiskit: null, pennylane: null, qasm: null };
-  window.isUserEditingExportCode = false;
-
-  function getEditorCode() {
-    if (!exportCodeEl) return '';
-    return ('value' in exportCodeEl) ? exportCodeEl.value : exportCodeEl.textContent;
-  }
-
-  function setEditorCode(code) {
-    if (!exportCodeEl) return;
-    if ('value' in exportCodeEl) {
-      exportCodeEl.value = code;
-    }
-    exportCodeEl.textContent = code;
-  }
-
-  function generateCodeForTab(tabKey, grid) {
-    if (tabKey === 'cirq') {
-      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'Google Cirq >= 1.3 - Willow & Sycamore QPU ready';
-      return engine.toCirq(grid);
-    } else if (tabKey === 'qiskit') {
-      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'Qiskit 1.x compatible';
-      return engine.toQiskit(grid);
-    } else if (tabKey === 'pennylane') {
-      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'PennyLane >= 0.38 (Xanadu)';
-      return engine.toPennyLane(grid);
-    } else if (tabKey === 'qasm') {
-      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'OpenQASM 2.0 standard';
-      return engine.toQASM(grid);
-    }
-    return '';
-  }
-
-  function updateExportCode(forceReset = false) {
+  function updateExportCode() {
     if (!circuitUI || !exportCodeEl) return;
     const grid = circuitUI.getGrid ? circuitUI.getGrid() : circuitUI.grid;
     if (!grid) return;
 
-    if (forceReset) {
-      userEditedCode[activeExportTab] = null;
+    let code = '';
+    if (activeExportTab === 'cirq') {
+      code = engine.toCirq(grid);
+      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'Google Cirq >= 1.3 - Willow & Sycamore QPU ready';
+    } else if (activeExportTab === 'qiskit') {
+      code = engine.toQiskit(grid);
+      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'Qiskit 1.x compatible';
+    } else if (activeExportTab === 'pennylane') {
+      code = engine.toPennyLane(grid);
+      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'PennyLane >= 0.38 (Xanadu)';
+    } else if (activeExportTab === 'qasm') {
+      code = engine.toQASM(grid);
+      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'OpenQASM 2.0 standard';
     }
-
-    // If the user has customized this tab and didn't force reset, keep their code
-    if (userEditedCode[activeExportTab] !== null) {
-      setEditorCode(userEditedCode[activeExportTab]);
-      return;
-    }
-
-    const code = generateCodeForTab(activeExportTab, grid);
-    setEditorCode(code);
-  }
-  window.updateExportCode = updateExportCode;
-
-  // Listen for user edits in the code editor
-  if (exportCodeEl) {
-    exportCodeEl.addEventListener('input', () => {
-      window.isUserEditingExportCode = true;
-      userEditedCode[activeExportTab] = getEditorCode();
-    });
-    exportCodeEl.addEventListener('focus', () => {
-      window.isUserEditingExportCode = true;
-    });
-    exportCodeEl.addEventListener('blur', () => {
-      window.isUserEditingExportCode = false;
-    });
-    // Tab key support for code indentation
-    exportCodeEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const start = exportCodeEl.selectionStart || 0;
-        const end = exportCodeEl.selectionEnd || 0;
-        const val = exportCodeEl.value || '';
-        exportCodeEl.value = val.substring(0, start) + '    ' + val.substring(end);
-        exportCodeEl.selectionStart = exportCodeEl.selectionEnd = start + 4;
-        userEditedCode[activeExportTab] = exportCodeEl.value;
-      }
-    });
+    exportCodeEl.textContent = code;
   }
 
   exportTabBtns.forEach(btn => {
@@ -1516,27 +1451,19 @@ document.addEventListener('DOMContentLoaded', () => {
       exportTabBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       activeExportTab = btn.getAttribute('data-export');
-      updateExportCode(false);
+      updateExportCode();
     });
   });
 
   if (exportCopyBtn) {
     exportCopyBtn.addEventListener('click', () => {
-      const code = getEditorCode();
+      const code = exportCodeEl ? exportCodeEl.textContent : '';
       navigator.clipboard.writeText(code).then(() => {
         exportCopyBtn.textContent = 'Copied!';
         setTimeout(() => { exportCopyBtn.textContent = 'Copy Code'; }, 2000);
       }).catch(() => {
         exportCopyBtn.textContent = 'Copy Code';
       });
-    });
-  }
-
-  if (exportResetBtn) {
-    exportResetBtn.addEventListener('click', () => {
-      updateExportCode(true);
-      exportResetBtn.textContent = 'Synced!';
-      setTimeout(() => { exportResetBtn.textContent = '↺ Reset from Circuit'; }, 1500);
     });
   }
 
@@ -3168,7 +3095,270 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 120);
   };
 
+  // =========================================================================
+  // 6-MILESTONE INTERACTIVE ROADMAP CONTROLLER & DEEP-DIVE VIEWER
+  // =========================================================================
+  const ROADMAP_MILESTONES = {
+    1: {
+      num: 1,
+      year: '2019',
+      badge: 'MILESTONE 01 • HISTORIC PROOF',
+      status: 'Achieved (Nature 2019)',
+      statusClass: 'status-achieved',
+      title: 'Beyond Classical Computation (Quantum Supremacy)',
+      tagline: 'Google Sycamore computes a random circuit sampling benchmark in 200 seconds that would take Summit supercomputer ~10,000 years.',
+      description: 'This landmark milestone proved for the first time in human history that physical quantum hardware can perform computations beyond the practical reach of any classical supercomputer. Operating 53 superconducting transmon qubits at 15 millikelvin with 2-qubit gate fidelities exceeding 99.4%, cross-entropy benchmarking (XEB) confirmed genuine computational acceleration across a 2⁵³ (9 quadrillion states) Hilbert space.',
+      breakthrough: 'Proved quantum mechanics does not break down at macroscopic multi-qubit scales, validating quantum computational complexity.',
+      qubits: '54 Physical Qubits (53 active transmons)',
+      errorRate: 'Physical gate error ~0.6% (No error correction)',
+      architecture: 'Sycamore 2D Square Planar Lattice with Tunable Couplers',
+      keyTech: 'Cross-Entropy Benchmarking (XEB), Tunable Transmon Coupling, 15 mK Dilution Cryostat',
+      paperTitle: 'Quantum Supremacy Using a Programmable Superconducting Processor (Arute et al., Nature 574)',
+      actionPreset: 'superposition',
+      actionLabel: 'Simulate Sycamore Superposition in Studio'
+    },
+    2: {
+      num: 2,
+      year: '2023',
+      badge: 'MILESTONE 02 • FAULT-TOLERANCE THRESHOLD',
+      status: 'Achieved (Nature 2023)',
+      statusClass: 'status-achieved',
+      title: 'Suppressing Quantum Errors by Scaling Surface Codes',
+      tagline: 'First demonstration that increasing distance from distance-3 (17 qubits) to distance-5 (49 qubits) suppresses net logical errors.',
+      description: 'Quantum states are inherently vulnerable to thermal noise and cosmic ray decoherence. In 2023, Google Quantum AI proved the fundamental tenet of fault-tolerant quantum computing: making an error-correcting surface code larger (scaling from distance-3 with 17 qubits to distance-5 with 49 qubits) actually REDUCED the logical error rate from 3.028% to 2.914%. This established that physical noise can be systematically conquered through code scaling.',
+      breakthrough: 'First experimental proof that scaling quantum error correction suppresses logical errors below the fault-tolerance threshold.',
+      qubits: '10² Physical Qubits (49 data & syndrome transmons)',
+      errorRate: 'Logical Error: ~10⁻² per error syndrome cycle',
+      architecture: 'Surface-17 (d=3) & Surface-49 (d=5) Planar Stabilizer Code',
+      keyTech: 'Real-time FPGA Syndrome Decoding, Repetitive X & Z Plaquette Measurements, 1 μs Cycle Time',
+      paperTitle: 'Suppressing Quantum Errors by Scaling a Quantum Error-Correcting Code (Google AI, Nature 614)',
+      actionPreset: 'bell',
+      actionLabel: 'Explore Surface Code Stabilizer Simulation'
+    },
+    3: {
+      num: 3,
+      year: '2025–Current',
+      badge: 'MILESTONE 03 • CURRENT ACTIVE FRONTIER',
+      status: 'In Progress (Active Lab Milestone)',
+      statusClass: 'status-current',
+      title: 'Building a Long-Lived Logical Qubit',
+      tagline: 'Crossing the break-even point where a protected logical qubit retains coherence longer than its best physical constituent.',
+      description: 'The current frontier focuses on building an ultra-reliable logical quantum memory (distance d=7 surface code tile with 97 physical qubits). Continuous real-time syndrome extraction and sub-microsecond Minimum-Weight Perfect Matching (MWPM) decoders allow this logical qubit to preserve quantum coherence ($T_1, T_2$) substantially longer than any single physical transmon in the array.',
+      breakthrough: 'Achieving the "break-even point" for quantum memory coherence under active continuous error correction.',
+      qubits: '10³ Physical Qubits',
+      errorRate: 'Logical Error Target: 10⁻⁴ (1 error in 10,000 cycles)',
+      architecture: 'Distance-7 Surface Code with Ultra-Low Loss Microwave Resonators',
+      keyTech: 'Sub-microsecond Cryo-Decoding, Correlated Cosmic Ray Mitigation, Purcell Filters',
+      paperTitle: 'Break-even Point and Fault-Tolerant Quantum Memories (Preskill 2024)',
+      actionPreset: 'deutsch',
+      actionLabel: 'Launch Noise & Decoherence Lab'
+    },
+    4: {
+      num: 4,
+      year: 'Phase 4',
+      badge: 'MILESTONE 04 • LOGICAL COMPUTATION',
+      status: 'Next Phase (R&D Roadmap)',
+      statusClass: 'status-future',
+      title: 'Creating Fault-Tolerant Logical Two-Qubit Gates',
+      tagline: 'Executing transversal Clifford operations and lattice surgery directly between protected logical qubits.',
+      description: 'Storing information is not enough—a quantum computer must compute. Milestone 4 demonstrates full fault-tolerant two-qubit logic gates (such as logical CNOT and CZ) applied directly between two protected logical qubits using lattice surgery. It integrates Magic State Distillation factories (15-to-1 Bravyi-Kitaev distillation) to inject non-Clifford T-gates with high fidelity.',
+      breakthrough: 'Universal quantum computation on encoded logical qubits without decoding into vulnerable physical states.',
+      qubits: '10⁴ Physical Qubits',
+      errorRate: 'Logical Error Target: 10⁻⁶ (1 error in 1,000,000 operations)',
+      architecture: 'Inter-Patch Lattice Surgery with Magic State Distillation Factories',
+      keyTech: 'Transversal Gates, Distillation Factories, Code Deformation, Fault-Tolerant Teleportation',
+      paperTitle: 'Universal Fault-Tolerant Quantum Computation with Magic States (Bravyi & Kitaev)',
+      actionPreset: 'teleportation',
+      actionLabel: 'Test Logical CNOT in Composer'
+    },
+    5: {
+      num: 5,
+      year: 'Phase 5',
+      badge: 'MILESTONE 05 • MODULAR SCALING',
+      status: 'Engineering Scale (Long-Range Target)',
+      statusClass: 'status-future',
+      title: 'Engineering Scale Up & Cryogenic Control Systems',
+      tagline: 'Scaling from thousands to hundreds of thousands of qubits via cryo-CMOS controllers and coherent quantum interconnects.',
+      description: 'Physical dilution refrigerators cannot host 100,000 coaxial cables without boiling off liquid helium. Milestone 5 integrates Cryo-CMOS multiplexed control chips operating at 3-4 Kelvin inside the cryostat, alongside coherent microwave-to-optical quantum transducers that link multiple cryostats together into a distributed modular quantum supercomputer.',
+      breakthrough: 'Overcoming the "wiring bottleneck" to scale quantum hardware architecture to hundreds of thousands of physical qubits.',
+      qubits: '10⁵ Physical Qubits',
+      errorRate: 'Logical Error Target: 10⁻⁸ per logical cycle',
+      architecture: 'Modular Multi-QPU Clusters with Optical & Microwave Quantum Interconnects',
+      keyTech: 'Cryo-CMOS Multiplexers, Microwave-to-Optical Transducers, Vacuum Enclosures',
+      paperTitle: 'Modular Architectures for Fault-Tolerant Quantum Computing (Monroe et al.)',
+      actionPreset: 'qft',
+      actionLabel: 'Explore Multi-QPU Topology in Studio'
+    },
+    6: {
+      num: 6,
+      year: 'Goal Horizon',
+      badge: 'MILESTONE 06 • INDUSTRIAL ADVANTAGE',
+      status: 'Ultimate Horizon (Fault-Tolerant Scale)',
+      statusClass: 'status-future',
+      title: 'Large Error-Corrected Quantum Computer (10⁶ Qubits)',
+      tagline: '1,000+ logical qubits operating at 10⁻¹³ error rates, solving real-world chemistry, energy, and optimization challenges.',
+      description: 'The ultimate destination of the quantum computing roadmap: a commercial-grade fault-tolerant machine capable of running trillions of quantum gate operations without failure. This system will simulate complex transition-metal catalysts (such as the Nitrogenase FeMoco active site for clean fertilizer), design room-temperature superconductors, execute Shor\'s algorithm on 4096-bit RSA keys, and solve multi-variable logistical optimization problems.',
+      breakthrough: 'Practical, transformative quantum advantage that reshapes global medicine, energy, chemistry, and computation.',
+      qubits: '10⁶ Physical Qubits (1,000+ Logical Qubits)',
+      errorRate: 'Logical Error: 10⁻¹³ (1 error in 10 trillion gate operations)',
+      architecture: 'Million-Qubit Distributed Fault-Tolerant Surface Code Architecture',
+      keyTech: 'Million-Qubit Cryo-Arrays, Automated Continuous Calibration, Fault-Tolerant QROM',
+      paperTitle: 'Elucidating Reaction Mechanisms on Quantum Computers (Reiher et al., PNAS)',
+      actionPreset: 'grover',
+      actionLabel: 'Explore 74 Algorithms in Compendium'
+    }
+  };
 
+  // Render deep-dive detail viewer for selected milestone
+  function renderMilestoneDetail(idx) {
+    const data = ROADMAP_MILESTONES[idx];
+    const viewer = document.getElementById('roadmap-detail-viewer');
+    if (!data || !viewer) return;
+
+    viewer.innerHTML = `
+      <div class="roadmap-detail-card" data-milestone-detail="${data.num}">
+        <!-- Header Banner -->
+        <div class="rm-detail-header">
+          <div class="rm-detail-title-group">
+            <div class="rm-badge-row">
+              <span class="rm-badge">${data.badge}</span>
+              <span class="rm-status-tag ${data.statusClass}">● ${data.status}</span>
+              <span class="rm-year-tag">Target: ${data.year}</span>
+            </div>
+            <h2 class="rm-detail-heading">${data.title}</h2>
+            <p class="rm-detail-tagline">${data.tagline}</p>
+          </div>
+        </div>
+
+        <!-- Main Content 2-Column Grid -->
+        <div class="rm-detail-grid">
+          <!-- Left Column: Physics & Breakthrough -->
+          <div class="rm-detail-left">
+            <div class="rm-section-block">
+              <h4 class="rm-block-label">🔬 Physical Significance & Quantum Mechanics</h4>
+              <p class="rm-desc-text">${data.description}</p>
+            </div>
+
+            <div class="rm-callout-breakthrough">
+              <div class="rm-callout-icon">⚡</div>
+              <div class="rm-callout-content">
+                <strong>Core Physical Breakthrough:</strong>
+                <span>${data.breakthrough}</span>
+              </div>
+            </div>
+
+            <div class="rm-reference-box">
+              <span class="rm-ref-label">📄 Foundational Literature:</span>
+              <span class="rm-ref-text">${data.paperTitle}</span>
+            </div>
+          </div>
+
+          <!-- Right Column: Specs & Direct Actions -->
+          <div class="rm-detail-right">
+            <div class="rm-specs-deck">
+              <div class="rm-spec-item">
+                <span class="rm-spec-name">Physical Qubit Scale</span>
+                <strong class="rm-spec-val highlight-qubits">${data.qubits}</strong>
+              </div>
+              <div class="rm-spec-item">
+                <span class="rm-spec-name">Logical Error Rate</span>
+                <strong class="rm-spec-val highlight-error">${data.errorRate}</strong>
+              </div>
+              <div class="rm-spec-item">
+                <span class="rm-spec-name">Target QPU Architecture</span>
+                <strong class="rm-spec-val">${data.architecture}</strong>
+              </div>
+              <div class="rm-spec-item">
+                <span class="rm-spec-name">Key Enablement Technologies</span>
+                <strong class="rm-spec-val">${data.keyTech}</strong>
+              </div>
+            </div>
+
+            <!-- Action Toolbar -->
+            <div class="rm-action-toolbar">
+              <button class="btn-rm-action btn-rm-primary" onclick="window.launchMilestonePreset('${data.actionPreset}')">
+                <span>🚀</span> ${data.actionLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Trigger math rendering if any LaTeX in detail card
+    if (window.renderMathInElement) {
+      renderMathInElement(viewer, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$',  right: '$',  display: false}
+        ],
+        throwOnError: false
+      });
+    }
+  }
+
+  // Quick Action Handlers
+  window.launchMilestonePreset = function(presetKey) {
+    if (window.loadPresetSafe) {
+      window.loadPresetSafe(presetKey);
+    }
+    if (window.switchView) {
+      window.switchView('simulator');
+    }
+  };
+
+  // 6-Milestone Interactive Roadmap Selection (Guarded Fallback)
+  window.selectMilestone = function(idx, shouldScroll = false) {
+    const cards = document.querySelectorAll('.roadmap-card');
+    if (!cards || cards.length === 0) return;
+    cards.forEach(c => {
+      if (parseInt(c.dataset.milestone) === idx) {
+        c.classList.add('active');
+        if (shouldScroll) {
+          const container = c.closest('.roadmap-cards-grid');
+          if (container && container.scrollWidth > container.clientWidth) {
+            c.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        }
+      } else {
+        c.classList.remove('active');
+      }
+    });
+
+    const nodes = document.querySelectorAll('.timeline-node');
+    nodes.forEach((n, i) => {
+      if (i + 1 === idx) {
+        n.classList.add('active');
+      } else {
+        n.classList.remove('active');
+      }
+    });
+
+    const progressBar = document.querySelector('.timeline-line-progress');
+    if (progressBar) {
+      const pct = Math.min(100, Math.max(0, ((idx - 1) / 5) * 100));
+      progressBar.style.width = pct + '%';
+    }
+
+    if (typeof renderMilestoneDetail === 'function') {
+      renderMilestoneDetail(idx);
+    }
+  };
+
+  // Wire click events on roadmap cards if present
+  document.querySelectorAll('.roadmap-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const mId = parseInt(card.dataset.milestone);
+      if (mId) window.selectMilestone(mId, true);
+    });
+  });
+
+  // Check and trigger Classical vs Quantum Maze Simulation if on overview
+  if (window.initQuantumMazeSim) {
+    setTimeout(() => {
+      window.initQuantumMazeSim();
+    }, 150);
+  }
 
   // Interactive 3D Mouse Parallax for Floating Quantum Processor Chip
   const chipScene = document.getElementById('chip-scene');
