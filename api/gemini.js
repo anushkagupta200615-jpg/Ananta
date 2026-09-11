@@ -354,7 +354,11 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
 
   // 3. Guaranteed Deterministic Quantum AI Engine (100% Uptime HTTP 200)
   try {
-    const fallbackResult = localFallbackFn();
+    // Real reason for the fallback, not a guess: a configured-but-rejected/
+    // expired key and a genuinely-missing key are different problems, and
+    // telling a user with a real key configured "no key is configured" sent
+    // them looking in the wrong place.
+    const fallbackResult = localFallbackFn(providerErrors);
     return res.status(200).json({
       ok: true,
       result: fallbackResult,
@@ -768,7 +772,7 @@ ${responseSchemaNote}`;
         body,
         systemPrompt,
         userQuestion || 'Analyze my current quantum circuit, tell me what I am making, and detect any errors',
-        () => generateCircuitTutorLocally(payload),
+        (providerErrors) => generateCircuitTutorLocally(payload, providerErrors),
         res
       );
     }
@@ -1210,7 +1214,21 @@ function generateCircuitAuditLocally(payload) {
   };
 }
 
-function generateCircuitTutorLocally(payload) {
+// Builds an honest one-line explanation of why the offline fallback is
+// answering instead of a real LLM, from the actual provider errors
+// collected in callMultiProviderAI - "no key configured" and "a key is
+// configured but was rejected/expired/rate-limited" are different problems
+// pointing the operator at different fixes, so they must not be
+// conflated into one hardcoded string.
+function describeOfflineReason(providerErrors) {
+  const geminiErr = (providerErrors || []).find((e) => e.provider === 'gemini');
+  if (!geminiErr) return 'No AI provider is configured on this server';
+  if (geminiErr.error === 'no Gemini key configured') return 'No AI provider key is configured on this server';
+  return `The configured Gemini key call failed (${geminiErr.error}), so this server fell back to offline mode`;
+}
+
+function generateCircuitTutorLocally(payload, providerErrors = []) {
+  const offlineReason = describeOfflineReason(providerErrors);
   const numQubits = payload?.numQubits || 3;
   const deterministicErrors = Array.isArray(payload?.deterministicErrors) ? payload.deterministicErrors : [];
 
@@ -1259,7 +1277,7 @@ function generateCircuitTutorLocally(payload) {
   const isHealthy = !errors.some(e => e.severity === 'error');
   const tutorGuidance = answerCircuitQuestionLocally(payload?.userQuestion, {
     summary, purpose, entanglementAnalysis, errors,
-    diracNotation: payload?.diracNotation, numQubits
+    diracNotation: payload?.diracNotation, numQubits, offlineReason
   }) || (errors.length > 0
     ? `You have ${errors.length} diagnostic recommendation(s). Review the highlighted findings above to optimize circuit depth and avoid unwanted state collapse.`
     : 'Your quantum circuit logic is sound and unitary! Try experimenting with relative phase (Phase S or T gates) or adding a CNOT to a third wire to observe entanglement scaling.');
@@ -1301,13 +1319,14 @@ const GATE_EXPLANATIONS = {
 // errors came from describeCircuit() on the real grid) - this runs when no
 // AI provider is configured, so every claim must stay grounded in that real
 // data instead of a generic canned string that ignores what was asked.
-function answerCircuitQuestionLocally(question, { summary, purpose, entanglementAnalysis, errors, diracNotation, numQubits }) {
+function answerCircuitQuestionLocally(question, { summary, purpose, entanglementAnalysis, errors, diracNotation, numQubits, offlineReason }) {
   const q = (question || '').toLowerCase();
   if (!q) return null;
+  const reason = offlineReason || 'No AI provider key is configured on this server';
 
   const gateMatch = Object.keys(GATE_EXPLANATIONS).find((key) => new RegExp(`\\b${key.toLowerCase()}\\b`).test(q));
   if (gateMatch && /what|explain|mean|do(es)?\b/.test(q)) {
-    return `${GATE_EXPLANATIONS[gateMatch]} (No AI provider key is configured on this server, so this is a reference definition rather than a comment generated specifically about your circuit by an LLM.)`;
+    return `${GATE_EXPLANATIONS[gateMatch]} (${reason}, so this is a reference definition rather than a comment generated specifically about your circuit by an LLM.)`;
   }
 
   if (/\b(right|correct|valid|proper|wrong|good|work(s|ing)?|mistake)\b/.test(q)) {
@@ -1340,7 +1359,7 @@ function answerCircuitQuestionLocally(question, { summary, purpose, entanglement
     return `The current statevector is ${diracNotation || '|0...0>'} across ${numQubits} qubits. ${entanglementAnalysis}`;
   }
 
-  return `No AI provider key is configured on this server, so this offline mode can't parse that question freely — but here's what's grounded in your real circuit: ${summary}. ${purpose} ${errors.length ? `${errors.length} diagnostic(s) found — see above.` : 'No issues detected.'}`;
+  return `${reason}, so this offline mode can't parse that question freely — but here's what's grounded in your real circuit: ${summary}. ${purpose} ${errors.length ? `${errors.length} diagnostic(s) found — see above.` : 'No issues detected.'}`;
 }
 
 module.exports = handler;

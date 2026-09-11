@@ -18,7 +18,11 @@ const path = require('path');
 const db = require('./db');
 const quizEngine = require('./quizEngine');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+// ANANTA_DATA_DIR lets tests (and any other caller needing isolation) point
+// this at a scratch directory instead of the real committed seed files -
+// without it, running the test suite repeatedly deleted and regenerated
+// ananta-backend/data/*.json, which are real tracked git content.
+const DATA_DIR = process.env.ANANTA_DATA_DIR || path.join(__dirname, '..', 'data');
 const COHORTS_FILE = path.join(DATA_DIR, 'cohorts.json');
 const STUDENTS_FILE = path.join(DATA_DIR, 'students.json');
 const ASSIGNMENTS_FILE = path.join(DATA_DIR, 'assignments.json');
