@@ -1406,6 +1406,44 @@
 
           <!-- Right: Circuit Canvas -->
           <div class="circuit-canvas-white">
+
+            <!-- Floating AI Doctor Trigger Button (As sketched) -->
+            <button type="button" class="floating-ai-doctor-btn" id="floating-ai-doctor-btn" onclick="window.circuitTutor && window.circuitTutor.toggleFloatingDoctor()" title="Open AI Circuit Doctor & Diagnostic Explanation">
+              <span class="doctor-badge-pulse" id="doctor-pulse-dot"></span>
+              <span class="doctor-btn-icon">🩺</span>
+              <span class="doctor-btn-label">AI Doctor</span>
+              <span class="doctor-btn-badge" id="doctor-count-badge" style="display: none;">1</span>
+            </button>
+
+            <!-- Floating AI Doctor Explanation Window (As sketched) -->
+            <div class="floating-ai-doctor-popup" id="floating-ai-doctor-popup" style="display: none;">
+              <div class="floating-doctor-header">
+                <div class="floating-doctor-title-box">
+                  <span class="doctor-header-icon">🩺</span>
+                  <div class="doctor-header-text">
+                    <h3 class="floating-doctor-title">AI Circuit Doctor</h3>
+                    <span class="floating-doctor-sub">Pedagogical Circuit Explanation</span>
+                  </div>
+                </div>
+                <div class="floating-doctor-header-actions">
+                  <div class="doctor-health-pill-small healthy" id="floating-doctor-health-pill">🟢 Sound</div>
+                  <button type="button" class="btn-doctor-win-ctrl btn-doctor-minimize" onclick="window.circuitTutor && window.circuitTutor.minimizeFloatingDoctor()" title="Minimize">_</button>
+                  <button type="button" class="btn-doctor-win-ctrl btn-doctor-close" onclick="window.circuitTutor && window.circuitTutor.closeFloatingDoctor()" title="Close">✕</button>
+                </div>
+              </div>
+
+              <div class="floating-doctor-body" id="floating-doctor-content">
+                <!-- Rendered dynamically by CircuitTutor into 4 structured sections -->
+              </div>
+
+              <div class="floating-doctor-footer">
+                <form class="doctor-ask-form" onsubmit="event.preventDefault(); window.circuitTutor && window.circuitTutor.askFloatingQuestion();">
+                  <input type="text" id="floating-doctor-input" class="floating-doctor-input" placeholder="Ask AI Doctor about this circuit...">
+                  <button type="submit" class="floating-doctor-submit">Ask ⚡</button>
+                </form>
+              </div>
+            </div>
+
             <!-- Guided Algorithm Tour Banner -->
             <div id="guided-algo-tour-bar" class="guided-algo-tour-bar" style="display: none;">
               <div class="tour-header-row">
