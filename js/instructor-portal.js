@@ -392,9 +392,55 @@ class InstructorPortal {
 
   // ================= 2. INSTRUCTOR DASHBOARD MODULE =================
 
+  // Real Authorization header from the signed session (window.AnantaAuth,
+  // set up in js/app.js) - every /api/instructor/* route verifies this
+  // server-side, so a client that merely *claims* to be an instructor
+  // without a valid signed token is correctly rejected with 401/403.
+  authHeaders() {
+    return (window.AnantaAuth && window.AnantaAuth.authHeaders) ? window.AnantaAuth.authHeaders() : {};
+  }
+
+  isSignedInAsInstructor() {
+    return Boolean(window.AnantaAuth && window.AnantaAuth.isInstructor && window.AnantaAuth.isInstructor());
+  }
+
+  renderInstructorAuthGate() {
+    const container = document.getElementById('instructor-analytics-content');
+    if (!container) return;
+
+    // Clear any stale KPI tiles/roster left over from a previous signed-in
+    // session so a signed-out viewer never sees another instructor's numbers.
+    ['kpi-total-students', 'kpi-avg-score', 'kpi-total-challenges', 'kpi-total-quizzes'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '—';
+    });
+    const rosterTbody = document.getElementById('instructor-roster-tbody');
+    if (rosterTbody) rosterTbody.innerHTML = '';
+    const misContainer = document.getElementById('instructor-misconceptions-list');
+    if (misContainer) misContainer.innerHTML = '';
+    const distContainer = document.getElementById('instructor-grade-distribution');
+    if (distContainer) distContainer.innerHTML = '';
+
+    container.innerHTML = `
+      <div style="padding: 32px; text-align: center; color: #94a3b8;">
+        <div style="font-size: 15px; font-weight: 700; color: #e2e8f0; margin-bottom: 8px;">🔒 Instructor sign-in required</div>
+        <div style="font-size: 13px; max-width: 420px; margin: 0 auto;">
+          Cohort management, gradebooks, and assignment dispatch are protected server-side.
+          Sign in with an <strong>Instructor</strong> account to view this dashboard.
+        </div>
+      </div>`;
+  }
+
   async loadCohorts() {
     const select = document.getElementById('instructor-cohort-select');
     if (!select) return;
+
+    if (!this.isSignedInAsInstructor()) {
+      this.cohorts = [];
+      select.innerHTML = '<option>Sign in as instructor to load cohorts</option>';
+      this.renderInstructorAuthGate();
+      return;
+    }
 
     const fallbackCohorts = [
       { id: 'cohort_qc101', code: 'QC-101', name: 'Introduction to Quantum Information & Circuits', enrolledStudents: 24, classAverageScore: 91 },
@@ -403,7 +449,13 @@ class InstructorPortal {
     ];
 
     try {
-      const res = await fetch('/api/instructor/cohorts');
+      const res = await fetch('/api/instructor/cohorts', { headers: this.authHeaders() });
+      if (res.status === 401 || res.status === 403) {
+        this.cohorts = [];
+        select.innerHTML = '<option>Sign in as instructor to load cohorts</option>';
+        this.renderInstructorAuthGate();
+        return;
+      }
       const data = await res.json();
       this.cohorts = (data.success && Array.isArray(data.cohorts) && data.cohorts.length) ? data.cohorts : fallbackCohorts;
     } catch (e) {
@@ -476,8 +528,17 @@ class InstructorPortal {
     const container = document.getElementById('instructor-analytics-content');
     if (!container) return;
 
+    if (!this.isSignedInAsInstructor()) {
+      this.renderInstructorAuthGate();
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/instructor/analytics?cohortId=${encodeURIComponent(cohortId)}`);
+      const res = await fetch(`/api/instructor/analytics?cohortId=${encodeURIComponent(cohortId)}`, { headers: this.authHeaders() });
+      if (res.status === 401 || res.status === 403) {
+        this.renderInstructorAuthGate();
+        return;
+      }
       const data = await res.json();
       if (data.success && data.totalStudents > 0) {
         this.currentAnalytics = data;
@@ -566,20 +627,38 @@ class InstructorPortal {
   }
 
   async exportGradebookCSV() {
+    if (!this.isSignedInAsInstructor()) {
+      alert('Sign in with an Instructor account to export the gradebook.');
+      return;
+    }
     try {
+      // A plain <a href> can't carry an Authorization header, so the
+      // authenticated download goes through fetch() + a blob URL instead.
       const url = `/api/instructor/export-gradebook?cohortId=${encodeURIComponent(this.selectedCohort)}`;
+      const res = await fetch(url, { headers: this.authHeaders() });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = blobUrl;
       link.download = `ananta_gradebook_${this.selectedCohort}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
     } catch (e) {
       alert(`Could not export gradebook: ${e.message}`);
     }
   }
 
   async promptNewCohort() {
+    if (!this.isSignedInAsInstructor()) {
+      alert('Sign in with an Instructor account to create a cohort.');
+      return;
+    }
     const code = prompt('Enter Course Code (e.g. QC-201):', 'QC-201');
     if (!code) return;
     const name = prompt('Enter Course Title:', 'Quantum Computation & Algorithms II');
@@ -589,7 +668,7 @@ class InstructorPortal {
     try {
       const res = await fetch('/api/instructor/cohorts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
         body: JSON.stringify({ code, name, instructor, term: 'Spring 2027' })
       });
       const data = await res.json();
@@ -605,6 +684,10 @@ class InstructorPortal {
   }
 
   async promptDispatchAssignment() {
+    if (!this.isSignedInAsInstructor()) {
+      alert('Sign in with an Instructor account to dispatch an assignment.');
+      return;
+    }
     const title = prompt('Enter Assignment Title:', 'Lab 4: Superdense Coding Implementation');
     if (!title) return;
     const targetState = prompt('Target Unitary / State Requirement:', 'Transmit 2 classical bits using 1 Bell pair');
@@ -612,7 +695,7 @@ class InstructorPortal {
     try {
       const res = await fetch('/api/instructor/assignments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
         body: JSON.stringify({
           cohortId: this.selectedCohort,
           title,
