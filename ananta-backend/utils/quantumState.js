@@ -271,4 +271,141 @@ function analyzeCircuit(grid, numQubits) {
   };
 }
 
-module.exports = { StateVector, simulateGrid, analyzeCircuit, GATES_1Q };
+const GATE_NAMES = {
+  H: 'Hadamard', X: 'Pauli-X', Y: 'Pauli-Y', Z: 'Pauli-Z',
+  S: 'Phase (S)', T: 'π/8 Phase (T)', M: 'Measurement'
+};
+
+/**
+ * Reads the actual gate composition out of a grid: which single-qubit gates
+ * appear on which wires, and which columns pair up into a CNOT or SWAP. This
+ * exists so a circuit's description can be built from what is really on the
+ * board instead of guessed from a Dirac-notation string (which is how a
+ * circuit with Hadamard, T and Y gates was once described as "Uniform
+ * Superposition State" — only the H was ever looked at).
+ */
+function readGateComposition(grid, numQubits) {
+  const n = Math.max(1, Math.min(12, numQubits || (grid ? grid.length : 1)));
+  const numCols = grid && grid[0] ? grid[0].length : 0;
+  const perWire = Array.from({ length: n }, () => []);
+  const singleGateCounts = {};
+  let cnotCount = 0;
+  let swapCount = 0;
+  let totalGates = 0;
+
+  for (let col = 0; col < numCols; col++) {
+    let control = -1, target = -1;
+    const swapWires = [];
+
+    for (let q = 0; q < n; q++) {
+      const cell = grid[q] ? grid[q][col] : null;
+      if (!cell) continue;
+      if (cell === 'CX_CTRL') { control = q; continue; }
+      if (cell === 'CX_TGT') { target = q; continue; }
+      if (cell === 'SWAP') { swapWires.push(q); continue; }
+      if (cell === 'M') { perWire[q].push('M'); continue; }
+      perWire[q].push(cell);
+      singleGateCounts[cell] = (singleGateCounts[cell] || 0) + 1;
+      totalGates++;
+    }
+
+    if (control !== -1 && target !== -1) {
+      perWire[control].push(`CNOT→q${target}`);
+      perWire[target].push(`CNOT←q${control}`);
+      cnotCount++;
+      totalGates++;
+    }
+    if (swapWires.length === 2) {
+      perWire[swapWires[0]].push(`SWAP↔q${swapWires[1]}`);
+      perWire[swapWires[1]].push(`SWAP↔q${swapWires[0]}`);
+      swapCount++;
+      totalGates++;
+    }
+  }
+
+  const distinctSingleGates = Object.keys(singleGateCounts);
+  return { perWire, singleGateCounts, distinctSingleGates, cnotCount, swapCount, totalGates };
+}
+
+/**
+ * A canonical Bell pair, gate-exact: an H on exactly one wire and a CNOT
+ * controlled by that same wire, on a 2-qubit register, nothing else. GHZ is
+ * the 3-qubit chain of that same pattern. Anything else gets an honest
+ * generic description rather than a guessed label.
+ */
+function detectCanonicalPattern(composition) {
+  const { singleGateCounts, cnotCount, swapCount, perWire } = composition;
+  const onlyH = Object.keys(singleGateCounts).every(g => g === 'H') && (singleGateCounts.H || 0) >= 1;
+  if (!onlyH || swapCount > 0) return null;
+
+  // Count wires that actually carry a gate, not the register's total width —
+  // a 2-qubit Bell pair built inside a wider register (idle spare wires) is
+  // still a Bell pair.
+  const activeWires = perWire.filter(ops => ops.length > 0).length;
+
+  if (activeWires === 2 && singleGateCounts.H === 1 && cnotCount === 1) return 'bell';
+  if (activeWires === 3 && singleGateCounts.H === 1 && cnotCount === 2) return 'ghz';
+  return null;
+}
+
+/**
+ * Builds an honest circuit description from real simulation plus the actual
+ * gate composition — the pairing this module exists for. Only used as the
+ * deterministic fallback when no AI provider answers; the AI path already
+ * reasons over the real grid and does not need this.
+ */
+function describeCircuit(grid, numQubits) {
+  const analysis = analyzeCircuit(grid, numQubits);
+  const composition = readGateComposition(grid, analysis.numQubits);
+
+  const structural = analysis.issues.filter(i => i.code !== 'EMPTY_CIRCUIT');
+  if (structural.length) {
+    return {
+      summary: 'Incomplete Circuit',
+      purpose: structural.map(i => i.message).join(' '),
+      entanglementAnalysis: 'Not applicable until the circuit above is fixed.',
+      analysis
+    };
+  }
+
+  if (composition.totalGates === 0) {
+    return {
+      summary: 'Empty Circuit (Ground State)',
+      purpose: `All ${analysis.numQubits} qubits are in the ground state |${'0'.repeat(analysis.numQubits)}⟩. Add gates from the palette to begin.`,
+      entanglementAnalysis: 'Not applicable — no gates have been placed yet.',
+      analysis
+    };
+  }
+
+  const pattern = detectCanonicalPattern(composition);
+  let summary, purpose;
+
+  if (pattern === 'bell') {
+    summary = 'Bell State Preparation (Bipartite Entanglement)';
+    purpose = 'A Hadamard puts one qubit into superposition, then a CNOT entangles it with the second qubit, producing a maximally entangled EPR pair. Used in quantum key distribution and teleportation.';
+  } else if (pattern === 'ghz') {
+    summary = 'GHZ State (Tripartite Entanglement)';
+    purpose = 'A Hadamard followed by a chain of two CNOTs spreads superposition across all three qubits into a single maximally entangled state. Used in quantum secret sharing and metrology.';
+  } else {
+    const gateParts = composition.distinctSingleGates
+      .map(g => `${GATE_NAMES[g] || g} (×${composition.singleGateCounts[g]})`);
+    if (composition.cnotCount) gateParts.push(`CNOT (×${composition.cnotCount})`);
+    if (composition.swapCount) gateParts.push(`SWAP (×${composition.swapCount})`);
+
+    summary = `Custom ${analysis.numQubits}-Qubit Circuit: ${composition.distinctSingleGates.concat(
+      composition.cnotCount ? ['CNOT'] : [], composition.swapCount ? ['SWAP'] : []
+    ).join(', ')}`;
+    purpose = `Applies ${gateParts.join(', ')} across a ${analysis.numQubits}-qubit register (depth ${analysis.depth}). ` +
+      (analysis.entangled
+        ? `The resulting state is entangled — measuring one qubit affects the others.`
+        : `The resulting state is separable — each qubit can be described independently.`);
+  }
+
+  const entanglementAnalysis = analysis.entangled
+    ? `Entangled: the largest single-qubit entropy is ${analysis.maxSingleQubitEntropy.toFixed(2)} ebits, so at least one pair of qubits cannot be described independently.`
+    : 'Separable: every qubit is in a definite pure state independent of the others (entropy ≈ 0).';
+
+  return { summary, purpose, entanglementAnalysis, analysis };
+}
+
+module.exports = { StateVector, simulateGrid, analyzeCircuit, describeCircuit, readGateComposition, GATES_1Q };

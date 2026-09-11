@@ -1142,14 +1142,9 @@ function generateCircuitAuditLocally(payload) {
 
 function generateCircuitTutorLocally(payload) {
   const numQubits = payload?.numQubits || 3;
-  const gridStructure = payload?.gridStructure || '';
-  const dirac = payload?.diracNotation || '|000⟩';
-  const mathMetrics = payload?.mathMetrics || {};
   const deterministicErrors = Array.isArray(payload?.deterministicErrors) ? payload.deterministicErrors : [];
-  const concurrence = parseFloat(mathMetrics.concurrence || 0);
-  const entropy = parseFloat(mathMetrics.entropy || 0);
 
-  // Map deterministic errors into structured error findings
+  // Map the frontend's own lint findings (idle wires, excess depth, etc.)
   const errors = deterministicErrors.map(err => ({
     severity: err.type === 'error' ? 'error' : (err.type === 'warning' ? 'warning' : 'optimization'),
     title: err.title || 'Circuit Inefficiency',
@@ -1158,33 +1153,40 @@ function generateCircuitTutorLocally(payload) {
     suggestedFix: err.fix || 'Review gate placement.'
   }));
 
-  const isHealthy = !errors.some(e => e.severity === 'error');
+  let summary, purpose, entanglementAnalysis;
 
-  // Identify what is being made based on circuit structure, concurrence, and Dirac notation
-  let summary = 'Custom Quantum Circuit';
-  let purpose = 'Unitary transformations applied to compute a quantum superposition across basis states.';
+  if (Array.isArray(payload?.grid)) {
+    // The real path: describe what is actually on the board, from an actual
+    // simulation — not a guess from a Dirac-notation string. This is what
+    // stopped "H, T, Y" being described as "Uniform Superposition State"
+    // (a label only ever earned by looking at the H and ignoring the rest).
+    const { describeCircuit } = require('../ananta-backend/utils/quantumState');
+    const described = describeCircuit(payload.grid, numQubits);
+    summary = described.summary;
+    purpose = described.purpose;
+    entanglementAnalysis = described.entanglementAnalysis;
 
-  if (!gridStructure || gridStructure.trim() === '' || gridStructure.includes('(empty circuit)')) {
-    summary = 'Empty Circuit (Ground State |0...0⟩)';
-    purpose = 'All qubits reside in the computational ground state |0⟩ at 15 millikelvin. Add gates from the left palette to begin your quantum program.';
-  } else if (concurrence > 0.7 && dirac.includes('|000⟩') && dirac.includes('|110⟩')) {
-    summary = 'Bell State |Φ⁺⟩ Preparation (Bipartite Entanglement)';
-    purpose = 'Creates a maximally entangled bipartite Einstein-Podolsky-Rosen (EPR) pair (|00⟩ + |11⟩)/√2 using Hadamard and CNOT gates. Used in Quantum Key Distribution (QKD) and Teleportation.';
-  } else if (concurrence > 0.7 && dirac.includes('|000⟩') && dirac.includes('|111⟩')) {
-    summary = 'GHZ State (|000⟩ + |111⟩)/√2 (Tripartite Entanglement)';
-    purpose = 'Prepares a 3-qubit maximally entangled Greenberger-Horne-Zeilinger superposition. Used in quantum secret sharing and high-precision quantum metrology.';
-  } else if (concurrence > 0.1) {
-    summary = 'Multi-Qubit Entangled Subsystem';
-    purpose = `Controlled entangling unitaries generate non-local quantum correlations across the register (Concurrence C = ${concurrence.toFixed(2)}).`;
-  } else if (dirac.includes('+') && !dirac.includes('-')) {
-    summary = 'Uniform Superposition State';
-    purpose = 'Hadamard gates initialize quantum parallel exploration across computational basis states with equal probability amplitude. Essential prerequisite for Grover search and quantum phase estimation.';
+    // Structural issues the simulator itself found (dangling CNOT/SWAP, unknown
+    // gate) are real errors — merge them in ahead of the frontend's lint list.
+    for (const issue of described.analysis.issues) {
+      if (issue.code === 'EMPTY_CIRCUIT') continue;
+      errors.unshift({
+        severity: 'error',
+        title: issue.code.replace(/_/g, ' '),
+        location: issue.column != null ? `Time step ${issue.column + 1}` : 'Circuit grid',
+        explanation: issue.message,
+        suggestedFix: 'Complete or remove the incomplete gate.'
+      });
+    }
+  } else {
+    // No raw grid was sent (older caller) — honest but generic, since without
+    // the grid there is nothing real to ground a specific claim in.
+    summary = 'Custom Quantum Circuit';
+    purpose = 'A circuit is present but its gate-level structure was not provided to this analysis, so no specific claim about it can be grounded. Provide the circuit grid for an exact description.';
+    entanglementAnalysis = 'Unknown — entanglement was not computed because the gate grid was not provided.';
   }
 
-  const entanglementAnalysis = concurrence > 0.1
-    ? `Strong quantum entanglement detected with Concurrence C = ${concurrence.toFixed(2)} and von Neumann Entropy S = ${entropy.toFixed(2)} ebits. Subsystems cannot be classically separated.`
-    : 'The quantum register is currently separable (unentangled product state with C = 0.00). Each qubit can be described independently without EPR correlations.';
-
+  const isHealthy = !errors.some(e => e.severity === 'error');
   const tutorGuidance = errors.length > 0
     ? `You have ${errors.length} diagnostic recommendation(s). Review the highlighted findings above to optimize circuit depth and avoid unwanted state collapse.`
     : 'Your quantum circuit logic is sound and unitary! Try experimenting with relative phase (Phase S or T gates) or adding a CNOT to a third wire to observe entanglement scaling.';

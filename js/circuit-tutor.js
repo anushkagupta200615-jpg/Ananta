@@ -274,6 +274,8 @@ class CircuitTutor {
 
       const payload = {
         gridStructure,
+        grid, // raw gate grid: lets the backend ground its analysis in a real
+              // simulation instead of guessing from the text summary
         numQubits,
         activeDepth,
         diracNotation,
@@ -327,14 +329,89 @@ class CircuitTutor {
     this.runAudit(question);
   }
 
-  generateLocalFallback(payload) {
-    const gridStructure = payload.gridStructure || '';
-    const dirac = payload.diracNotation || '|000⟩';
-    const mathMetrics = payload.mathMetrics || {};
-    const deterministicErrors = payload.deterministicErrors || [];
-    const concurrence = parseFloat(mathMetrics.concurrence || 0);
-    const entropy = parseFloat(mathMetrics.entropy || 0);
+  /**
+   * Reads the actual gate composition out of a grid, mirroring
+   * ananta-backend/utils/quantumState.js's readGateComposition/describeCircuit
+   * for the case this file cannot reach that Node module: a pure network
+   * failure reaching /api/ai/tutor. Grounds the description in which gates are
+   * really on the board instead of guessing from Dirac-notation text — that
+   * guess is how "H, T, Y" once became "Uniform Superposition State".
+   */
+  describeGridLocally(grid, numQubits, mathMetrics) {
+    const GATE_NAMES = { H: 'Hadamard', X: 'Pauli-X', Y: 'Pauli-Y', Z: 'Pauli-Z', S: 'Phase (S)', T: 'π/8 Phase (T)' };
+    const n = numQubits || (grid ? grid.length : 1);
+    const numCols = grid && grid[0] ? grid[0].length : 0;
+    const singleGateCounts = {};
+    let cnotCount = 0, swapCount = 0, danglingIssue = null;
 
+    const wireHasGate = new Array(n).fill(false);
+    for (let col = 0; col < numCols; col++) {
+      let control = -1, target = -1;
+      const swapWires = [];
+      for (let q = 0; q < n; q++) {
+        const cell = grid[q] ? grid[q][col] : null;
+        if (!cell || cell === 'M') continue;
+        if (cell === 'CX_CTRL') { control = q; wireHasGate[q] = true; continue; }
+        if (cell === 'CX_TGT') { target = q; wireHasGate[q] = true; continue; }
+        if (cell === 'SWAP') { swapWires.push(q); wireHasGate[q] = true; continue; }
+        singleGateCounts[cell] = (singleGateCounts[cell] || 0) + 1;
+        wireHasGate[q] = true;
+      }
+      if (control !== -1 && target !== -1) cnotCount++;
+      else if (control !== -1 || target !== -1) {
+        danglingIssue = `The CNOT at time step ${col + 1} is missing its ${control === -1 ? 'control' : 'target'} wire, so it does nothing.`;
+      }
+      if (swapWires.length === 2) swapCount++;
+    }
+    // Wires that actually carry a gate, not the register's total width — a
+    // Bell pair built inside a wider register (idle spare wires) is still one.
+    const activeWires = wireHasGate.filter(Boolean).length;
+
+    const concurrence = parseFloat(mathMetrics?.concurrence || 0);
+    const entropy = parseFloat(mathMetrics?.entropy || 0);
+    const entangled = concurrence > 0.1;
+    const distinctGates = Object.keys(singleGateCounts);
+    const totalGates = distinctGates.reduce((s, g) => s + singleGateCounts[g], 0) + cnotCount + swapCount;
+
+    if (danglingIssue) {
+      return { summary: 'Incomplete Circuit', purpose: danglingIssue, entanglementAnalysis: 'Not applicable until the circuit above is fixed.', hasError: true };
+    }
+    if (totalGates === 0) {
+      return {
+        summary: 'Empty Circuit (Ground State)',
+        purpose: `All ${n} qubits are in the ground state |${'0'.repeat(n)}⟩. Add gates from the palette to begin.`,
+        entanglementAnalysis: 'Not applicable — no gates have been placed yet.'
+      };
+    }
+
+    const onlyH = distinctGates.length === 1 && distinctGates[0] === 'H' && swapCount === 0;
+    let summary, purpose;
+    if (onlyH && activeWires === 2 && singleGateCounts.H === 1 && cnotCount === 1) {
+      summary = 'Bell State Preparation (Bipartite Entanglement)';
+      purpose = 'A Hadamard puts one qubit into superposition, then a CNOT entangles it with the second qubit, producing a maximally entangled EPR pair. Used in quantum key distribution and teleportation.';
+    } else if (onlyH && activeWires === 3 && singleGateCounts.H === 1 && cnotCount === 2) {
+      summary = 'GHZ State (Tripartite Entanglement)';
+      purpose = 'A Hadamard followed by a chain of two CNOTs spreads superposition across all three qubits into a single maximally entangled state. Used in quantum secret sharing and metrology.';
+    } else {
+      const parts = distinctGates.map(g => `${GATE_NAMES[g] || g} (×${singleGateCounts[g]})`);
+      if (cnotCount) parts.push(`CNOT (×${cnotCount})`);
+      if (swapCount) parts.push(`SWAP (×${swapCount})`);
+      const nameList = distinctGates.concat(cnotCount ? ['CNOT'] : [], swapCount ? ['SWAP'] : []).join(', ');
+      summary = `Custom ${n}-Qubit Circuit: ${nameList}`;
+      purpose = `Applies ${parts.join(', ')} across a ${n}-qubit register. ` +
+        (entangled ? 'The resulting state is entangled — measuring one qubit affects the others.'
+                   : 'The resulting state is separable — each qubit can be described independently.');
+    }
+
+    const entanglementAnalysis = entangled
+      ? `Entangled: Concurrence C = ${concurrence.toFixed(2)}, von Neumann Entropy S = ${entropy.toFixed(2)} ebits. Subsystems cannot be described independently.`
+      : 'Separable: every qubit is in a definite pure state independent of the others (entropy ≈ 0).';
+
+    return { summary, purpose, entanglementAnalysis };
+  }
+
+  generateLocalFallback(payload) {
+    const deterministicErrors = payload.deterministicErrors || [];
     const errors = deterministicErrors.map(err => ({
       severity: err.type === 'error' ? 'error' : (err.type === 'warning' ? 'warning' : 'optimization'),
       title: err.title || 'Circuit Inefficiency',
@@ -343,41 +420,29 @@ class CircuitTutor {
       suggestedFix: err.fix || 'Review gate placement.'
     }));
 
-    let summary = 'Custom Quantum Circuit';
-    let purpose = 'Unitary transformations applied to compute a quantum superposition across computational basis states.';
+    const described = Array.isArray(payload.grid)
+      ? this.describeGridLocally(payload.grid, payload.numQubits, payload.mathMetrics)
+      : {
+          summary: 'Custom Quantum Circuit',
+          purpose: 'The gate grid was not available to this offline analysis, so no specific claim about it can be grounded.',
+          entanglementAnalysis: 'Unknown — not computed offline.'
+        };
 
-    if (!gridStructure || gridStructure.trim() === '' || gridStructure.includes('(idle)'.repeat(payload.numQubits))) {
-      summary = 'Empty Circuit (Ground State |0...0⟩)';
-      purpose = 'All qubits reside in the lowest-energy computational ground state |0⟩ at 15 millikelvin. Click any gate on the left palette to begin constructing your quantum program.';
-    } else if (concurrence > 0.7 && dirac.includes('|000⟩') && dirac.includes('|110⟩')) {
-      summary = 'Bell State |Φ⁺⟩ Preparation (Bipartite Entanglement)';
-      purpose = 'Creates a maximally entangled bipartite EPR pair (|00⟩ + |11⟩)/√2 using Hadamard and CNOT gates. Used in Quantum Key Distribution (QKD) and Teleportation.';
-    } else if (concurrence > 0.7 && dirac.includes('|000⟩') && dirac.includes('|111⟩')) {
-      summary = 'GHZ State (|000⟩ + |111⟩)/√2 (Tripartite Entanglement)';
-      purpose = 'Prepares a 3-qubit maximally entangled Greenberger-Horne-Zeilinger state. Used in quantum secret sharing and high-precision atomic magnetometry.';
-    } else if (concurrence > 0.1) {
-      summary = 'Multi-Qubit Entangled Subsystem';
-      purpose = `Controlled entangling unitaries generate non-local quantum correlations across the register (Concurrence C = ${concurrence.toFixed(2)}).`;
-    } else if (dirac.includes('+') && !dirac.includes('-')) {
-      summary = 'Uniform Superposition State';
-      purpose = 'Hadamard gates initialize quantum parallel exploration across computational basis states with equal probability amplitude. Essential prerequisite for Grover search and phase estimation.';
+    if (described.hasError) {
+      errors.unshift({ severity: 'error', title: 'Incomplete Gate', location: 'Circuit grid', explanation: described.purpose, suggestedFix: 'Complete or remove the incomplete gate.' });
     }
-
-    const entanglementAnalysis = concurrence > 0.1
-      ? `Strong quantum entanglement detected with Concurrence C = ${concurrence.toFixed(2)} and von Neumann Entropy S = ${entropy.toFixed(2)} ebits. Subsystems cannot be classically separated.`
-      : 'The quantum register is currently separable (unentangled product state with C = 0.00). Each qubit can be described independently without EPR correlations.';
 
     const tutorGuidance = errors.length > 0
       ? `You have ${errors.length} diagnostic recommendation(s). Review the highlighted findings above to optimize circuit depth and avoid unwanted state collapse.`
       : 'Your quantum circuit logic is sound and unitary! Try experimenting with relative phase (Phase S or T gates) or adding a CNOT to a third wire to observe entanglement scaling.';
 
     return {
-      circuitSummary: summary,
-      circuitPurpose: purpose,
+      circuitSummary: described.summary,
+      circuitPurpose: described.purpose,
       isHealthy: !errors.some(e => e.severity === 'error'),
       healthBadge: errors.length === 0 ? 'Healthy Circuit (100% Sound)' : `${errors.length} Issue(s) Detected`,
       errors,
-      entanglementAnalysis,
+      entanglementAnalysis: described.entanglementAnalysis,
       tutorGuidance
     };
   }
