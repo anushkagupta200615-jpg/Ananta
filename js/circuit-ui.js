@@ -804,6 +804,55 @@ class CircuitUI {
     }
   }
 
+  // Single source of truth for "is this literally just a canonical Bell/GHZ
+  // circuit" - used everywhere in the UI that shows a Bell/GHZ-specific
+  // label, so the badge at the top of the composer and the Beginner
+  // Intuition panel below it can never disagree again. Matching purely on
+  // the final measurement-probability pattern was wrong: an S gate only
+  // shifts phase (invisible to measurement probabilities) and an inert
+  // Toffoli whose controls never both reach |1> changes nothing either, so
+  // H + CNOT + S still lands on exactly the canonical |000>+|110> Bell
+  // signature - a circuit with real extra gates on it was still being
+  // reported as a plain Bell pair.
+  analyzeGateComposition() {
+    const grid = this.grid;
+    const hasX = grid && grid.some(row => row.some(c => c === 'X'));
+    const hasY = grid && grid.some(row => row.some(c => c === 'Y'));
+    const hasZ = grid && grid.some(row => row.some(c => c === 'Z'));
+    const hasS = grid && grid.some(row => row.some(c => c === 'S'));
+    const hasT = grid && grid.some(row => row.some(c => c === 'T'));
+    const hasM = grid && grid.some(row => row.some(c => c === 'M'));
+
+    let hasToffoli = false, hasCnot = false, hasSwap = false, cnotCount = 0;
+    if (grid && grid.length && grid[0]) {
+      const numCols = grid[0].length;
+      for (let col = 0; col < numCols; col++) {
+        let controls = 0, hasTarget = false, swapWires = 0;
+        for (let q = 0; q < grid.length; q++) {
+          const cell = grid[q][col];
+          if (cell === 'CX_CTRL') controls++;
+          else if (cell === 'CX_TGT') hasTarget = true;
+          else if (cell === 'SWAP') swapWires++;
+        }
+        if (hasTarget && controls === 2) hasToffoli = true;
+        else if (hasTarget && controls === 1) { hasCnot = true; cnotCount++; }
+        if (swapWires >= 2) hasSwap = true;
+      }
+    }
+
+    const entanglingGateNames = [hasToffoli && 'Toffoli', hasCnot && 'CNOT', hasSwap && 'SWAP'].filter(Boolean);
+    const entanglingGatesLabel = entanglingGateNames.length > 0 ? entanglingGateNames.join(' / ') : 'multi-qubit';
+    const onlyCanonicalGates = hasCnot && !hasToffoli && !hasSwap && !hasX && !hasY && !hasZ && !hasS && !hasT;
+
+    return {
+      hasX, hasY, hasZ, hasS, hasT, hasM,
+      hasToffoli, hasCnot, hasSwap, cnotCount,
+      entanglingGatesLabel,
+      hasOnlyBellGates: onlyCanonicalGates && cnotCount === 1,
+      hasOnlyGhzGates: onlyCanonicalGates && cnotCount === 2
+    };
+  }
+
   updateEntanglementBadge(probs) {
     const badge = document.getElementById('entanglement-status-indicator');
     if (!badge) return;
@@ -813,9 +862,9 @@ class CircuitUI {
     const isEntangled = m ? (m.concurrence > 0.15 || m.vonNeumannEntropy > 0.15) : false;
     const states = activeStates.map(s => s.state);
 
-    const hasY = this.grid && this.grid.some(row => row.some(c => c === 'Y'));
-    const isStdBell = states.length === 2 && states.includes('|000⟩') && states.includes('|110⟩') && !hasY && isEntangled;
-    const isGHZ = states.length === 2 && states.includes('|000⟩') && states.includes('|111⟩') && isEntangled;
+    const gates = this.analyzeGateComposition();
+    const isStdBell = gates.hasOnlyBellGates && states.length === 2 && states.includes('|000⟩') && states.includes('|110⟩') && isEntangled;
+    const isGHZ = gates.hasOnlyGhzGates && states.length === 2 && states.includes('|000⟩') && states.includes('|111⟩') && isEntangled;
 
     if (isStdBell) {
       badge.style.display = 'inline-flex';
@@ -2105,52 +2154,14 @@ class CircuitUI {
       entanglementClass: 'Product State'
     };
 
-    // State signatures & Gate analysis
+    // State signatures & Gate analysis - analyzeGateComposition() is the
+    // single shared source of truth (also used by updateEntanglementBadge)
+    // so the badge at the top of the composer and this panel can never
+    // disagree about what circuit is actually on the board again.
     const stateNames = activeStates.map(s => s.state);
-    const hasCX = this.grid && this.grid.some(row => row.some(c => c === 'CX_CTRL' || c === 'CX_TGT'));
-    const hasY = this.grid && this.grid.some(row => row.some(c => c === 'Y'));
-    const hasX = this.grid && this.grid.some(row => row.some(c => c === 'X'));
-    const hasZ = this.grid && this.grid.some(row => row.some(c => c === 'Z'));
-    const hasM = this.grid && this.grid.some(row => row.some(c => c === 'M'));
     const isEntangled = m.concurrence > 0.15 || m.vonNeumannEntropy > 0.15;
-
-    // Name the entangling gate(s) actually present, instead of assuming
-    // CNOT unconditionally - a column with 2 controls sharing a target is
-    // a Toffoli, not a CNOT (mirrors the same fix in circuit-tutor.js's
-    // detectDeterministicErrors, which used to mislabel Toffoli as CNOT).
-    let hasToffoli = false, hasCnot = false, hasSwap = false, cnotCount = 0;
-    if (this.grid && this.grid.length && this.grid[0]) {
-      const numCols = this.grid[0].length;
-      for (let col = 0; col < numCols; col++) {
-        let controls = 0, hasTarget = false, swapWires = 0;
-        for (let q = 0; q < this.grid.length; q++) {
-          const cell = this.grid[q][col];
-          if (cell === 'CX_CTRL') controls++;
-          else if (cell === 'CX_TGT') hasTarget = true;
-          else if (cell === 'SWAP') swapWires++;
-        }
-        if (hasTarget && controls === 2) hasToffoli = true;
-        else if (hasTarget && controls === 1) { hasCnot = true; cnotCount++; }
-        if (swapWires >= 2) hasSwap = true;
-      }
-    }
-    const entanglingGateNames = [hasToffoli && 'Toffoli', hasCnot && 'CNOT', hasSwap && 'SWAP'].filter(Boolean);
-    const entanglingGatesLabel = entanglingGateNames.length > 0 ? entanglingGateNames.join(' / ') : 'multi-qubit';
-
-    // The canned Bell/GHZ narrative below is only accurate when THOSE are
-    // literally the only gates that ran - matching purely on the final
-    // measurement-probability pattern was wrong: an S gate only shifts
-    // phase (invisible to measurement probabilities) and an inert Toffoli
-    // whose controls never both reach |1> changes nothing either, so a
-    // circuit with H + CNOT + S + Toffoli could still land on exactly the
-    // canonical |000>+|110> Bell signature and get the exact same "Qubit 0
-    // was put into superposition with H, and CNOT entangled..." text with
-    // no mention of the other gates the user actually placed - which is
-    // exactly the "it's not changing no matter what I build" bug.
-    const hasS = this.grid && this.grid.some(row => row.some(c => c === 'S'));
-    const hasT = this.grid && this.grid.some(row => row.some(c => c === 'T'));
-    const hasOnlyBellGates = hasCnot && cnotCount === 1 && !hasToffoli && !hasSwap && !hasX && !hasY && !hasZ && !hasS && !hasT;
-    const hasOnlyGhzGates = hasCnot && cnotCount === 2 && !hasToffoli && !hasSwap && !hasX && !hasY && !hasZ && !hasS && !hasT;
+    const gates = this.analyzeGateComposition();
+    const { hasX, hasY, hasZ, hasS, hasT, hasM, hasToffoli, entanglingGatesLabel, hasOnlyBellGates, hasOnlyGhzGates } = gates;
 
     const isStdBell = hasOnlyBellGates && activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|110⟩') && Math.abs(activeStates[0].probability - 0.5) < 0.15;
     const isStdGHZ = hasOnlyGhzGates && activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|111⟩') && Math.abs(activeStates[0].probability - 0.5) < 0.15;
