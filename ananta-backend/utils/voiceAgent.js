@@ -44,6 +44,19 @@ function describeCircuit(analysis) {
     `entangled: ${analysis.entangled ? 'yes' : 'no'} (max single-qubit entropy ${fmtNum(analysis.maxSingleQubitEntropy)})`
   ];
 
+  if (analysis.rawGrid && Array.isArray(analysis.rawGrid)) {
+    const placed = [];
+    for (let q = 0; q < analysis.rawGrid.length; q++) {
+      const row = analysis.rawGrid[q] || [];
+      for (let c = 0; c < row.length; c++) {
+        if (row[c]) {
+          placed.push(`q${q} at step ${c} (t=${c + 1}): ${row[c]}`);
+        }
+      }
+    }
+    lines.push(`current gates on grid: ${placed.length > 0 ? placed.join(', ') : 'none'}`);
+  }
+
   const probs = analysis.probabilities.slice(0, 8)
     .map(p => `|${p.state}> ${fmtPct(p.probability)}`)
     .join(', ');
@@ -116,13 +129,21 @@ NUMBERS ARE NOT YOURS TO INVENT
 - For anything numerical, quote the LIVE CIRCUIT block above. Never estimate, round loosely, or make up a value.
 - If a number they ask for is not in that block and cannot be derived from it, say so plainly instead of guessing.
 
-BUILDING RULES
+BUILDING & MOVING RULES
 - One operation per qubit for single-qubit gates: "S on q0 and q3" is TWO operations, targets [0] and [3].
 - Multi-qubit gates (CNOT, CZ, SWAP, Toffoli) use controls + targets together in ONE operation.
 - A controlled gate cannot share control and target; if asked, set error_feedback and explain why.
 - step is a 0-indexed column; null means "next free slot". reset_existing is true only when they ask for a NEW circuit.
+- MOVING/RELOCATING: The user can speak naturally in any phrasing to move, shift, reposition, slide, or rearrange any gate or circuit item from anywhere to anywhere (e.g. "move t to t 5", "shift H forward two steps", "take the gate on wire 0 to wire 1", "slide CNOT to step 4", "move it over there").
+  * Use mode: "build", action: "move".
+  * Identify what gate or item to move (e.g. gate "T", "H", "CNOT", etc.).
+  * Use "from_step" (0-indexed source column) and "from_qubit" (source qubit). If not explicitly spoken, infer from the "current gates on grid" section above.
+  * Use "step" (0-indexed destination column, e.g. "t 5" or "step 5" is step 4) and "targets": [<destination qubit>].
+  * If the user asks to move an item that is not yet placed on the circuit, set action "place" to create it at the desired step and wire so the user gets what they asked for.
 - For whole-circuit actions use "control" instead of operations: "clear" (wipe the circuit), "run" (execute the simulation), "add-qubit", "remove-qubit". Leave it null otherwise.
 - To build a named algorithm, set "algorithm" to its id and leave operations empty — the app has a correct, tested builder for each. Only emit raw operations for gate-level requests the ids do not cover. Valid ids: ${CAPABILITIES.filter(c => c.kind === 'algorithm').map(c => c.id).join(', ')}.
+- Carry any width or direction they asked for in "params": "a 5 qubit QFT" is params.qubits = 5, "the inverse QFT" is params.inverse = true. Do not drop these; the builder honours them.
+- "bit flip" on its own is the Pauli-X gate, but "bit flip code" / "bit flip error correction" is the bit-flip-code algorithm. Read which one they meant from context.
 
 VOICE STYLE
 - spoken_response is read aloud: one or two plain sentences, no markdown, no symbols like |0>, say "ket zero" instead.
@@ -133,11 +154,12 @@ Return ONLY this JSON object, no markdown fences:
   "mode": "build" | "answer" | "explain" | "clarify",
   "control": <null | "clear" | "run" | "add-qubit" | "remove-qubit">,
   "algorithm": <null | one of the algorithm ids listed above>,
+  "params": { "qubits": <int|null, only if they asked for a specific width>, "inverse": <bool, true for inverse/IQFT/adjoint requests> },
   "num_qubits": <int, minimum wires needed>,
   "reset_existing": <bool>,
   "operations": [
     { "action": "place" | "move" | "remove", "gate": "<H|X|Y|Z|S|T|CNOT|CZ|SWAP|Toffoli|Rx|Ry|Rz|MEASURE>",
-      "targets": [<int>], "controls": [<int>], "step": <int|null>, "from_step": <int|null>,
+      "targets": [<int>], "controls": [<int>], "step": <int|null>, "from_step": <int|null>, "from_qubit": <int|null>,
       "params": { "theta": <float> } }
   ],
   "spoken_response": "<what to say aloud>",
@@ -157,17 +179,45 @@ USER SAID: "${transcript}"`;
 // simulator rather than from any language model.
 // ---------------------------------------------------------------------------
 
+/**
+ * Pulls the knobs an algorithm request carries. Without this a request's
+ * numbers were parsed for matching and then discarded, so "make a 5 qubit QFT"
+ * and "make an inverse QFT" both built the same default forward 3-qubit
+ * circuit — the spoken detail was silently ignored.
+ */
+const SPELLED_NUMBERS = {
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8
+};
+
+function extractAlgorithmParams(text) {
+  const lower = String(text || '').toLowerCase();
+
+  let qubits = null;
+  const digitMatch = lower.match(/\b(\d+)\s*-?\s*qubits?\b/);
+  if (digitMatch) {
+    qubits = parseInt(digitMatch[1], 10);
+  } else {
+    const wordMatch = lower.match(/\b(one|two|three|four|five|six|seven|eight)\s*-?\s*qubits?\b/);
+    if (wordMatch) qubits = SPELLED_NUMBERS[wordMatch[1]];
+  }
+  if (qubits != null) qubits = Math.min(8, Math.max(1, qubits));
+
+  const inverse = /\b(inverse|inverted|iqft|adjoint|dagger|reversed?)\b/.test(lower);
+
+  return { qubits, inverse };
+}
+
 const QUESTION_RE = /\b(what|why|how|which|is|are|does|do|can|explain|tell me)\b/i;
 const ERROR_RE = /\b(error|failed|failing|broken|wrong|bug|crash|exception|not working)\b/i;
-const BUILD_VERB_RE = /\b(make|create|build|construct|draw|generate|add|place|put|insert|apply|wire|load|show me|give me)\b/i;
+const BUILD_VERB_RE = /\b(make|create|build|construct|draw|generate|add|place|put|insert|apply|wire|load|show me|give me|move|shift|relocate|drag|transfer|slide|swap|adjust|rearrange|take)\b/i;
 
 /**
- * A build verb wins over question words, so "can you make QFT" and "show me a
- * bell state" are requests to build, not questions to answer.
+ * A build verb wins over question words, so "can you make QFT", "can you move t to t 5",
+ * and "show me a bell state" are requests to build/manipulate, not questions to answer.
  */
 function classifyIntent(text, hasCapability = false) {
+  if (BUILD_VERB_RE.test(text)) return 'build';
   if (ERROR_RE.test(text)) return 'explain';
-  if (hasCapability && BUILD_VERB_RE.test(text)) return 'build';
   if (QUESTION_RE.test(text) || text.trim().endsWith('?')) return 'answer';
   return 'build';
 }
@@ -391,10 +441,14 @@ function respondDeterministically({ transcript, resolution, analysis, errorConte
   const intent = errorContext ? 'explain' : classifyIntent(text, !!algorithm);
 
   if (intent === 'build' && algorithm) {
+    // The raw utterance carries the knobs; resolution.text may have rewritten
+    // "iqft" to its canonical name, so read parameters from what was actually said.
+    const params = extractAlgorithmParams(`${resolution.original} ${resolution.text}`);
     return {
       mode: 'build',
       algorithm: algorithm.id,
-      num_qubits: analysis.numQubits,
+      params,
+      num_qubits: params.qubits || analysis.numQubits,
       reset_existing: true,
       operations: [],
       spoken_response: `Building the ${algorithm.resolvedTo}.`,
@@ -448,6 +502,9 @@ function respondDeterministically({ transcript, resolution, analysis, errorConte
 function prepareTurn({ transcript, circuit, history, errorContext }) {
   const resolution = resolveTranscript(transcript || '');
   const analysis = analyzeCircuit(circuit && circuit.grid, circuit && circuit.num_qubits);
+  if (circuit && circuit.grid) {
+    analysis.rawGrid = circuit.grid;
+  }
   return {
     resolution,
     analysis,

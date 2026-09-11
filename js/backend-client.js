@@ -249,16 +249,20 @@ if (typeof window.ANANTA_CONFIG === 'undefined') {
       }
     }
 
-    // Call /api/qpu/run (Physical QPU Simulation & Readout)
-    async runQpuCircuit(payload) {
-      this._logClient('POST /api/qpu/run', 'PENDING', { backend: payload.backend, shots: payload.shots });
+    // Call /api/qpu/run (Physical QPU Hardware Execution & Honest Simulation Dispatch)
+    async runQpuCircuit(payload, token = '') {
+      const activeToken = token || (typeof localStorage !== 'undefined' && localStorage.getItem('ananta_ibm_token')) || '';
+      this._logClient('POST /api/qpu/run', 'PENDING', { backend: payload.backend, shots: payload.shots, hasToken: Boolean(activeToken) });
       const startTime = performance.now();
 
       try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (activeToken) headers['x-ibm-token'] = activeToken;
+
         const res = await fetch(`${this.baseUrl}/api/qpu/run`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          headers,
+          body: JSON.stringify({ ...payload, token: activeToken })
         });
 
         const data = await safeJsonParse(res);
@@ -271,13 +275,54 @@ if (typeof window.ANANTA_CONFIG === 'undefined') {
         this._logClient('POST /api/qpu/run', 'SUCCESS', {
           latency: latency + 'ms',
           jobId: data.jobId,
-          fidelity: data.deviceSpecs?.fidelityScore
+          isRealHardware: data.isRealHardware,
+          status: data.status
         });
 
         return data;
       } catch (err) {
         this._logClient('POST /api/qpu/run', 'FAILED', { error: err.message });
         throw err;
+      }
+    }
+
+    // Call /api/qpu/auth (Validate IBM Quantum Token)
+    async validateIbmToken(token) {
+      try {
+        const res = await fetch(`${this.baseUrl}/api/qpu/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-ibm-token': token },
+          body: JSON.stringify({ token })
+        });
+        return await safeJsonParse(res);
+      } catch (err) {
+        return { valid: false, error: err.message };
+      }
+    }
+
+    // Call /api/qpu/devices (Fetch Live Backends or Reference Catalog)
+    async fetchQpuDevices(token = '') {
+      try {
+        const activeToken = token || (typeof localStorage !== 'undefined' && localStorage.getItem('ananta_ibm_token')) || '';
+        const headers = {};
+        if (activeToken) headers['x-ibm-token'] = activeToken;
+        const res = await fetch(`${this.baseUrl}/api/qpu/devices`, { headers });
+        return await safeJsonParse(res);
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+
+    // Call /api/qpu/job/:id (Poll Job Status & Results)
+    async pollQpuJob(jobId, token = '') {
+      try {
+        const activeToken = token || (typeof localStorage !== 'undefined' && localStorage.getItem('ananta_ibm_token')) || '';
+        const headers = {};
+        if (activeToken) headers['x-ibm-token'] = activeToken;
+        const res = await fetch(`${this.baseUrl}/api/qpu/job/${encodeURIComponent(jobId)}`, { headers });
+        return await safeJsonParse(res);
+      } catch (err) {
+        return { success: false, error: err.message };
       }
     }
 

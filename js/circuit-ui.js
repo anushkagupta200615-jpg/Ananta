@@ -331,11 +331,30 @@ class CircuitUI {
   }
 
   moveGate(fromQ, fromCol, toQ, toCol) {
-    if (fromQ < 0 || fromQ >= this.numQubits || fromCol < 0 || fromCol >= this.numCols) return false;
-    toQ = toQ !== undefined ? toQ : fromQ;
-    if (toQ < 0 || toQ >= this.numQubits || toCol < 0 || toCol >= this.numCols) return false;
+    if (fromQ === undefined || fromCol === undefined) return false;
+    fromQ = Math.max(0, Math.min(this.numQubits - 1, parseInt(fromQ, 10) || 0));
+    fromCol = Math.max(0, Math.min(this.numCols - 1, parseInt(fromCol, 10) || 0));
 
-    const gate = this.grid[fromQ][fromCol];
+    toQ = toQ !== undefined ? parseInt(toQ, 10) : fromQ;
+    toCol = toCol !== undefined ? parseInt(toCol, 10) : fromCol;
+
+    while (this.numQubits <= toQ && this.numQubits < 8) {
+      this.addQubit();
+    }
+    toQ = Math.max(0, Math.min(this.numQubits - 1, toQ));
+    toCol = Math.max(0, Math.min(this.numCols - 1, toCol));
+
+    let gate = this.grid[fromQ] ? this.grid[fromQ][fromCol] : null;
+    if (!gate) {
+      // Find closest gate on wire fromQ if specified slot was empty
+      for (let c = 0; c < this.numCols; c++) {
+        if (this.grid[fromQ] && this.grid[fromQ][c]) {
+          gate = this.grid[fromQ][c];
+          fromCol = c;
+          break;
+        }
+      }
+    }
     if (!gate) return false;
 
     if (gate === 'CX_CTRL' || gate === 'CX_TGT') {
@@ -349,6 +368,17 @@ class CircuitUI {
         this.grid[ctrlQ][toCol] = 'CX_CTRL';
         this.grid[tgtQ][toCol] = 'CX_TGT';
       }
+    } else if (gate === 'SWAP') {
+      const swapWires = [];
+      for (let q = 0; q < this.numQubits; q++) {
+        if (this.grid[q][fromCol] === 'SWAP') {
+          swapWires.push(q);
+          this.grid[q][fromCol] = null;
+        }
+      }
+      for (const q of swapWires) {
+        this.grid[q][toCol] = 'SWAP';
+      }
     } else {
       this.grid[fromQ][fromCol] = null;
       this.grid[toQ][toCol] = gate;
@@ -357,6 +387,7 @@ class CircuitUI {
     this.renderGrid();
     this.updateSimulation();
     if (this.renderCnotConnectors) this.renderCnotConnectors();
+    if (this.bindGateTooltips) this.bindGateTooltips();
     return true;
   }
 

@@ -10,13 +10,15 @@ class CloudQPUBridge {
     this.engine = engine;
     this.circuitUI = circuitUI;
 
-    // Load saved token or fallback
-    this.apiToken = localStorage.getItem('ananta_ibm_token') || 'Qp3YGpZ_tnsetYrdMwSaRM10o2nhzzuo0r5Z_QkJgbdD';
+    // Load saved token or start empty (no fake/mock credentials)
+    this.apiToken = localStorage.getItem('ananta_ibm_token') || '';
     this.selectedBackend = 'ibm_brisbane';
     this.isJobRunning = false;
     this.lastJobResults = null;
+    this.isFleetLive = false;
+    this.activePollInterval = null;
 
-    // Physical Device Fleet Catalog (Calibrated Specifications)
+    // Calibrated baseline specifications (used when no live connection/token is available)
     this.devices = {
       'ibm_brisbane': {
         name: 'ibm_brisbane',
@@ -29,7 +31,8 @@ class CloudQPUBridge {
         cnotErrorMedian: 0.0078, // 0.78%
         readoutError: 0.019, // 1.9%
         quantumVolume: 128,
-        clops: 2600
+        clops: 2600,
+        isLive: false
       },
       'ibm_kyoto': {
         name: 'ibm_kyoto',
@@ -42,7 +45,8 @@ class CloudQPUBridge {
         cnotErrorMedian: 0.0085,
         readoutError: 0.021,
         quantumVolume: 128,
-        clops: 2400
+        clops: 2400,
+        isLive: false
       },
       'ibm_sherbrooke': {
         name: 'ibm_sherbrooke',
@@ -55,7 +59,8 @@ class CloudQPUBridge {
         cnotErrorMedian: 0.0072,
         readoutError: 0.016,
         quantumVolume: 256,
-        clops: 2900
+        clops: 2900,
+        isLive: false
       },
       'ibm_osaka': {
         name: 'ibm_osaka',
@@ -68,7 +73,8 @@ class CloudQPUBridge {
         cnotErrorMedian: 0.0080,
         readoutError: 0.018,
         quantumVolume: 128,
-        clops: 2500
+        clops: 2500,
+        isLive: false
       },
       'simulator_mps': {
         name: 'simulator_mps',
@@ -81,24 +87,66 @@ class CloudQPUBridge {
         cnotErrorMedian: 0.00001,
         readoutError: 0.0001,
         quantumVolume: 512,
-        clops: 10000
+        clops: 10000,
+        isLive: false
       }
     };
 
     this.initDOM();
   }
 
-  saveToken(token) {
-    if (!token) return;
-    this.apiToken = token.trim();
+  async saveToken(token) {
+    if (!token || !token.trim()) {
+      this.clearToken();
+      return;
+    }
+    const cleanToken = token.trim();
+
+    // Show validating indicator
+    if (this.tokenStatusBadge) {
+      this.tokenStatusBadge.className = 'status-pill status-warn';
+      this.tokenStatusBadge.innerHTML = `⏳ Verifying with IBM Quantum...`;
+    }
+
+    if (window.anantaBackend && typeof window.anantaBackend.validateIbmToken === 'function') {
+      try {
+        const check = await window.anantaBackend.validateIbmToken(cleanToken);
+        if (check && check.valid) {
+          this.apiToken = cleanToken;
+          localStorage.setItem('ananta_ibm_token', this.apiToken);
+          const userName = (check.user && check.user.username) ? check.user.username : this.getMaskedToken();
+          if (this.tokenStatusBadge) {
+            this.tokenStatusBadge.className = 'status-pill status-ready';
+            this.tokenStatusBadge.innerHTML = `✓ Verified IBM Account (${userName})`;
+          }
+          await this.fetchDeviceFleet();
+          return;
+        } else {
+          if (this.tokenStatusBadge) {
+            this.tokenStatusBadge.className = 'status-pill status-warn';
+            this.tokenStatusBadge.innerHTML = `⚠️ Invalid IBM Token`;
+          }
+          alert(`IBM Quantum Token verification failed: ${check ? check.error : 'Invalid token credentials'}`);
+          return;
+        }
+      } catch (err) {
+        console.warn('[CloudQPUBridge] Validation check failed:', err);
+      }
+    }
+
+    // Fallback if backend validation service unreachable
+    this.apiToken = cleanToken;
     localStorage.setItem('ananta_ibm_token', this.apiToken);
     this.updateTokenStatus();
+    this.fetchDeviceFleet();
   }
 
   clearToken() {
     this.apiToken = '';
     localStorage.removeItem('ananta_ibm_token');
+    this.isFleetLive = false;
     this.updateTokenStatus();
+    this.fetchDeviceFleet();
   }
 
   getMaskedToken() {
@@ -126,6 +174,9 @@ class CloudQPUBridge {
     this.updateTokenStatus();
     this.updateDeviceTelemetry();
     this.bindEvents();
+
+    // Fetch device fleet from server (live IBM Quantum or calibrated baseline)
+    this.fetchDeviceFleet();
   }
 
   bindEvents() {
@@ -190,6 +241,7 @@ class CloudQPUBridge {
       document.body.style.overflow = 'hidden';
       this.updateDeviceTelemetry();
       this.updateTokenStatus();
+      this.fetchDeviceFleet();
     }
   }
 
@@ -202,36 +254,83 @@ class CloudQPUBridge {
 
   updateTokenStatus() {
     if (!this.tokenStatusBadge) return;
-    if (this.apiToken && this.apiToken.length > 10) {
+    if (this.apiToken && this.apiToken.length > 8) {
       this.tokenStatusBadge.className = 'status-pill status-ready';
       this.tokenStatusBadge.innerHTML = `✓ Key Armed (${this.getMaskedToken()})`;
     } else {
       this.tokenStatusBadge.className = 'status-pill status-warn';
-      this.tokenStatusBadge.innerHTML = `⚠️ Token Missing`;
+      this.tokenStatusBadge.innerHTML = `⚠️ No Token (Simulated Mode)`;
+    }
+  }
+
+  async fetchDeviceFleet() {
+    if (window.anantaBackend && typeof window.anantaBackend.fetchQpuDevices === 'function') {
+      try {
+        const res = await window.anantaBackend.fetchQpuDevices(this.apiToken);
+        if (res && res.success && res.devices && Object.keys(res.devices).length > 0) {
+          this.devices = res.devices;
+          this.isFleetLive = !!res.isLive;
+          this.updateBackendSelectDropdown();
+          this.updateDeviceTelemetry();
+        }
+      } catch (err) {
+        console.warn('[CloudQPUBridge] Unable to fetch device fleet from backend:', err);
+      }
+    }
+  }
+
+  updateBackendSelectDropdown() {
+    if (!this.backendSelect) return;
+    const currentSelected = this.selectedBackend;
+    this.backendSelect.innerHTML = '';
+
+    for (const [key, dev] of Object.entries(this.devices)) {
+      const opt = document.createElement('option');
+      opt.value = key;
+      const queueText = (dev.queue !== undefined && dev.queue !== null) ? ` | Queue: ${dev.queue}` : '';
+      opt.textContent = `${dev.name} (${dev.qubits} Qubits | ${dev.status}${queueText})`;
+      if (key === currentSelected) {
+        opt.selected = true;
+      }
+      this.backendSelect.appendChild(opt);
+    }
+
+    if (!this.devices[this.selectedBackend]) {
+      this.selectedBackend = Object.keys(this.devices)[0] || 'ibm_brisbane';
+      if (this.backendSelect.options.length > 0) {
+        this.backendSelect.selectedIndex = 0;
+      }
     }
   }
 
   updateDeviceTelemetry() {
-    const dev = this.devices[this.selectedBackend] || this.devices['ibm_brisbane'];
-    if (!this.deviceTelemetryCard) return;
+    const dev = this.devices[this.selectedBackend] || Object.values(this.devices)[0];
+    if (!this.deviceTelemetryCard || !dev) return;
+
+    const isLive = !!(dev.isLive || this.isFleetLive);
+    const badgeHtml = isLive
+      ? `<span class="device-chip-badge" style="color:#10b981; border: 1px solid rgba(16,185,129,0.4); padding: 2px 6px; border-radius: 4px; background: rgba(16,185,129,0.1);">🟢 LIVE IBM QUANTUM TELEMETRY</span>`
+      : `<span class="device-chip-badge" style="color:#f59e0b; border: 1px solid rgba(245,158,11,0.4); padding: 2px 6px; border-radius: 4px; background: rgba(245,158,11,0.1);">📊 CALIBRATED REFERENCE SPECIFICATIONS</span>`;
+
+    const statusBadgeClass = (dev.status && dev.status.includes('Online')) ? 'online' : 'busy';
 
     this.deviceTelemetryCard.innerHTML = `
       <div class="telemetry-header">
         <div class="telemetry-identity">
-          <span class="device-chip-badge">⚛️ PHYSICAL HARDWARE</span>
+          ${badgeHtml}
           <h3 class="device-name">${dev.name}</h3>
-          <span class="device-arch">${dev.type}</span>
+          <span class="device-arch">${dev.type || 'Superconducting Transmon'}</span>
         </div>
-        <div class="device-status-badge ${dev.status.includes('Online') ? 'online' : 'busy'}">
-          ● ${dev.status}
+        <div class="device-status-badge ${statusBadgeClass}">
+          ● ${dev.status || 'Online'}
         </div>
       </div>
 
       <div class="telemetry-specs-grid">
         <div class="spec-tile">
           <span class="spec-label">Physical Qubits</span>
-          <strong class="spec-val">${dev.qubits} Qubits</strong>
-          <span class="spec-note">Heavy-Hex Coupling</span>
+          <strong class="spec-val">${dev.qubits || 127} Qubits</strong>
+          <span class="spec-note">Coupling Topology</span>
         </div>
         <div class="spec-tile">
           <span class="spec-label">Median T₁ (Relaxation)</span>
@@ -245,18 +344,18 @@ class CloudQPUBridge {
         </div>
         <div class="spec-tile">
           <span class="spec-label">Median 2Q Error (CX)</span>
-          <strong class="spec-val">${(dev.cnotErrorMedian * 100).toFixed(2)}%</strong>
+          <strong class="spec-val">${((dev.cnotErrorMedian || 0.008) * 100).toFixed(2)}%</strong>
           <span class="spec-note">Cross-Resonance Gate</span>
         </div>
         <div class="spec-tile">
           <span class="spec-label">Readout Error</span>
-          <strong class="spec-val">${(dev.readoutError * 100).toFixed(2)}%</strong>
+          <strong class="spec-val">${((dev.readoutError || 0.019) * 100).toFixed(2)}%</strong>
           <span class="spec-note">Dispersive Cavity</span>
         </div>
         <div class="spec-tile">
           <span class="spec-label">Current Queue</span>
-          <strong class="spec-val">${dev.queue} Jobs Pending</strong>
-          <span class="spec-note">Est. Wait: ~${Math.max(1, Math.round(dev.queue * 0.8))} min</span>
+          <strong class="spec-val">${dev.queue !== undefined ? dev.queue : 0} Jobs Pending</strong>
+          <span class="spec-note">Est. Wait: ~${Math.max(1, Math.round((dev.queue || 1) * 0.8))} min</span>
         </div>
       </div>
     `;
@@ -305,7 +404,7 @@ class CloudQPUBridge {
     return `"""
 Ananta Quantum Studio -> IBM Quantum Physical Cloud QPU Execution
 Generated: ${new Date().toISOString()}
-Target Hardware: ${backend} (127-Qubit Superconducting Transmon)
+Target Hardware: ${backend}
 """
 
 from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
@@ -391,7 +490,7 @@ for bitstring, count in sorted(counts.items()):
 
     if (this.runJobBtn) {
       this.runJobBtn.disabled = true;
-      this.runJobBtn.innerHTML = '⏳ Submitting to IBM QPU Queue...';
+      this.runJobBtn.innerHTML = '⏳ Submitting Circuit to QPU...';
     }
 
     if (this.jobStatusEl) {
@@ -400,26 +499,11 @@ for bitstring, count in sorted(counts.items()):
       this.jobStatusEl.innerHTML = `
         <div class="status-spinner"></div>
         <div>
-          <strong>Job Dispatched to ${this.selectedBackend}</strong>
-          <p>Compiling OpenQASM 3.0 → Transpiling to Heavy-Hex coupling graph → Queuing in Dilution Refrigerator...</p>
+          <strong>${this.apiToken ? 'Submitting to IBM Quantum Platform API...' : 'Preparing Calibrated Hardware Noise Simulation...'}</strong>
+          <p>Compiling OpenQASM 3.0 → Validating target transpilation for ${this.selectedBackend}...</p>
         </div>
       `;
     }
-
-    await new Promise(r => setTimeout(r, 1200));
-
-    if (this.jobStatusEl) {
-      this.jobStatusEl.className = 'job-status-banner status-running';
-      this.jobStatusEl.innerHTML = `
-        <div class="status-spinner"></div>
-        <div>
-          <strong>Physical Execution Active on ${this.selectedBackend} (15 mK)</strong>
-          <p>Microwave pulses driving Josephson junction transmon gates → Readout resonators sampling 1024 shots...</p>
-        </div>
-      `;
-    }
-
-    await new Promise(r => setTimeout(r, 600));
 
     // Calculate ideal probabilities and gate statistics
     const numQ = (this.circuitUI && this.circuitUI.numQubits) ? this.circuitUI.numQubits : (this.engine.numQubits || 3);
@@ -430,61 +514,134 @@ for bitstring, count in sorted(counts.items()):
       }
     }
     const idealProbs = this.engine.getProbabilities();
-    const dev = this.devices[this.selectedBackend];
+    const dev = this.devices[this.selectedBackend] || Object.values(this.devices)[0];
     const totalShots = 1024;
     const qasm = this.generateOpenQASM3();
 
-    // 1. Try Live Backend Execution via Node.js Server
+    let backendRes = null;
+
+    // 1. Dispatch via Ananta Backend Server
     if (window.anantaBackend && typeof window.anantaBackend.runQpuCircuit === 'function') {
       try {
         console.log('[CloudQPUBridge] Dispatching circuit execution to Live Backend /api/qpu/run...');
-        const backendRes = await window.anantaBackend.runQpuCircuit({
+        backendRes = await window.anantaBackend.runQpuCircuit({
           backend: this.selectedBackend,
           shots: totalShots,
           qasm,
           numQubits: numQ,
-          idealProbabilities: idealProbs.map(p => p.probability)
+          idealProbabilities: idealProbs.map(p => p.probability),
+          token: this.apiToken
         });
-
-        if (backendRes && backendRes.success) {
-          console.log('[CloudQPUBridge] Backend QPU execution complete! Job ID:', backendRes.jobId);
-          this.lastJobResults = {
-            backend: backendRes.backend,
-            shots: backendRes.shots,
-            idealCounts: backendRes.idealCounts,
-            noisyCounts: backendRes.counts,
-            physicalFidelity: parseFloat(backendRes.deviceSpecs?.fidelityScore) / 100 || 0.94,
-            jobId: backendRes.jobId,
-            isLiveBackend: true,
-            executionTimeMs: backendRes.executionTimeMs
-          };
-
-          if (this.jobStatusEl) {
-            this.jobStatusEl.className = 'job-status-banner status-completed';
-            this.jobStatusEl.innerHTML = `
-              <span class="status-check">✓</span>
-              <div>
-                <strong>Physical Execution Completed via Live Backend! (Job ID: ${backendRes.jobId})</strong>
-                <p>1,024 physical shots retrieved from ${backendRes.backend} (15 mK). Hardware fidelity: <strong>${backendRes.deviceSpecs?.fidelityScore}</strong>. Roundtrip: ${backendRes.executionTimeMs}ms.</p>
-              </div>
-            `;
-          }
-
-          if (this.runJobBtn) {
-            this.runJobBtn.disabled = false;
-            this.runJobBtn.innerHTML = '⚡ Re-Run on Physical QPU';
-          }
-
-          this.isJobRunning = false;
-          this.renderHardwareResults();
-          return;
-        }
       } catch (backendErr) {
-        console.warn('[CloudQPUBridge] Backend QPU execution failed, falling back to local simulation:', backendErr.message);
+        console.warn('[CloudQPUBridge] Backend request error:', backendErr.message);
       }
     }
 
-    // 2. Local Fallback Simulation
+    // 2. Handle Asynchronous Hardware Polling if Job is Pending in Real IBM Queue
+    if (backendRes && backendRes.pending && backendRes.jobId) {
+      if (this.jobStatusEl) {
+        this.jobStatusEl.className = 'job-status-banner status-queued';
+        this.jobStatusEl.innerHTML = `
+          <div class="status-spinner"></div>
+          <div>
+            <strong>Physical QPU Job Queued on IBM Quantum! (Job ID: ${backendRes.jobId})</strong>
+            <p>Target: ${this.selectedBackend}. Waiting in dilution refrigerator queue. Polling status...</p>
+          </div>
+        `;
+      }
+
+      // Poll every 2.5 seconds up to 60 times (2.5 minutes)
+      const maxPolls = 60;
+      let pollCount = 0;
+      let jobFinished = false;
+
+      while (pollCount < maxPolls && this.isJobRunning) {
+        await new Promise(r => setTimeout(r, 2500));
+        pollCount++;
+
+        try {
+          const pollRes = await window.anantaBackend.pollQpuJob(backendRes.jobId, this.apiToken);
+          if (pollRes && pollRes.status === 'COMPLETED' && pollRes.counts) {
+            backendRes = {
+              ...backendRes,
+              ...pollRes,
+              success: true,
+              pending: false,
+              executionMode: 'PHYSICAL_HARDWARE',
+              counts: pollRes.counts,
+              idealCounts: backendRes.idealCounts || pollRes.counts
+            };
+            jobFinished = true;
+            break;
+          } else if (pollRes && (pollRes.status === 'CANCELLED' || pollRes.status === 'FAILED')) {
+            throw new Error(`IBM Quantum Job ${backendRes.jobId} ended with status: ${pollRes.status}`);
+          } else if (pollRes) {
+            if (this.jobStatusEl) {
+              const statusClass = pollRes.status === 'RUNNING' ? 'status-running' : 'status-queued';
+              this.jobStatusEl.className = `job-status-banner ${statusClass}`;
+              this.jobStatusEl.innerHTML = `
+                <div class="status-spinner"></div>
+                <div>
+                  <strong>IBM Hardware Status: ${pollRes.status} (Job ID: ${backendRes.jobId})</strong>
+                  <p>Target: ${this.selectedBackend} | Elapsed: ${pollCount * 2.5}s... Polling dilution refrigerator execution...</p>
+                </div>
+              `;
+            }
+          }
+        } catch (pollErr) {
+          console.warn('[CloudQPUBridge] Job polling error:', pollErr);
+        }
+      }
+    }
+
+    // 3. Process Completed Results (Hardware or Calibrated Server Simulation)
+    if (backendRes && backendRes.success && backendRes.counts) {
+      const isPhysical = (backendRes.executionMode === 'PHYSICAL_HARDWARE');
+
+      this.lastJobResults = {
+        backend: backendRes.backend || this.selectedBackend,
+        shots: backendRes.shots || totalShots,
+        idealCounts: backendRes.idealCounts,
+        noisyCounts: backendRes.counts,
+        physicalFidelity: parseFloat(backendRes.deviceSpecs?.fidelityScore) / 100 || 0.94,
+        jobId: backendRes.jobId,
+        executionMode: backendRes.executionMode || (isPhysical ? 'PHYSICAL_HARDWARE' : 'SIMULATED_PHYSICAL_NOISE'),
+        isLiveBackend: true,
+        executionTimeMs: backendRes.executionTimeMs
+      };
+
+      if (this.jobStatusEl) {
+        this.jobStatusEl.className = 'job-status-banner status-completed';
+        if (isPhysical) {
+          this.jobStatusEl.innerHTML = `
+            <span class="status-check">✓</span>
+            <div>
+              <strong>Physical Superconducting Execution Completed via IBM Quantum! (Job ID: ${backendRes.jobId})</strong>
+              <p>1,024 physical shots retrieved from ${backendRes.backend} (15 mK dilution refrigerator). Roundtrip: ${backendRes.executionTimeMs || 0}ms.</p>
+            </div>
+          `;
+        } else {
+          this.jobStatusEl.innerHTML = `
+            <span class="status-check">ℹ️</span>
+            <div>
+              <strong>Simulated Physical Noise Sandbox Completed (Job ID: ${backendRes.jobId})</strong>
+              <p>1,024 shots generated with calibrated hardware noise models ($T_1$, $T_2$, CNOT & Readout errors). Configure an IBM Quantum API token above to dispatch directly to physical QPUs.</p>
+            </div>
+          `;
+        }
+      }
+
+      if (this.runJobBtn) {
+        this.runJobBtn.disabled = false;
+        this.runJobBtn.innerHTML = isPhysical ? '⚡ Re-Run on Physical QPU' : '⚡ Re-Run Simulation';
+      }
+
+      this.isJobRunning = false;
+      this.renderHardwareResults();
+      return;
+    }
+
+    // 4. Offline Fallback Simulation (if Backend Server is entirely unavailable)
     const noisyCounts = {};
     const idealCounts = {};
     const numStates = 1 << numQ;
@@ -499,9 +656,9 @@ for bitstring, count in sorted(counts.items()):
     this.circuitUI.grid.forEach(row => row.forEach(cell => { if (cell) gateCount++; }));
 
     const circuitDurationUs = gateCount * 0.035;
-    const t1Decay = Math.exp(-circuitDurationUs / dev.t1Median);
-    const t2Decay = Math.exp(-circuitDurationUs / dev.t2Median);
-    const gateSurvival = Math.pow(1 - dev.cnotErrorMedian, Math.max(1, gateCount * 0.4));
+    const t1Decay = Math.exp(-circuitDurationUs / (dev.t1Median || 280));
+    const t2Decay = Math.exp(-circuitDurationUs / (dev.t2Median || 160));
+    const gateSurvival = Math.pow(1 - (dev.cnotErrorMedian || 0.008), Math.max(1, gateCount * 0.4));
     const physicalFidelity = Math.max(0.65, Math.min(0.99, t1Decay * t2Decay * gateSurvival));
 
     for (let shot = 0; shot < totalShots; shot++) {
@@ -529,7 +686,7 @@ for bitstring, count in sorted(counts.items()):
 
       const chars = noisyState.split('');
       for (let q = 0; q < numQ; q++) {
-        if (Math.random() < dev.readoutError) {
+        if (Math.random() < (dev.readoutError || 0.019)) {
           chars[q] = chars[q] === '0' ? '1' : '0';
         }
       }
@@ -544,23 +701,24 @@ for bitstring, count in sorted(counts.items()):
       idealCounts,
       noisyCounts,
       physicalFidelity,
-      jobId: `job-c${Math.random().toString(36).substring(2, 9)}-qpu`
+      jobId: `sim_${dev.name}_${Date.now()}`,
+      executionMode: 'CLIENT_SIMULATED_PHYSICAL_NOISE'
     };
 
     if (this.jobStatusEl) {
       this.jobStatusEl.className = 'job-status-banner status-completed';
       this.jobStatusEl.innerHTML = `
-        <span class="status-check">✓</span>
+        <span class="status-check">ℹ️</span>
         <div>
-          <strong>Physical Execution Completed! (Job ID: ${this.lastJobResults.jobId})</strong>
-          <p>1,024 physical shots retrieved from ${dev.name}. Hardware fidelity: <strong>${(physicalFidelity * 100).toFixed(1)}%</strong>.</p>
+          <strong>Offline Hardware Simulation Completed (Job ID: ${this.lastJobResults.jobId})</strong>
+          <p>1,024 shots sampled locally using calibrated physical noise parameters ($T_1$, $T_2$, CNOT & readout error). Backend server is offline or unreachable.</p>
         </div>
       `;
     }
 
     if (this.runJobBtn) {
       this.runJobBtn.disabled = false;
-      this.runJobBtn.innerHTML = '⚡ Re-Run on Physical QPU';
+      this.runJobBtn.innerHTML = '⚡ Re-Run Simulation';
     }
 
     this.isJobRunning = false;
@@ -569,14 +727,23 @@ for bitstring, count in sorted(counts.items()):
 
   renderHardwareResults() {
     if (!this.resultsContainer || !this.lastJobResults) return;
+    this.resultsContainer.style.display = 'block';
     const r = this.lastJobResults;
     const allStates = Object.keys(r.idealCounts).sort();
+
+    const isPhysical = (r.executionMode === 'PHYSICAL_HARDWARE');
+    const modeBadge = isPhysical
+      ? `<span style="background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold;">⚛️ PHYSICAL HARDWARE READOUT</span>`
+      : `<span style="background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold;">🔬 SIMULATED PHYSICAL NOISE</span>`;
 
     let html = `
       <div class="results-header-row">
         <div>
-          <h4>Physical Hardware Readout Comparison (1024 Shots)</h4>
-          <span class="results-subtitle">Blue = Theoretical Statevector | Amber = Physical Transmon Readout (Noise + Readout Errors)</span>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <h4 style="margin:0;">Hardware Readout Comparison (${r.shots} Shots)</h4>
+            ${modeBadge}
+          </div>
+          <span class="results-subtitle">Blue = Theoretical Statevector | Amber = Physical Transmon Readout (${isPhysical ? 'Real IBM Dilution Refrigerator' : 'Calibrated Noise Model'})</span>
         </div>
         <div class="fidelity-chip">
           Fidelity: <strong>${(r.physicalFidelity * 100).toFixed(1)}%</strong>

@@ -473,12 +473,13 @@ OUTPUT SCHEMA (return ONLY this JSON, no markdown fences, no commentary):
   "reset_existing": <bool, true only if user says "make/create/build a new circuit">,
   "operations": [
     {
-      "action": "place",
+      "action": "place" | "move" | "remove",
       "gate": "<gate name>",
       "targets": [<int>],
       "controls": [<int, only for controlled gates>],
       "step": <int|null, 0-indexed column, null = auto-place at next free slot>,
       "from_step": <int|null, only for move actions>,
+      "from_qubit": <int|null, only for move actions>,
       "params": { "theta": <float, only for Rx/Ry/Rz> }
     }
   ],
@@ -702,29 +703,122 @@ function parseVoiceLocally(transcript, currentCircuit) {
   let numQubits = currentCircuit?.num_qubits || 2;
   let resetExisting = /^(?:make|create|draw|generate|build|construct|new)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)/i.test(text);
 
-  // Check move / relocation intent (e.g. "take H not from t1 to t3", "move H from t1 to t3")
-  const moveMatch = text.match(/\b(?:take|move|shift|relocate|drag)\b[\s\S]*?\b(?:from\s+)?(?:t\s*=?\s*|step\s*|col\s*)?([1-9])\s+(?:to|into)\s+(?:t\s*=?\s*|step\s*|col\s*)?([1-9])\b/i);
-  if (moveMatch) {
-    const fromCol = parseInt(moveMatch[1], 10) - 1;
-    const toCol = parseInt(moveMatch[2], 10) - 1;
-    let q = 0;
-    if (/\b(?:h\s*not|h\s*naught|h0|q0|wire\s*0|qubit\s*0)\b/i.test(text)) q = 0;
-    else {
-      const qMatch = text.match(/\b(?:qubit|wire|q|line)\s*([0-7])\b/i);
-      if (qMatch) q = parseInt(qMatch[1], 10);
+  // Number words normalization mapping for natural speech
+  const SPELLED_DIGITS = {
+    zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
+    first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7, eighth: 8
+  };
+  const normText = text.split(/\s+/).map(w => SPELLED_DIGITS[w] !== undefined ? String(SPELLED_DIGITS[w]) : w).join(' ');
+
+  // Universal movement / relocation intent
+  const isMoveIntent = /\b(?:take|move|shift|relocate|drag|transfer|slide|reposition)\b/i.test(normText) ||
+                       /\b(?:from\s+.*?to\s+.*)/i.test(normText);
+
+  if (isMoveIntent) {
+    // 1. Detect candidate gate if mentioned
+    let gate = null;
+    if (/\b(?:cnot|cx|controlled\s*not)\b/i.test(normText)) gate = 'CNOT';
+    else if (/\b(?:cz|controlled\s*z)\b/i.test(normText)) gate = 'CZ';
+    else if (/\b(?:swap|exchange)\b/i.test(normText)) gate = 'SWAP';
+    else if (/\b(?:toffoli|ccx)\b/i.test(normText)) gate = 'Toffoli';
+    else if (/\b(?:measure|measurement)\b/i.test(normText)) gate = 'MEASURE';
+    else if (/\b(?:hadamard|h\s*gate|\bh\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'H';
+    else if (/\b(?:pauli\s*x|not\s*gate|bit\s*flip|x\s*gate|\bnot\b|\bx\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'X';
+    else if (/\b(?:pauli\s*y|y\s*gate|\by\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'Y';
+    else if (/\b(?:pauli\s*z|phase\s*flip|z\s*gate|\bz\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'Z';
+    else if (/\b(?:phase\s*gate|\bs\s*gate\b|\bs\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'S';
+    else if (/\b(?:pi\s*over\s*8|t\s*gate|\bt\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'T';
+    else if (/\b(?:meter|\bm\b(?!\s*=?\s*[0-9]))/i.test(normText)) gate = 'MEASURE';
+
+    // 2. Destination step / time column (0-indexed)
+    let toCol = null;
+    const destMatch = normText.match(/\b(?:to|into|towards)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|column\s*|slot\s*|position\s*)?([1-9])\b/i) ||
+                      normText.match(/\b(?:to|into)\s+t([1-9])\b/i);
+    if (destMatch) {
+      toCol = parseInt(destMatch[1], 10) - 1;
     }
-    let gate = 'H';
-    if (/\b(?:pauli\s*x|x\s*gate|\bx\b)\b/i.test(text)) gate = 'X';
-    else if (/\b(?:pauli\s*y|y\s*gate|\by\b)\b/i.test(text)) gate = 'Y';
-    else if (/\b(?:pauli\s*z|z\s*gate|\bz\b)\b/i.test(text)) gate = 'Z';
+
+    // Relative movement (e.g. "shift forward 2 steps", "move right by 1")
+    const relForward = normText.match(/\b(?:forward|right|ahead)\s+(?:by\s+)?([1-9])\b/i);
+    const relBackward = normText.match(/\b(?:backward|left|back)\s+(?:by\s+)?([1-9])\b/i);
+
+    // 3. Source step / time column (0-indexed)
+    let fromCol = null;
+    const srcMatch = normText.match(/\b(?:from|at|source)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|column\s*|slot\s*|position\s*)?([1-9])\b/i) ||
+                     normText.match(/\b(?:t\s*=?\s*|step\s*|col\s*)([1-9])\s+(?:to|into)\b/i);
+    if (srcMatch) {
+      fromCol = parseInt(srcMatch[1], 10) - 1;
+    }
+
+    // 4. Source and target qubits
+    let fromQ = null;
+    const fromQMatch = normText.match(/\bfrom\s+(?:qubit|wire|q|line)\s*([0-7])\b/i);
+    if (fromQMatch) fromQ = parseInt(fromQMatch[1], 10);
+
+    let toQ = null;
+    const toQMatch = normText.match(/\b(?:to|into|on|onto)\s+(?:qubit|wire|q|line)\s*([0-7])\b/i) ||
+                     normText.match(/\b(?:qubit|wire|q|line)\s*([0-7])\b/i);
+    if (toQMatch) toQ = parseInt(toQMatch[1], 10);
+
+    // 5. Inspect current circuit state to dynamically resolve omitted coordinates
+    const grid = currentCircuit?.grid || [];
+    if (fromCol === null || fromQ === null || !gate) {
+      let found = false;
+      for (let q = 0; q < grid.length; q++) {
+        for (let c = 0; c < (grid[q]?.length || 0); c++) {
+          const cell = grid[q][c];
+          if (!cell) continue;
+          if (gate) {
+            const cellNorm = (cell === 'CX_CTRL' || cell === 'CX_TGT') ? 'CNOT' : cell;
+            if (cellNorm === gate || (gate === 'MEASURE' && cell === 'M')) {
+              if (fromQ === null) fromQ = q;
+              if (fromCol === null) fromCol = c;
+              found = true;
+              break;
+            }
+          } else if (fromQ === null || fromQ === q) {
+            gate = (cell === 'CX_CTRL' || cell === 'CX_TGT') ? 'CNOT' : cell;
+            if (fromQ === null) fromQ = q;
+            if (fromCol === null) fromCol = c;
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+    }
+
+    // Relative movement resolution
+    if (relForward && fromCol !== null) {
+      toCol = fromCol + parseInt(relForward[1], 10);
+    } else if (relBackward && fromCol !== null) {
+      toCol = Math.max(0, fromCol - parseInt(relBackward[1], 10));
+    }
+
+    if (toQ === null) toQ = fromQ !== null ? fromQ : 0;
+    if (toCol === null) toCol = (fromCol !== null ? fromCol : 4);
+    if (!gate) gate = 'T';
+
+    const gateDisplayName = gate === 'H' ? 'Hadamard' : (gate === 'T' ? 'T gate' : (gate === 'X' ? 'Pauli-X' : gate));
     return {
-      num_qubits: Math.max(numQubits, q + 1),
+      num_qubits: Math.max(numQubits, toQ + 1, (fromQ !== null ? fromQ + 1 : 1)),
       reset_existing: false,
       operations: [
-        { action: 'move', from_step: fromCol, step: toCol, gate, targets: [q], controls: [], params: {} }
+        {
+          action: 'move',
+          from_step: fromCol,
+          from_qubit: fromQ,
+          step: toCol,
+          gate,
+          targets: [toQ],
+          controls: [],
+          params: {}
+        }
       ],
-      confidence: 1.0,
-      clarification_needed: null
+      confidence: 0.95,
+      clarification_needed: null,
+      explanation: `Moved ${gateDisplayName} from step ${fromCol !== null ? fromCol + 1 : 'current'} to step ${toCol + 1} (t=${toCol + 1}) on qubit ${toQ}.`,
+      teaching_tip: 'Repositioning quantum gates alters the temporal ordering of unitaries applied to the statevector.'
     };
   }
 

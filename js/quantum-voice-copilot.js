@@ -725,13 +725,22 @@ class QuantumVoiceCopilot {
    * the registry ids in ananta-backend/utils/voiceIntent.js — keeping the two
    * in step is the only coupling between them.
    */
-  _buildNamedAlgorithm(id) {
+  _buildNamedAlgorithm(id, params = {}) {
     const ui = window.circuitUI;
     if (!ui) return null;
 
+    // Width and direction come from what was actually asked for; the builders
+    // have always supported both, the dispatch table just threw them away.
+    const width = Number.isInteger(params.qubits) ? Math.min(8, Math.max(1, params.qubits)) : null;
+    const inverse = params.inverse === true;
+
     const builders = {
       'bell': () => { this._buildBellVariant('phi_plus'); return 'Built a Bell pair.'; },
-      'ghz': () => { this._buildDynamicGHZ(3); return 'Built a 3-qubit GHZ state.'; },
+      'ghz': () => {
+        const n = width || 3;
+        this._buildDynamicGHZ(n);
+        return `Built a ${n}-qubit GHZ state.`;
+      },
       'w-state': () => { this._buildWState(); return 'Built a W state.'; },
       'teleportation': () => { this._buildTeleportation(); return 'Loaded the quantum teleportation protocol.'; },
       'superdense': () => { this._buildSuperdenseCoding(); return 'Loaded superdense coding.'; },
@@ -740,7 +749,11 @@ class QuantumVoiceCopilot {
       'bernstein-vazirani': () => { this._buildBernsteinVazirani(); return 'Built the Bernstein-Vazirani circuit.'; },
       'simon': () => { this._buildSimon(); return "Built Simon's algorithm."; },
       'grover': () => { this._buildGrover(); return 'Loaded Grover search.'; },
-      'qft': () => { this._buildDynamicQFT(ui.numQubits || 3, false); return `Built a ${ui.numQubits || 3}-qubit Quantum Fourier Transform.`; },
+      'qft': () => {
+        const n = width || ui.numQubits || 3;
+        this._buildDynamicQFT(n, inverse);
+        return `Built a ${n}-qubit ${inverse ? 'inverse ' : ''}Quantum Fourier Transform.`;
+      },
       'qpe': () => { this._buildQPE(); return 'Built Quantum Phase Estimation.'; },
       'adder': () => { this._buildQuantumAdder(); return 'Built the quantum adder.'; },
       'bit-flip-code': () => { this._buildBitFlipCode(); return 'Built the 3-qubit bit-flip code.'; },
@@ -790,7 +803,7 @@ class QuantumVoiceCopilot {
     // every capability in the backend registry is constructible without the
     // backend having to describe it gate by gate.
     if (plan.algorithm) {
-      const built = this._buildNamedAlgorithm(plan.algorithm);
+      const built = this._buildNamedAlgorithm(plan.algorithm, plan.params || {});
       if (built) {
         this._setActionFeedback(spoken || built, true);
         this._setDialogueAI(`${spoken || built}${tip}`);
@@ -1377,8 +1390,8 @@ class QuantumVoiceCopilot {
       if (res) return res;
     }
 
-    // 4.3b Move / Shift / Take Gate from Step X to Step Y (e.g. "take H not from t1 to t3")
-    if (/\b(?:move|take|shift|transfer|relocate|drag|change)\b/i.test(clean) || /\b(?:from\s+t?\d+\s+to\s+t?\d+)\b/i.test(clean)) {
+    // 4.3b Universal Movement & Spatial Relocation
+    if (/\b(?:move|take|shift|transfer|relocate|drag|slide|reposition|change|swap)\b/i.test(clean) || /\b(?:from\s+.*?to\s+.*)/i.test(clean)) {
       const moveRes = this._parseAndMoveGate(clean, shouldSpeak);
       if (moveRes) return moveRes;
     }
@@ -1530,14 +1543,74 @@ class QuantumVoiceCopilot {
           const targets = (op.targets && op.targets.length > 0) ? op.targets : [0];
 
           if (op.action === 'move' || op.from_step !== undefined) {
-            const fromStep = op.from_step !== undefined ? op.from_step : 0;
-            const toStep = (op.step !== undefined && op.step !== null) ? op.step : 2;
-            for (const targetQ of targets) {
-              while (ui && ui.numQubits <= targetQ) ui.addQubit();
-              if (ui && ui.moveGate) {
-                ui.moveGate(targetQ, fromStep, targetQ, toStep);
+            let fromStep = (op.from_step !== undefined && op.from_step !== null) ? op.from_step : null;
+            let toStep = (op.step !== undefined && op.step !== null) ? op.step : 4;
+            let fromQ = (op.from_qubit !== undefined && op.from_qubit !== null) ? op.from_qubit : null;
+            let toQ = (targets[0] !== undefined) ? targets[0] : 0;
+            const rawGate = op.gate === 'MEASURE' ? 'M' : op.gate;
+
+            // Handle stepper / playhead movement
+            if (rawGate === 'playhead' || rawGate === 'stepper') {
+              if (ui && ui.seekStep) {
+                ui.seekStep(toStep + 1);
                 placed++;
+                continue;
               }
+            }
+
+            // Handle cryostat temperature movement
+            if (rawGate === 'temperature') {
+              if (window.cryoTwin && op.params && op.params.value !== undefined) {
+                window.cryoTwin.temperatureMK = op.params.value;
+                const sl = document.getElementById('cryo-temp-slider');
+                if (sl) sl.value = op.params.value;
+                if (window.cryoTwin._updateDisplay) window.cryoTwin._updateDisplay();
+                placed++;
+                continue;
+              }
+            }
+
+            // Search live circuit if source coordinate is omitted
+            if (fromStep === null || fromQ === null) {
+              for (let q = 0; q < (ui ? ui.numQubits : 0); q++) {
+                for (let c = 0; c < (ui ? ui.numCols : 0); c++) {
+                  const cell = ui.grid[q] ? ui.grid[q][c] : null;
+                  if (!cell) continue;
+                  if (rawGate) {
+                    const normCell = (cell === 'CX_CTRL' || cell === 'CX_TGT') ? 'CNOT' : cell;
+                    if (normCell === rawGate || (rawGate === 'M' && cell === 'M')) {
+                      if (fromQ === null) fromQ = q;
+                      if (fromStep === null) fromStep = c;
+                      break;
+                    }
+                  } else if (fromQ === null || fromQ === q) {
+                    if (fromQ === null) fromQ = q;
+                    if (fromStep === null) fromStep = c;
+                    break;
+                  }
+                }
+                if (fromStep !== null && fromQ !== null) break;
+              }
+            }
+
+            if (fromQ === null) fromQ = 0;
+            if (toQ === null) toQ = fromQ;
+            if (fromStep === null) fromStep = 0;
+
+            while (ui && ui.numQubits <= Math.max(fromQ, toQ) && ui.numQubits < 8) ui.addQubit();
+
+            let moved = false;
+            if (ui && ui.moveGate) {
+              moved = ui.moveGate(fromQ, fromStep, toQ, toStep);
+            }
+
+            // If gate did not exist to move, place it at the requested destination
+            if (!moved && ui && ui.placeGate) {
+              const placeGateName = rawGate || 'T';
+              ui.placeGate(placeGateName, toQ, toStep);
+              placed++;
+            } else if (moved) {
+              placed++;
             }
           } else if (op.gate === 'CNOT' || op.gate === 'CX') {
             const ctrl = (op.controls && op.controls.length > 0) ? op.controls[0] : 0;
@@ -2261,78 +2334,172 @@ class QuantumVoiceCopilot {
   // -------------------------------------------------------------
   // Freeform Gate Placement & Helper Parsers
   // -------------------------------------------------------------
+  // -------------------------------------------------------------
+  // Universal Natural Spatial Movement & Relocation Controller
+  // -------------------------------------------------------------
   _parseAndMoveGate(text, shouldSpeak = true) {
     const ui = window.circuitUI;
     if (!ui) return null;
 
-    // Matches: "from t1 to t3", "from step 1 to step 3", "from 1 to 3", "from col 1 to col 3"
-    const fromToMatch = text.match(/\bfrom\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|slot\s*)?([1-9])\s+(?:to|into)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|slot\s*)?([1-9])\b/i);
-    const toMatch = text.match(/\b(?:to|into)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|slot\s*)([1-9])\b/i);
+    const SPELLED_DIGITS = {
+      zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
+      first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7, eighth: 8
+    };
+    const norm = text.split(/\s+/).map(w => SPELLED_DIGITS[w.toLowerCase()] !== undefined ? String(SPELLED_DIGITS[w.toLowerCase()]) : w).join(' ');
 
-    let fromCol = -1;
-    let toCol = -1;
-
-    if (fromToMatch) {
-      fromCol = parseInt(fromToMatch[1], 10) - 1;
-      toCol = parseInt(fromToMatch[2], 10) - 1;
-    } else if (toMatch) {
-      toCol = parseInt(toMatch[1], 10) - 1;
-    }
-
-    // Determine target qubit: "H not" / "H naught" / "H0" -> Qubit 0
-    let q = 0;
-    if (/\b(?:h\s*not|h\s*naught|h\s*zero|h0|x\s*not|x\s*naught|x0)\b/i.test(text)) {
-      q = 0;
-    } else {
-      q = this._extractQubit(text);
-    }
-
-    // If fromCol is unknown, search for the gate or first occupied slot on wire q
-    const targetGate = this._matchSingleGate(text);
-    if (fromCol === -1) {
-      for (let c = 0; c < (ui.numCols || 16); c++) {
-        const existing = ui.grid[q] ? ui.grid[q][c] : null;
-        if (existing) {
-          if (!targetGate || existing === targetGate) {
-            fromCol = c;
-            break;
-          }
-        }
+    // 1. Playhead / Stepper Movement ("move playhead to step 4", "move to time 3")
+    if (/\b(?:playhead|timeline|stepper|time\s*machine)\b/i.test(norm) || /^(?:move|shift|go|jump)\s+(?:to|into)\s+(?:t\s*=?\s*|step\s*|col\s*)?([1-9])\b/i.test(norm)) {
+      const stepMatch = norm.match(/\b(?:to|into|at)\s+(?:t\s*=?\s*|step\s*|time\s*step\s*|col\s*)?([1-9])\b/i);
+      if (stepMatch && ui.seekStep) {
+        const targetStep = parseInt(stepMatch[1], 10);
+        ui.seekStep(targetStep);
+        const msg = `Moved quantum timeline playhead to step ${targetStep} (t=${targetStep}).`;
+        this._setActionFeedback(msg);
+        this._playChime('success');
+        if (shouldSpeak) this._speak(msg);
+        return `SeekStep(${targetStep})`;
       }
     }
 
-    if (fromCol === -1) fromCol = 0; // Default to step 1
-    if (toCol === -1) toCol = 2; // Default to step 3
-
-    const existingGate = (ui.grid[q] && ui.grid[q][fromCol]) ? ui.grid[q][fromCol] : null;
-    const requestedGate = targetGate || existingGate || 'H';
-
-    if (!existingGate) {
-      ui.placeGate(requestedGate, q, toCol);
-      this._setActionFeedback(`Placed ${requestedGate} on Qubit ${q} at t=${toCol + 1}.`);
-      this._playChime('success');
-      if (shouldSpeak) this._speak(`Placed ${requestedGate} on qubit ${q} at time step ${toCol + 1}.`);
-      return `Place(${requestedGate}, q${q}, t${toCol+1})`;
+    // 2. Cryostat Temperature Movement ("move temperature to 20 mK", "shift temp to 10")
+    if (/\b(?:temp|temperature|milli\s*kelvin|mk|cryostat)\b/i.test(norm)) {
+      const tempMatch = norm.match(/\b(?:to|at|set\s*to)?\s*([0-9.]+)\s*(?:mk|milli\s*kelvin|k)?\b/i);
+      if (tempMatch && window.cryoTwin) {
+        const val = parseFloat(tempMatch[1]);
+        window.cryoTwin.temperatureMK = val;
+        const sl = document.getElementById('cryo-temp-slider');
+        if (sl) sl.value = val;
+        if (window.cryoTwin._updateDisplay) window.cryoTwin._updateDisplay();
+        if (window.cryoTwin._renderThermalNoise) window.cryoTwin._renderThermalNoise();
+        const msg = `Adjusted Cryostat dilution temperature to ${val} mK.`;
+        this._setActionFeedback(msg);
+        this._playChime('success');
+        if (shouldSpeak) this._speak(msg);
+        return `SetTemperature(${val}mK)`;
+      }
     }
 
-    ui.moveGate(q, fromCol, q, toCol);
+    // 3. Detect candidate gate
+    let targetGate = this._matchSingleGate(norm);
+    if (!targetGate) {
+      if (/\b(?:cnot|cx|controlled\s*not)\b/i.test(norm)) targetGate = 'CNOT';
+      else if (/\b(?:cz|controlled\s*z)\b/i.test(norm)) targetGate = 'CZ';
+      else if (/\b(?:swap|exchange)\b/i.test(norm)) targetGate = 'SWAP';
+      else if (/\b(?:toffoli|ccx)\b/i.test(norm)) targetGate = 'Toffoli';
+    }
+
+    // 4. Destination step / time column (0-indexed)
+    let toCol = -1;
+    const toMatch = norm.match(/\b(?:to|into|towards)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|column\s*|slot\s*|position\s*)?([1-9])\b/i) ||
+                    norm.match(/\b(?:to|into)\s+t([1-9])\b/i);
+    if (toMatch) {
+      toCol = parseInt(toMatch[1], 10) - 1;
+    }
+
+    // Relative movement (e.g. "shift forward 2 steps", "move right by 1")
+    const relForward = norm.match(/\b(?:forward|right|ahead)\s+(?:by\s+)?([1-9])\b/i);
+    const relBackward = norm.match(/\b(?:backward|left|back)\s+(?:by\s+)?([1-9])\b/i);
+
+    // 5. Source step / time column (0-indexed)
+    let fromCol = -1;
+    const fromMatch = norm.match(/\b(?:from|at|source)\s+(?:t\s*=?\s*|time\s*step\s*|step\s*|col\s*|column\s*|slot\s*|position\s*)?([1-9])\b/i) ||
+                      norm.match(/\b(?:t\s*=?\s*|step\s*|col\s*)([1-9])\s+(?:to|into)\b/i);
+    if (fromMatch) {
+      fromCol = parseInt(fromMatch[1], 10) - 1;
+    }
+
+    // 6. Qubit wires (source fromQ and destination toQ)
+    let fromQ = null;
+    const fromQMatch = norm.match(/\bfrom\s+(?:qubit|wire|q|line)\s*([0-7])\b/i);
+    if (fromQMatch) fromQ = parseInt(fromQMatch[1], 10);
+
+    let toQ = null;
+    const toQMatch = norm.match(/\b(?:to|into|on|onto)\s+(?:qubit|wire|q|line)\s*([0-7])\b/i) ||
+                     norm.match(/\b(?:qubit|wire|q|line)\s*([0-7])\b/i);
+    if (toQMatch) toQ = parseInt(toQMatch[1], 10);
+
+    // 7. Dynamic search on live circuit grid to resolve omitted coordinates
+    let gateFoundOnGrid = false;
+    if (fromCol === -1 || fromQ === null || !targetGate) {
+      for (let q = 0; q < (ui.numQubits || 3); q++) {
+        for (let c = 0; c < (ui.numCols || 6); c++) {
+          const cell = ui.grid[q] ? ui.grid[q][c] : null;
+          if (!cell) continue;
+          if (targetGate) {
+            const normCell = (cell === 'CX_CTRL' || cell === 'CX_TGT') ? 'CNOT' : cell;
+            if (normCell === targetGate || (targetGate === 'M' && cell === 'M')) {
+              if (fromQ === null) fromQ = q;
+              if (fromCol === -1) fromCol = c;
+              gateFoundOnGrid = true;
+              break;
+            }
+          } else if (fromQ === null || fromQ === q) {
+            targetGate = (cell === 'CX_CTRL' || cell === 'CX_TGT') ? 'CNOT' : cell;
+            if (fromQ === null) fromQ = q;
+            if (fromCol === -1) fromCol = c;
+            gateFoundOnGrid = true;
+            break;
+          }
+        }
+        if (gateFoundOnGrid && fromCol !== -1 && fromQ !== null) break;
+      }
+    } else {
+      // Check if source slot actually has the gate
+      const cell = ui.grid[fromQ] ? ui.grid[fromQ][fromCol] : null;
+      if (cell) {
+        const normCell = (cell === 'CX_CTRL' || cell === 'CX_TGT') ? 'CNOT' : cell;
+        if (!targetGate || normCell === targetGate) gateFoundOnGrid = true;
+      }
+    }
+
+    // Relative movement resolution
+    if (relForward && fromCol !== -1) {
+      toCol = fromCol + parseInt(relForward[1], 10);
+    } else if (relBackward && fromCol !== -1) {
+      toCol = Math.max(0, fromCol - parseInt(relBackward[1], 10));
+    }
+
+    if (fromQ === null) fromQ = 0;
+    if (toQ === null) toQ = fromQ;
+    if (fromCol === -1) fromCol = 0;
+    if (toCol === -1) toCol = (fromCol !== -1 ? fromCol : 4);
+    toCol = Math.max(0, Math.min((ui.numCols || 6) - 1, toCol));
+
+    const requestedGate = targetGate || 'T';
+
+    while (ui.numQubits <= Math.max(fromQ, toQ) && ui.numQubits < 8) ui.addQubit();
+
+    // If a specific gate was requested but is not present on the board to move:
+    // Place it directly at the requested destination slot!
+    if (targetGate && !gateFoundOnGrid) {
+      ui.placeGate(requestedGate, toQ, toCol);
+      const gateName = requestedGate === 'H' ? 'Hadamard' : (requestedGate === 'X' ? 'Pauli-X' : requestedGate);
+      this._setActionFeedback(`Placed ${gateName} on Qubit ${toQ} at t=${toCol + 1}.`);
+      this._playChime('success');
+      if (shouldSpeak) this._speak(`Placed ${gateName} on qubit ${toQ} at time step ${toCol + 1}.`);
+      return `Place(${requestedGate}, q${toQ}, t${toCol+1})`;
+    }
+
+    // Otherwise move existing gate
+    ui.moveGate(fromQ, fromCol, toQ, toCol);
     const gateName = requestedGate === 'H' ? 'Hadamard' : (requestedGate === 'X' ? 'Pauli-X' : requestedGate);
-    this._setActionFeedback(`Moved ${gateName} on Qubit ${q} from t=${fromCol + 1} to t=${toCol + 1}.`);
+    const locDesc = fromQ !== toQ ? `from Q${fromQ}, t=${fromCol + 1} to Q${toQ}, t=${toCol + 1}` : `on Qubit ${toQ} from t=${fromCol + 1} to t=${toCol + 1}`;
+    this._setActionFeedback(`Moved ${gateName} ${locDesc}.`);
     this._playChime('success');
     if (shouldSpeak) {
-      this._speak(`Moved ${gateName} gate on qubit ${q} from time step ${fromCol + 1} to time step ${toCol + 1}.`);
+      this._speak(`Moved ${gateName} ${locDesc.replace(/t=/g, 'time step ')}.`);
     }
-    return `Move(q${q}, t${fromCol+1} ➔ t${toCol+1})`;
+    return `Move(${requestedGate}, ${locDesc})`;
   }
 
   _matchSingleGate(text) {
-    if (/\b(hadamard|h\s*gate|letter\s*h|\bh\b)\b/i.test(text)) return 'H';
-    if (/\b(pauli\s*x|not\s*gate|bit\s*flip|x\s*gate|\bnot\b|\bx\b)\b/i.test(text)) return 'X';
-    if (/\b(pauli\s*y|y\s*gate|\by\b)\b/i.test(text)) return 'Y';
-    if (/\b(pauli\s*z|phase\s*flip|z\s*gate|\bz\b)\b/i.test(text)) return 'Z';
-    if (/\b(phase\s*gate|phase|\bs\s*gate\b|\bs\b)\b/i.test(text)) return 'S';
-    if (/\b(pi\s*over\s*8|t\s*gate|\bt\b)\b/i.test(text)) return 'T';
-    if (/\b(measure|measurement|meter|\bm\b)\b/i.test(text)) return 'M';
+    if (/\b(hadamard|h\s*gate|letter\s*h|\bh\b(?!\s*=?\s*[0-9]))/i.test(text)) return 'H';
+    if (/\b(pauli\s*x|not\s*gate|bit\s*flip|x\s*gate|\bnot\b|\bx\b(?!\s*=?\s*[0-9]))/i.test(text)) return 'X';
+    if (/\b(pauli\s*y|y\s*gate|\by\b(?!\s*=?\s*[0-9]))/i.test(text)) return 'Y';
+    if (/\b(pauli\s*z|phase\s*flip|z\s*gate|\bz\b(?!\s*=?\s*[0-9]))/i.test(text)) return 'Z';
+    if (/\b(phase\s*gate|phase|\bs\s*gate\b|\bs\b(?!\s*=?\s*[0-9]))/i.test(text)) return 'S';
+    if (/\b(pi\s*over\s*8|t\s*gate|\bt\b(?!\s*=?\s*[0-9]))/i.test(text)) return 'T';
+    if (/\b(measure|measurement|meter|\bm\b(?!\s*=?\s*[0-9]))/i.test(text)) return 'M';
     return null;
   }
 

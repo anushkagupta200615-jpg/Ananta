@@ -32,13 +32,16 @@ const CAPABILITIES = [
   { id: 'bernstein-vazirani', kind: 'algorithm', terms: ['bernstein vazirani', 'hidden string', 'bernstein', 'vazirani'] },
   { id: 'simon', kind: 'algorithm', terms: ['simon algorithm', 'period finding', 'simon'] },
   { id: 'grover', kind: 'algorithm', terms: ['grover search', 'grover algorithm', 'quantum search', 'database search', 'grover'] },
-  { id: 'qft', kind: 'algorithm', terms: ['quantum fourier transform', 'fourier transform', 'qft'] },
+  { id: 'qft', kind: 'algorithm', terms: ['quantum fourier transform', 'fourier transform', 'qft', 'iqft', 'inverse qft', 'inverse quantum fourier transform'] },
   { id: 'qpe', kind: 'algorithm', terms: ['phase estimation', 'quantum phase estimation', 'qpe'] },
   { id: 'adder', kind: 'algorithm', terms: ['quantum adder', 'half adder', 'quantum arithmetic', 'adder'] },
 
   // --- Error correction & diagnostics ---
-  { id: 'bit-flip-code', kind: 'algorithm', terms: ['bit flip code', 'repetition code', 'error correction'] },
-  { id: 'phase-flip-code', kind: 'algorithm', terms: ['phase flip code'] },
+  // "bit flip" alone is the Pauli-X gate, so the error-correcting code lists the
+  // longer forms people actually say for it. Longest-span matching then keeps
+  // "bit flip error" resolving to the code rather than to a single X gate.
+  { id: 'bit-flip-code', kind: 'algorithm', terms: ['bit flip code', 'repetition code', 'error correction', 'bit flip error correction', 'bit flip error', 'bit flip correction', 'three qubit bit flip code'] },
+  { id: 'phase-flip-code', kind: 'algorithm', terms: ['phase flip code', 'phase flip error correction', 'phase flip error', 'phase flip correction'] },
   { id: 'swap-test', kind: 'algorithm', terms: ['swap test', 'state overlap', 'fidelity test'] },
   { id: 'qrng', kind: 'algorithm', terms: ['random number generator', 'quantum random number', 'coin flip', 'qrng'] },
   { id: 'vqe', kind: 'algorithm', terms: ['variational quantum eigensolver', 'vqe ansatz', 'ansatz', 'vqe'] },
