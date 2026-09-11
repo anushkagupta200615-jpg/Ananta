@@ -1541,17 +1541,32 @@ class CircuitUI {
       }
     }
 
-    // Build 8x8 Table
-    const basisLabels = ['000', '001', '010', '011', '100', '101', '110', '111'];
+    // Build an N x N table where N = 2^numQubits - was hardcoded to a fixed
+    // 8x8 (3-qubit) table, so uData.matrix[i][j] for i/j >= 4 was undefined
+    // and .abs() on it crashed the instant the register size changed (e.g.
+    // Auto-Fix removing an idle qubit). computeTotalUnitary already returns
+    // the real N x N matrix for any register size; this just has to render
+    // whatever size it actually gets instead of assuming 3 qubits.
+    const N = uData.matrix.length;
+    const bits = Math.round(Math.log2(N));
+    const basisLabels = Array.from({ length: N }, (_, i) => i.toString(2).padStart(bits, '0'));
+    // A full N x N table stops being readable well before 8 qubits (256x256
+    // cells) - cap the rendered grid and say so rather than freezing the tab.
+    const MAX_RENDERED_DIM = 32;
+    if (N > MAX_RENDERED_DIM) {
+      gridEl.innerHTML = `<div class="unitary-too-large-note">U is ${N}×${N} (${bits} qubits) - too large to render as a table. Use the LaTeX/NumPy export above to inspect it directly.</div>`;
+      return;
+    }
+
     let html = '<table class="unitary-table"><thead><tr><th>⟨out|in⟩</th>';
-    for (let j = 0; j < 8; j++) {
+    for (let j = 0; j < N; j++) {
       html += `<th>|${basisLabels[j]}⟩</th>`;
     }
     html += '</tr></thead><tbody>';
 
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < N; i++) {
       html += `<tr><th>⟨${basisLabels[i]}|</th>`;
-      for (let j = 0; j < 8; j++) {
+      for (let j = 0; j < N; j++) {
         const c = uData.matrix[i][j];
         const mag = c.abs();
         let cls = 'u-cell-zero';

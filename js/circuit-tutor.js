@@ -1029,12 +1029,69 @@ class CircuitTutor {
   /**
    * Automatically repairs circuit pathology directly on canvas.
    */
+  /**
+   * The AI backend's JSON schema for errors (title/location/explanation/
+   * suggestedFix - see api/gemini.js's circuit-tutor prompt) has never
+   * included the structured fields (errorType, qubit, cols, controls,
+   * grounded) that autoFixError needs to mechanically edit the grid - those
+   * only ever existed on detectDeterministicErrors()'s own output. While the
+   * AI backend was silently broken (see the aiProvider.js fix), every audit
+   * fell back to that local detector, so Auto-Fix always happened to have
+   * the rich data by accident. Now that the AI genuinely answers, its errors
+   * lack qubit/cols entirely - autoFixError defaulted every fix to q[0], or
+   * for idle_qubit (no title-fallback at all) silently did nothing.
+   *
+   * Ground truth for the mechanical repair should never depend on which
+   * provider happened to answer, so this re-runs the same deterministic,
+   * zero-hallucination analyzer fresh and matches the AI's prose error back
+   * to the structured finding it was grounded in (the AI is instructed to
+   * ground itself in exactly this data, so their wire/column references
+   * agree even when the phrasing doesn't match verbatim).
+   */
+  resolveStructuredError(err, grid) {
+    if (!err) return null;
+    if (err.errorType) return err; // already structured (local detector)
+
+    const detErrors = this.detectDeterministicErrors(grid);
+    if (!detErrors.length) return null;
+
+    const numsIn = (s) => (String(s || '').match(/\d+/g) || []).map(Number);
+    const errQubits = new Set(numsIn((err.location || '') + ' ' + (err.title || '')).filter((n) => n < (grid ? grid.length : 8)));
+
+    const CATEGORY_HINTS = {
+      premature_measurement: /measur/i,
+      self_inverse: /self.?cancel|redundan/i,
+      ineffective_cnot: /ineffective|toffoli|cnot/i,
+      idle_qubit: /idle/i,
+      high_depth: /depth/i
+    };
+    const category = Object.keys(CATEGORY_HINTS).find((k) => CATEGORY_HINTS[k].test(err.title || '') || CATEGORY_HINTS[k].test(err.explanation || ''));
+
+    let best = null, bestScore = -1;
+    for (const det of detErrors) {
+      let score = det.errorType === category ? 5 : 0;
+      const detQubits = new Set(numsIn(det.location));
+      for (const q of errQubits) if (detQubits.has(q)) score += 1;
+      if (score > bestScore) { bestScore = score; best = det; }
+    }
+    // Require at least a category match, or a qubit match if category
+    // couldn't be inferred - a bare fallback to "whatever sorted first"
+    // would silently fix the wrong thing.
+    return bestScore > 0 ? best : null;
+  }
+
   autoFixError(errIndex) {
-    const err = this.currentErrors && this.currentErrors[errIndex];
-    if (!err) return;
+    const rawErr = this.currentErrors && this.currentErrors[errIndex];
+    if (!rawErr) return;
 
     const ui = this.circuitUI || window.circuitUI;
     if (!ui || !ui.grid) return;
+
+    const err = this.resolveStructuredError(rawErr, ui.grid) || rawErr;
+    if (!err.errorType) {
+      this.showAutoFixFeedback('Could not automatically locate this finding on the current grid - the circuit may have changed since this audit ran. Try re-analyzing.');
+      return;
+    }
 
     let fixed = false;
     let feedbackMsg = '';
