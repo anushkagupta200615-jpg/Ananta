@@ -296,35 +296,240 @@ class QuantumCircuitEngine {
   }
 
   // Calculate Von Neumann Entanglement Entropy for bipartite split q0 vs (q1, q2)
-  getEntanglementEntropy() {
-    // Reduced density matrix for qubit 0 (2x2 matrix)
+  // Reduced 2x2 density matrix for ANY single qubit vs the rest of the
+  // register, for ANY register size (2-8 qubits) - generalizes the old
+  // qubit-0-only version so entanglement diagnostics aren't stuck to a
+  // fixed 3-qubit layout.
+  getSingleQubitReducedState(qubitIndex) {
+    const bitPos = this.numQubits - 1 - qubitIndex;
+    const bitMask = 1 << bitPos;
     let rho00 = 0, rho01_re = 0, rho01_im = 0, rho11 = 0;
     for (let i = 0; i < this.numStates; i++) {
-      const bit0 = (i >> (this.numQubits - 1)) & 1;
-      const magSq = this.state[i].absSq();
-      if (bit0 === 0) {
-        rho00 += magSq;
-        // Off-diagonal with i ^ 4 (qubit 0 flipped)
-        const j = i ^ (1 << (this.numQubits - 1));
+      if ((i & bitMask) === 0) {
+        const j = i | bitMask;
         const ai = this.state[i];
         const aj = this.state[j];
+        rho00 += ai.absSq();
+        rho11 += aj.absSq();
         rho01_re += (ai.re * aj.re + ai.im * aj.im);
         rho01_im += (ai.im * aj.re - ai.re * aj.im);
-      } else {
-        rho11 += magSq;
       }
     }
-    // Eigenvalues of 2x2 Hermitian matrix
+    return { rho00, rho11, rho01_re, rho01_im };
+  }
+
+  // Purity Tr(rho^2) and Von Neumann entropy of a 2x2 Hermitian density
+  // matrix given by its real diagonal entries and complex off-diagonal.
+  static purityAndEntropy2x2(rho00, rho11, rho01_re, rho01_im) {
+    const offSq = rho01_re * rho01_re + rho01_im * rho01_im;
+    const purity = Math.min(1, Math.max(0, rho00 * rho00 + rho11 * rho11 + 2 * offSq));
     const tr = rho00 + rho11;
-    const det = (rho00 * rho11) - (rho01_re * rho01_re + rho01_im * rho01_im);
+    const det = rho00 * rho11 - offSq;
     const disc = Math.max(0, (tr * tr) / 4 - det);
     const l1 = Math.max(0, tr / 2 + Math.sqrt(disc));
     const l2 = Math.max(0, tr / 2 - Math.sqrt(disc));
-
     let entropy = 0;
     if (l1 > 0.0001) entropy -= l1 * Math.log2(l1);
     if (l2 > 0.0001) entropy -= l2 * Math.log2(l2);
-    return Math.max(0, parseFloat(entropy.toFixed(3)));
+    const schmidtRank = (l1 > 0.0005 ? 1 : 0) + (l2 > 0.0005 ? 1 : 0);
+    return { purity, entropy: Math.max(0, entropy), schmidtRank: Math.max(1, schmidtRank) };
+  }
+
+  // Entanglement entropy of a single qubit vs the rest of the register.
+  // qubitIndex defaults to 0 for backward compatibility with existing callers.
+  getEntanglementEntropy(qubitIndex = 0) {
+    const { rho00, rho11, rho01_re, rho01_im } = this.getSingleQubitReducedState(qubitIndex);
+    const { entropy } = QuantumCircuitEngine.purityAndEntropy2x2(rho00, rho11, rho01_re, rho01_im);
+    return parseFloat(entropy.toFixed(3));
+  }
+
+  // General partial trace producing the 4x4 reduced density matrix for
+  // ANY two qubits (qA, qB) out of an N-qubit register, tracing out every
+  // other qubit. Works for any numQubits (2-8), not just a fixed triple.
+  getPairwiseReducedState(qA, qB) {
+    const bitA = this.numQubits - 1 - qA;
+    const bitB = this.numQubits - 1 - qB;
+    const maskAB = (1 << bitA) | (1 << bitB);
+    const rho = Array.from({ length: 4 }, () => [new Complex(0, 0), new Complex(0, 0), new Complex(0, 0), new Complex(0, 0)]);
+
+    // Group amplitudes by the state of the "environment" qubits (everything
+    // except qA, qB) so we only pair up amplitudes that agree on those bits.
+    const groups = new Map();
+    for (let i = 0; i < this.numStates; i++) {
+      const env = i & ~maskAB;
+      const rIdx = (((i >> bitA) & 1) << 1) | ((i >> bitB) & 1);
+      if (!groups.has(env)) groups.set(env, []);
+      groups.get(env).push({ rIdx, amp: this.state[i] });
+    }
+    for (const entries of groups.values()) {
+      for (const { rIdx: ri, amp: ai } of entries) {
+        for (const { rIdx: rj, amp: aj } of entries) {
+          rho[ri][rj] = rho[ri][rj].add(ai.mul(aj.conj()));
+        }
+      }
+    }
+    return rho;
+  }
+
+  // Real symmetric Jacobi eigenvalue algorithm (classic cyclic Jacobi
+  // rotations). Returns {values, vectors} for an n x n real symmetric
+  // matrix. Unlike polynomial root-finding, this is numerically robust
+  // even when eigenvalues repeat - which happens constantly for the
+  // reduced density matrices of real quantum states (product, Bell, GHZ,
+  // W states are all degenerate by symmetry), so it's the right general
+  // tool here rather than a per-case workaround.
+  static jacobiEigenSymmetric(matrix, n, sweeps = 60) {
+    const A = matrix.map((row) => row.slice());
+    const V = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)));
+    for (let sweep = 0; sweep < sweeps; sweep++) {
+      let off = 0;
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) off += A[i][j] * A[i][j];
+      if (off < 1e-22) break;
+      for (let p = 0; p < n; p++) {
+        for (let q = p + 1; q < n; q++) {
+          if (Math.abs(A[p][q]) < 1e-18) continue;
+          const theta = (A[q][q] - A[p][p]) / (2 * A[p][q]);
+          const sign = theta >= 0 ? 1 : -1;
+          const t = sign / (Math.abs(theta) + Math.sqrt(theta * theta + 1));
+          const c = 1 / Math.sqrt(t * t + 1);
+          const s = t * c;
+          for (let k = 0; k < n; k++) {
+            const akp = A[k][p], akq = A[k][q];
+            A[k][p] = c * akp - s * akq;
+            A[k][q] = s * akp + c * akq;
+          }
+          for (let k = 0; k < n; k++) {
+            const apk = A[p][k], aqk = A[q][k];
+            A[p][k] = c * apk - s * aqk;
+            A[q][k] = s * apk + c * aqk;
+          }
+          for (let k = 0; k < n; k++) {
+            const vkp = V[k][p], vkq = V[k][q];
+            V[k][p] = c * vkp - s * vkq;
+            V[k][q] = s * vkp + c * vkq;
+          }
+        }
+      }
+    }
+    const values = Array.from({ length: n }, (_, i) => A[i][i]);
+    return { values, vectors: V };
+  }
+
+  // Maps a 4x4 complex Hermitian matrix to its 8x8 real-symmetric "doubled"
+  // representation [[Hr,-Hi],[Hi,Hr]] - a standard trick that lets a real
+  // symmetric eigensolver handle complex Hermitian matrices exactly (each
+  // eigenvalue of H appears twice in the doubled matrix).
+  static doubleHermitian(H) {
+    const n = H.length;
+    const M = Array.from({ length: 2 * n }, () => Array(2 * n).fill(0));
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        M[i][j] = H[i][j].re;
+        M[i][j + n] = -H[i][j].im;
+        M[i + n][j] = H[i][j].im;
+        M[i + n][j + n] = H[i][j].re;
+      }
+    }
+    return M;
+  }
+
+  // Applies a real scalar function (e.g. Math.sqrt) to the eigenvalues of a
+  // 4x4 complex Hermitian PSD matrix H, returning f(H) as a complex 4x4
+  // matrix - via double-to-real Jacobi diagonalization, applying f to the
+  // (doubled, real, non-negative) eigenvalues, and reconstructing.
+  static hermitianMatrixFunction(H, f) {
+    const n = H.length;
+    const M = QuantumCircuitEngine.doubleHermitian(H);
+    const { values, vectors } = QuantumCircuitEngine.jacobiEigenSymmetric(M, 2 * n);
+    const fVals = values.map((v) => f(Math.max(0, v)));
+    const size = 2 * n;
+    const result = Array.from({ length: size }, () => Array(size).fill(0));
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        let s = 0;
+        for (let k = 0; k < size; k++) s += vectors[i][k] * fVals[k] * vectors[j][k];
+        result[i][j] = s;
+      }
+    }
+    // Undouble: top-left block is the real part, bottom-left is the imaginary part.
+    const out = Array.from({ length: n }, () => Array(n));
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        out[i][j] = new Complex(result[i][j], result[i + n][j]);
+      }
+    }
+    return out;
+  }
+
+  // Real, non-negative eigenvalues (sorted descending) of a 4x4 complex
+  // Hermitian matrix, via the same doubling + Jacobi diagonalization.
+  static hermitianEigenvalues(H) {
+    const n = H.length;
+    const M = QuantumCircuitEngine.doubleHermitian(H);
+    const { values } = QuantumCircuitEngine.jacobiEigenSymmetric(M, 2 * n);
+    const sorted = values.slice().sort((a, b) => b - a);
+    // Doubling duplicates each real eigenvalue exactly once; take every other entry.
+    const out = [];
+    for (let i = 0; i < sorted.length; i += 2) out.push(Math.max(0, sorted[i]));
+    return out;
+  }
+
+  // General Wootters concurrence for ANY 4x4 (possibly mixed) two-qubit
+  // density matrix: C = max(0, sqrt(l1)-sqrt(l2)-sqrt(l3)-sqrt(l4)) where
+  // l1>=..>=l4 are eigenvalues of T = sqrt(rho) * rho~ * sqrt(rho), rho~
+  // being the spin-flipped state under sigma_y (x) sigma_y. T is Hermitian
+  // PSD by construction, so a real-eigenvalue Jacobi solver applies exactly
+  // - this is the textbook formula for a general (possibly mixed) two-qubit
+  // state, not a shortcut tuned to any specific named circuit.
+  static concurrenceFromReducedState(rho) {
+    const Y = [
+      [new Complex(0, 0), new Complex(0, 0), new Complex(0, 0), new Complex(-1, 0)],
+      [new Complex(0, 0), new Complex(0, 0), new Complex(1, 0), new Complex(0, 0)],
+      [new Complex(0, 0), new Complex(1, 0), new Complex(0, 0), new Complex(0, 0)],
+      [new Complex(-1, 0), new Complex(0, 0), new Complex(0, 0), new Complex(0, 0)]
+    ];
+    const mul = (A, B) => {
+      const C = Array.from({ length: 4 }, () => Array(4));
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          let s = new Complex(0, 0);
+          for (let k = 0; k < 4; k++) s = s.add(A[i][k].mul(B[k][j]));
+          C[i][j] = s;
+        }
+      }
+      return C;
+    };
+    const conjMat = (A) => A.map((row) => row.map((c) => c.conj()));
+
+    const rhoStar = conjMat(rho);
+    const rhoTilde = mul(Y, mul(rhoStar, Y));
+    const sqrtRho = QuantumCircuitEngine.hermitianMatrixFunction(rho, Math.sqrt);
+    const T = mul(mul(sqrtRho, rhoTilde), sqrtRho);
+
+    const eigenvalues = QuantumCircuitEngine.hermitianEigenvalues(T);
+    const sqrts = eigenvalues.map((v) => Math.sqrt(Math.max(0, v))).sort((a, b) => b - a);
+    const concurrence = sqrts[0] - sqrts[1] - sqrts[2] - sqrts[3];
+    return Math.min(1, Math.max(0, concurrence));
+  }
+
+  // Pairwise Wootters concurrence between any two qubits (traces out the
+  // rest of the register first, then applies the general formula above).
+  getPairwiseConcurrence(qA, qB) {
+    const rho = this.getPairwiseReducedState(qA, qB);
+    return parseFloat(QuantumCircuitEngine.concurrenceFromReducedState(rho).toFixed(4));
+  }
+
+  // Headline concurrence: the strongest pairwise entanglement link found
+  // anywhere in the register. Generalizes to any qubit count instead of
+  // being hardcoded to the q0-q1 pair.
+  getConcurrence() {
+    let best = 0;
+    for (let a = 0; a < this.numQubits; a++) {
+      for (let b = a + 1; b < this.numQubits; b++) {
+        best = Math.max(best, this.getPairwiseConcurrence(a, b));
+      }
+    }
+    return best;
   }
 
   // Get Dirac Bra-Ket String formatted for live HUD
@@ -952,59 +1157,52 @@ def circuit():
 
   // 2. Comprehensive Entanglement & Purity Quantifier
   getAdvancedEntanglementMetrics() {
-    const N = this.numStates; // 8
-    let purity = 0;
-    for (let i = 0; i < N; i++) {
-      purity += Math.pow(this.state[i].absSq(), 2);
-    }
-    purity = Math.min(1, Math.max(0.125, purity));
-    const linearEntropy = (8 / 7) * (1 - purity);
+    // Real Tr(rho_q0^2) subsystem purity (not an inverse-participation-ratio
+    // over the full register, which is basis-dependent and doesn't measure
+    // entanglement at all - e.g. it wrongly reported 0.125 "purity" for a
+    // genuinely pure product state like H on every qubit).
+    const q0State = this.getSingleQubitReducedState(0);
+    const { purity, entropy: entropyQ0, schmidtRank } = QuantumCircuitEngine.purityAndEntropy2x2(
+      q0State.rho00, q0State.rho11, q0State.rho01_re, q0State.rho01_im
+    );
+    // Linear entropy of a single-qubit (dimension d=2) subsystem: d/(d-1) * (1-purity).
+    const linearEntropy = 2 * (1 - purity);
 
-    // Von Neumann Entanglement Entropy for bipartite split: qubit 0 vs (qubit 1, qubit 2)
-    const entropyQ0 = this.getEntanglementEntropy();
+    // Real Wootters concurrence, generalized to ANY register size: check
+    // every qubit pair and report the strongest pairwise entanglement link
+    // found anywhere, instead of hardcoding the q0-q1 pair.
+    const concurrence = this.getConcurrence();
 
-    // Partial trace over qubit 2 to get 4x4 reduced density matrix rho_{01}
-    const rho01 = Array.from({ length: 4 }, () => Array(4).fill(new Complex(0, 0)));
-    for (let q01_i = 0; q01_i < 4; q01_i++) {
-      for (let q01_j = 0; q01_j < 4; q01_j++) {
-        let sum = new Complex(0, 0);
-        for (let q2 = 0; q2 < 2; q2++) {
-          const idx_i = (q01_i << 1) | q2;
-          const idx_j = (q01_j << 1) | q2;
-          sum = sum.add(this.state[idx_i].mul(this.state[idx_j].conj()));
-        }
-        rho01[q01_i][q01_j] = sum;
-      }
-    }
+    // Per-qubit entanglement entropy (vs the rest of the register) for
+    // every qubit - this is what actually distinguishes a genuine N-partite
+    // GHZ-type state (every qubit highly entangled with the rest, but zero
+    // pairwise concurrence because monogamy pushes all the correlation into
+    // higher-order terms) from a W-type state (entangled AND some nonzero
+    // pairwise concurrence) or a simple bipartite pair (only 2 qubits show
+    // entropy at all), without pattern-matching specific named circuits.
+    const perQubitEntropy = Array.from({ length: this.numQubits }, (_, q) => this.getEntanglementEntropy(q));
+    const entangledQubitCount = perQubitEntropy.filter((s) => s > 0.05).length;
+    const maxEntropy = Math.max(0, ...perQubitEntropy);
 
-    // Wootters Concurrence for 2-qubit subsystem
-    const a01 = rho01[0][3].abs(); // coherence between |00> and |11>
-    let concurrence = 0;
-    if (a01 > 0.05) {
-      concurrence = Math.min(1, 2 * a01);
-    } else {
-      concurrence = Math.min(1, Math.max(0, entropyQ0));
-    }
-
-    // Classify Entanglement
     let entanglementClass = "Product State (Separable, Zero Entanglement)";
-    let schmidtRank = 1;
-
-    if (entropyQ0 > 0.85 && concurrence > 0.8) {
-      entanglementClass = "Maximally Entangled Bell Pair (|Phi+> or |Psi+>)";
-      schmidtRank = 2;
-    } else if (entropyQ0 > 0.85 && concurrence < 0.3) {
-      entanglementClass = "GHZ Tripartite Entangled Superposition";
-      schmidtRank = 2;
-    } else if (entropyQ0 > 0.1) {
+    if (entangledQubitCount === 0) {
+      entanglementClass = "Product State (Separable, Zero Entanglement)";
+    } else if (entangledQubitCount === 2) {
+      entanglementClass = concurrence > 0.8
+        ? "Maximally Entangled Bipartite Pair (Bell-Type)"
+        : "Partially Entangled Bipartite Pair";
+    } else if (entangledQubitCount >= 3 && maxEntropy > 0.85 && concurrence < 0.15) {
+      entanglementClass = `${entangledQubitCount}-Partite GHZ-Type Entanglement (Monogamy-Saturated, No Pairwise Correlations)`;
+    } else if (entangledQubitCount >= 3 && concurrence >= 0.15) {
+      entanglementClass = `${entangledQubitCount}-Partite Distributed Entanglement (W-Type, Shared Pairwise Correlations)`;
+    } else {
       entanglementClass = "Partially Entangled Quantum Subsystem";
-      schmidtRank = 2;
     }
 
     return {
       purity: parseFloat(purity.toFixed(4)),
       linearEntropy: parseFloat(linearEntropy.toFixed(4)),
-      vonNeumannEntropy: entropyQ0,
+      vonNeumannEntropy: parseFloat(entropyQ0.toFixed(3)),
       concurrence: parseFloat(concurrence.toFixed(4)),
       mutualInformation: parseFloat((2 * entropyQ0).toFixed(4)),
       schmidtRank,

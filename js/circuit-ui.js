@@ -2114,6 +2114,29 @@ class CircuitUI {
     const hasM = this.grid && this.grid.some(row => row.some(c => c === 'M'));
     const isEntangled = m.concurrence > 0.15 || m.vonNeumannEntropy > 0.15;
 
+    // Name the entangling gate(s) actually present, instead of assuming
+    // CNOT unconditionally - a column with 2 controls sharing a target is
+    // a Toffoli, not a CNOT (mirrors the same fix in circuit-tutor.js's
+    // detectDeterministicErrors, which used to mislabel Toffoli as CNOT).
+    let hasToffoli = false, hasCnot = false, hasSwap = false;
+    if (this.grid && this.grid.length && this.grid[0]) {
+      const numCols = this.grid[0].length;
+      for (let col = 0; col < numCols; col++) {
+        let controls = 0, hasTarget = false, swapWires = 0;
+        for (let q = 0; q < this.grid.length; q++) {
+          const cell = this.grid[q][col];
+          if (cell === 'CX_CTRL') controls++;
+          else if (cell === 'CX_TGT') hasTarget = true;
+          else if (cell === 'SWAP') swapWires++;
+        }
+        if (hasTarget && controls === 2) hasToffoli = true;
+        else if (hasTarget && controls === 1) hasCnot = true;
+        if (swapWires >= 2) hasSwap = true;
+      }
+    }
+    const entanglingGateNames = [hasToffoli && 'Toffoli', hasCnot && 'CNOT', hasSwap && 'SWAP'].filter(Boolean);
+    const entanglingGatesLabel = entanglingGateNames.length > 0 ? entanglingGateNames.join(' / ') : 'multi-qubit';
+
     const isStdBell = activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|110⟩') && !hasY && Math.abs(activeStates[0].probability - 0.5) < 0.15;
     const isStdGHZ = activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|111⟩') && !hasY && Math.abs(activeStates[0].probability - 0.5) < 0.15;
     const isRotatedEntangled = isEntangled && (hasY || hasX || hasZ);
@@ -2232,7 +2255,7 @@ class CircuitUI {
       if (begAction) begAction.textContent = `🔗 Entangled (C = ${m.concurrence.toFixed(2)})`;
       if (begIcon) begIcon.textContent = '🔗';
       if (begTitle) begTitle.textContent = `Coupled Quantum State: ${stateNames.slice(0, 3).join(' + ')}`;
-      if (begDesc) begDesc.textContent = `CNOT entangling operations have coupled the qubits together. Subsystem purity is ${(m.purity * 100).toFixed(0)}% with Von Neumann entropy ${m.vonNeumannEntropy.toFixed(2)} ebits. Outcomes are correlated across ${stateNames.join(', ')}.`;
+      if (begDesc) begDesc.textContent = `${entanglingGatesLabel} entangling operations have coupled the qubits together. Subsystem purity is ${(m.purity * 100).toFixed(0)}% with Von Neumann entropy ${m.vonNeumannEntropy.toFixed(2)} ebits. Outcomes are correlated across ${stateNames.join(', ')}.`;
       if (begApp) begApp.textContent = 'Quantum Phase Estimation & VQE Chemistry';
     } else if (isSuperpos) {
       if (begConcept) begConcept.textContent = 'Quantum Superposition (Spinning Coin)';

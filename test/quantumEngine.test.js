@@ -88,3 +88,98 @@ test('computeTotalUnitary still matches simulation for the original 3-qubit case
     ['CX_CTRL', 'CX_TGT', null]
   ], '3-qubit CNOT + other qubit (originally-supported case)');
 });
+
+/**
+ * getAdvancedEntanglementMetrics() / getConcurrence() used to be hardcoded
+ * to a fixed q0-vs-rest, q0-q1-pair view with a threshold heuristic that
+ * only recognized two named states (Bell, GHZ) - it reported concurrence:1
+ * and "Maximally Entangled Bell Pair" for a genuine GHZ state, which is
+ * physically wrong (GHZ pairwise concurrence is exactly 0 by entanglement
+ * monogamy - all the correlation is tripartite, not pairwise). These tests
+ * pin down the real Wootters-concurrence values for well-known benchmark
+ * states so any future regression to a named-state heuristic is caught.
+ */
+function buildEngine(QuantumCircuitEngine, numQubits) {
+  return new QuantumCircuitEngine(numQubits);
+}
+
+test('product state (independent Hadamards) has zero entropy and zero concurrence everywhere', () => {
+  const QuantumCircuitEngine = loadEngine();
+  const engine = buildEngine(QuantumCircuitEngine, 3);
+  engine.apply1QGate('H', 0);
+  engine.apply1QGate('H', 1);
+  engine.apply1QGate('H', 2);
+  const m = engine.getAdvancedEntanglementMetrics();
+  assert.ok(m.concurrence < 1e-3, `product state concurrence should be ~0, got ${m.concurrence}`);
+  assert.ok(m.vonNeumannEntropy < 1e-3, `product state entropy should be ~0, got ${m.vonNeumannEntropy}`);
+  assert.equal(m.entanglementClass, 'Product State (Separable, Zero Entanglement)');
+});
+
+test('Bell pair has concurrence exactly 1 and is classified as a bipartite pair', () => {
+  const QuantumCircuitEngine = loadEngine();
+  const engine = buildEngine(QuantumCircuitEngine, 3);
+  engine.apply1QGate('H', 0);
+  engine.applyCNOT(0, 1);
+  const m = engine.getAdvancedEntanglementMetrics();
+  assert.ok(Math.abs(m.concurrence - 1) < 1e-3, `Bell pair concurrence should be ~1, got ${m.concurrence}`);
+  assert.equal(m.entanglementClass, 'Maximally Entangled Bipartite Pair (Bell-Type)');
+});
+
+test('GHZ state has ZERO pairwise concurrence (monogamy-saturated), not the Bell-pair value', () => {
+  const QuantumCircuitEngine = loadEngine();
+  const engine = buildEngine(QuantumCircuitEngine, 3);
+  engine.apply1QGate('H', 0);
+  engine.applyCNOT(0, 1);
+  engine.applyCNOT(1, 2);
+  const m = engine.getAdvancedEntanglementMetrics();
+  assert.ok(m.concurrence < 1e-3, `GHZ pairwise concurrence should be ~0 by monogamy, got ${m.concurrence}`);
+  assert.ok(Math.abs(m.vonNeumannEntropy - 1) < 1e-3, 'each GHZ qubit should still be maximally entangled with the rest');
+  assert.match(m.entanglementClass, /GHZ-Type/, 'GHZ must not be mislabeled as a Bell pair');
+  assert.equal(engine.getPairwiseConcurrence(0, 1), 0);
+  assert.equal(engine.getPairwiseConcurrence(0, 2), 0);
+  assert.equal(engine.getPairwiseConcurrence(1, 2), 0);
+});
+
+test('W state has the textbook pairwise concurrence of 2/3 (neither 0 nor 1)', () => {
+  const QuantumCircuitEngine = loadEngine();
+  const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'quantum-engine.js'), 'utf8');
+  const sandbox = {};
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(src, sandbox, { filename: 'quantum-engine.js' });
+  const m = vm.runInContext(`
+    (function () {
+      const e = new QuantumCircuitEngine(3);
+      const amp = 1 / Math.sqrt(3);
+      e.state = e.state.map(() => new Complex(0, 0));
+      e.state[1] = new Complex(amp, 0);
+      e.state[2] = new Complex(amp, 0);
+      e.state[4] = new Complex(amp, 0);
+      return e.getAdvancedEntanglementMetrics();
+    })()
+  `, sandbox);
+  assert.ok(Math.abs(m.concurrence - 2 / 3) < 1e-3, `W-state pairwise concurrence should be ~0.667, got ${m.concurrence}`);
+  assert.match(m.entanglementClass, /W-Type/);
+});
+
+test('concurrence is invariant under local single-qubit rotation of an entangled pair', () => {
+  const QuantumCircuitEngine = loadEngine();
+  const engine = buildEngine(QuantumCircuitEngine, 3);
+  engine.apply1QGate('H', 0);
+  engine.applyCNOT(0, 1);
+  engine.apply1QGate('Y', 1);
+  const m = engine.getAdvancedEntanglementMetrics();
+  assert.ok(Math.abs(m.concurrence - 1) < 1e-3, `local Y rotation must not change concurrence, got ${m.concurrence}`);
+});
+
+test('4-qubit GHZ generalizes correctly (not hardcoded to 3 qubits): zero pairwise concurrence, all qubits entangled', () => {
+  const QuantumCircuitEngine = loadEngine();
+  const engine = buildEngine(QuantumCircuitEngine, 4);
+  engine.apply1QGate('H', 0);
+  engine.applyCNOT(0, 1);
+  engine.applyCNOT(1, 2);
+  engine.applyCNOT(2, 3);
+  const m = engine.getAdvancedEntanglementMetrics();
+  assert.ok(m.concurrence < 1e-3);
+  assert.match(m.entanglementClass, /4-Partite GHZ-Type/);
+});

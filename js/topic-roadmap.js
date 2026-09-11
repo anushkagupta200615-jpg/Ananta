@@ -1517,6 +1517,18 @@ class TopicRoadmapManager {
     if (resultsStage) resultsStage.style.display = 'none';
     detailStage.style.display = 'block';
 
+    // If the real Circuit Designer is already docked inside detailStage
+    // from a PREVIOUSLY-opened module, move it back out to #view-simulator
+    // first. The template below replaces detailStage.innerHTML wholesale,
+    // which would otherwise destroy the docked composer DOM outright (it's
+    // a descendant of detailStage) - dockCircuitDesigner() would then
+    // silently find nothing to re-dock, leaving the new module showing
+    // the PREVIOUS module's stale circuit with no preset reload and no
+    // visible error.
+    if (this.isDockedInSplit) {
+      this.undockCircuitDesigner();
+    }
+
     const hasCircuitLab = Boolean(mod.circuitPreset);
 
     detailStage.innerHTML = `
@@ -1663,6 +1675,32 @@ class TopicRoadmapManager {
         window.circuitUI.loadPreset(presetKey);
       }
     }
+    this._showFullCircuitResult();
+  }
+
+  // loadPresetSafe() starts a step-by-step tour (via startAlgorithmTour)
+  // for any preset that matches a known ALGORITHM_CATALOG entry, which
+  // freezes playbackStep at 1 - showing only the FIRST gate-column's
+  // result. That's fine inside the interactive Composer (where the tour
+  // bar lets a user click through), but this module reader doesn't
+  // surface that tour bar, so every metric below the circuit (Dirac
+  // notation, entanglement class, "Full Circuit State" badge) was
+  // silently describing a truncated, physically-incomplete state - e.g.
+  // a Bell exercise showing zero entanglement because the CNOT column
+  // never ran. This affects every multi-column preset (bell, ghz,
+  // teleport, grover, vqe, chsh, qft), not any single module, so the fix
+  // has to live here in the shared dock/load path rather than per-module.
+  _showFullCircuitResult() {
+    const ui = window.circuitUI;
+    if (!ui) return;
+    if (ui.currentTour) {
+      ui.currentTour = null;
+      if (ui.stopTourAutoPlay) ui.stopTourAutoPlay();
+      if (ui.tourBar) ui.tourBar.style.display = 'none';
+    }
+    ui.playbackStep = -1;
+    if (ui.renderGrid) ui.renderGrid();
+    if (ui.updateSimulation) ui.updateSimulation();
   }
 
   // Un-dock Circuit Designer back to #view-simulator
@@ -1691,6 +1729,7 @@ class TopicRoadmapManager {
         window.circuitUI.loadPreset(presetKey);
       }
     }
+    this._showFullCircuitResult();
   }
 
   backToCuratedRoadmap() {
