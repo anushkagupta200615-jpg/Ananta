@@ -1,6 +1,6 @@
 /**
- * Ananta Quantum Studio — Universal AI Voice & Video Camera Quantum Copilot
- * 
+ * Ananta Quantum Studio — Universal AI Voice Quantum Copilot
+ *
  * Features:
  *  - Immediate zero-latency startup on user click gesture.
  *  - Automatic switch to Composer tab (window.switchTab('simulator')) so the circuit
@@ -15,22 +15,23 @@
  *  - Automatic fresh start when user asks to "make a circuit with...".
  *  - CNOT connector redraw to ensure the vertical lines (• <--> ⊕) render with proper layout.
  *  - Chrome-safe TTS speech synthesis with window.speechSynthesis.resume().
- *  - Real-time webcam PIP video with animated audio waveform fallback.
+ *  - Animated audio waveform visualizer while listening.
  *  - Text command fallback input and 1-click test chips.
  */
 
 class QuantumVoiceCopilot {
   constructor() {
     this.isActive = false;
-    this.isCameraOn = false;
     this.isListening = false;
     this.speechSynthesisEnabled = true;
-    this.mediaStream = null;
     this.recognition = null;
     this.waveAnimId = null;
     this.wavePhase = 0;
     this.speechDebounceTimer = null;
     this.audioCtx = null;
+    // Rolling dialogue memory so follow-ups ("do that again", "why?", "undo it")
+    // resolve against what was actually said and built earlier in the session.
+    this.conversationHistory = [];
 
     // Multi-Provider AI Configuration (Grok-2, Gemini 2.5 Flash, Local Quantum AI)
     this.selectedProvider = localStorage.getItem('ananta_ai_provider') || 'auto';
@@ -42,6 +43,23 @@ class QuantumVoiceCopilot {
 
   _bindEvents() {
     window.quantumVoiceCopilot = this;
+
+    // Voices load asynchronously; pin one as soon as they arrive so every reply
+    // in the session speaks with the same voice.
+    if (window.speechSynthesis) {
+      this._resolveVoice();
+      window.speechSynthesis.addEventListener('voiceschanged', () => this._resolveVoice());
+    }
+
+    // Keep the most recent runtime failure so the user can just ask "why did
+    // that fail?" and get it explained against the live circuit.
+    window.addEventListener('error', (e) => {
+      this._lastRuntimeError = `${e.message}${e.filename ? ` (${e.filename}:${e.lineno})` : ''}`;
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      this._lastRuntimeError = `Unhandled promise rejection: ${e.reason && e.reason.message ? e.reason.message : e.reason}`;
+    });
+
     setTimeout(() => {
       this._updateBadge(this.selectedProvider === 'grok' ? 'grok-2' : (this.selectedProvider === 'gemini' ? 'gemini-2.5-flash' : 'deterministic-quantum-ai'));
     }, 500);
@@ -180,10 +198,11 @@ class QuantumVoiceCopilot {
     this._setSubtitle('Listening! Say e.g. "Add H on 0", "Make GHZ", "CNOT 0 to 1", or "Make Bell state"');
     this._speak('Quantum Voice Copilot ready. What circuit shall I build?');
 
-    // 4. Start Camera asynchronously in background (never blocks voice/mic)
-    this.startCamera().catch(err => {
-      console.warn('[QuantumVoiceCopilot] Camera background init:', err);
-    });
+    // 4. Start the audio waveform visualizer
+    this._startWaveAnimation();
+
+    // 5. Warm the phonetic vocabulary so mispronunciations resolve locally
+    this.loadVoiceVocabulary();
   }
 
   close() {
@@ -197,7 +216,7 @@ class QuantumVoiceCopilot {
     const btn = document.getElementById('btn-voice-camera');
     if (btn) btn.classList.remove('active');
 
-    this.stopCamera();
+    this._cancelWaveAnimation();
     this.stopListening();
   }
 
@@ -260,77 +279,6 @@ class QuantumVoiceCopilot {
         osc.stop(now + 0.38);
       }
     } catch (e) {}
-  }
-
-  async startCamera() {
-    const videoEl = document.getElementById('copilot-video-feed');
-    const canvas = document.getElementById('copilot-wave-canvas');
-
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('getUserMedia not supported');
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: 'user' },
-        audio: false
-      });
-
-      this.mediaStream = stream;
-      if (videoEl) {
-        videoEl.srcObject = stream;
-        videoEl.style.display = 'block';
-        videoEl.play().catch(() => {});
-      }
-      if (canvas) canvas.style.display = 'none';
-      this.isCameraOn = true;
-      this._updateCameraBtn(true);
-      this._cancelWaveAnimation();
-    } catch (err) {
-      console.warn('[QuantumVoiceCopilot] Webcam not available or permission denied:', err);
-      this.isCameraOn = false;
-      if (videoEl) {
-        videoEl.srcObject = null;
-        videoEl.style.display = 'none';
-      }
-      if (canvas) canvas.style.display = 'block';
-      this._updateCameraBtn(false);
-      this._startWaveAnimation();
-    }
-  }
-
-  stopCamera() {
-    if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(track => track.stop());
-      this.mediaStream = null;
-    }
-    const videoEl = document.getElementById('copilot-video-feed');
-    if (videoEl) {
-      videoEl.srcObject = null;
-      videoEl.style.display = 'none';
-    }
-    this.isCameraOn = false;
-    this._cancelWaveAnimation();
-    this._updateCameraBtn(false);
-  }
-
-  toggleCamera() {
-    if (this.isCameraOn) {
-      this.stopCamera();
-      const canvas = document.getElementById('copilot-wave-canvas');
-      if (canvas) canvas.style.display = 'block';
-      this._startWaveAnimation();
-    } else {
-      this.startCamera();
-    }
-  }
-
-  _updateCameraBtn(isOn) {
-    const btn = document.getElementById('copilot-btn-cam');
-    if (btn) {
-      btn.title = isOn ? 'Turn off camera (switch to waveform)' : 'Turn on camera';
-      btn.style.opacity = isOn ? '1' : '0.6';
-    }
   }
 
   _startWaveAnimation() {
@@ -556,6 +504,28 @@ class QuantumVoiceCopilot {
     }
   }
 
+  /**
+   * Resolves one English voice and reuses it for the whole session. getVoices()
+   * returns [] until the engine finishes loading, so picking per-utterance made
+   * the first reply speak in the browser default voice and later replies in the
+   * preferred one — audibly two different speakers.
+   */
+  _resolveVoice() {
+    if (this._pinnedVoice) return this._pinnedVoice;
+    if (!window.speechSynthesis) return null;
+
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || !voices.length) return null;
+
+    const preferred = voices.find(v =>
+      v.lang.startsWith('en') &&
+      (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Jenny') || v.name.includes('Guy'))
+    ) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+
+    if (preferred) this._pinnedVoice = preferred;
+    return this._pinnedVoice || null;
+  }
+
   _speak(text, onComplete = null) {
     console.log('[QuantumVoiceCopilot] Speaking:', text);
     this._setDialogueAI(text);
@@ -569,11 +539,17 @@ class QuantumVoiceCopilot {
       this.isSpeaking = true;
       this._updateStatus('🗣️ COPILOT SPEAKING...', 'speaking');
 
-      // Clear any pending queue
+      // Supersede any utterance that is queued or mid-flight, so two replies
+      // can never overlap into a garbled duet.
+      clearTimeout(this._speakTimer);
+      const speakToken = (this._speakToken || 0) + 1;
+      this._speakToken = speakToken;
+
       window.speechSynthesis.cancel();
       window.speechSynthesis.resume();
 
-      setTimeout(() => {
+      this._speakTimer = setTimeout(() => {
+        if (this._speakToken !== speakToken) return; // a newer reply won
         try {
           const utterance = new SpeechSynthesisUtterance(text);
           // CRITICAL: Bind to window and instance to prevent V8 premature garbage collection
@@ -584,14 +560,8 @@ class QuantumVoiceCopilot {
           utterance.pitch = 1.0;
           utterance.volume = 1.0;
 
-          const voices = window.speechSynthesis.getVoices();
-          if (voices && voices.length) {
-            const preferredVoice = voices.find(v => 
-              v.lang.startsWith('en') && 
-              (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Jenny') || v.name.includes('Guy'))
-            ) || voices.find(v => v.lang.startsWith('en'));
-            if (preferredVoice) utterance.voice = preferredVoice;
-          }
+          const voice = this._resolveVoice();
+          if (voice) utterance.voice = voice;
 
           utterance.onstart = () => {
             this.isSpeaking = true;
@@ -689,6 +659,348 @@ class QuantumVoiceCopilot {
   }
 
   // -------------------------------------------------------------
+  // Agent turn: one backend call handles building, questions and errors
+  // -------------------------------------------------------------
+
+  _rememberTurn(role, text) {
+    if (!text) return;
+    this.conversationHistory.push({ role, text: String(text).slice(0, 400) });
+    // Only recent turns matter for follow-ups, and the backend trims again.
+    if (this.conversationHistory.length > 12) {
+      this.conversationHistory = this.conversationHistory.slice(-12);
+    }
+  }
+
+  clearConversation() {
+    this.conversationHistory = [];
+    this._setActionFeedback('Conversation memory cleared.');
+  }
+
+  _circuitSnapshot() {
+    const ui = window.circuitUI;
+    if (!ui) return { num_qubits: 2, grid: [] };
+    return {
+      num_qubits: ui.numQubits,
+      grid: Array.isArray(ui.grid) ? ui.grid.map(row => [...row]) : []
+    };
+  }
+
+  /**
+   * Primary path. Sends the utterance, the live circuit and the recent
+   * conversation to the backend agent, which decides whether this turn builds
+   * something, answers a question, or explains an error.
+   */
+  async _runAgent(transcript, errorContext = null) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (this.grokKey) headers['X-Grok-Key'] = this.grokKey;
+    if (this.geminiKey) headers['X-Gemini-Key'] = this.geminiKey;
+    if (this.selectedProvider) headers['X-AI-Provider'] = this.selectedProvider;
+
+    const base = (window.anantaBackend && window.anantaBackend.baseUrl) || '';
+    const response = await fetch(`${base}/api/gemini`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        task: 'voice-agent',
+        provider: this.selectedProvider,
+        grokApiKey: this.grokKey,
+        geminiApiKey: this.geminiKey,
+        payload: {
+          transcript,
+          circuit: this._circuitSnapshot(),
+          history: this.conversationHistory,
+          errorContext
+        }
+      })
+    });
+
+    if (!response.ok) throw new Error(`Backend HTTP ${response.status}`);
+    const data = await response.json();
+    if (data.source) this._updateBadge(data.source);
+    return data.result || {};
+  }
+
+  /**
+   * Maps a backend capability id to the builder that constructs it. Keys are
+   * the registry ids in ananta-backend/utils/voiceIntent.js — keeping the two
+   * in step is the only coupling between them.
+   */
+  _buildNamedAlgorithm(id) {
+    const ui = window.circuitUI;
+    if (!ui) return null;
+
+    const builders = {
+      'bell': () => { this._buildBellVariant('phi_plus'); return 'Built a Bell pair.'; },
+      'ghz': () => { this._buildDynamicGHZ(3); return 'Built a 3-qubit GHZ state.'; },
+      'w-state': () => { this._buildWState(); return 'Built a W state.'; },
+      'teleportation': () => { this._buildTeleportation(); return 'Loaded the quantum teleportation protocol.'; },
+      'superdense': () => { this._buildSuperdenseCoding(); return 'Loaded superdense coding.'; },
+      'entanglement-swap': () => { this._buildEntanglementSwapping(); return 'Built entanglement swapping.'; },
+      'deutsch-jozsa': () => { this._buildDeutschJozsa(); return 'Built the Deutsch-Jozsa circuit.'; },
+      'bernstein-vazirani': () => { this._buildBernsteinVazirani(); return 'Built the Bernstein-Vazirani circuit.'; },
+      'simon': () => { this._buildSimon(); return "Built Simon's algorithm."; },
+      'grover': () => { this._buildGrover(); return 'Loaded Grover search.'; },
+      'qft': () => { this._buildDynamicQFT(ui.numQubits || 3, false); return `Built a ${ui.numQubits || 3}-qubit Quantum Fourier Transform.`; },
+      'qpe': () => { this._buildQPE(); return 'Built Quantum Phase Estimation.'; },
+      'adder': () => { this._buildQuantumAdder(); return 'Built the quantum adder.'; },
+      'bit-flip-code': () => { this._buildBitFlipCode(); return 'Built the 3-qubit bit-flip code.'; },
+      'phase-flip-code': () => { this._buildPhaseFlipCode(); return 'Built the 3-qubit phase-flip code.'; },
+      'swap-test': () => { this._buildSwapTest(); return 'Built the SWAP test.'; },
+      'qrng': () => { this._buildQRNG(); return 'Built a quantum random number generator.'; },
+      'vqe': () => { this._buildVQE(); return 'Loaded the VQE ansatz.'; },
+      'chsh': () => { this._buildCHSH(); return 'Loaded the CHSH Bell test.'; }
+    };
+
+    const build = builders[id];
+    if (!build) return null;
+
+    const summary = build();
+    setTimeout(() => {
+      if (ui.renderGrid) ui.renderGrid();
+      if (ui.renderCnotConnectors) ui.renderCnotConnectors();
+    }, 60);
+    return summary;
+  }
+
+  /** Executes whichever kind of turn the agent decided this was. */
+  _applyAgentPlan(plan, shouldSpeak = true) {
+    const spoken = plan.spoken_response || plan.clarification_needed || plan.error_feedback || '';
+    const tip = plan.teaching_tip ? `\n💡 ${plan.teaching_tip}` : '';
+
+    if (plan.error_feedback) {
+      this._setActionFeedback(`⚠️ ${plan.error_feedback}`, false);
+      this._setDialogueAI(`⚠️ ${plan.error_feedback}${tip}`);
+      this._playChime('warn');
+      if (shouldSpeak) this._speak(plan.error_feedback);
+      this._rememberTurn('assistant', plan.error_feedback);
+      return 'error';
+    }
+
+    if (plan.mode === 'answer' || plan.mode === 'explain') {
+      const body = plan.display_text || spoken;
+      this._setActionFeedback(spoken || body, true);
+      this._setDialogueAI(`${body}${tip}`);
+      this._playChime('success');
+      if (shouldSpeak && spoken) this._speak(spoken);
+      this._rememberTurn('assistant', spoken || body);
+      return plan.mode;
+    }
+
+    // A recognized algorithm is built by the client's own tested builder, so
+    // every capability in the backend registry is constructible without the
+    // backend having to describe it gate by gate.
+    if (plan.algorithm) {
+      const built = this._buildNamedAlgorithm(plan.algorithm);
+      if (built) {
+        this._setActionFeedback(spoken || built, true);
+        this._setDialogueAI(`${spoken || built}${tip}`);
+        this._playChime('success');
+        if (shouldSpeak) this._speak(spoken || built);
+        this._rememberTurn('assistant', spoken || built);
+        return 'build';
+      }
+      console.warn('[QuantumVoiceCopilot] No builder for algorithm id:', plan.algorithm);
+    }
+
+    if (plan.control) {
+      const ui = window.circuitUI;
+      if (ui) {
+        if (plan.control === 'clear') ui.clearCircuit();
+        else if (plan.control === 'run') ui.runInteractiveSimulation();
+        else if (plan.control === 'add-qubit') ui.addQubit();
+        else if (plan.control === 'remove-qubit') ui.removeQubit();
+      }
+      if (plan.operations && plan.operations.length) this._applyOperations(plan);
+      this._setActionFeedback(spoken, true);
+      this._setDialogueAI(`${spoken}${tip}`);
+      this._playChime('success');
+      if (shouldSpeak) this._speak(spoken);
+      this._rememberTurn('assistant', spoken);
+      return 'control';
+    }
+
+    if (plan.mode === 'clarify' || (!plan.operations || plan.operations.length === 0)) {
+      const ask = plan.clarification_needed || spoken || 'Could you say that another way?';
+      this._setActionFeedback(ask, false);
+      this._setDialogueAI(`${ask}${tip}`);
+      if (shouldSpeak) this._speak(ask);
+      this._rememberTurn('assistant', ask);
+      return 'clarify';
+    }
+
+    const placed = this._applyOperations(plan);
+    const summary = spoken || `Applied ${placed} operation${placed === 1 ? '' : 's'}.`;
+    this._setActionFeedback(summary, true);
+    this._setDialogueAI(`${summary}${tip}`);
+    this._playChime('success');
+    if (shouldSpeak) this._speak(summary);
+    this._rememberTurn('assistant', summary);
+    return 'build';
+  }
+
+  /**
+   * Public entry point for the error explainer: hand it anything that went
+   * wrong and the agent explains it against the live circuit.
+   */
+  async explainError(errorText) {
+    if (!errorText) return;
+    if (!this.isActive) this.open();
+    this._setDialogueUser(`Explain this error: ${String(errorText).slice(0, 200)}`);
+    this._setActionFeedback('Analyzing the error...', true);
+    this._rememberTurn('user', `Explain this error: ${errorText}`);
+
+    try {
+      const plan = await this._runAgent('Explain this error and how to fix it.', String(errorText));
+      this._applyAgentPlan(plan, true);
+    } catch (err) {
+      this._setActionFeedback(`Could not reach the AI engine: ${err.message}`, false);
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Phonetic term resolution (vocabulary owned by the backend registry)
+  // -------------------------------------------------------------
+
+  /**
+   * Pulls the capability vocabulary from the backend once per session. The
+   * terms live in exactly one place (ananta-backend/utils/voiceIntent.js); this
+   * side only runs the generic matching algorithm over whatever it is given, so
+   * new capabilities become speakable with no frontend change.
+   */
+  async loadVoiceVocabulary() {
+    if (this._vocabulary) return this._vocabulary;
+    if (this._vocabularyPromise) return this._vocabularyPromise;
+
+    this._vocabularyPromise = (async () => {
+      const base = (window.anantaBackend && window.anantaBackend.baseUrl) || '';
+      const res = await fetch(`${base}/api/voice/vocabulary`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      this._vocabConfig = {
+        minFuzzyLength: data.minFuzzyLength || 5,
+        similarityThreshold: data.similarityThreshold || 0.78,
+        maxNgram: data.maxNgram || 4
+      };
+      this._vocabulary = (data.capabilities || []).flatMap(cap =>
+        (cap.terms || []).map(term => ({
+          id: cap.id,
+          kind: cap.kind,
+          collapsed: term.toLowerCase().replace(/[^a-z0-9]/g, ''),
+          canonical: cap.terms[0]
+        }))
+      );
+      console.log('[QuantumVoiceCopilot] Loaded', this._vocabulary.length, 'voice vocabulary terms.');
+      return this._vocabulary;
+    })().catch(err => {
+      console.warn('[QuantumVoiceCopilot] Vocabulary unavailable, backend will correct instead:', err.message);
+      this._vocabularyPromise = null;
+      return null;
+    });
+
+    return this._vocabularyPromise;
+  }
+
+  _levenshtein(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+
+    let prev = new Array(b.length + 1);
+    let curr = new Array(b.length + 1);
+    for (let j = 0; j <= b.length; j++) prev[j] = j;
+
+    for (let i = 1; i <= a.length; i++) {
+      curr[0] = i;
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+      }
+      const swap = prev; prev = curr; curr = swap;
+    }
+    return prev[b.length];
+  }
+
+  _isTransposition(a, b) {
+    if (a.length !== b.length || a.length < 3) return false;
+    return a.split('').sort().join('') === b.split('').sort().join('');
+  }
+
+  _matchSpokenPhrase(phrase) {
+    const target = phrase.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!target || !this._vocabulary) return null;
+    const cfg = this._vocabConfig;
+
+    let best = null;
+    for (const entry of this._vocabulary) {
+      if (entry.collapsed === target) return { ...entry, score: 1, exact: true };
+      if (this._isTransposition(target, entry.collapsed)) return { ...entry, score: 0.99, exact: false };
+      if (target.length < cfg.minFuzzyLength || entry.collapsed.length < cfg.minFuzzyLength) continue;
+
+      const max = Math.max(target.length, entry.collapsed.length);
+      const score = 1 - this._levenshtein(target, entry.collapsed) / max;
+      if (score >= cfg.similarityThreshold && (!best || score > best.score)) {
+        best = { ...entry, score, exact: false };
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Rewrites a heard phrase so recognized capabilities appear under their
+   * canonical names. Non-overlapping, best-score-first.
+   */
+  _resolveSpokenTerms(rawText) {
+    const original = (rawText || '').trim();
+    if (!this._vocabulary) return { text: original, corrected: false };
+
+    const tokens = original.split(/\s+/).filter(Boolean);
+    if (!tokens.length) return { text: original, corrected: false };
+
+    const maxNgram = this._vocabConfig.maxNgram;
+    const candidates = [];
+    for (let start = 0; start < tokens.length; start++) {
+      for (let len = Math.min(maxNgram, tokens.length - start); len >= 1; len--) {
+        const match = this._matchSpokenPhrase(tokens.slice(start, start + len).join(' '));
+        if (match) candidates.push({ start, end: start + len, match, span: len });
+      }
+    }
+
+    candidates.sort((a, b) => (b.match.score - a.match.score) || (b.span - a.span));
+
+    const claimed = new Array(tokens.length).fill(false);
+    const accepted = [];
+    for (const cand of candidates) {
+      let free = true;
+      for (let i = cand.start; i < cand.end; i++) {
+        if (claimed[i]) { free = false; break; }
+      }
+      if (!free) continue;
+      for (let i = cand.start; i < cand.end; i++) claimed[i] = true;
+      accepted.push(cand);
+    }
+    accepted.sort((a, b) => a.start - b.start);
+
+    const out = [];
+    let cursor = 0;
+    let corrected = false;
+    for (const cand of accepted) {
+      for (let i = cursor; i < cand.start; i++) out.push(tokens[i]);
+      // Leave correctly-spoken text alone; only substitute actual mishearings.
+      if (cand.match.exact) {
+        for (let i = cand.start; i < cand.end; i++) out.push(tokens[i]);
+      } else {
+        out.push(cand.match.canonical);
+        corrected = true;
+      }
+      cursor = cand.end;
+    }
+    for (let i = cursor; i < tokens.length; i++) out.push(tokens[i]);
+
+    return { text: out.join(' '), corrected };
+  }
+
+  // -------------------------------------------------------------
   // Universal Generative Quantum Circuit AI Engine
   // -------------------------------------------------------------
   async _processTranscript(rawText) {
@@ -700,7 +1012,15 @@ class QuantumVoiceCopilot {
     this._isProcessingVoice = true;
 
     try {
-      let text = rawText.toLowerCase().trim();
+      const heard = rawText.toLowerCase().trim();
+      // Correct mispronunciations against the backend capability registry before
+      // any matcher runs, so "bellystate" behaves exactly like "bell state".
+      const resolved = this._resolveSpokenTerms(heard);
+      let text = resolved.text;
+      if (resolved.corrected) {
+        console.log('[QuantumVoiceCopilot] Phonetic correction:', heard, '->', text);
+        this._setDialogueUser(`${rawText.trim()}  →  understood as "${text}"`);
+      }
       console.log('[QuantumVoiceCopilot] Ingested raw voice:', text);
 
       // -----------------------------------------------------------------------
@@ -723,6 +1043,27 @@ class QuantumVoiceCopilot {
       if (!ui) {
         this._setActionFeedback('Circuit UI not loaded yet.', false);
         return;
+      }
+
+      // -----------------------------------------------------------------------
+      // PRIMARY PATH: the backend agent. It sees the live circuit and the recent
+      // conversation, so it can build, answer questions with real simulated
+      // numbers, or explain an error — and it resolves follow-ups like "do the
+      // same on qubit 1". The local pattern engine below is the offline fallback.
+      // -----------------------------------------------------------------------
+      this._rememberTurn('user', rawText);
+      if (this.selectedProvider !== 'offline') {
+        try {
+          this._updateStatus('🧠 THINKING...', 'speaking');
+          // If they're asking about a failure, hand over the last real error too.
+          const asksAboutError = /\b(error|failed|failing|broken|wrong|bug|crash|exception|not working)\b/i.test(text);
+          const plan = await this._runAgent(text, asksAboutError ? this._lastRuntimeError || null : null);
+          this._applyAgentPlan(plan, true);
+          return;
+        } catch (err) {
+          console.warn('[QuantumVoiceCopilot] Agent unreachable, using local engine:', err.message);
+          this._setActionFeedback('AI engine unreachable — using local engine.', false);
+        }
       }
 
       // If user says "make a circuit with..." or "create a circuit with..." or "draw circuit with...":
@@ -1045,10 +1386,28 @@ class QuantumVoiceCopilot {
     // 4.4 Single Qubit Gates (H, X, Y, Z, S, T, M)
     const singleGate = this._matchSingleGate(clean);
     if (singleGate) {
-      const q = this._extractQubit(clean);
-      const col = this._extractColumn(clean, q);
-      this._placeSingleGate(singleGate, q, col, shouldSpeak);
-      return `${singleGate}(q${q})`;
+      const allQubits = this._extractAllQubits(clean);
+      if (allQubits.length > 1) {
+        const placedQubits = [];
+        for (const q of allQubits) {
+          while (ui.numQubits <= q) ui.addQubit();
+          const col = this._extractColumn(clean, q);
+          this._placeSingleGate(singleGate, q, col, false);
+          placedQubits.push(`Q${q}`);
+        }
+        const summary = `Placed ${singleGate} on ${placedQubits.join(' and ')}.`;
+        this._setActionFeedback(summary);
+        this._setDialogueAI(summary);
+        this._playChime('success');
+        if (shouldSpeak) this._speak(summary);
+        return summary;
+      } else {
+        const q = this._extractQubit(clean);
+        while (ui.numQubits <= q) ui.addQubit();
+        const col = this._extractColumn(clean, q);
+        this._placeSingleGate(singleGate, q, col, shouldSpeak);
+        return `${singleGate}(q${q})`;
+      }
     }
 
     // 4.5 Remove/Delete Gate
@@ -1104,6 +1463,16 @@ class QuantumVoiceCopilot {
 
       this._updateBadge(source);
 
+      // Error explanation feedback from Voice Mentor LLM
+      if (plan.error_feedback) {
+        const errNotice = `⚠️ ${plan.error_feedback}`;
+        this._setActionFeedback(errNotice, false);
+        this._setDialogueAI(errNotice);
+        this._playChime('warn');
+        if (shouldSpeak) this._speak(plan.error_feedback);
+        return null;
+      }
+
       if (plan.clarification_needed) {
         this._setActionFeedback(plan.clarification_needed, false);
         this._setDialogueAI(plan.clarification_needed);
@@ -1111,48 +1480,19 @@ class QuantumVoiceCopilot {
         return null;
       }
 
-      if (plan.reset_existing && ui) ui.clearCircuit();
-      let placed = 0, skipped = [];
+      // Auto-expand qubits if synthesis requires more wires
+      const placed = this._applyOperations(plan);
+      const skipped = [];
 
-      if (plan.operations && Array.isArray(plan.operations)) {
-        for (const op of plan.operations) {
-          const targetQ = (op.targets && op.targets.length > 0) ? op.targets[0] : 0;
-          const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumn(targetQ);
+      const explanation = plan.explanation || `Built ${placed} operation(s) from: "${rawClause}"`;
+      const tip = plan.teaching_tip ? `\n💡 Tip: ${plan.teaching_tip}` : '';
+      const fullDialogue = `${explanation}${tip}`;
 
-          if (op.action === 'move' || op.from_step !== undefined) {
-            const fromStep = op.from_step !== undefined ? op.from_step : 0;
-            const toStep = (op.step !== undefined && op.step !== null) ? op.step : 2;
-            if (ui && ui.moveGate) {
-              ui.moveGate(targetQ, fromStep, targetQ, toStep);
-              placed++;
-            }
-          } else if (op.gate === 'CNOT' && op.controls && op.controls.length >= 1) {
-            // NOTE: placeGate() supports arbitrary control/target (Section 4.3)
-            const ctrl = op.controls[0];
-            const tgt = targetQ;
-            if (ui) {
-              ui.placeGate('CX', ctrl, col, tgt);
-              placed++;
-            }
-          } else if (['H', 'X', 'Y', 'Z', 'S', 'T', 'M', 'MEASURE'].includes(op.gate)) {
-            const gate = op.gate === 'MEASURE' ? 'M' : op.gate;
-            if (ui) {
-              ui.placeGate(gate, targetQ, col);
-              placed++;
-            }
-          } else {
-            skipped.push(op.gate);
-          }
-        }
-      }
-
-      const summary = `Built ${placed} operation(s) from: "${rawClause}"` +
-        (skipped.length ? ` (engine can't yet place: ${skipped.join(', ')})` : '');
-      this._setActionFeedback(summary, skipped.length === 0);
-      this._setDialogueAI(summary);
+      this._setActionFeedback(explanation, skipped.length === 0);
+      this._setDialogueAI(fullDialogue);
       this._playChime('success');
-      if (shouldSpeak) this._speak(summary);
-      return summary;
+      if (shouldSpeak) this._speak(explanation);
+      return explanation;
     } catch (err) {
       console.warn('[QuantumVoiceCopilot] Backend parse failed:', err);
       if (typeof setStatusBadge === 'function') {
@@ -1165,6 +1505,120 @@ class QuantumVoiceCopilot {
       this._playChime('warn');
       return null;
     }
+  }
+
+  /**
+   * Applies a plan's operations to the circuit grid. Shared by the agent path
+   * and the legacy fallback so gate placement behaves identically either way.
+   */
+  _applyOperations(plan) {
+    const ui = window.circuitUI;
+    let placed = 0;
+    const skipped = [];
+
+    {
+      if (ui && plan.num_qubits && plan.num_qubits > ui.numQubits) {
+        while (ui.numQubits < Math.min(8, plan.num_qubits)) {
+          ui.addQubit();
+        }
+      }
+
+      if (plan.reset_existing && ui) ui.clearCircuit();
+
+      if (plan.operations && Array.isArray(plan.operations)) {
+        for (const op of plan.operations) {
+          const targets = (op.targets && op.targets.length > 0) ? op.targets : [0];
+
+          if (op.action === 'move' || op.from_step !== undefined) {
+            const fromStep = op.from_step !== undefined ? op.from_step : 0;
+            const toStep = (op.step !== undefined && op.step !== null) ? op.step : 2;
+            for (const targetQ of targets) {
+              while (ui && ui.numQubits <= targetQ) ui.addQubit();
+              if (ui && ui.moveGate) {
+                ui.moveGate(targetQ, fromStep, targetQ, toStep);
+                placed++;
+              }
+            }
+          } else if (op.gate === 'CNOT' || op.gate === 'CX') {
+            const ctrl = (op.controls && op.controls.length > 0) ? op.controls[0] : 0;
+            const tgt = targets[0] !== undefined ? targets[0] : 1;
+            while (ui && ui.numQubits <= Math.max(ctrl, tgt)) ui.addQubit();
+            const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumnForPair(ctrl, tgt);
+            if (ui) {
+              ui.placeGate('CX', ctrl, col, tgt);
+              placed++;
+            }
+          } else if (op.gate === 'SWAP') {
+            const q1 = targets[0] !== undefined ? targets[0] : 0;
+            const q2 = targets[1] !== undefined ? targets[1] : 1;
+            while (ui && ui.numQubits <= Math.max(q1, q2)) ui.addQubit();
+            const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumnForPair(q1, q2);
+            if (ui) {
+              ui.grid[q1][col] = 'SWAP';
+              ui.grid[q2][col] = 'SWAP';
+              ui.renderGrid();
+              ui.updateSimulation();
+              placed++;
+            }
+          } else if (op.gate === 'Toffoli' || op.gate === 'CCX') {
+            while (ui && ui.numQubits < 3) ui.addQubit();
+            const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumnForTrio(0, 1, 2);
+            if (ui) {
+              ui.grid[0][col] = 'CX_CTRL';
+              ui.grid[1][col] = 'CX_CTRL';
+              ui.grid[2][col] = 'CX_TGT';
+              ui.renderGrid();
+              ui.updateSimulation();
+              placed++;
+            }
+          } else if (['H', 'X', 'Y', 'Z', 'S', 'T', 'M', 'MEASURE'].includes(op.gate)) {
+            const gate = op.gate === 'MEASURE' ? 'M' : op.gate;
+            for (const targetQ of targets) {
+              while (ui && ui.numQubits <= targetQ) ui.addQubit();
+              const col = (op.step !== undefined && op.step !== null) ? op.step : this._nextFreeColumn(targetQ);
+              if (ui) {
+                ui.placeGate(gate, targetQ, col);
+                placed++;
+              }
+            }
+          } else {
+            skipped.push(op.gate);
+          }
+        }
+      }
+
+      setTimeout(() => {
+        if (ui && ui.renderGrid) ui.renderGrid();
+        if (ui && ui.renderCnotConnectors) ui.renderCnotConnectors();
+      }, 60);
+    }
+
+    if (skipped.length) {
+      console.warn('[QuantumVoiceCopilot] Skipped unsupported gates:', skipped);
+    }
+    return placed;
+  }
+
+  _nextFreeColumnForPair(q1, q2) {
+    const ui = window.circuitUI;
+    if (!ui || !ui.grid) return 0;
+    for (let c = 0; c < (ui.numCols || 16); c++) {
+      if ((!ui.grid[q1] || !ui.grid[q1][c]) && (!ui.grid[q2] || !ui.grid[q2][c])) {
+        return c;
+      }
+    }
+    return 0;
+  }
+
+  _nextFreeColumnForTrio(q1, q2, q3) {
+    const ui = window.circuitUI;
+    if (!ui || !ui.grid) return 0;
+    for (let c = 0; c < (ui.numCols || 16); c++) {
+      if ((!ui.grid[q1] || !ui.grid[q1][c]) && (!ui.grid[q2] || !ui.grid[q2][c]) && (!ui.grid[q3] || !ui.grid[q3][c])) {
+        return c;
+      }
+    }
+    return 0;
   }
 
   _nextFreeColumn(qubit) {
@@ -1909,6 +2363,21 @@ class QuantumVoiceCopilot {
       }
     }
     return 0;
+  }
+
+  _extractAllQubits(text) {
+    const results = [];
+    const re = /\b(?:qubit|wire|q|line)?\s*([0-7]|zero|one|two|three|four|five|six|seven)\b/gi;
+    for (const m of text.matchAll(re)) {
+      const preWord = text.substring(Math.max(0, m.index - 8), m.index).toLowerCase();
+      if (/(?:col|step|slot|time|t\s*=?)\s*$/i.test(preWord.trim())) continue;
+
+      const q = this._extractQubitNum(m[1]);
+      if (q >= 0 && q < 8 && !results.includes(q)) {
+        results.push(q);
+      }
+    }
+    return results;
   }
 
   _extractColumn(text, qubit, findEmptyIfMissing = true) {

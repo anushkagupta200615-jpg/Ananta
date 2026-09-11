@@ -6,10 +6,10 @@
   <title>Ananta - Quantum Circuit Composer & Knowledge Engine</title>
   <meta name="description" content="Ananta is a research-grade in-browser quantum computing platform for circuit composition, statevector analysis, algorithm design, and Advanced Research quantum education.">
   
-  <!-- Google Quantum AI Typography -->
+  <!-- Premium Typography: Google Sans, Space Grotesk, JetBrains Mono, Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@400;500;700&family=Google+Sans+Text:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@400;500;700&family=Google+Sans+Text:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   
   <!-- Three.js for 3D Bloch Sphere Visualizer (Local offline-first) -->
   <script src="js/three.min.js"></script>
@@ -149,7 +149,7 @@
               <span class="dropdown-rich-icon">📚</span>
               <div class="dropdown-rich-info">
                 <div class="dropdown-rich-title-line">
-                  <span class="dropdown-rich-title">Algorithm Zoo & Papers</span>
+                  <span class="dropdown-rich-title">Research Archive & Algorithms</span>
                   <span class="dropdown-badge badge-catalog">74 ALGOS</span>
                 </div>
                 <span class="dropdown-rich-desc">74 quantum algorithms catalog & interactive seminal paper reproductions</span>
@@ -226,7 +226,7 @@
     <div class="nav-center-search nav-search-desktop">
       <div class="devsite-nav-search" id="devsite-header-search-bar" onclick="window.focusKnowledgeEngineSearch()" title="Search quantum topics, Cirq, and hardware (Press /)">
         <svg class="devsite-search-svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-          <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 14z"/>
+          <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
         </svg>
         <span class="devsite-search-placeholder">Search Cirq, topics...</span>
         <kbd class="devsite-search-kbd">/</kbd>
@@ -295,7 +295,7 @@
     <!-- Category: Algorithms & Research -->
     <div class="mobile-nav-section-title">ALGORITHMS & RESEARCH</div>
     <a href="#algorithms" class="mobile-nav-item" data-tab="algorithms" onclick="window.closeMobileNav()">📐 Benchmark Labs</a>
-    <a href="#research" class="mobile-nav-item" data-tab="research" onclick="window.closeMobileNav()">📚 Algorithm Zoo & Papers</a>
+    <a href="#research" class="mobile-nav-item" data-tab="research" onclick="window.closeMobileNav()">📚 Research Archive & Algorithms</a>
 
     <!-- Category: Learn & Reference -->
     <div class="mobile-nav-section-title">LEARN & REFERENCE</div>
@@ -308,7 +308,7 @@
     <!-- Mobile search bar -->
     <div class="mobile-nav-search" onclick="window.closeMobileNav(); window.focusKnowledgeEngineSearch();">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="color:var(--text-dim);flex-shrink:0">
-        <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 14z"/>
+        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
       </svg>
       <span style="font-size:13px;color:var(--text-dim)">Search quantum topics...</span>
     </div>
@@ -976,8 +976,8 @@
           </div>
 
           <div class="ribbon-actions">
-            <button class="tool-btn btn-voice-camera" id="btn-voice-camera" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggle()" title="Live AI Voice & Video Camera Copilot (Speak to place gates and build circuits hands-free)">
-              🎙️ Voice & Camera AI
+            <button class="tool-btn btn-voice-camera" id="btn-voice-camera" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggle()" title="Live AI Voice Copilot (Speak to place gates and build circuits hands-free)">
+              🎙️ Voice AI
             </button>
             <button class="tool-btn btn-cloud-qpu" id="btn-open-qpu-modal" onclick="if(window.cloudQPUBridge) window.cloudQPUBridge.openModal()" title="Execute on Real Physical IBM Quantum Cloud Processor">
               🚀 Cloud QPU
@@ -1628,18 +1628,20 @@
                 <code id="qasm-code" style="display:none;"></code>
               </div>
             </div>
-        <!-- Floating Live AI Voice & Video Camera Copilot HUD -->
+          </div>
+        </div>
+
+        <!-- Floating Live AI Voice Copilot HUD -->
         <div id="quantum-copilot-hud" class="quantum-copilot-hud" style="display:none;">
           <!-- Header Bar -->
           <div class="copilot-hud-header">
             <div class="copilot-hud-title">
               <span class="copilot-hud-dot live"></span>
-              <span class="copilot-hud-heading">AI Voice & Camera Copilot</span>
+              <span class="copilot-hud-heading">AI Voice Copilot</span>
               <span id="copilot-status-badge" class="ai-status-badge fallback">○ Local Fallback</span>
             </div>
             <div class="copilot-hud-actions">
               <button class="copilot-hud-btn" id="copilot-btn-settings" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleSettingsPanel()" title="Select AI Engine (Grok-2 / Gemini)">⚙️</button>
-              <button class="copilot-hud-btn" id="copilot-btn-cam" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleCamera()" title="Toggle Camera">📷</button>
               <button class="copilot-hud-btn" id="copilot-btn-mic" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleMic()" title="Toggle Mic">🎙️</button>
               <button class="copilot-hud-btn" id="copilot-btn-tts" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.toggleSpeechFeedback()" title="Toggle Voice Feedback">🔊</button>
               <button class="copilot-hud-btn copilot-btn-close" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.close()" title="Close Copilot">✕</button>
@@ -1675,10 +1677,9 @@
             </div>
           </div>
 
-          <!-- Video / Audio Waveform Canvas -->
+          <!-- Audio Waveform Canvas -->
           <div class="copilot-video-wrap">
-            <video id="copilot-video-feed" autoplay playsinline muted></video>
-            <canvas id="copilot-wave-canvas" width="300" height="170" style="display:none;"></canvas>
+            <canvas id="copilot-wave-canvas" width="300" height="170"></canvas>
             <div class="copilot-feed-overlay">
               <span class="copilot-live-pill" id="copilot-live-pill">🟢 LISTENING</span>
               <span class="copilot-qpu-brand">ANANTA COPILOT</span>
@@ -1732,6 +1733,9 @@
             <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('put hadamard on all qubits')">🌐 H on All</button>
             <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('add cnot from 0 to 1')">⚡ CNOT 0→1</button>
             <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('run simulation')">▶️ Simulate</button>
+            <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('what are the measurement probabilities')">📊 Probabilities</button>
+            <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('is this circuit entangled')">🔗 Entangled?</button>
+            <button class="copilot-chip" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('why is my circuit not working')">🩺 Explain error</button>
             <button class="copilot-chip chip-danger" onclick="window.quantumVoiceCopilot && window.quantumVoiceCopilot.executeSpokenCommand('clear circuit')">🗑️ Clear</button>
           </div>
         </div>
@@ -2261,16 +2265,53 @@ Key Advantage:
         
         <!-- Primary Research View Mode Switcher -->
         <div class="research-mode-switcher">
-          <button class="research-mode-tab active" id="tab-mode-papers" onclick="window.switchResearchMode('papers')">
-            📑 Landmark Papers & Textbooks (38)
+          <button class="research-mode-tab active" id="tab-mode-search" onclick="window.switchResearchMode('search')">
+            🔎 Literature Search
           </button>
-          <button class="research-mode-tab" id="tab-mode-zoo" onclick="window.switchResearchMode('zoo')">
-            ⚡ Universal Algorithm Catalog (74 Algorithms)
+          <button class="research-mode-tab" id="tab-mode-papers" onclick="window.switchResearchMode('papers')">
+            📑 Landmark Papers & Textbooks
+          </button>
+          <button class="research-mode-tab" id="tab-mode-catalog" onclick="window.switchResearchMode('catalog')">
+            ⚡ Algorithm Catalog
+          </button>
+          <button class="research-mode-tab" id="tab-mode-library" onclick="window.switchResearchMode('library')">
+            🌐 Community Resource Library
           </button>
         </div>
 
+        <!-- ================= MODE 0: LIVE LITERATURE SEARCH ================= -->
+        <div id="literature-search-subview">
+          <div class="research-hero-banner">
+            <div class="research-pill-tag">
+              <span>🔎</span> Live from arXiv &amp; Crossref
+            </div>
+            <h1 class="research-hero-title">Quantum Literature Search</h1>
+            <p class="research-hero-desc">
+              Describe any topic in plain language. The archive searches the current literature, ranks what it finds by relevance and citation weight, and synthesizes the results into a single cited review.
+            </p>
+          </div>
+
+          <form class="litsearch-form" onsubmit="event.preventDefault(); window.runLiteratureSearch();">
+            <div class="research-search-box litsearch-box">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" id="litsearch-input" autocomplete="off"
+                     placeholder="e.g. I want to know about superposition — or decoherence, surface codes, VQE…" />
+            </div>
+            <button type="submit" class="litsearch-submit" id="litsearch-submit">Search &amp; Summarize</button>
+          </form>
+
+          <div class="litsearch-suggestions" id="litsearch-suggestions"></div>
+
+          <div class="litsearch-status" id="litsearch-status"></div>
+          <div id="litsearch-synthesis"></div>
+          <div class="research-grid" id="litsearch-results"></div>
+        </div>
+
         <!-- ================= MODE 1: RESEARCH PAPERS & TEXTBOOKS ================= -->
-        <div id="research-papers-subview">
+        <div id="research-papers-subview" style="display: none;">
           <div class="research-hero-banner">
             <div class="research-pill-tag">
               <span>📚</span> Academic & Open-Access Knowledge Repository
@@ -2281,8 +2322,21 @@ Key Advantage:
             </p>
           </div>
 
+          <!-- Papers vs Topic-Wise View Toggle -->
+          <div class="papers-view-switcher">
+            <button class="papers-view-btn active" id="btn-view-per-paper" onclick="window.switchPapersView('per-paper')">
+              📑 Per-Paper Summaries
+            </button>
+            <button class="papers-view-btn" id="btn-view-topic-synthesis" onclick="window.switchPapersView('topic-synthesis')">
+              🔬 Topic-Wise Synthesis
+            </button>
+            <span class="topic-synthesis-status-chip" id="topic-synthesis-badge" style="display:none;">
+              ✨ Multi-Paper Co-citation Synthesis
+            </span>
+          </div>
+
           <!-- Search & Category Filters -->
-          <div class="research-toolbar">
+          <div class="research-toolbar" id="research-papers-toolbar">
             <div class="research-search-box">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/>
@@ -2310,13 +2364,58 @@ Key Advantage:
             </div>
           </div>
 
-          <!-- Research Papers Grid -->
+          <!-- Research Papers Grid (Per-Paper View) -->
           <div class="research-grid" id="research-grid-container">
             <!-- Populated dynamically by app.js -->
           </div>
+
+          <!-- Topic-Wise Synthesis Container -->
+          <div id="topic-synthesis-container" style="display: none;">
+            <!-- Ask ANY Concept or Word Box -->
+            <div class="topic-custom-search-box">
+              <div class="topic-custom-search-title-row">
+                <div class="topic-custom-search-title">
+                  <span>🔬</span> Ask or Synthesize ANY Word / Concept Across All Research Papers
+                </div>
+                <span class="topic-badge-dynamic">Dynamic Live Synthesis</span>
+              </div>
+              <p class="topic-custom-search-desc">
+                Enter <strong>any term or concept</strong> (e.g. <em>decoherence</em>, <em>teleportation</em>, <em>fault tolerance</em>, <em>barren plateaus</em>, <em>transmon</em>, <em>quantum walk</em>, <em>anyon</em>, <em>QKD</em>). Ananta will retrieve all matching papers across the research corpus and synthesize their collective findings with clickable citations.
+              </p>
+              <div class="topic-custom-input-bar">
+                <input type="text" id="topic-custom-input" placeholder="Type ANY quantum concept or word (e.g. 'decoherence', 'teleportation', 'fault tolerance', 'anyons')..." onkeydown="if(event.key==='Enter') window.synthesizeAnyWord()" />
+                <button class="btn-synthesize-custom-word" id="btn-synthesize-custom-word" onclick="window.synthesizeAnyWord()">
+                  ⚡ Synthesize Across Papers
+                </button>
+              </div>
+              <div class="topic-quick-suggestions" id="topic-quick-suggestions">
+                <span class="quick-suggest-label">Suggestions:</span>
+                <!-- Filled dynamically by app.js -->
+              </div>
+            </div>
+
+            <!-- Custom Topic Live Result Showcase -->
+            <div id="topic-custom-result-showcase" style="display:none; margin-bottom: 24px;"></div>
+
+            <div class="topic-synthesis-header-bar">
+              <div class="topic-synthesis-info">
+                <h3 class="topic-synthesis-heading">Cross-Paper Concept Clusters</h3>
+                <p class="topic-synthesis-sub">Browse multi-paper syntheses across topics with &ge;2 publications. Click any citation to view the source paper.</p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <span id="topic-synthesis-stats" class="research-counter-badge">0 Topics Loaded</span>
+                <button class="btn-synthesize-all" id="btn-synthesize-all" onclick="window.synthesizeAllTopics()">
+                  🧠 Synthesize All Clusters
+                </button>
+              </div>
+            </div>
+            <div class="topic-synthesis-grid" id="topic-synthesis-grid">
+              <!-- Populated dynamically by app.js -->
+            </div>
+          </div>
         </div>
 
-        <!-- ================= MODE 2: GOOGLE QUANTUM AI ALGORITHM COMPENDIUM ================= -->
+        <!-- ================= MODE 2: ALGORITHM CATALOG ================= -->
         <div id="quantum-zoo-subview" style="display: none;">
           <div class="google-compendium-banner">
             <div class="g-quantum-accent-line"></div>
@@ -2422,6 +2521,43 @@ Key Advantage:
           <!-- Algorithms Cards Grid -->
           <div class="g-algorithms-grid" id="zoo-grid-container">
             <!-- Populated dynamically by app.js -->
+          </div>
+        </div>
+
+        <!-- ================= MODE 3: LIVE COMMUNITY RESOURCE LIBRARY ================= -->
+        <div id="resource-library-subview" style="display: none;">
+          <div class="research-hero-banner">
+            <div class="research-pill-tag">
+              <span>🌐</span> Live, Backend-Fetched from Curated GitHub Repositories
+            </div>
+            <h1 class="research-hero-title">Community Quantum Resource Library</h1>
+            <p class="research-hero-desc">
+              Roadmaps, books, courses, cheatsheets, and papers pulled live by the backend from a curated set of open-source quantum computing / QML resource repositories on GitHub. Nothing here is hardcoded — every link is parsed fresh from each repo's current README.
+            </p>
+          </div>
+
+          <div class="research-toolbar">
+            <div class="research-search-box">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" id="reslib-search-input" placeholder="Search resource titles, categories, or repositories..." oninput="window.filterResourceLibrary()" />
+              <button id="reslib-clear-search" class="btn-clear-search" style="display:none;" title="Clear search" onclick="window.clearResourceLibrarySearch()">✕</button>
+            </div>
+
+            <div class="research-category-pills" id="reslib-source-pills">
+              <button class="cat-pill active" data-reslib-source="all" onclick="window.setResourceLibrarySource('all')">All Sources</button>
+            </div>
+
+            <div class="research-status-bar">
+              <span id="reslib-results-count" class="research-counter-badge">Loading live resource library...</span>
+              <button class="btn-live-extract" onclick="window.loadResourceLibrary(true)" style="margin-left: auto; background: linear-gradient(135deg, #0891b2, #0f62fe); color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">🔄 Refresh from GitHub</button>
+            </div>
+          </div>
+
+          <div class="research-grid" id="reslib-grid-container">
+            <!-- Populated live by app.js from GET /api/resources -->
           </div>
         </div>
 
@@ -3716,6 +3852,7 @@ Key Advantage:
   <script src="js/quantum-voice-copilot.js"></script>
   <script src="js/knowledge-graph-data.js"></script>
   <script src="js/knowledge-graph.js"></script>
+  <script src="js/quantum-maze-sim.js"></script>
   <script src="js/app.js"></script>
   <!-- KaTeX Auto-Render Engine -->
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>

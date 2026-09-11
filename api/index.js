@@ -292,6 +292,22 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  if (pathname === '/api/synthesize-topic' && req.method === 'POST') {
+    const body = await getParsedBody(req);
+    const { topic, papers } = body || {};
+    if (!topic || !Array.isArray(papers) || papers.length === 0) {
+      return sendJson(res, 400, { error: 'provide topic and a non-empty papers array' });
+    }
+
+    try {
+      const { synthesizeTopic } = require('../ananta-backend/utils/summarize');
+      const result = await synthesizeTopic(topic, papers);
+      return sendJson(res, 200, result);
+    } catch (e) {
+      return sendJson(res, 500, { error: e.message });
+    }
+  }
+
   // 1. GET /api or /api/health
   if ((pathname === '/api' || pathname === '/api/health') && req.method === 'GET') {
     return sendJson(res, 200, {
@@ -335,6 +351,45 @@ module.exports = async function handler(req, res) {
       count: Object.keys(QPU_DEVICES).length,
       devices: QPU_DEVICES
     });
+  }
+
+  // POST /api/research/discover — live literature search for a plain-language topic
+  // POST /api/research/brief    — the same, plus a cited AI synthesis
+  if ((pathname === '/api/research/discover' || pathname === '/api/research/brief') && req.method === 'POST') {
+    const body = await getParsedBody(req);
+    const { topic, limit, refresh } = body || {};
+    if (!topic) return sendJson(res, 400, { error: 'topic is required' });
+
+    try {
+      const { discoverPapers, briefTopic } = require('../ananta-backend/utils/researchArchive');
+      const run = pathname.endsWith('/brief') ? briefTopic : discoverPapers;
+      const data = await run({ topic, limit: Math.min(Number(limit) || 12, 40), refresh: refresh === true });
+      return sendJson(res, 200, data);
+    } catch (err) {
+      return sendJson(res, 500, { error: err.message });
+    }
+  }
+
+  // GET /api/voice/vocabulary — capability registry used for phonetic matching
+  if (pathname === '/api/voice/vocabulary' && req.method === 'GET') {
+    try {
+      const { getVocabulary } = require('../ananta-backend/utils/voiceIntent');
+      return sendJson(res, 200, getVocabulary());
+    } catch (err) {
+      return sendJson(res, 500, { error: err.message });
+    }
+  }
+
+  // GET /api/resources — Live Community Resource Library (fetched from GitHub, cached)
+  if (pathname === '/api/resources' && req.method === 'GET') {
+    try {
+      const { getResourceLibrary } = require('../ananta-backend/utils/githubResources');
+      const forceRefresh = reqUrl.searchParams.get('refresh') === 'true';
+      const data = await getResourceLibrary({ forceRefresh });
+      return sendJson(res, 200, data);
+    } catch (err) {
+      return sendJson(res, 500, { error: err.message });
+    }
   }
 
   // 4. POST /api/ai/audit

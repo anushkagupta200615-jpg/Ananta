@@ -386,6 +386,9 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         window.knowledgeGraphManager.render();
       }, 50);
+    // Refresh Quantum Maze Simulation when entering Overview tab
+    if (tabKey === 'overview' && window.initQuantumMazeSim) {
+      setTimeout(() => window.initQuantumMazeSim(), 60);
     }
 
     // Trigger LaTeX / Math typesetter on view change
@@ -1635,6 +1638,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </a>
       ` : '';
 
+      card.id = `paper-card-${p.id}`;
+
       card.innerHTML = `
         <div class="paper-top-row">
           <span class="paper-badge ${catBadgeClass}">${catBadgeLabel}</span>
@@ -1646,15 +1651,580 @@ document.addEventListener('DOMContentLoaded', () => {
         <p class="paper-abstract">${p.abstract}</p>
         <div class="paper-actions-bar">
           ${simulateBtn}
+          <button class="btn-paper-aisummary" id="btn-aisummary-${p.id}" onclick="window.togglePaperAiSummary('${p.id}')">
+            🧠 AI Summary
+          </button>
           <button class="btn-paper-cite" onclick="window.openBibtexModal('${p.id}')">
             Cite BibTeX
           </button>
           ${pdfLink}
         </div>
+        <div class="paper-ai-summary-drawer" id="paper-summary-drawer-${p.id}"></div>
       `;
       researchGrid.appendChild(card);
     });
   }
+
+  // Per-paper on-card AI Summary toggle
+  window.__PAPER_AI_SUMMARY_CACHE = window.__PAPER_AI_SUMMARY_CACHE || {};
+  window.togglePaperAiSummary = async function(paperId) {
+    const drawer = document.getElementById(`paper-summary-drawer-${paperId}`);
+    const btn = document.getElementById(`btn-aisummary-${paperId}`);
+    if (!drawer) return;
+
+    if (drawer.style.display === 'block') {
+      drawer.style.display = 'none';
+      if (btn) btn.innerHTML = '🧠 AI Summary';
+      return;
+    }
+
+    drawer.style.display = 'block';
+    if (btn) btn.innerHTML = '🧠 Hide Summary';
+
+    if (window.__PAPER_AI_SUMMARY_CACHE[paperId]) {
+      const cached = window.__PAPER_AI_SUMMARY_CACHE[paperId];
+      drawer.innerHTML = `
+        <div class="paper-ai-summary-header">
+          <span>🧠 Executive Research Summary</span>
+          <span style="font-size: 10px; opacity: 0.8;">Instant AI Cached</span>
+        </div>
+        <p class="paper-ai-summary-text">${cached}</p>
+      `;
+      return;
+    }
+
+    const paper = (window.QUANTUM_RESEARCH_PAPERS || []).find(p => p.id === paperId);
+    if (!paper) return;
+
+    drawer.innerHTML = `
+      <div style="color: #34d399; font-size: 12px; display: flex; align-items: center; gap: 8px; padding: 4px 0;">
+        <span style="display:inline-block; width:12px; height:12px; border:2px solid #34d399; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></span>
+        Synthesizing executive scientific summary...
+      </div>
+    `;
+
+    try {
+      const res = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: paper.abstract, title: paper.title })
+      });
+      const data = await res.json();
+      const summary = data.summary || paper.abstract;
+      window.__PAPER_AI_SUMMARY_CACHE[paperId] = summary;
+
+      drawer.innerHTML = `
+        <div class="paper-ai-summary-header">
+          <span>🧠 Executive Research Summary</span>
+          <span style="font-size: 10px; opacity: 0.8;">AI Synthesized</span>
+        </div>
+        <p class="paper-ai-summary-text">${summary}</p>
+      `;
+    } catch (err) {
+      drawer.innerHTML = `
+        <div class="paper-ai-summary-header" style="color: #f87171;">Summary Notice</div>
+        <p class="paper-ai-summary-text" style="color: #cbd5e1;">${paper.abstract}</p>
+      `;
+    }
+  };
+
+  // ==========================================
+  // 8A. TOPIC-WISE CROSS-PAPER SYNTHESIS ENGINE
+  // ==========================================
+  let currentPapersViewMode = 'per-paper';
+  window.__TOPIC_SYNTHESIS_CACHE = window.__TOPIC_SYNTHESIS_CACHE || {};
+
+  window.switchPapersView = function(mode) {
+    currentPapersViewMode = mode;
+    const btnPerPaper = document.getElementById('btn-view-per-paper');
+    const btnTopic = document.getElementById('btn-view-topic-synthesis');
+    const badge = document.getElementById('topic-synthesis-badge');
+    const papersGrid = document.getElementById('research-grid-container');
+    const topicContainer = document.getElementById('topic-synthesis-container');
+
+    if (mode === 'topic-synthesis') {
+      if (btnPerPaper) btnPerPaper.classList.remove('active');
+      if (btnTopic) btnTopic.classList.add('active');
+      if (badge) badge.style.display = 'inline-flex';
+      if (papersGrid) papersGrid.style.display = 'none';
+      if (topicContainer) topicContainer.style.display = 'block';
+      renderTopicWiseSynthesis();
+    } else {
+      if (btnPerPaper) btnPerPaper.classList.add('active');
+      if (btnTopic) btnTopic.classList.remove('active');
+      if (badge) badge.style.display = 'none';
+      if (papersGrid) papersGrid.style.display = 'grid';
+      if (topicContainer) topicContainer.style.display = 'none';
+      renderResearchLibrary();
+    }
+  };
+
+  // Smoothly scrolls to a paper card and flashes a glowing pulse highlight
+  window.scrollToPaper = function(paperId) {
+    if (!paperId) return;
+
+    if (currentPapersViewMode !== 'per-paper') {
+      window.switchPapersView('per-paper');
+    }
+
+    const targetPaper = (window.QUANTUM_RESEARCH_PAPERS || []).find(p => p.id === paperId);
+    if (targetPaper) {
+      if (activeCategory !== 'all' && targetPaper.category !== activeCategory) {
+        activeCategory = 'all';
+        catPills.forEach(p => p.classList.toggle('active', p.getAttribute('data-cat') === 'all'));
+      }
+      if (searchQuery) {
+        searchQuery = '';
+        if (searchInput) searchInput.value = '';
+        if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+      }
+      renderResearchLibrary();
+    }
+
+    setTimeout(() => {
+      const card = document.getElementById(`paper-card-${paperId}`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.remove('paper-card-highlighted');
+        void card.offsetWidth;
+        card.classList.add('paper-card-highlighted');
+        setTimeout(() => {
+          card.classList.remove('paper-card-highlighted');
+        }, 2800);
+      }
+    }, 120);
+  };
+
+  // Format inline citation markers [paper-id] into clickable interactive badges
+  function formatCitationsInText(text, topicPapers) {
+    if (!text) return '';
+    const paperLookup = new Map((topicPapers || []).map(p => [p.id, p]));
+    (window.QUANTUM_RESEARCH_PAPERS || []).forEach(p => {
+      if (!paperLookup.has(p.id)) paperLookup.set(p.id, p);
+    });
+
+    return text.replace(/\[([a-zA-Z0-9_\-]+(?:,\s*[a-zA-Z0-9_\-]+)*)\]/g, (match, idsStr) => {
+      const ids = idsStr.split(',').map(s => s.trim());
+      const buttons = ids.map(id => {
+        const p = paperLookup.get(id);
+        const label = p
+          ? (p.title.length > 34 ? `${p.authors.split(',')[0].split(' ')[0]} ${p.year}` : p.title)
+          : id;
+        const fullTitle = p ? `${p.title} (${p.authors}, ${p.year})` : id;
+        return `<button class="citation-marker" onclick="window.scrollToPaper('${id}')" title="Inspect source publication: ${fullTitle.replace(/"/g, '&quot;')}">${label}</button>`;
+      }).join(' ');
+      return buttons;
+    });
+  }
+
+  function renderTopicWiseSynthesis() {
+    const topicGrid = document.getElementById('topic-synthesis-grid');
+    const statsBadge = document.getElementById('topic-synthesis-stats');
+    if (!topicGrid || !window.QUANTUM_RESEARCH_PAPERS) return;
+
+    // Dynamically cluster papers by their assigned topics
+    const topicMap = new Map();
+    window.QUANTUM_RESEARCH_PAPERS.forEach(p => {
+      const topics = (p.topics && p.topics.length) ? p.topics : [p.category.replace('-', ' ')];
+      topics.forEach(t => {
+        if (!topicMap.has(t)) topicMap.set(t, []);
+        topicMap.get(t).push(p);
+      });
+    });
+
+    // Filter topics by active search query if present
+    const q = searchQuery ? searchQuery.toLowerCase() : '';
+    const entries = Array.from(topicMap.entries()).filter(([topic, papers]) => {
+      if (!q) return true;
+      if (topic.toLowerCase().includes(q)) return true;
+      return papers.some(p => 
+        (p.title && p.title.toLowerCase().includes(q)) ||
+        (p.authors && p.authors.toLowerCase().includes(q)) ||
+        (p.abstract && p.abstract.toLowerCase().includes(q))
+      );
+    });
+
+    if (statsBadge) {
+      statsBadge.textContent = `${entries.length} Concept Clusters Active`;
+    }
+
+    if (entries.length === 0) {
+      topicGrid.innerHTML = `
+        <div style="text-align: center; padding: 48px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;">
+          <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-white);">No topic clusters match your search</h3>
+          <p style="font-size: 13px; color: var(--text-dim);">Try searching for terms like "superposition", "surface code", "error correction", or "VQE".</p>
+        </div>
+      `;
+      return;
+    }
+
+    topicGrid.innerHTML = '';
+
+    entries.forEach(([topic, papers]) => {
+      const card = document.createElement('div');
+      card.className = 'topic-card';
+      const isMultiPaper = papers.length >= 2;
+      const cached = window.__TOPIC_SYNTHESIS_CACHE[topic];
+
+      // Paper pills
+      const paperPillsHtml = papers.map(p => `
+        <button class="topic-paper-pill" onclick="window.scrollToPaper('${p.id}')" title="Inspect paper: ${p.title.replace(/"/g, '&quot;')}">
+          <span>📄</span>
+          <strong>${p.year}</strong>
+          <span>${p.title.length > 40 ? p.title.slice(0, 40) + '…' : p.title}</span>
+        </button>
+      `).join('');
+
+      let contentHtml = '';
+      if (!isMultiPaper) {
+        // Single paper: show individual summary
+        const p = papers[0];
+        contentHtml = `
+          <div class="topic-synthesis-body">
+            <p class="topic-paragraph">
+              <strong>Single-Paper Topic Anchor:</strong> ${formatCitationsInText(`[${p.id}] ${p.abstract}`, [p])}
+            </p>
+          </div>
+        `;
+      } else if (cached) {
+        // Render synthesized narrative and takeaways with citations
+        const paragraphsHtml = (cached.synthesis_paragraphs || []).map(para => `
+          <p class="topic-paragraph">${formatCitationsInText(para.text, papers)}</p>
+        `).join('');
+
+        const takeawaysHtml = (cached.key_takeaways && cached.key_takeaways.length) ? `
+          <div class="topic-takeaways-box">
+            <div class="topic-takeaways-title">
+              <span>⚡</span> Key Cross-Paper Takeaways & Citations
+            </div>
+            <ul class="topic-takeaways-list">
+              ${cached.key_takeaways.map(t => `
+                <li class="topic-takeaway-item">${formatCitationsInText(t.point, papers)}</li>
+              `).join('')}
+            </ul>
+          </div>
+        ` : '';
+
+        contentHtml = `
+          <div class="topic-synthesis-body">
+            ${paragraphsHtml}
+            ${takeawaysHtml}
+          </div>
+        `;
+      } else {
+        // Not yet synthesized: placeholder with instant synthesis trigger
+        contentHtml = `
+          <div class="topic-synthesis-body" id="topic-body-${encodeURIComponent(topic)}">
+            <div style="background: rgba(56, 189, 248, 0.05); border: 1px dashed rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 18px; text-align: center;">
+              <p style="margin: 0 0 10px 0; color: #cbd5e1; font-size: 13px;">
+                Ready to synthesize findings across these <strong>${papers.length} publications</strong> with inline source citations.
+              </p>
+              <button onclick="window.synthesizeTopicForCard('${topic.replace(/'/g, "\\'")}')" class="btn-synthesize-all" style="font-size: 11.5px; padding: 6px 14px;">
+                🧠 Synthesize Cross-Paper Findings
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      const resynthesizeBtn = isMultiPaper ? `
+        <button class="btn-topic-resynthesize" onclick="window.synthesizeTopicForCard('${topic.replace(/'/g, "\\'")}', true)" title="Re-synthesize this topic with latest AI">
+          ${cached ? '🔄 Re-synthesize' : '⚡ Synthesize'}
+        </button>
+      ` : '';
+
+      card.innerHTML = `
+        <div class="topic-card-header">
+          <div class="topic-card-title-group">
+            <h4 class="topic-card-title">${topic}</h4>
+            <span class="topic-papers-count">${papers.length} ${papers.length === 1 ? 'Paper' : 'Papers Analyzed'}</span>
+          </div>
+          <div class="topic-card-actions">
+            ${resynthesizeBtn}
+          </div>
+        </div>
+        <div class="topic-paper-pills">
+          ${paperPillsHtml}
+        </div>
+        ${contentHtml}
+      `;
+
+      topicGrid.appendChild(card);
+    });
+
+    // Populate quick suggestion chips for arbitrary words
+    const suggestContainer = document.getElementById('topic-quick-suggestions');
+    if (suggestContainer && (!suggestContainer.dataset.initialized)) {
+      suggestContainer.dataset.initialized = 'true';
+      const dynamicKeywords = [
+        'Decoherence', 'Teleportation', 'Fault Tolerance', 'Barren Plateaus',
+        'Surface Codes', 'Superposition', 'Entanglement', 'Grover Search',
+        'Shor Factoring', 'VQE', 'QAOA', 'Transmon', 'Anyons', 'Quantum Walks', 'BB84 QKD'
+      ];
+      suggestContainer.innerHTML = `
+        <span class="quick-suggest-label">Try any term:</span>
+        ${dynamicKeywords.map(kw => `
+          <button class="quick-suggest-chip" onclick="window.synthesizeAnyWord('${kw}')">${kw}</button>
+        `).join('')}
+      `;
+    }
+
+    // Auto-synthesize the first 2 visible multi-paper topics on first load if not yet cached
+    const needsAuto = entries.filter(([t, p]) => p.length >= 2 && !window.__TOPIC_SYNTHESIS_CACHE[t]).slice(0, 2);
+    if (needsAuto.length > 0) {
+      setTimeout(() => {
+        needsAuto.forEach(([topic]) => {
+          window.synthesizeTopicForCard(topic, false);
+        });
+      }, 200);
+    }
+  }
+
+  // ==========================================
+  // ASK / SYNTHESIZE ANY WORD OR CONCEPT DYNAMICALLY
+  // ==========================================
+  window.synthesizeAnyWord = async function(customWord = null) {
+    const input = document.getElementById('topic-custom-input');
+    const term = (customWord || (input ? input.value : '')).trim();
+    if (!term) {
+      alert('Please enter any word or concept to synthesize across research papers (e.g. "decoherence", "teleportation", "fault tolerance", "vqe")');
+      return;
+    }
+    if (input) input.value = term;
+
+    const showcase = document.getElementById('topic-custom-result-showcase');
+    if (!showcase) return;
+
+    showcase.style.display = 'block';
+    showcase.innerHTML = `
+      <div style="background: var(--bg-card); border: 1px solid var(--accent-blue); border-radius: 14px; padding: 26px; text-align: center; color: #38bdf8; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
+        <span style="display:inline-block; width:22px; height:22px; border:2px solid #38bdf8; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; margin-bottom: 12px;"></span>
+        <h3 style="margin: 0 0 6px 0; color: #ffffff; font-size: 17px;">Scanning publications and synthesizing: "${term}"...</h3>
+        <p style="margin: 0; font-size: 13px; color: #cbd5e1;">Analyzing paper abstracts, methodologies, and findings across the entire quantum research corpus...</p>
+      </div>
+    `;
+    showcase.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // 1. Retrieve all matching papers from the corpus
+    const termLower = term.toLowerCase();
+    const queryTokens = termLower.split(/[\s,&+/\-_]+/).filter(w => w.length >= 3);
+
+    let matchingPapers = (window.QUANTUM_RESEARCH_PAPERS || []).filter(p => {
+      const text = `${p.title} ${p.abstract} ${p.authors} ${p.category} ${(p.topics || []).join(' ')}`.toLowerCase();
+      if (text.includes(termLower)) return true;
+      return queryTokens.length > 0 && queryTokens.some(tok => text.includes(tok));
+    });
+
+    // 2. If fewer than 2 papers found in local static corpus, search arXiv live via /api/search!
+    if (matchingPapers.length < 2) {
+      try {
+        const arxivRes = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: term, num: 4 })
+        });
+        const arxivData = await arxivRes.json();
+        if (arxivData.results && arxivData.results.length) {
+          arxivData.results.forEach((r, idx) => {
+            matchingPapers.push({
+              id: `arxiv-${Date.now().toString(36)}-${idx}`,
+              title: r.title,
+              authors: r.authors || 'arXiv Researchers',
+              year: r.published ? (parseInt(r.published) || 2024) : 2024,
+              abstract: r.snippet || '',
+              category: 'arxiv',
+              pdfUrl: r.link
+            });
+          });
+        }
+      } catch (err) {
+        console.warn('Live search notice:', err.message);
+      }
+    }
+
+    if (matchingPapers.length === 0) {
+      showcase.innerHTML = `
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 26px; text-align: center;">
+          <h4 style="margin: 0 0 6px 0; color: #fff; font-size: 16px;">No research publications found for "${term}"</h4>
+          <p style="margin: 0; font-size: 13px; color: #94a3b8;">Try searching for concepts like "decoherence", "teleportation", "fault tolerance", "vqe", "anyon", or "transmon".</p>
+        </div>
+      `;
+      return;
+    }
+
+    // 3. Synthesize findings across the matching papers with citations
+    try {
+      const res = await fetch('/api/synthesize-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: term,
+          papers: matchingPapers.map(p => ({
+            id: p.id,
+            title: p.title,
+            authors: p.authors,
+            year: p.year,
+            abstract: p.abstract,
+            category: p.category
+          }))
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.synthesis_paragraphs) throw new Error(data.error || 'Failed to synthesize');
+
+      // 4. Render customized synthesis showcase
+      const paragraphsHtml = (data.synthesis_paragraphs || []).map(para => `
+        <p class="topic-paragraph">${formatCitationsInText(para.text, matchingPapers)}</p>
+      `).join('');
+
+      const takeawaysHtml = (data.key_takeaways && data.key_takeaways.length) ? `
+        <div class="topic-takeaways-box">
+          <div class="topic-takeaways-title">
+            <span>⚡</span> Key Cross-Paper Takeaways & Citations for "${term}"
+          </div>
+          <ul class="topic-takeaways-list">
+            ${data.key_takeaways.map(t => `
+              <li class="topic-takeaway-item">${formatCitationsInText(t.point, matchingPapers)}</li>
+            `).join('')}
+          </ul>
+        </div>
+      ` : '';
+
+      const paperPillsHtml = matchingPapers.map(p => `
+        <button class="topic-paper-pill" onclick="window.scrollToPaper('${p.id}')" title="Inspect paper: ${p.title.replace(/"/g, '&quot;')}">
+          <span>📄</span>
+          <strong>${p.year}</strong>
+          <span>${p.title.length > 40 ? p.title.slice(0, 40) + '…' : p.title}</span>
+        </button>
+      `).join('');
+
+      showcase.innerHTML = `
+        <div class="topic-card" style="border-color: #38bdf8; box-shadow: 0 10px 30px rgba(56, 189, 248, 0.15);">
+          <div class="topic-card-header">
+            <div class="topic-card-title-group">
+              <span style="font-size: 20px;">✨</span>
+              <h4 class="topic-card-title">Live Cross-Paper Synthesis: "${term}"</h4>
+              <span class="topic-papers-count">${matchingPapers.length} Publications Synthesized</span>
+            </div>
+            <div class="topic-card-actions">
+              <button class="btn-topic-resynthesize" onclick="window.synthesizeAnyWord('${term.replace(/'/g, "\\'")}')" title="Re-synthesize with AI">
+                🔄 Re-synthesize
+              </button>
+              <button class="btn-topic-resynthesize" onclick="document.getElementById('topic-custom-result-showcase').style.display='none'" title="Close">
+                ✕ Close
+              </button>
+            </div>
+          </div>
+          <div class="topic-paper-pills">
+            ${paperPillsHtml}
+          </div>
+          <div class="topic-synthesis-body">
+            ${paragraphsHtml}
+            ${takeawaysHtml}
+          </div>
+        </div>
+      `;
+    } catch (err) {
+      showcase.innerHTML = `
+        <div style="background: var(--bg-card); border: 1px solid #f87171; border-radius: 12px; padding: 20px; color: #f87171;">
+          Failed to synthesize "${term}": ${err.message}
+        </div>
+      `;
+    }
+  };
+
+  // Synthesize a specific topic dynamically via /api/synthesize-topic
+  window.synthesizeTopicForCard = async function(topic, forceRefresh = false) {
+    if (!topic) return;
+    if (!forceRefresh && window.__TOPIC_SYNTHESIS_CACHE[topic]) {
+      renderTopicWiseSynthesis();
+      return;
+    }
+
+    const topicMap = new Map();
+    (window.QUANTUM_RESEARCH_PAPERS || []).forEach(p => {
+      const topics = (p.topics && p.topics.length) ? p.topics : [p.category];
+      topics.forEach(t => {
+        if (!topicMap.has(t)) topicMap.set(t, []);
+        topicMap.get(t).push(p);
+      });
+    });
+
+    const papers = topicMap.get(topic) || [];
+    if (!papers.length) return;
+
+    const bodyEl = document.getElementById(`topic-body-${encodeURIComponent(topic)}`);
+    if (bodyEl) {
+      bodyEl.innerHTML = `
+        <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 8px; padding: 18px; text-align: center; color: #38bdf8; font-size: 13px;">
+          <span style="display:inline-block; width:14px; height:14px; border:2px solid #38bdf8; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; margin-right: 8px;"></span>
+          Synthesizing cross-paper analysis across ${papers.length} publications with inline citations...
+        </div>
+      `;
+    }
+
+    try {
+      const res = await fetch('/api/synthesize-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic,
+          papers: papers.map(p => ({
+            id: p.id,
+            title: p.title,
+            authors: p.authors,
+            year: p.year,
+            abstract: p.abstract,
+            category: p.category
+          }))
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.synthesis_paragraphs) {
+        window.__TOPIC_SYNTHESIS_CACHE[topic] = data;
+      }
+    } catch (err) {
+      console.warn('Synthesis error:', err);
+    } finally {
+      renderTopicWiseSynthesis();
+    }
+  };
+
+  // Synthesizes all multi-paper topics in batches
+  window.synthesizeAllTopics = async function() {
+    const btn = document.getElementById('btn-synthesize-all');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Synthesizing All Topics...';
+    }
+
+    const topicMap = new Map();
+    (window.QUANTUM_RESEARCH_PAPERS || []).forEach(p => {
+      const topics = (p.topics && p.topics.length) ? p.topics : [p.category];
+      topics.forEach(t => {
+        if (!topicMap.has(t)) topicMap.set(t, []);
+        topicMap.get(t).push(p);
+      });
+    });
+
+    const multiTopics = Array.from(topicMap.keys()).filter(t => (topicMap.get(t) || []).length >= 2);
+
+    for (const topic of multiTopics) {
+      if (!window.__TOPIC_SYNTHESIS_CACHE[topic]) {
+        await window.synthesizeTopicForCard(topic, false);
+      }
+    }
+
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '✅ All Topics Synthesized';
+      setTimeout(() => {
+        btn.innerHTML = '🧠 Synthesize All Topics';
+      }, 3000);
+    }
+  };
 
   function updateCategoryCounts() {
     if (!window.QUANTUM_RESEARCH_PAPERS) return;
@@ -1677,7 +2247,11 @@ document.addEventListener('DOMContentLoaded', () => {
       catPills.forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       activeCategory = pill.getAttribute('data-cat');
-      renderResearchLibrary();
+      if (currentPapersViewMode === 'per-paper') {
+        renderResearchLibrary();
+      } else {
+        renderTopicWiseSynthesis();
+      }
     });
   });
 
@@ -1688,7 +2262,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (clearSearchBtn) {
         clearSearchBtn.style.display = searchQuery ? 'inline-block' : 'none';
       }
-      renderResearchLibrary();
+      if (currentPapersViewMode === 'per-paper') {
+        renderResearchLibrary();
+      } else {
+        renderTopicWiseSynthesis();
+      }
     });
   }
 
@@ -1697,7 +2275,11 @@ document.addEventListener('DOMContentLoaded', () => {
       searchInput.value = '';
       searchQuery = '';
       clearSearchBtn.style.display = 'none';
-      renderResearchLibrary();
+      if (currentPapersViewMode === 'per-paper') {
+        renderResearchLibrary();
+      } else {
+        renderTopicWiseSynthesis();
+      }
     });
   }
 
@@ -1707,26 +2289,331 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeZooCategory = 'all';
   let zooSearchQuery = '';
 
-  window.switchResearchMode = function(mode) {
-    const papersSub = document.getElementById('research-papers-subview');
-    const zooSub = document.getElementById('quantum-zoo-subview');
-    const tabPapers = document.getElementById('tab-mode-papers');
-    const tabZoo = document.getElementById('tab-mode-zoo');
+  // ==========================================
+  // 8D. LIVE LITERATURE SEARCH (backend: /api/research/brief)
+  // ==========================================
+  let litSearchBusy = false;
 
-    if (mode === 'zoo') {
-      if (papersSub) papersSub.style.display = 'none';
-      if (zooSub) zooSub.style.display = 'block';
-      if (tabPapers) tabPapers.classList.remove('active');
-      if (tabZoo) tabZoo.classList.add('active');
-      renderZooLibrary();
-    } else {
-      if (papersSub) papersSub.style.display = 'block';
-      if (zooSub) zooSub.style.display = 'none';
-      if (tabPapers) tabPapers.classList.add('active');
-      if (tabZoo) tabZoo.classList.remove('active');
-      renderResearchLibrary();
+  window.initLiteratureSearch = function() {
+    const box = document.getElementById('litsearch-suggestions');
+    if (!box || box.dataset.ready) return;
+    box.dataset.ready = '1';
+
+    // Seeded from the categories the archive already organises itself by, so
+    // the prompts track the app rather than being a fixed list.
+    const seeds = [...document.querySelectorAll('#research-category-pills .cat-pill')]
+      .map(p => p.textContent.replace(/\(.*\)/, '').trim())
+      .filter(t => t && !/^all$/i.test(t));
+
+    box.innerHTML = seeds.slice(0, 7).map(t =>
+      `<button type="button" class="litsearch-chip" onclick="window.runLiteratureSearch('${t.replace(/'/g, "\\'")}')">${t}</button>`
+    ).join('');
+  };
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /** Turns [P1] / [P1, P3] citation tags into links that scroll to the paper. */
+  function linkCitations(text, papers) {
+    const known = new Set(papers.map(p => p.id));
+    return escapeHtml(text).replace(/\[([P0-9,\s]+)\]/g, (match, ids) => {
+      const parts = ids.split(',').map(s => s.trim()).filter(id => known.has(id));
+      if (!parts.length) return match;
+      return parts.map(id =>
+        `<a href="#litpaper-${id}" class="litsearch-cite" onclick="window.focusLitPaper('${id}');return false;">${id}</a>`
+      ).join(' ');
+    });
+  }
+
+  window.focusLitPaper = function(id) {
+    const el = document.getElementById(`litpaper-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('litsearch-highlight');
+    setTimeout(() => el.classList.remove('litsearch-highlight'), 1600);
+  };
+
+  window.runLiteratureSearch = async function(presetTopic) {
+    const input = document.getElementById('litsearch-input');
+    const status = document.getElementById('litsearch-status');
+    const synthEl = document.getElementById('litsearch-synthesis');
+    const grid = document.getElementById('litsearch-results');
+    if (!input || !status || !grid) return;
+
+    if (presetTopic) input.value = presetTopic;
+    const topic = input.value.trim();
+    if (!topic) { input.focus(); return; }
+    if (litSearchBusy) return;
+
+    litSearchBusy = true;
+    const submit = document.getElementById('litsearch-submit');
+    if (submit) { submit.disabled = true; submit.textContent = 'Searching…'; }
+
+    status.className = 'litsearch-status is-busy';
+    status.textContent = `Searching the literature for “${topic}” and preparing a synthesis…`;
+    synthEl.innerHTML = '';
+    grid.innerHTML = '';
+
+    try {
+      const base = (window.anantaBackend && window.anantaBackend.baseUrl) || '';
+      const res = await fetch(`${base}/api/research/brief`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, limit: 12 })
+      });
+      if (!res.ok) throw new Error(`Backend returned HTTP ${res.status}`);
+      const data = await res.json();
+
+      renderLiteratureResults(data);
+    } catch (err) {
+      status.className = 'litsearch-status is-error';
+      status.textContent = `Could not complete the search: ${err.message}`;
+    } finally {
+      litSearchBusy = false;
+      if (submit) { submit.disabled = false; submit.textContent = 'Search & Summarize'; }
     }
   };
+
+  function renderLiteratureResults(data) {
+    const status = document.getElementById('litsearch-status');
+    const synthEl = document.getElementById('litsearch-synthesis');
+    const grid = document.getElementById('litsearch-results');
+    const papers = data.papers || [];
+
+    const sourceSummary = (data.sources || [])
+      .map(s => `${s.label}: ${s.error ? 'unavailable' : s.count}`)
+      .join(' · ');
+
+    status.className = 'litsearch-status';
+    status.innerHTML = papers.length
+      ? `Found <strong>${papers.length}</strong> publications for <strong>${escapeHtml(data.query)}</strong> &nbsp;·&nbsp; <span class="litsearch-sources">${escapeHtml(sourceSummary)}</span>`
+      : `No publications matched “${escapeHtml(data.topic)}”. Try a broader or more specific phrase.`;
+
+    if (data.synthesis && data.synthesis.synthesis_paragraphs) {
+      const paras = data.synthesis.synthesis_paragraphs
+        .map(p => `<p>${linkCitations(p.text, papers)}</p>`).join('');
+      const takeaways = (data.synthesis.key_takeaways || [])
+        .map(k => `<li>${linkCitations(k.point, papers)}</li>`).join('');
+
+      synthEl.innerHTML = `
+        <section class="litsearch-synthesis-card">
+          <header class="litsearch-synthesis-head">
+            <h2>Synthesis: ${escapeHtml(data.query)}</h2>
+            <span class="litsearch-synth-badge">Cited across ${papers.length} sources</span>
+          </header>
+          <div class="litsearch-synthesis-body">${paras}</div>
+          ${takeaways ? `<h3 class="litsearch-takeaway-head">Key takeaways</h3><ul class="litsearch-takeaways">${takeaways}</ul>` : ''}
+        </section>
+      `;
+    } else if (data.synthesisError) {
+      synthEl.innerHTML = `<section class="litsearch-synthesis-card is-muted">
+        <p>Papers retrieved, but the synthesis step was unavailable: ${escapeHtml(data.synthesisError)}</p>
+      </section>`;
+    }
+
+    grid.innerHTML = papers.map(p => {
+      const meta = [p.year, p.venue, p.citationCount != null ? `${p.citationCount} citations` : null]
+        .filter(Boolean).map(escapeHtml).join(' · ');
+      const abstract = p.abstract
+        ? escapeHtml(p.abstract.length > 420 ? p.abstract.slice(0, 420) + '…' : p.abstract)
+        : '<em>No abstract published for this record.</em>';
+
+      return `
+        <article class="paper-card litsearch-card" id="litpaper-${p.id}">
+          <div class="paper-top-row">
+            <span class="paper-badge badge-qml">${escapeHtml(p.id)} · ${escapeHtml(p.source)}</span>
+            <span class="paper-year">${escapeHtml(p.year || '—')}</span>
+          </div>
+          <h3 class="paper-title">${escapeHtml(p.title)}</h3>
+          <div class="paper-authors">${escapeHtml(p.authors)}</div>
+          <div class="paper-venue">${meta}</div>
+          <p class="paper-abstract">${abstract}</p>
+          <div class="paper-actions-bar">
+            ${p.url ? `<a href="${encodeURI(p.url)}" target="_blank" rel="noopener noreferrer" class="btn-paper-pdf">Open record ↗</a>` : ''}
+            ${p.pdfUrl ? `<a href="${encodeURI(p.pdfUrl)}" target="_blank" rel="noopener noreferrer" class="btn-paper-pdf">PDF ↗</a>` : ''}
+            ${p.doi ? `<a href="https://doi.org/${encodeURIComponent(p.doi)}" target="_blank" rel="noopener noreferrer" class="btn-paper-cite">DOI</a>` : ''}
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  window.switchResearchMode = function(mode) {
+    const views = {
+      search:  { sub: 'literature-search-subview', tab: 'tab-mode-search',  onShow: () => window.initLiteratureSearch() },
+      papers:  { sub: 'research-papers-subview',   tab: 'tab-mode-papers',  onShow: () => renderResearchLibrary() },
+      catalog: { sub: 'quantum-zoo-subview',       tab: 'tab-mode-catalog', onShow: () => renderZooLibrary() },
+      library: { sub: 'resource-library-subview',  tab: 'tab-mode-library', onShow: () => window.loadResourceLibrary() }
+    };
+
+    Object.values(views).forEach(v => {
+      const sub = document.getElementById(v.sub);
+      const tab = document.getElementById(v.tab);
+      if (sub) sub.style.display = 'none';
+      if (tab) tab.classList.remove('active');
+    });
+
+    const view = views[mode] || views.search;
+    const sub = document.getElementById(view.sub);
+    const tab = document.getElementById(view.tab);
+    if (sub) sub.style.display = 'block';
+    if (tab) tab.classList.add('active');
+    view.onShow();
+  };
+
+  // ==========================================
+  // 8C. LIVE COMMUNITY RESOURCE LIBRARY (backend-fetched from GitHub)
+  // ==========================================
+  let resourceLibraryData = null;
+  let reslibActiveSource = 'all';
+  let reslibSearchQuery = '';
+  let reslibLoading = false;
+
+  window.loadResourceLibrary = async function(forceRefresh) {
+    const grid = document.getElementById('reslib-grid-container');
+    const counter = document.getElementById('reslib-results-count');
+    if (resourceLibraryData && !forceRefresh) {
+      renderResourceLibrary();
+      return;
+    }
+    if (reslibLoading) return;
+    reslibLoading = true;
+    if (counter) counter.textContent = forceRefresh ? 'Refreshing from GitHub...' : 'Loading live resource library...';
+    if (grid) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+          <h3 style="font-size: 16px; color: var(--text-white);">⚡ Fetching curated resources live from GitHub…</h3>
+          <p style="font-size: 13px; color: var(--text-dim); margin-top: 6px;">Parsing README links from the source repositories via the Ananta backend.</p>
+        </div>
+      `;
+    }
+    try {
+      const base = (window.anantaBackend && window.anantaBackend.baseUrl) || '';
+      const res = await fetch(`${base}/api/resources${forceRefresh ? '?refresh=true' : ''}`);
+      if (!res.ok) throw new Error(`Backend returned HTTP ${res.status}`);
+      const data = await res.json();
+      resourceLibraryData = data;
+      buildResourceLibrarySourcePills();
+      renderResourceLibrary();
+    } catch (err) {
+      console.error('[ResourceLibrary] Load failed:', err);
+      if (counter) counter.textContent = 'Could not reach the backend.';
+      if (grid) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+            <h3 style="font-size: 16px; color: var(--text-white);">⚠️ Resource library unavailable</h3>
+            <p style="font-size: 13px; color: var(--text-dim); margin-top: 6px;">${err.message}. Make sure the Ananta backend server is running, then hit Refresh.</p>
+          </div>
+        `;
+      }
+    } finally {
+      reslibLoading = false;
+    }
+  };
+
+  function buildResourceLibrarySourcePills() {
+    const wrap = document.getElementById('reslib-source-pills');
+    if (!wrap || !resourceLibraryData) return;
+    const sources = resourceLibraryData.sources || [];
+    wrap.innerHTML = `<button class="cat-pill${reslibActiveSource === 'all' ? ' active' : ''}" data-reslib-source="all" onclick="window.setResourceLibrarySource('all')">All Sources (<span>${resourceLibraryData.totalItems}</span>)</button>` +
+      sources.map(s => `
+        <button class="cat-pill${reslibActiveSource === s.id ? ' active' : ''}" data-reslib-source="${s.id}" onclick="window.setResourceLibrarySource('${s.id}')" title="${s.description || ''}">
+          ${s.label} (<span>${s.itemCount}</span>)${s.error ? ' ⚠️' : ''}
+        </button>
+      `).join('');
+  }
+
+  window.setResourceLibrarySource = function(sourceId) {
+    reslibActiveSource = sourceId;
+    document.querySelectorAll('#reslib-source-pills .cat-pill').forEach(pill => {
+      pill.classList.toggle('active', pill.getAttribute('data-reslib-source') === sourceId);
+    });
+    renderResourceLibrary();
+  };
+
+  window.filterResourceLibrary = function() {
+    const input = document.getElementById('reslib-search-input');
+    const clearBtn = document.getElementById('reslib-clear-search');
+    reslibSearchQuery = input ? input.value.trim() : '';
+    if (clearBtn) clearBtn.style.display = reslibSearchQuery ? 'inline-block' : 'none';
+    renderResourceLibrary();
+  };
+
+  window.clearResourceLibrarySearch = function() {
+    const input = document.getElementById('reslib-search-input');
+    if (input) input.value = '';
+    reslibSearchQuery = '';
+    const clearBtn = document.getElementById('reslib-clear-search');
+    if (clearBtn) clearBtn.style.display = 'none';
+    renderResourceLibrary();
+  };
+
+  function renderResourceLibrary() {
+    const grid = document.getElementById('reslib-grid-container');
+    const counter = document.getElementById('reslib-results-count');
+    if (!grid || !resourceLibraryData) return;
+
+    const sources = resourceLibraryData.sources || [];
+    let items = [];
+    sources.forEach(s => {
+      if (reslibActiveSource !== 'all' && s.id !== reslibActiveSource) return;
+      (s.items || []).forEach(it => items.push({ ...it, sourceLabel: s.label, repoUrl: s.repoUrl }));
+    });
+
+    if (reslibSearchQuery) {
+      const q = reslibSearchQuery.toLowerCase();
+      items = items.filter(it =>
+        (it.title && it.title.toLowerCase().includes(q)) ||
+        (it.category && it.category.toLowerCase().includes(q)) ||
+        (it.sourceLabel && it.sourceLabel.toLowerCase().includes(q))
+      );
+    }
+
+    if (counter) {
+      const totalFailed = sources.filter(s => s.error).length;
+      counter.textContent = `Showing ${items.length} of ${resourceLibraryData.totalItems} resources` +
+        (totalFailed ? ` (${totalFailed} source${totalFailed > 1 ? 's' : ''} temporarily unreachable)` : '');
+    }
+
+    if (items.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+          <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-white);">No matching resources found</h3>
+          <p style="font-size: 13px; color: var(--text-dim);">Try adjusting your search query or switching sources.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Cap rendered cards for performance; the counter above still reflects the true match count.
+    const MAX_RENDER = 300;
+    grid.innerHTML = '';
+    items.slice(0, MAX_RENDER).forEach(it => {
+      const card = document.createElement('div');
+      card.className = 'paper-card';
+      card.innerHTML = `
+        <div class="paper-top-row">
+          <span class="paper-badge badge-qml">${escapeHtml(it.sourceLabel)}</span>
+          <span class="paper-year">${escapeHtml(it.category)}</span>
+        </div>
+        <h3 class="paper-title">${escapeHtml(it.title)}</h3>
+        <div class="paper-actions-bar">
+          <a href="${it.url}" target="_blank" rel="noopener noreferrer" class="btn-paper-pdf">🔗 Open Resource ↗</a>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function escapeHtml(str) {
+    return (str || '').toString()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
   let activeZooSpeedup = 'all';
 
@@ -2004,16 +2891,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const res = await fetch('/api/search', {
+      // Was /api/search (googleSearch.js): a strict all-words-must-match arXiv
+      // query that returns 0 hits for a full sentence, then silently falls back
+      // to treating the raw sentence as a bag-of-words match — which is how
+      // "i want research paper related to superposition" returned gravitational-
+      // wave papers. Routes through the same discovery pipeline the Literature
+      // Search tab uses instead: model-extracted subject, arXiv + Crossref,
+      // ranked, and dropped if it doesn't actually mention the topic.
+      const base = (window.anantaBackend && window.anantaBackend.baseUrl) || '';
+      const res = await fetch(`${base}/api/research/discover`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, num: 6 })
+        body: JSON.stringify({ topic: query, limit: 6 })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch search results');
 
-      lastPaperSearchResults = data.results || [];
-      lastSearchQuery = query;
+      lastPaperSearchResults = (data.papers || []).map(p => ({
+        title: p.title,
+        authors: p.authors,
+        published: p.year ? String(p.year) : (p.source || 'arXiv'),
+        snippet: p.abstract && p.abstract.length > 320 ? p.abstract.slice(0, 320) + '…' : (p.abstract || ''),
+        link: p.url,
+        pdfUrl: p.pdfUrl || p.url
+      }));
+      lastSearchQuery = data.query || query;
 
       if (!lastPaperSearchResults.length) {
         if (status) status.textContent = `No papers found for "${query}".`;
@@ -2215,6 +3117,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial render of research library
   renderResearchLibrary();
+  // Establish the default research mode properly, so its subview is not merely
+  // visible by virtue of having no display style yet.
+  window.switchResearchMode('search');
 
   // ==========================================
   // 9. Determine Initial Active View & Routing

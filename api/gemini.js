@@ -3,8 +3,15 @@
 // Providers: Grok-2 (xAI), Google AI Studio (Gemini 2.5 Flash), Deterministic Quantum AI
 // Tasks: voice-parse, audio-parse, circuit-doctor, roadmap, concept-doctor, provider-info
 
-const _defaultKeyB64 = 'QVEuQWI4Uk42TFozV0wtZ2JnOUh0bldoVzFJNG5qY3JWTkVWMFBReEVHQ2JwYmdvRHdHdmc=';
+const { resolveTranscript, sampleSuggestions } = require('../ananta-backend/utils/voiceIntent');
+const { prepareTurn } = require('../ananta-backend/utils/voiceAgent');
 
+/**
+ * Credentials come from the environment or from the caller, never from source.
+ * Returning '' when nothing is configured is deliberate: the provider probe then
+ * reports "no key configured" honestly and the deterministic engine takes over,
+ * instead of a committed key silently answering for everybody.
+ */
 function getApiKey(req) {
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
     return process.env.GEMINI_API_KEY.trim();
@@ -12,11 +19,7 @@ function getApiKey(req) {
   if (req && req.headers && req.headers['x-gemini-key'] && req.headers['x-gemini-key'].length > 10) {
     return req.headers['x-gemini-key'].trim();
   }
-  try {
-    return Buffer.from(_defaultKeyB64, 'base64').toString('utf8');
-  } catch (e) {
-    return '';
-  }
+  return '';
 }
 
 function getGrokKey(req, body) {
@@ -62,7 +65,107 @@ async function getParsedBody(req) {
 // --------------------------------------------------------------------
 // Grok (xAI API) Caller
 // --------------------------------------------------------------------
-async function callGrokAPI(grokKey, systemPrompt, userText, model = 'grok-2-latest') {
+// ---------------------------------------------------------------------------
+// Model discovery.
+//
+// Hardcoded model ids rot: "grok-2-latest" and a fixed Gemini id both started
+// returning "model not found", which surfaced to users as a silent downgrade to
+// the offline engine. Ask each provider what it actually serves, pick the best
+// match, and cache it for the life of the warm instance. A provider renaming its
+// models no longer breaks anything.
+// ---------------------------------------------------------------------------
+const _modelCache = { gemini: null, grok: null };
+
+/** Ranks candidates: prefer fast "flash"/"mini" tiers, then the newest version. */
+function rankModel(name, preferred) {
+  const n = name.toLowerCase();
+  let score = 0;
+  for (const token of preferred) if (n.includes(token)) score += 100;
+  const version = n.match(/(\d+(?:\.\d+)?)/);
+  if (version) score += parseFloat(version[1]) * 10;
+  if (n.includes('preview') || n.includes('exp')) score -= 15;
+  if (n.includes('vision') || n.includes('embedding') || n.includes('image') || n.includes('tts')) score -= 500;
+  return score;
+}
+
+/** Ranked list of every model this key may call, best first. */
+async function resolveGeminiModels(apiKey) {
+  if (_modelCache.geminiList) return _modelCache.geminiList;
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+  if (!res.ok) throw new Error(`Gemini ListModels HTTP ${res.status}`);
+
+  const data = await res.json();
+  const usable = (data.models || [])
+    .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+    .map(m => m.name.replace(/^models\//, ''));
+
+  if (!usable.length) throw new Error('Gemini key has no models supporting generateContent');
+
+  usable.sort((a, b) => rankModel(b, ['flash']) - rankModel(a, ['flash']));
+  _modelCache.geminiList = usable;
+  return usable;
+}
+
+async function resolveGeminiModel(apiKey) {
+  if (_modelCache.gemini) return _modelCache.gemini;
+  const list = await resolveGeminiModels(apiKey);
+  return list[0];
+}
+
+async function resolveGrokModel(grokKey) {
+  if (_modelCache.grok) return _modelCache.grok;
+
+  const res = await fetch('https://api.x.ai/v1/models', {
+    headers: { 'Authorization': `Bearer ${grokKey.trim()}` }
+  });
+  if (!res.ok) throw new Error(`xAI ListModels HTTP ${res.status}`);
+
+  const data = await res.json();
+  const usable = (data.data || []).map(m => m.id).filter(Boolean);
+  if (!usable.length) throw new Error('xAI key exposes no usable models');
+
+  usable.sort((a, b) => rankModel(b, ['grok']) - rankModel(a, ['grok']));
+  _modelCache.grok = usable[0];
+  console.log('[Grok API] Using discovered model:', _modelCache.grok);
+  return _modelCache.grok;
+}
+
+/**
+ * Reports what each provider can actually do right now, by resolving a model
+ * rather than merely checking that a key string exists — the old check reported
+ * "available" even when every call was failing.
+ */
+async function probeProviders(req, body) {
+  const grokKey = getGrokKey(req, body);
+  const geminiKey = getApiKey(req);
+
+  const probe = async (key, resolver) => {
+    if (!key) return { available: false, model: null, error: 'no key configured' };
+    try {
+      return { available: true, model: await resolver(key), error: null };
+    } catch (err) {
+      return { available: false, model: null, error: err.message };
+    }
+  };
+
+  const [grok, gemini] = await Promise.all([
+    probe(grokKey, resolveGrokModel),
+    probe(geminiKey, resolveGeminiModel)
+  ]);
+
+  return {
+    providers: {
+      grok,
+      gemini,
+      deterministicQuantumAI: { available: true, model: 'quantum-nlp-v2', error: null }
+    },
+    activeProvider: grok.available ? grok.model : (gemini.available ? gemini.model : 'deterministic-quantum-ai')
+  };
+}
+
+async function callGrokAPI(grokKey, systemPrompt, userText, model = null) {
+  model = model || await resolveGrokModel(grokKey);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 18000);
   try {
@@ -96,20 +199,20 @@ async function callGrokAPI(grokKey, systemPrompt, userText, model = 'grok-2-late
     if (!content) throw new Error('Empty response from Grok');
     const cleaned = content.replace(/```json/gi, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(cleaned);
-    return { ok: true, result: parsed, source: 'grok-2' };
+    return { ok: true, result: parsed, source: model };
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
 // --------------------------------------------------------------------
-// Google AI Studio (Gemini 2.5 Flash) Direct Caller
+// Google AI Studio Direct Caller
 // --------------------------------------------------------------------
-async function callGeminiDirect(apiKey, systemPrompt, userText) {
+async function callGeminiOnce(apiKey, model, systemPrompt, userText) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 16000);
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const fullPrompt = userText ? `${systemPrompt}\n\nUser input: "${userText}"` : systemPrompt;
 
     const response = await fetch(endpoint, {
@@ -133,10 +236,40 @@ async function callGeminiDirect(apiKey, systemPrompt, userText) {
 
     const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(cleaned);
-    return { ok: true, result: parsed, source: 'gemini-2.5-flash' };
+    return { ok: true, result: parsed, source: model };
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+/**
+ * Tries the discovered models best-first. The top-ranked model can be
+ * overloaded (503) or out of quota (429) for a given key while another is
+ * perfectly usable, so a single stale choice must not take the whole copilot
+ * offline. The model that works is remembered for subsequent calls.
+ */
+async function callGeminiDirect(apiKey, systemPrompt, userText) {
+  const ranked = await resolveGeminiModels(apiKey);
+  // Whatever worked last time goes first.
+  const candidates = _modelCache.gemini
+    ? [_modelCache.gemini, ...ranked.filter(m => m !== _modelCache.gemini)]
+    : ranked;
+
+  let lastErr;
+  for (const model of candidates.slice(0, 4)) {
+    try {
+      const result = await callGeminiOnce(apiKey, model, systemPrompt, userText);
+      _modelCache.gemini = model;
+      return result;
+    } catch (err) {
+      lastErr = err;
+      console.warn(`[Gemini API] ${model} failed: ${err.message}`);
+      // A malformed answer is the model's fault, not the endpoint's — trying a
+      // different model is reasonable, but a bad key never will be.
+      if (/HTTP (401|403)/.test(err.message)) break;
+    }
+  }
+  throw lastErr || new Error('No usable Gemini model');
 }
 
 // --------------------------------------------------------------------
@@ -146,6 +279,10 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
   const geminiKey = getApiKey(req);
   const grokKey = getGrokKey(req, body);
   const requestedProvider = (body?.provider || (req.headers && req.headers['x-ai-provider']) || '').toLowerCase();
+  // Provider failures used to vanish into server logs, leaving the UI showing
+  // "Quantum Engine" with no way to tell whether a key was missing, rejected or
+  // simply timed out. Collect them and report them with the fallback answer.
+  const providerErrors = [];
 
   // 1. If Grok explicitly requested or Grok key provided, try Grok first!
   if (requestedProvider === 'grok' || (grokKey && requestedProvider !== 'gemini' && requestedProvider !== 'local')) {
@@ -155,9 +292,11 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
         return res.status(200).json(grokRes);
       } catch (err) {
         console.warn(`[Grok API] Call failed (${err.message}), evaluating Gemini / Local fallback...`);
+        providerErrors.push({ provider: 'grok', error: err.message });
       }
     } else if (requestedProvider === 'grok') {
       console.warn('[Grok API] Requested "grok" but no xAI key provided. Falling back to Gemini.');
+      providerErrors.push({ provider: 'grok', error: 'no xAI key configured' });
     }
   }
 
@@ -168,6 +307,7 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
       return res.status(200).json(geminiRes);
     } catch (err) {
       console.warn(`[Gemini API] Call failed (${err.message}), evaluating fallbacks...`);
+      providerErrors.push({ provider: 'gemini', error: err.message });
       // If Grok key is available and wasn't tried yet:
       if (grokKey && requestedProvider !== 'gemini') {
         try {
@@ -175,17 +315,25 @@ async function callMultiProviderAI(req, body, systemPrompt, userText, localFallb
           return res.status(200).json(grokRes);
         } catch (grokErr) {
           console.warn(`[Grok API] Fallback call also failed (${grokErr.message})`);
+          providerErrors.push({ provider: 'grok', error: grokErr.message });
         }
       }
     }
+  } else if (requestedProvider !== 'local') {
+    providerErrors.push({ provider: 'gemini', error: 'no Gemini key configured' });
   }
 
   // 3. Guaranteed Deterministic Quantum AI Engine (100% Uptime HTTP 200)
   try {
     const fallbackResult = localFallbackFn();
-    return res.status(200).json({ ok: true, result: fallbackResult, source: 'deterministic-quantum-ai' });
+    return res.status(200).json({
+      ok: true,
+      result: fallbackResult,
+      source: 'deterministic-quantum-ai',
+      providerErrors
+    });
   } catch (fallbackErr) {
-    return res.status(500).json({ error: 'Failed to synthesize response', detail: fallbackErr.message });
+    return res.status(500).json({ error: 'Failed to synthesize response', detail: fallbackErr.message, providerErrors });
   }
 }
 
@@ -215,17 +363,7 @@ async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const grokKey = getGrokKey(req, null);
-    const geminiKey = getApiKey(req);
-    return res.status(200).json({
-      status: 'ONLINE',
-      providers: {
-        grok: { available: Boolean(grokKey && grokKey.length > 5), model: 'grok-2-latest' },
-        gemini: { available: Boolean(geminiKey && geminiKey.length > 10), model: 'gemini-2.5-flash' },
-        deterministicQuantumAI: { available: true, model: 'quantum-nlp-v2' }
-      },
-      activeProvider: grokKey ? 'grok-2-latest' : (geminiKey ? 'gemini-2.5-flash' : 'deterministic-quantum-ai')
-    });
+    return res.status(200).json({ status: 'ONLINE', ...(await probeProviders(req, null)) });
   }
 
   if (req.method !== 'POST') {
@@ -238,17 +376,7 @@ async function handler(req, res) {
 
   // Task: provider-info / model status
   if (task === 'provider-info' || task === 'status') {
-    const grokKey = getGrokKey(req, body);
-    const geminiKey = getApiKey(req);
-    return res.status(200).json({
-      ok: true,
-      providers: {
-        grok: { available: Boolean(grokKey && grokKey.length > 5), model: 'grok-2-latest' },
-        gemini: { available: Boolean(geminiKey && geminiKey.length > 10), model: 'gemini-2.5-flash' },
-        deterministicQuantumAI: { available: true, model: 'quantum-nlp-v2' }
-      },
-      activeProvider: grokKey ? 'grok-2' : (geminiKey ? 'gemini-2.5-flash' : 'deterministic-quantum-ai')
-    });
+    return res.status(200).json({ ok: true, ...(await probeProviders(req, body)) });
   }
 
   if (!task || !payload) {
@@ -259,28 +387,111 @@ async function handler(req, res) {
 
   switch (task) {
     // ------------------------------------------------------------------
+    // 0. VOICE AGENT — the primary path. Handles building, questions and
+    //    error explanation in one schema, with conversation memory and
+    //    numbers grounded in a real backend simulation of the live circuit.
+    // ------------------------------------------------------------------
+    case 'voice-agent': {
+      const { transcript, circuit, history, errorContext } = payload;
+      if (!transcript && !errorContext) {
+        return res.status(400).json({ error: 'transcript or errorContext is required' });
+      }
+
+      const turn = prepareTurn({ transcript, circuit, history, errorContext });
+
+      return await callMultiProviderAI(
+        req,
+        body,
+        turn.systemPrompt,
+        '',
+        () => {
+          // No provider available: answer questions and errors from the
+          // simulator, and hand build requests to the circuit parser.
+          const settled = turn.deterministic();
+          if (settled) return settled;
+
+          const plan = parseVoiceLocally(transcript, circuit);
+          const opSummary = (plan.operations || [])
+            .map(o => `${o.gate} on q${(o.targets || []).join(',')}`)
+            .join(', ');
+          return {
+            mode: plan.clarification_needed ? 'clarify' : 'build',
+            num_qubits: plan.num_qubits,
+            reset_existing: plan.reset_existing,
+            operations: plan.operations || [],
+            spoken_response: plan.clarification_needed || plan.explanation ||
+              (opSummary ? `Placed ${opSummary}.` : 'Circuit updated.'),
+            display_text: plan.explanation || plan.clarification_needed || '',
+            teaching_tip: plan.teaching_tip || null,
+            error_feedback: plan.error_feedback || null,
+            clarification_needed: plan.clarification_needed || null,
+            confidence: plan.confidence
+          };
+        },
+        res
+      );
+    }
+
+    // ------------------------------------------------------------------
     // 1. VOICE COPILOT — text transcript intent parser (Grok & Gemini)
     // ------------------------------------------------------------------
     case 'voice-parse': {
       const { transcript, currentCircuit } = payload;
-      const systemPrompt = `You are an elite quantum circuit synthesis engine for a web quantum composer.
-Given the user's spoken instruction and the current circuit state, output ONLY a valid JSON object matching this schema:
+      const circuitSnapshot = JSON.stringify(currentCircuit || { num_qubits: 2, grid: [] });
+      const voiceResolution = resolveTranscript(transcript || '');
+      const systemPrompt = `You are an expert quantum computing mentor and circuit synthesis engine for a web-based quantum circuit composer called "Ananta Quantum Studio".
+
+YOUR ROLE:
+- You are a patient, step-by-step voice mentor. The user speaks instructions and you translate them into precise circuit operations.
+- You MUST also explain what you're doing and teach the user quantum concepts as you go.
+- If the user makes a mistake or asks for something physically impossible, explain the error clearly instead of guessing.
+
+SPEECH RECOGNITION IS IMPERFECT:
+- This transcript came from a microphone, so words are often garbled, split, or merged ("bellystate" = "bell state", "had a mard" = "hadamard", "grovers" = "grover").
+- Interpret phonetically and charitably: infer the closest quantum term the user plausibly meant rather than rejecting the request.
+- Only ask for clarification when the intent is genuinely unrecoverable, not merely misspelled.${voiceResolution.corrected ? `
+- A phonetic pre-pass already resolved this to: "${voiceResolution.text}". Treat that as a strong hint.` : ''}
+
+CRITICAL MULTI-TARGET RULE:
+- If the user says "put S on q0 AND q3", you MUST emit TWO separate operations: one with targets:[0] and one with targets:[3].
+- If the user says "add H to qubit 0, 1, and 2", emit THREE operations, one per qubit.
+- NEVER combine multiple qubits into a single targets array for single-qubit gates (H, X, Y, Z, S, T, M). Each qubit gets its own operation.
+- Multi-qubit gates like CNOT use controls + targets together in ONE operation.
+
+SPOKEN LANGUAGE RULES:
+- "H not" or "H naught" or "H nought" = Hadamard on wire 0 (qubit 0).
+- "q0", "qubit 0", "wire 0", "first qubit" = qubit index 0.
+- "q1", "qubit 1", "wire 1", "second qubit" = qubit index 1.
+- "t1" = column/step 0 (0-indexed), "t2" = column 1, "t3" = column 2, etc.
+- "CNOT from 0 to 1" = CNOT with control=0, target=1.
+
+GATE NAMES: H, X, Y, Z, S, T, CNOT, CZ, SWAP, Toffoli, Rx, Ry, Rz, MEASURE
+
+OUTPUT SCHEMA (return ONLY this JSON, no markdown fences, no commentary):
 {
-  "num_qubits": <int>,
-  "reset_existing": <bool>,
+  "num_qubits": <int, minimum qubits needed>,
+  "reset_existing": <bool, true only if user says "make/create/build a new circuit">,
   "operations": [
-    { "action": "<place|move|remove>", "from_step": <int|null>, "step": <int|null>, "gate": "<H|X|Y|Z|S|T|CNOT|CZ|SWAP|Toffoli|Rx|Ry|Rz|MEASURE>",
-      "targets": [<int>...], "controls": [<int>...], "params": { "theta": <float> } }
+    {
+      "action": "place",
+      "gate": "<gate name>",
+      "targets": [<int>],
+      "controls": [<int, only for controlled gates>],
+      "step": <int|null, 0-indexed column, null = auto-place at next free slot>,
+      "from_step": <int|null, only for move actions>,
+      "params": { "theta": <float, only for Rx/Ry/Rz> }
+    }
   ],
+  "explanation": "<1-3 sentence step-by-step explanation of what you built and why, suitable for a student>",
+  "error_feedback": "<null, OR a clear explanation of what's wrong with the user's request if it's physically impossible or ambiguous>",
+  "teaching_tip": "<a one-liner quantum physics insight related to the gates/circuit just built, e.g. 'The S gate applies a π/2 phase rotation, equivalent to √Z.'>",
   "confidence": <float 0-1>,
-  "clarification_needed": "<string|null>"
+  "clarification_needed": "<null, OR a question to ask the user if the instruction is truly ambiguous>"
 }
-Support any qubit count and any gate above.
-Handle gate movement and relocation commands (e.g. 'take H not from t1 to t3', 'move H on wire 0 from step 1 to step 3', 'shift gate from t1 to t3').
-In spoken audio, 'H not' or 'H naught' refers to Hadamard on wire 0 (H0).
-'t1' is column 0 (0-indexed). 't3' is column 2 (0-indexed).
-For move operations, set "action": "move", "from_step": <source 0-indexed column>, "step": <target 0-indexed column>.
-Current circuit state: ${JSON.stringify(currentCircuit || {})}
+
+CURRENT CIRCUIT STATE (use this to understand what's already placed):
+${circuitSnapshot}
+
 ${responseSchemaNote}`;
 
       return await callMultiProviderAI(
@@ -433,7 +644,8 @@ async function callGeminiAudioWithLocalFallback(apiKey, systemPrompt, audioBase6
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 18000);
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const audioModel = await resolveGeminiModel(apiKey);
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${audioModel}:generateContent?key=${apiKey}`;
       const cleanMime = mimeType ? mimeType.split(';')[0].trim() : 'audio/webm';
       const cleanData = audioBase64.replace(/^data:audio\/[a-z0-9]+;base64,/i, '');
 
@@ -465,7 +677,7 @@ async function callGeminiAudioWithLocalFallback(apiKey, systemPrompt, audioBase6
         const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (rawText) {
           const parsed = JSON.parse(rawText.replace(/```json/gi, '').replace(/```/g, '').trim());
-          return res.status(200).json({ ok: true, result: parsed, source: 'gemini-2.5-flash' });
+          return res.status(200).json({ ok: true, result: parsed, source: audioModel });
         }
       }
     } catch (err) {
@@ -481,7 +693,11 @@ async function callGeminiAudioWithLocalFallback(apiKey, systemPrompt, audioBase6
 // Deterministic Quantum Fallback Parsers & Synthesis Engines
 // --------------------------------------------------------------------
 function parseVoiceLocally(transcript, currentCircuit) {
-  const text = (transcript || '').toLowerCase().trim();
+  // Correct mispronunciations / speech-recognition drift against the capability
+  // registry before any pattern matching runs, so "bellystate" reaches the Bell
+  // state branch below instead of falling through as unrecognized.
+  const resolution = resolveTranscript(transcript || '');
+  const text = resolution.text.toLowerCase().trim();
   const operations = [];
   let numQubits = currentCircuit?.num_qubits || 2;
   let resetExisting = /^(?:make|create|draw|generate|build|construct|new)\s+(?:a\s+|an\s+|the\s+)?(?:circuit|diagram)/i.test(text);
@@ -522,7 +738,9 @@ function parseVoiceLocally(transcript, currentCircuit) {
         { step: 1, gate: 'CNOT', targets: [1], controls: [0], params: {} }
       ],
       confidence: 1.0,
-      clarification_needed: null
+      clarification_needed: null,
+      explanation: 'Built a Bell pair: Hadamard on qubit 0, then CNOT onto qubit 1.',
+      teaching_tip: 'A Hadamard followed by a CNOT is the canonical way to create maximal two-qubit entanglement.'
     };
   }
 
@@ -536,36 +754,74 @@ function parseVoiceLocally(transcript, currentCircuit) {
         { step: 2, gate: 'CNOT', targets: [2], controls: [1], params: {} }
       ],
       confidence: 1.0,
-      clarification_needed: null
+      clarification_needed: null,
+      explanation: 'Built a 3-qubit GHZ state: Hadamard on qubit 0, then a CNOT chain across qubits 1 and 2.',
+      teaching_tip: 'GHZ states are maximally entangled across all three qubits at once — measuring any one collapses the rest.'
     };
   }
 
-  // Extract CNOTs
-  const cnotMatches = text.matchAll(/\b(?:cnot|cx|controlled\s*not)\b.*?(?:from|ctrl|control)?\s*([0-7])\s*(?:to|target|tgt)?\s*([0-7])/gi);
+  // Extract CNOTs and CZ
+  const cnotMatches = text.matchAll(/\b(?:cnot|cx|controlled\s*not|cz|controlled\s*z)\b.*?(?:from|ctrl|control)?\s*([0-7])\s*(?:to|target|tgt|and)?\s*([0-7])/gi);
   for (const m of cnotMatches) {
     const ctrl = parseInt(m[1], 10);
     const tgt = parseInt(m[2], 10);
-    operations.push({ step: null, gate: 'CNOT', targets: [tgt], controls: [ctrl], params: {} });
+    const isCz = /\b(cz|controlled\s*z)\b/i.test(m[0]);
+    if (ctrl === tgt) {
+      return {
+        num_qubits: Math.max(numQubits, ctrl + 1),
+        reset_existing: false,
+        operations: [],
+        confidence: 0.95,
+        clarification_needed: null,
+        explanation: 'Invalid gate operation detected.',
+        error_feedback: `A controlled gate cannot have the same control and target qubit (Qubit ${ctrl}). Please specify two distinct qubits.`,
+        teaching_tip: 'Two-qubit entangling gates require one control wire and one distinct target wire to execute conditional operations.'
+      };
+    }
+    operations.push({ step: null, gate: isCz ? 'CZ' : 'CNOT', targets: [tgt], controls: [ctrl], params: {} });
     numQubits = Math.max(numQubits, ctrl + 1, tgt + 1);
   }
 
-  // Extract single gates
-  const gateMap = {
-    'hadamard': 'H', 'h gate': 'H', '\\bh\\b': 'H',
-    'pauli x': 'X', 'not gate': 'X', '\\bx\\b': 'X',
-    'pauli y': 'Y', '\\by\\b': 'Y',
-    'pauli z': 'Z', '\\bz\\b': 'Z',
-    'phase': 'S', '\\bs gate\\b': 'S',
-    't gate': 'T', '\\bt\\b': 'T',
-    'measure': 'MEASURE', 'measurement': 'MEASURE'
-  };
+  // Extract SWAP gates
+  const swapMatches = text.matchAll(/\b(?:swap|exchange)\b.*?(?:qubit|q|wire)?\s*([0-7])\s*(?:and|with|to)?\s*(?:qubit|q|wire)?\s*([0-7])/gi);
+  for (const m of swapMatches) {
+    const qA = parseInt(m[1], 10);
+    const qB = parseInt(m[2], 10);
+    if (qA !== qB) {
+      operations.push({ step: null, gate: 'SWAP', targets: [qA, qB], controls: [], params: {} });
+      numQubits = Math.max(numQubits, qA + 1, qB + 1);
+    }
+  }
 
-  for (const [pattern, gate] of Object.entries(gateMap)) {
-    const regex = new RegExp(`${pattern}\\s*(?:on|at|to|qubit)?\\s*([0-7])`, 'gi');
-    for (const m of text.matchAll(regex)) {
-      const q = parseInt(m[1], 10);
-      operations.push({ step: null, gate, targets: [q], controls: [], params: {} });
-      numQubits = Math.max(numQubits, q + 1);
+  // Extract single gates — handles both single target and multi-target lists
+  // e.g. "put s to q0 and q3", "h on 0, 1 and 2", "x on q1"
+  const gatePatterns = [
+    { pattern: /\b(?:hadamard|h\s*gate|\bh\b)\b/i, gate: 'H' },
+    { pattern: /\b(?:pauli\s*x|not\s*gate|bit\s*flip|x\s*gate|\bnot\b|\bx\b)\b/i, gate: 'X' },
+    { pattern: /\b(?:pauli\s*y|y\s*gate|\by\b)\b/i, gate: 'Y' },
+    { pattern: /\b(?:pauli\s*z|phase\s*flip|z\s*gate|\bz\b)\b/i, gate: 'Z' },
+    { pattern: /\b(?:phase\s*gate|\bs\s*gate\b|\bs\b)\b/i, gate: 'S' },
+    { pattern: /\b(?:pi\s*over\s*8|t\s*gate|\bt\b)\b/i, gate: 'T' },
+    { pattern: /\b(?:measure|measurement|\bm\b)\b/i, gate: 'MEASURE' }
+  ];
+
+  for (const { pattern, gate } of gatePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      // Find the substring after this gate mention
+      const idx = text.indexOf(match[0]) + match[0].length;
+      const afterText = text.slice(idx);
+      // Extract all qubit references until next gate or punctuation
+      // e.g., "to q0 and q3", "on 0, 1, 2", "at q0", "to qubit 0", "on qubit 0 and qubit 3"
+      const targetListMatch = afterText.match(/^\s*(?:to|on|at|in|for)?\s*((?:(?:qubit|wire|q)\s*)?[0-7](?:\s*(?:,|and)\s*(?:(?:qubit|wire|q)\s*)?[0-7])*)/i);
+      if (targetListMatch) {
+        const qMatches = targetListMatch[1].matchAll(/([0-7])/g);
+        for (const qm of qMatches) {
+          const q = parseInt(qm[1], 10);
+          operations.push({ step: null, gate, targets: [q], controls: [], params: {} });
+          numQubits = Math.max(numQubits, q + 1);
+        }
+      }
     }
   }
 
@@ -588,15 +844,49 @@ function parseVoiceLocally(transcript, currentCircuit) {
   }
 
   if (operations.length === 0) {
-    operations.push({ step: 0, gate: 'H', targets: [0], controls: [], params: {} });
+    return {
+      num_qubits: numQubits,
+      reset_existing: false,
+      operations: [],
+      confidence: 0.2,
+      clarification_needed: `I heard "${resolution.original}" but couldn't match it to a gate or circuit I know. You could try: ${sampleSuggestions(3).join(', ')}.`,
+      heard: resolution.original,
+      resolved_transcript: resolution.text,
+      explanation: null,
+      error_feedback: null,
+      teaching_tip: null
+    };
   }
+
+  // Generate physics teaching tip based on gates placed
+  const gateTypes = [...new Set(operations.map(o => o.gate))];
+  let teachingTip = 'Quantum circuits manipulate complex probability amplitudes using unitary matrix transformations.';
+  if (gateTypes.includes('H')) {
+    teachingTip = 'Hadamard (H) maps basis states |0⟩ and |1⟩ into equal superpositions (|0⟩+|1⟩)/√2 and (|0⟩-|1⟩)/√2.';
+  } else if (gateTypes.includes('S')) {
+    teachingTip = 'The Phase gate S applies a π/2 (90°) rotation around the Z-axis, equivalent to the square root of Pauli-Z (√Z).';
+  } else if (gateTypes.includes('T')) {
+    teachingTip = 'The T gate is a π/4 phase rotation (√S) essential for universal fault-tolerant quantum computation (Magic State Distillation).';
+  } else if (gateTypes.includes('CNOT')) {
+    teachingTip = 'CNOT flips the target qubit if and only if the control qubit is |1⟩, generating quantum entanglement when preceded by Hadamard.';
+  } else if (gateTypes.includes('X')) {
+    teachingTip = 'Pauli-X acts as a quantum NOT gate, flipping |0⟩ to |1⟩ and vice versa via a π rotation around the Bloch sphere X-axis.';
+  }
+
+  const opSummary = operations.map(o => `${o.gate} on q${o.targets.join(',')}`).join(', ');
 
   return {
     num_qubits: Math.max(2, numQubits),
     reset_existing: resetExisting,
     operations,
-    confidence: 0.95,
-    clarification_needed: null
+    confidence: resolution.corrected ? 0.85 : 0.95,
+    clarification_needed: null,
+    heard: resolution.original,
+    resolved_transcript: resolution.text,
+    corrections: resolution.matches.filter(m => !m.exact),
+    explanation: `Synthesized ${operations.length} gate operation(s): ${opSummary}.`,
+    error_feedback: null,
+    teaching_tip: teachingTip
   };
 }
 
@@ -672,3 +962,29 @@ function generateCircuitAuditLocally(payload) {
 
 module.exports = handler;
 module.exports.default = handler;
+
+// Reusable pieces for other backend modules, so provider selection, key
+// resolution and model discovery live in exactly one place.
+module.exports.getApiKey = getApiKey;
+module.exports.getGrokKey = getGrokKey;
+module.exports.callGeminiDirect = callGeminiDirect;
+module.exports.callGrokAPI = callGrokAPI;
+
+/**
+ * One JSON answer from whichever provider is configured, or null when none is.
+ * Callers are expected to have a working non-AI path — this never throws for
+ * "no key", only for a provider that was tried and genuinely failed.
+ */
+module.exports.askJson = async function askJson(systemPrompt) {
+  const geminiKey = getApiKey(null);
+  if (geminiKey) {
+    const res = await callGeminiDirect(geminiKey, systemPrompt, '');
+    return res.result;
+  }
+  const grokKey = getGrokKey(null, null);
+  if (grokKey) {
+    const res = await callGrokAPI(grokKey, systemPrompt, '');
+    return res.result;
+  }
+  return null;
+};
