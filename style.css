@@ -264,8 +264,9 @@ button.nav-dropdown-trigger.active {
   position: absolute;
   top: 52px;
   left: 0;
-  min-width: 380px;
-  max-width: 440px;
+  min-width: 360px;
+  max-width: min(440px, calc(100vw - 32px));
+  box-sizing: border-box;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 14px;
@@ -276,19 +277,27 @@ button.nav-dropdown-trigger.active {
   gap: 3px;
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
   transform: translateY(8px);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.18s;
   z-index: 200;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
 .nav-dropdown-item:hover .nav-dropdown-menu,
-.nav-dropdown-item.is-open .nav-dropdown-menu,
-.nav-dropdown-item:focus-within .nav-dropdown-menu {
+.nav-dropdown-item.is-open .nav-dropdown-menu {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
   transform: translateY(0);
+}
+
+.nav-dropdown-item.just-closed .nav-dropdown-menu {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(8px) !important;
 }
 
 .nav-dropdown-header {
@@ -312,6 +321,8 @@ button.nav-dropdown-trigger.active {
   transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid transparent;
   cursor: pointer;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .dropdown-rich-item:hover {
@@ -345,12 +356,14 @@ button.nav-dropdown-trigger.active {
   gap: 2px;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .dropdown-rich-title-line {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .dropdown-rich-title {
@@ -359,6 +372,8 @@ button.nav-dropdown-trigger.active {
   font-weight: 600;
   color: var(--text-white);
   transition: color 0.15s ease;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .dropdown-rich-desc {
@@ -367,6 +382,9 @@ button.nav-dropdown-trigger.active {
   line-height: 1.35;
   color: var(--text-dim);
   transition: color 0.15s ease;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .dropdown-rich-item:hover .dropdown-rich-title {
@@ -6924,10 +6942,12 @@ body.dark-theme .btn-paper-simulate {
 
 .intuition-container {
   max-width: 1240px;
+  box-sizing: border-box;
 }
 
 .intuition-hero-banner {
   margin-bottom: 28px;
+  max-width: 100%;
 }
 
 .intuition-pill-tag {
@@ -6942,6 +6962,8 @@ body.dark-theme .btn-paper-simulate {
   padding: 5px 14px;
   border-radius: 20px;
   margin-bottom: 14px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .intuition-hero-title {
@@ -6950,6 +6972,9 @@ body.dark-theme .btn-paper-simulate {
   color: var(--text-white);
   margin-bottom: 8px;
   letter-spacing: -0.5px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .intuition-hero-desc {
@@ -6957,6 +6982,8 @@ body.dark-theme .btn-paper-simulate {
   color: var(--text-dim);
   line-height: 1.6;
   max-width: 800px;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .intuition-grid {
@@ -7522,12 +7549,17 @@ input:checked + .slider-round:before {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .doctor-header-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .doctor-badge {
@@ -7539,6 +7571,12 @@ input:checked + .slider-round:before {
   border: 1px solid rgba(16, 185, 129, 0.3);
   padding: 4px 12px;
   border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .doctor-header-row h2 {
@@ -7546,23 +7584,34 @@ input:checked + .slider-round:before {
   font-weight: 700;
   color: var(--text-white);
   letter-spacing: -0.3px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+  margin: 0;
+  max-width: 100%;
 }
 
 .doctor-header-row p {
   font-size: 13px;
   color: var(--text-dim);
-  line-height: 1.5;
+  line-height: 1.55;
   max-width: 900px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  margin: 0;
 }
 
 /* Input Bar */
 .doctor-input-bar {
   display: flex;
   gap: 10px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .doctor-input-field {
   flex-grow: 1;
+  min-width: 0; /* Critical: stops flex child with long placeholder from overflowing */
   background: var(--bg-subtle);
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -7572,6 +7621,7 @@ input:checked + .slider-round:before {
   font-family: inherit;
   outline: none;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
 
 .doctor-input-field:focus {
@@ -7588,6 +7638,7 @@ input:checked + .slider-round:before {
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
   transition: background 0.15s;
 }
 
@@ -7601,6 +7652,8 @@ input:checked + .slider-round:before {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .chips-label {
@@ -7619,6 +7672,7 @@ input:checked + .slider-round:before {
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.15s;
+  white-space: nowrap;
 }
 
 .concept-quick-pill:hover,
@@ -7637,6 +7691,9 @@ input:checked + .slider-round:before {
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 22px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 @media (max-width: 900px) {
@@ -7649,12 +7706,16 @@ input:checked + .slider-round:before {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0; /* Prevents grid column blowout */
+  overflow: hidden;
 }
 
 .stage-info-column h3 {
   font-size: 17px;
   font-weight: 700;
   color: var(--text-white);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .doctor-section-box {
@@ -7665,6 +7726,10 @@ input:checked + .slider-round:before {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .doctor-box-tag {
@@ -7680,6 +7745,8 @@ input:checked + .slider-round:before {
   color: var(--text-dim);
   line-height: 1.5;
   margin: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .doctor-controls-wrapper {

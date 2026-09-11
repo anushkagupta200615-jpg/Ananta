@@ -450,6 +450,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Dropdown toggle on click/tap for accessibility & touch devices
   const dropdownItems = document.querySelectorAll('.nav-dropdown-item');
+
+  function closeAllDropdowns() {
+    dropdownItems.forEach(g => {
+      g.classList.remove('is-open');
+      g.classList.add('just-closed');
+      const t = g.querySelector('.nav-dropdown-trigger');
+      if (t) t.setAttribute('aria-expanded', 'false');
+      setTimeout(() => g.classList.remove('just-closed'), 350);
+    });
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+  }
+
   dropdownItems.forEach(group => {
     const trigger = group.querySelector('.nav-dropdown-trigger');
     if (trigger) {
@@ -458,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isOpen = group.classList.contains('is-open');
         // Close all other dropdowns
         dropdownItems.forEach(g => {
-          g.classList.remove('is-open');
+          g.classList.remove('is-open', 'just-closed');
           const t = g.querySelector('.nav-dropdown-trigger');
           if (t) t.setAttribute('aria-expanded', 'false');
         });
@@ -468,24 +482,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
+
+    group.addEventListener('mouseleave', () => {
+      group.classList.remove('just-closed');
+    });
   });
 
   // Close dropdowns on outside click or Escape key
   document.addEventListener('click', () => {
-    dropdownItems.forEach(g => {
-      g.classList.remove('is-open');
-      const t = g.querySelector('.nav-dropdown-trigger');
-      if (t) t.setAttribute('aria-expanded', 'false');
-    });
+    closeAllDropdowns();
   });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      dropdownItems.forEach(g => {
-        g.classList.remove('is-open');
-        const t = g.querySelector('.nav-dropdown-trigger');
-        if (t) t.setAttribute('aria-expanded', 'false');
-      });
+      closeAllDropdowns();
     }
   });
 
@@ -495,8 +505,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const tab = item.getAttribute('data-tab');
       if (tab) {
         e.preventDefault();
-        // Close any open dropdowns
-        dropdownItems.forEach(g => g.classList.remove('is-open'));
+        // Immediately close dropdowns and blur active element so it never stays stuck
+        closeAllDropdowns();
         switchView(tab);
       }
     });
