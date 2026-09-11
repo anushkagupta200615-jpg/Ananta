@@ -37,7 +37,7 @@ class CircuitTutor {
     this.btnAskEl = document.getElementById('btn-tutor-ask');
     this.autoAuditCheckbox = document.getElementById('tutor-auto-audit-toggle');
 
-    // Floating AI Doctor & Tutor Components
+    // Legacy / Floating references (Guarded if elements are removed)
     this.floatingDoctorBtn = document.getElementById('floating-ai-doctor-btn');
     this.floatingDoctorPopup = document.getElementById('floating-ai-doctor-popup');
     this.floatingDoctorContent = document.getElementById('floating-doctor-content');
@@ -64,39 +64,6 @@ class CircuitTutor {
         this.autoAuditEnabled = e.target.checked;
       });
     }
-
-    // Make floating doctor draggable via header
-    const header = this.floatingDoctorPopup ? this.floatingDoctorPopup.querySelector('.floating-doctor-header') : null;
-    if (header && this.floatingDoctorPopup) {
-      let isDragging = false;
-      let startX = 0, startY = 0, origLeft = 0, origTop = 0;
-      header.addEventListener('mousedown', (e) => {
-        if (e.target.closest('button') || e.target.closest('.doctor-health-pill-small')) return;
-        isDragging = true;
-        const rect = this.floatingDoctorPopup.getBoundingClientRect();
-        startX = e.clientX;
-        startY = e.clientY;
-        origLeft = rect.left;
-        origTop = rect.top;
-        this.floatingDoctorPopup.style.right = 'auto';
-        this.floatingDoctorPopup.style.left = `${origLeft}px`;
-        this.floatingDoctorPopup.style.top = `${origTop}px`;
-        this.floatingDoctorPopup.style.position = 'fixed';
-        e.preventDefault();
-      });
-
-      document.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        this.floatingDoctorPopup.style.left = `${Math.max(10, origLeft + dx)}px`;
-        this.floatingDoctorPopup.style.top = `${Math.max(10, origTop + dy)}px`;
-      });
-
-      document.addEventListener('mouseup', () => {
-        isDragging = false;
-      });
-    }
   }
 
   /**
@@ -116,34 +83,27 @@ class CircuitTutor {
   }
 
   toggleFloatingDoctor() {
-    if (!this.floatingDoctorPopup) this.initDOM();
-    if (!this.floatingDoctorPopup) return;
-    const isHidden = this.floatingDoctorPopup.style.display === 'none' || !this.floatingDoctorPopup.style.display;
-    if (isHidden) {
-      this.openFloatingDoctor();
+    if (window.circuitUI && typeof window.circuitUI.openAiTutor === 'function') {
+      window.circuitUI.openAiTutor();
     } else {
-      this.closeFloatingDoctor();
+      this.runAudit();
     }
   }
 
   openFloatingDoctor() {
-    if (!this.floatingDoctorPopup) this.initDOM();
-    if (this.floatingDoctorPopup) {
-      this.floatingDoctorPopup.style.display = 'flex';
-      this.floatingDoctorPopup.classList.remove('minimized');
+    if (window.circuitUI && typeof window.circuitUI.openAiTutor === 'function') {
+      window.circuitUI.openAiTutor();
     }
     this.runAudit();
   }
 
   closeFloatingDoctor() {
-    if (!this.floatingDoctorPopup) this.initDOM();
     if (this.floatingDoctorPopup) {
       this.floatingDoctorPopup.style.display = 'none';
     }
   }
 
   minimizeFloatingDoctor() {
-    if (!this.floatingDoctorPopup) this.initDOM();
     if (this.floatingDoctorPopup) {
       this.floatingDoctorPopup.classList.toggle('minimized');
     }
@@ -1209,7 +1169,7 @@ class CircuitTutor {
   }
 
   showAutoFixFeedback(msg) {
-    const pill = this.floatingDoctorPill || document.getElementById('floating-doctor-health-pill');
+    const pill = this.floatingDoctorPill || document.getElementById('tutor-health-badge');
     if (pill) {
       const oldHtml = pill.innerHTML;
       pill.innerHTML = `⚡ ${escapeHtml(msg || 'Fixed!')}`;
@@ -1227,7 +1187,7 @@ class CircuitTutor {
     this.currentErrors = errs;
     const isHealthy = data.isHealthy !== false && errs.length === 0;
 
-    // 1. Update Trigger Button Badge & Pulse Dot
+    // 2. Legacy / Trigger Button Badge & Pulse Dot (If still present in DOM)
     if (this.doctorCountBadge) {
       if (errs.length > 0) {
         this.doctorCountBadge.textContent = String(errs.length);
@@ -1244,7 +1204,6 @@ class CircuitTutor {
       }
     }
 
-    // 2. Update Floating Popup Header Health Pill
     if (this.floatingDoctorPill) {
       this.floatingDoctorPill.className = `doctor-health-pill-small ${isHealthy ? 'healthy' : 'warning'}`;
       this.floatingDoctorPill.innerHTML = isHealthy
