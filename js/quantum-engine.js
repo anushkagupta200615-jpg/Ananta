@@ -63,9 +63,21 @@ class QuantumCircuitEngine {
   }
 
   reset() {
-    this.state = Array.from({ length: this.numStates }, (_, i) => 
+    this.state = Array.from({ length: this.numStates }, (_, i) =>
       i === 0 ? new Complex(1, 0) : new Complex(0, 0)
     );
+    // Wires that have been projectively measured in the computational basis.
+    // A measured qubit can no longer hold coherence with anything else, and
+    // the reduced-state helpers below enforce that.
+    this.measuredQubits = new Set();
+  }
+
+  /** Bitmask of every measured wire, in state-index bit positions. */
+  getMeasuredMask() {
+    let mask = 0;
+    if (!this.measuredQubits) return mask;
+    for (const q of this.measuredQubits) mask |= 1 << (this.numQubits - 1 - q);
+    return mask;
   }
 
   setNumQubits(numQubits) {
@@ -224,7 +236,16 @@ class QuantumCircuitEngine {
 
       for (let q = 0; q < this.numQubits; q++) {
         const cell = grid[q][col];
-        if (cell && cell !== 'CX_CTRL' && cell !== 'CX_TGT' && cell !== 'SWAP' && cell !== 'M') {
+        if (cell === 'M') {
+          // A Measure gate used to be skipped outright, so the simulator
+          // happily reported a fully entangled state (C = 1.00) on a wire it
+          // had just told the user was collapsed by measurement. Recording it
+          // makes the reduced-state helpers drop that wire's coherences, which
+          // is what a projective measurement in the computational basis
+          // actually does: outcome probabilities are unchanged, but the
+          // superposition (and any entanglement through that wire) is gone.
+          this.measuredQubits.add(q);
+        } else if (cell && cell !== 'CX_CTRL' && cell !== 'CX_TGT' && cell !== 'SWAP') {
           this.apply1QGate(cell, q);
         }
       }
@@ -303,6 +324,7 @@ class QuantumCircuitEngine {
   getSingleQubitReducedState(qubitIndex) {
     const bitPos = this.numQubits - 1 - qubitIndex;
     const bitMask = 1 << bitPos;
+    const measuredMask = this.getMeasuredMask();
     let rho00 = 0, rho01_re = 0, rho01_im = 0, rho11 = 0;
     for (let i = 0; i < this.numStates; i++) {
       if ((i & bitMask) === 0) {
@@ -311,8 +333,12 @@ class QuantumCircuitEngine {
         const aj = this.state[j];
         rho00 += ai.absSq();
         rho11 += aj.absSq();
-        rho01_re += (ai.re * aj.re + ai.im * aj.im);
-        rho01_im += (ai.im * aj.re - ai.re * aj.im);
+        // i and j differ on this wire, so if it was measured there is no
+        // coherence left between the two branches to accumulate.
+        if ((i & measuredMask) === (j & measuredMask)) {
+          rho01_re += (ai.re * aj.re + ai.im * aj.im);
+          rho01_im += (ai.im * aj.re - ai.re * aj.im);
+        }
       }
     }
     return { rho00, rho11, rho01_re, rho01_im };
@@ -354,16 +380,19 @@ class QuantumCircuitEngine {
 
     // Group amplitudes by the state of the "environment" qubits (everything
     // except qA, qB) so we only pair up amplitudes that agree on those bits.
+    const measuredMask = this.getMeasuredMask();
     const groups = new Map();
     for (let i = 0; i < this.numStates; i++) {
       const env = i & ~maskAB;
       const rIdx = (((i >> bitA) & 1) << 1) | ((i >> bitB) & 1);
       if (!groups.has(env)) groups.set(env, []);
-      groups.get(env).push({ rIdx, amp: this.state[i] });
+      groups.get(env).push({ rIdx, amp: this.state[i], idx: i });
     }
     for (const entries of groups.values()) {
-      for (const { rIdx: ri, amp: ai } of entries) {
-        for (const { rIdx: rj, amp: aj } of entries) {
+      for (const { rIdx: ri, amp: ai, idx: i } of entries) {
+        for (const { rIdx: rj, amp: aj, idx: j } of entries) {
+          // Measured wires carry no coherence between differing outcomes.
+          if ((i & measuredMask) !== (j & measuredMask)) continue;
           rho[ri][rj] = rho[ri][rj].add(ai.mul(aj.conj()));
         }
       }
@@ -1184,8 +1213,18 @@ def circuit():
     const entangledQubitCount = perQubitEntropy.filter((s) => s > 0.05).length;
     const maxEntropy = Math.max(0, ...perQubitEntropy);
 
+    // After a projective measurement the register can still show per-qubit
+    // entropy, but that is classical uncertainty about the outcome, not
+    // entanglement - reporting it as "partially entangled" contradicts the
+    // Error Doctor's own warning that measuring collapsed the state.
+    const measuredCount = this.measuredQubits ? this.measuredQubits.size : 0;
+
     let entanglementClass = "Product State (Separable, Zero Entanglement)";
-    if (entangledQubitCount === 0) {
+    if (measuredCount > 0 && concurrence < 0.05) {
+      entanglementClass = entangledQubitCount > 0
+        ? `Classically Correlated (collapsed by measurement on ${measuredCount} wire${measuredCount > 1 ? 's' : ''}, zero entanglement)`
+        : `Collapsed Classical State (measured on ${measuredCount} wire${measuredCount > 1 ? 's' : ''})`;
+    } else if (entangledQubitCount === 0) {
       entanglementClass = "Product State (Separable, Zero Entanglement)";
     } else if (entangledQubitCount === 2) {
       entanglementClass = concurrence > 0.8

@@ -278,27 +278,23 @@ async function callGeminiOnce(apiKey, model, systemPrompt, userText) {
  * offline. The model that works is remembered for subsequent calls.
  */
 async function callGeminiDirect(apiKey, systemPrompt, userText) {
-  const ranked = await resolveGeminiModels(apiKey);
-  // Whatever worked last time goes first.
-  const candidates = _modelCache.gemini
-    ? [_modelCache.gemini, ...ranked.filter(m => m !== _modelCache.gemini)]
-    : ranked;
-
-  let lastErr;
-  for (const model of candidates.slice(0, 4)) {
-    try {
-      const result = await callGeminiOnce(apiKey, model, systemPrompt, userText);
-      _modelCache.gemini = model;
-      return result;
-    } catch (err) {
-      lastErr = err;
-      console.warn(`[Gemini API] ${model} failed: ${err.message}`);
-      // A malformed answer is the model's fault, not the endpoint's — trying a
-      // different model is reasonable, but a bad key never will be.
-      if (/HTTP (401|403)/.test(err.message)) break;
-    }
-  }
-  throw lastErr || new Error('No usable Gemini model');
+  // Delegates to the shared provider layer (ananta-backend/utils/aiProvider.js)
+  // so the tutor gets the same runtime model discovery, wider rotation and
+  // response cache as every other AI feature. The free tier caps requests per
+  // model per day, and Live Audit fires a tutor call on every gate placement -
+  // without rotation + caching the first model 429s and the whole tutor goes
+  // dark for the rest of the day, which is exactly what was happening.
+  const { generateJson } = require('../ananta-backend/utils/aiProvider');
+  const fullPrompt = userText ? `${systemPrompt}\n\nUser input: "${userText}"` : systemPrompt;
+  const out = await generateJson({
+    prompt: fullPrompt,
+    maxTokens: 8192,
+    temperature: 0.2,
+    timeoutMs: 20000,
+    maxModels: 6
+  });
+  _modelCache.gemini = out.model;
+  return { ok: true, result: out.result, source: out.model };
 }
 
 // --------------------------------------------------------------------

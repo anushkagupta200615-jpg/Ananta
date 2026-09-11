@@ -172,6 +172,47 @@ test('concurrence is invariant under local single-qubit rotation of an entangled
   assert.ok(Math.abs(m.concurrence - 1) < 1e-3, `local Y rotation must not change concurrence, got ${m.concurrence}`);
 });
 
+/**
+ * A Measure ('M') gate used to be skipped outright by runCircuitUpToCol, so
+ * the simulator reported a fully entangled Bell pair (C = 1.00) on a wire the
+ * Error Doctor had just flagged as collapsed by a premature measurement - the
+ * simulation contradicted its own diagnostic. Measurement is now modelled as
+ * dephasing in the computational basis: outcome probabilities are untouched,
+ * but coherence (and any entanglement through that wire) is destroyed.
+ */
+test('measuring half of a Bell pair destroys entanglement but preserves outcome probabilities', () => {
+  const QuantumCircuitEngine = loadEngine();
+  const engine = new QuantumCircuitEngine(3);
+  engine.runCircuit(buildGrid(3, [
+    ['H', null, null],
+    ['CX_CTRL', 'CX_TGT', null],
+    [null, 'M', null]
+  ]));
+
+  const m = engine.getAdvancedEntanglementMetrics();
+  assert.ok(m.concurrence < 1e-3, `measured Bell pair must have zero concurrence, got ${m.concurrence}`);
+  assert.match(m.entanglementClass, /Classically Correlated/, 'must not still claim entanglement after measurement');
+
+  // The 50/50 measurement statistics are physically unchanged by the measurement.
+  const active = engine.getProbabilities().filter((p) => p.probability > 0.01);
+  assert.equal(active.length, 2);
+  for (const p of active) {
+    assert.ok(Math.abs(p.probability - 0.5) < 1e-6, `expected 50/50 outcomes, got ${p.probability}`);
+  }
+});
+
+test('an unmeasured Bell pair is unaffected by the measurement handling (regression guard)', () => {
+  const QuantumCircuitEngine = loadEngine();
+  const engine = new QuantumCircuitEngine(3);
+  engine.runCircuit(buildGrid(3, [
+    ['H', null],
+    ['CX_CTRL', 'CX_TGT'],
+    [null, null]
+  ]));
+  const m = engine.getAdvancedEntanglementMetrics();
+  assert.ok(Math.abs(m.concurrence - 1) < 1e-3, `unmeasured Bell pair must stay maximally entangled, got ${m.concurrence}`);
+});
+
 test('4-qubit GHZ generalizes correctly (not hardcoded to 3 qubits): zero pairwise concurrence, all qubits entangled', () => {
   const QuantumCircuitEngine = loadEngine();
   const engine = buildEngine(QuantumCircuitEngine, 4);
