@@ -175,6 +175,16 @@
                 <span class="dropdown-rich-desc">Interactive flowchart diagrams, voice-activated pathways & guided tracks</span>
               </div>
             </a>
+            <a href="#knowledge-graph" class="dropdown-rich-item" data-tab="knowledge-graph">
+              <span class="dropdown-rich-icon">🕸️</span>
+              <div class="dropdown-rich-info">
+                <div class="dropdown-rich-title-line">
+                  <span class="dropdown-rich-title">Knowledge Graph</span>
+                  <span class="dropdown-badge badge-learn">PREREQUISITE MAP</span>
+                </div>
+                <span class="dropdown-rich-desc">Interactive curriculum dependency graph & concept mastery tracker</span>
+              </div>
+            </a>
             <a href="#docs" class="dropdown-rich-item" data-tab="docs">
               <span class="dropdown-rich-icon">🗺️</span>
               <div class="dropdown-rich-info">
@@ -290,6 +300,7 @@
     <!-- Category: Learn & Reference -->
     <div class="mobile-nav-section-title">LEARN & REFERENCE</div>
     <a href="#topic-roadmap" class="mobile-nav-item" data-tab="topic-roadmap" onclick="window.closeMobileNav()">🎯 Roadmap Studio (Basic · Advanced · Custom)</a>
+    <a href="#knowledge-graph" class="mobile-nav-item" data-tab="knowledge-graph" onclick="window.closeMobileNav()">🕸️ Knowledge Graph (Concept Map & Mastery)</a>
     <a href="#docs" class="mobile-nav-item" data-tab="docs" onclick="window.closeMobileNav()">🗺️ Full Curriculum & Docs (All 10 Modules)</a>
     <a href="#intuition" class="mobile-nav-item" data-tab="intuition" onclick="window.closeMobileNav()">🔬 Intuition Lab</a>
     <a href="#challenges" class="mobile-nav-item" data-tab="challenges" onclick="window.closeMobileNav()">🏆 Challenges & Quests</a>
@@ -384,182 +395,7 @@
         </div>
       </div>
 
-      <!-- SECTION 3: Google Quantum AI 6-Milestone Interactive Roadmap (Screenshot 3) -->
-      <!-- SECTION 3: Classical Computer vs Quantum Computer Maze Search Simulation -->
-      <div class="qsite-maze-section" id="maze-battle-section">
-        <div class="qsite-maze-container">
-          <!-- Section Heading matching Google Quantum AI -->
-          <div class="gqai-section-heading">
-            <span class="gqai-eyebrow">COMPUTATIONAL COMPLEXITY • LIVE SIMULATION</span>
-            <h2 class="gqai-heading-title">SOLVING A MAZE: CLASSICAL COMPUTER VS QUANTUM COMPUTER</h2>
-            <p class="gqai-heading-sub">
-              Observe why quantum computers don't just calculate faster — they compute fundamentally differently. Classical depth-first search explores one corridor at a time sequentially (O(N)), while quantum superposition and wave interference traverse all possible paths simultaneously (O(√N)).
-            </p>
-          </div>
 
-          <!-- Comparative Path Guide Ribbon -->
-          <div class="maze-concept-ribbon">
-            <div class="concept-strip classical">
-              <span class="concept-dot classical-dot"></span>
-              <div class="concept-info">
-                <span class="concept-name">Normal Search</span>
-                <span class="concept-desc">Single-threaded DFS and backtracking trial • O(N)</span>
-              </div>
-            </div>
-            <div class="concept-separator">VS</div>
-            <div class="concept-strip quantum">
-              <span class="concept-dot quantum-dot"></span>
-              <div class="concept-info">
-                <span class="concept-name">Quantum Search</span>
-                <span class="concept-desc">Coherent superposition wave interference • O(√N)</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Minimalist Floating Control Capsule -->
-          <div class="maze-controls-capsule">
-            <div class="capsule-actions">
-              <button id="maze-btn-play" class="capsule-btn primary-action">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                <span>Run Search</span>
-              </button>
-              <button id="maze-btn-reset" class="capsule-btn" title="Replay on current maze">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                <span>Replay</span>
-              </button>
-              <button id="maze-btn-new" class="capsule-btn" title="Generate procedural labyrinth">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg>
-                <span>New Labyrinth</span>
-              </button>
-            </div>
-
-            <div class="capsule-divider"></div>
-
-            <div class="capsule-selectors">
-              <span class="capsule-label">Grid:</span>
-              <div class="segmented-control">
-                <button class="segment-btn size-btn" data-size="compact">Compact</button>
-                <button class="segment-btn size-btn active" data-size="standard">Standard</button>
-                <button class="segment-btn size-btn" data-size="dense">Dense</button>
-              </div>
-
-              <span class="capsule-label">Speed:</span>
-              <div class="segmented-control">
-                <button class="segment-btn speed-btn" data-speed="1">1×</button>
-                <button class="segment-btn speed-btn active" data-speed="2">2×</button>
-                <button class="segment-btn speed-btn" data-speed="5">5×</button>
-                <button class="segment-btn speed-btn" data-speed="20">Instant</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Dual High-Precision Museum Canvas Arena -->
-          <div class="maze-arena-container">
-            <!-- Left Frame: Normal Search (Classical) -->
-            <div class="maze-specimen-card classical">
-              <div class="specimen-header">
-                <div class="specimen-titles">
-                  <h3 class="specimen-label classical-label">Normal Search</h3>
-                  <span class="specimen-sub">Depth-First Search with Backtracking</span>
-                </div>
-                <div class="specimen-pill classical-pill">O(N) Complexity</div>
-              </div>
-
-              <div class="specimen-canvas-stage">
-                <canvas id="classical-maze-canvas" width="460" height="460"></canvas>
-                <div class="stage-endpoints-legend">
-                  <span class="legend-point"><span class="legend-led start-led"></span> Start</span>
-                  <span class="legend-point"><span class="legend-led goal-led"></span> Target</span>
-                  <span class="legend-point"><span class="legend-led classical-led"></span> Trail</span>
-                </div>
-              </div>
-
-              <div class="specimen-telemetry-bar">
-                <div class="telemetry-stat">
-                  <span class="stat-tag">STATUS</span>
-                  <span class="stat-val" id="classical-status">Ready</span>
-                </div>
-                <div class="telemetry-stat">
-                  <span class="stat-tag">EXPLORED</span>
-                  <span class="stat-val" id="classical-explored">0</span>
-                </div>
-                <div class="telemetry-stat">
-                  <span class="stat-tag">DEAD ENDS</span>
-                  <span class="stat-val" id="classical-deadends">0</span>
-                </div>
-                <div class="telemetry-stat">
-                  <span class="stat-tag">STEPS</span>
-                  <span class="stat-val" id="classical-steps">0</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Frame: Quantum Search (QPU) -->
-            <div class="maze-specimen-card quantum">
-              <div class="specimen-header">
-                <div class="specimen-titles">
-                  <h3 class="specimen-label quantum-label">Quantum Search</h3>
-                  <span class="specimen-sub">Continuous-Time Quantum Walk (CTQW)</span>
-                </div>
-                <div class="specimen-pill quantum-pill">O(√N) Grover Bound</div>
-              </div>
-
-              <div class="specimen-canvas-stage">
-                <canvas id="quantum-maze-canvas" width="460" height="460"></canvas>
-                <div class="stage-endpoints-legend">
-                  <span class="legend-point"><span class="legend-led start-led"></span> Start</span>
-                  <span class="legend-point"><span class="legend-led goal-led"></span> Target</span>
-                  <span class="legend-point"><span class="legend-led quantum-led"></span> Superposition</span>
-                </div>
-              </div>
-
-              <div class="specimen-telemetry-bar">
-                <div class="telemetry-stat">
-                  <span class="stat-tag">STATUS</span>
-                  <span class="stat-val" id="quantum-status">Ready</span>
-                </div>
-                <div class="telemetry-stat">
-                  <span class="stat-tag">SUPERPOSITIONS</span>
-                  <span class="stat-val" id="quantum-states">0</span>
-                </div>
-                <div class="telemetry-stat">
-                  <span class="stat-tag">WAVE ITERATIONS</span>
-                  <span class="stat-val" id="quantum-iterations">0</span>
-                </div>
-                <div class="telemetry-stat">
-                  <span class="stat-tag">ADVANTAGE</span>
-                  <span class="stat-val highlight" id="quantum-speedup">--</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Deep-Dive Insights (Identical Google Quantum AI 3-Up Grid) -->
-          <div class="gqai-cards-grid maze-insights-grid">
-            <div class="gqai-card">
-              <div class="gqai-card-content">
-                <span class="gqai-card-eyebrow">01 • SUPERPOSITION PRINCIPLE</span>
-                <h3 class="gqai-card-title">Serial Search vs Superposition</h3>
-                <p class="gqai-card-body">Classical bits are strictly 0 or 1, requiring the processor to try hallways serially. Qubits enter |ψ⟩ = ∑ αᵢ |pathᵢ⟩, dispersing across all avenues concurrently.</p>
-              </div>
-            </div>
-            <div class="gqai-card">
-              <div class="gqai-card-content">
-                <span class="gqai-card-eyebrow">02 • QUANTUM INTERFERENCE</span>
-                <h3 class="gqai-card-title">Phase Cancellation (eⁱᵖⁱ = -1)</h3>
-                <p class="gqai-card-body">Dead-end waves reflect with an inverted phase, destructively cancelling out non-viable branches while constructive interference boosts the solution amplitude.</p>
-              </div>
-            </div>
-            <div class="gqai-card">
-              <div class="gqai-card-content">
-                <span class="gqai-card-eyebrow">03 • QUADRATIC SPEEDUP</span>
-                <h3 class="gqai-card-title">The Grover Bound Advantage</h3>
-                <p class="gqai-card-body">For an unstructured search with N paths, classical algorithms require an average of N/2 trials, whereas quantum amplitude amplification reaches the target in (π/4)√N iterations.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- SECTION 4: Google Quantum AI 3-Up Feature Grid -->
       <div class="gqai-cards-container">
@@ -1784,10 +1620,12 @@
               </div>
               <div class="export-copy-row">
                 <button class="btn-copy-chip" id="btn-copy-qiskit">Copy Code</button>
+                <button class="btn-copy-chip" id="btn-reset-code" title="Re-generate code from visual circuit composer">↺ Reset from Circuit</button>
                 <span class="export-framework-badge" id="export-framework-label">Google Cirq >= 1.3 - Willow & Sycamore QPU ready</span>
               </div>
               <div class="export-preview">
-                <pre><code id="qiskit-code"># Initializing circuit code...</code><code id="qasm-code" style="display:none;"></code></pre>
+                <textarea class="code-textarea composer-code-editor" id="qiskit-code" spellcheck="false" placeholder="Write or edit quantum code here..."></textarea>
+                <code id="qasm-code" style="display:none;"></code>
               </div>
             </div>
           </div>
@@ -3509,6 +3347,7 @@ Key Advantage:
 
     <!-- ================= VIEW: TOPIC-SPECIFIC LEARNING JOURNEY ================= -->
     <section class="viewport-section" id="view-topic-roadmap" style="display: none;"></section>
+    <section class="viewport-section" id="view-knowledge-graph" style="display:none"></section>
 
   </main>
 
@@ -4011,6 +3850,8 @@ Key Advantage:
   <script src="js/cryo-twin.js"></script>
   <script src="js/pqc-auditor.js"></script>
   <script src="js/quantum-voice-copilot.js"></script>
+  <script src="js/knowledge-graph-data.js"></script>
+  <script src="js/knowledge-graph.js"></script>
   <script src="js/quantum-maze-sim.js"></script>
   <script src="js/app.js"></script>
   <!-- KaTeX Auto-Render Engine -->
