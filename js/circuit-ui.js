@@ -1098,6 +1098,22 @@ class CircuitUI {
       document.querySelectorAll('.gate-slot.drag-hover').forEach(s => s.classList.remove('drag-hover'));
     };
 
+    // Belt-and-braces: if a drag ever ends without pointerup/pointercancel
+    // reaching this handler (an OS-level gesture stealing the pointer stream
+    // mid-drag, the tab losing focus, etc.), the ghost label must not survive
+    // as a permanent floating artifact. Anything that can plausibly signal
+    // "the gesture is over" forces a hard cleanup.
+    const forceEndDrag = () => {
+      document.querySelectorAll('.gate-drag-ghost').forEach(g => g.remove());
+      clearSlotHighlights();
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+      dragState = null;
+    };
+    window.addEventListener('blur', forceEndDrag);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) forceEndDrag(); });
+
     const slotAt = (x, y) => {
       const el = document.elementFromPoint(x, y);
       return el ? el.closest('.gate-slot') : null;
@@ -1164,6 +1180,12 @@ class CircuitUI {
       const gate = chip.getAttribute('data-gate');
       chip.addEventListener('pointerdown', (e) => {
         if (e.button !== undefined && e.button !== 0) return; // left button / touch only
+        // Self-heal unconditionally: a ghost has no legitimate reason to
+        // exist at the start of a fresh gesture. Checked against dragState
+        // rather than the DOM directly, that guard would only catch the
+        // exact failure modes already anticipated — sweeping the DOM itself
+        // catches any leftover ghost regardless of why it survived.
+        forceEndDrag();
         dragState = { gate, startX: e.clientX, startY: e.clientY, isDragging: false, pointerId: e.pointerId, ghost: null };
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
@@ -1177,13 +1199,6 @@ class CircuitUI {
     const paletteChips = document.querySelectorAll('.gate-btn');
     paletteChips.forEach(chip => {
       const gate = chip.getAttribute('data-gate');
-
-      // Native HTML5 drag-and-drop kept as-is for browsers where it works,
-      // but it is not the primary path any more — see bindPointerGateDrag().
-      chip.addEventListener('dragstart', (e) => {
-        this.activeDragGate = gate;
-        e.dataTransfer.setData('text/plain', gate);
-      });
 
       chip.addEventListener('click', () => {
         // A drag-to-place just happened via the pointer-based path below;
