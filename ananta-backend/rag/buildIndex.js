@@ -19,7 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const { buildChunks } = require('./chunkKnowledgeCorpus');
-const { embedBatch, EMBED_MODEL } = require('./geminiEmbeddings');
+const { embedBatch, resolveEmbeddingModel } = require('./geminiEmbeddings');
 
 const OUTPUT_PATH = path.join(__dirname, 'knowledge_index.json');
 
@@ -31,21 +31,23 @@ async function main() {
   }
 
   const chunks = buildChunks();
-  console.log(`Embedding ${chunks.length} knowledge-corpus chunks with ${EMBED_MODEL}...`);
+  const model = await resolveEmbeddingModel(apiKey);
+  console.log(`Embedding ${chunks.length} knowledge-corpus chunks with ${model} (auto-discovered from this key's available models)...`);
 
-  const embeddings = await embedBatch(chunks.map((c) => c.text), apiKey, {
+  const { vectors, model: usedModel } = await embedBatch(chunks.map((c) => c.text), apiKey, {
     onProgress: (done, total) => process.stdout.write(`\r  ${done}/${total}`)
   });
   process.stdout.write('\n');
 
   const index = {
-    model: EMBED_MODEL,
+    model: usedModel,
+    dimensions: vectors[0].length,
     builtAt: new Date().toISOString(),
-    chunks: chunks.map((c, i) => ({ ...c, embedding: embeddings[i] }))
+    chunks: chunks.map((c, i) => ({ ...c, embedding: vectors[i] }))
   };
 
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(index));
-  console.log(`Wrote ${OUTPUT_PATH} (${chunks.length} chunks, ${(fs.statSync(OUTPUT_PATH).size / 1024).toFixed(0)} KB)`);
+  console.log(`Wrote ${OUTPUT_PATH} (${chunks.length} chunks x ${index.dimensions} dims, ${(fs.statSync(OUTPUT_PATH).size / 1024).toFixed(0)} KB)`);
 }
 
 main().catch((err) => {

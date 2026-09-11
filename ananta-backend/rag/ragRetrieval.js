@@ -51,7 +51,12 @@ async function retrieve(query, apiKey, topK = 3) {
 
   let queryVec;
   try {
-    queryVec = await embedText(query, apiKey);
+    // Embed with the exact same model the index was built with (recorded
+    // in knowledge_index.json), not whatever the resolver would pick fresh
+    // right now - those could diverge if Google adds a newer model between
+    // index builds, and mismatched dimensions can't be compared.
+    const { values } = await embedText(query, apiKey, index.model);
+    queryVec = values;
   } catch (e) {
     console.warn('[RAG] Query embedding failed, skipping retrieval:', e.message);
     return [];
