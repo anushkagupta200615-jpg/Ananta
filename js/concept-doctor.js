@@ -157,10 +157,15 @@ class ConceptDoctor {
     // Otherwise, ask the backend — grounded in this exact knowledge base (Section 4.4)
     this._showThinkingState(queryText);
     try {
+      // Send the tags and real-world impact too - they were being dropped,
+      // so the model had only a title and an analogy to match against and
+      // missed entries it should have matched.
       const groundingEntries = Object.values(this.knowledgeBase).map(item => ({
         id: item.id,
         title: item.title,
-        analogy: item.analogy
+        tags: item.tags || [],
+        analogy: item.analogy,
+        realWorldImpact: item.realWorldImpact || ''
       }));
 
       const response = await fetch('/api/gemini', {
