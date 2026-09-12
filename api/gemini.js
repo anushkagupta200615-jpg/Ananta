@@ -677,14 +677,36 @@ Do NOT invent speculative or non-standard physics, fabricated experimental
 results, or made-up numbers. Only if the question is genuinely outside physics,
 or cannot be answered scientifically at all, say so plainly.
 
+ILLUSTRATIVE CIRCUIT: if the concept can be demonstrated by a small quantum
+circuit, also return one. Ananta will RUN it on its real statevector simulator
+and show the learner the actual resulting probabilities and entanglement - so
+it must be a genuine, correct circuit, not a decorative one. Keep it minimal
+(1-3 qubits, few gates) and make it the canonical demonstration of the concept.
+Return null if the concept cannot honestly be shown as a circuit.
+
+Allowed gates: H, X, Y, Z, S, T, RX, RY, RZ, P (these take "angle" in radians),
+CNOT (control+target), CZ (two wires), SWAP (two wires), TOFFOLI (two controls +
+target), M (measure).
+
 Grounding library:
 ${JSON.stringify(groundingEntries || [])}
 Return ONLY JSON: {
   "title": "short title for this explanation",
   "analogy": "a real-world analogy, 2-3 sentences",
   "explanation": "the actual physics explanation, in clear language for a learner",
-  "matched_source": "the id of the grounding entry this matched, or null if answered from general physics"
+  "matched_source": "the id of the grounding entry this matched, or null if answered from general physics",
+  "illustrative_circuit": {
+    "numQubits": 2,
+    "caption": "one short line saying what this circuit demonstrates",
+    "gates": [
+      { "gate": "H", "qubit": 0 },
+      { "gate": "CNOT", "control": 0, "target": 1 }
+    ]
+  }
 }
+"illustrative_circuit" may be null. Gate objects use "qubit" for single-qubit
+gates, "control"/"target" for CNOT, "controls":[a,b]+"target" for TOFFOLI,
+"wires":[a,b] for CZ and SWAP, and optional "angle" for rotations.
 ${responseSchemaNote}`;
 
       return await callMultiProviderAI(
