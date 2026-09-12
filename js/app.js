@@ -939,6 +939,96 @@ document.addEventListener('DOMContentLoaded', () => {
       ];
       const lbl = document.getElementById('circuit-filename-label');
       if (lbl) lbl.textContent = 'quantum_fourier_transform.qc';
+    } else if (presetKey === 'decoherence') {
+      normalizedKey = 'decoherence';
+      targetGrid = [
+        ['X', 'H', 'Z', 'H', null, null],
+        [null, null, null, null, null, null],
+        [null, null, null, null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'decoherence_lindblad_ramsey.qc';
+    } else if (presetKey === 'density_matrix') {
+      normalizedKey = 'density_matrix';
+      targetGrid = [
+        ['H', 'CX_CTRL', null, null, null, null],
+        [null, 'CX_TGT', null, null, null, null],
+        [null, null, null, null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'density_matrix_mixed.qc';
+    } else if (presetKey === 'pauli_observables') {
+      normalizedKey = 'pauli_observables';
+      targetGrid = [
+        ['H', 'Z', 'X', null, null, null],
+        [null, 'H', null, null, null, null],
+        [null, null, null, null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'pauli_observables.qc';
+    } else if (presetKey === 'qasm_circuit') {
+      normalizedKey = 'qasm_circuit';
+      targetGrid = [
+        ['H', 'CX_CTRL', 'S', null, null, null],
+        [null, 'CX_TGT', 'T', null, null, null],
+        [null, null, null, null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'openqasm_ast_synthesis.qc';
+    } else if (presetKey === 'qaoa') {
+      normalizedKey = 'qaoa';
+      targetGrid = [
+        ['H', 'CX_CTRL', 'Z', 'CX_CTRL', 'H', null],
+        ['H', 'CX_TGT', null, 'CX_TGT', 'H', null],
+        ['H', null, null, null, 'H', null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'qaoa_maxcut_graph.qc';
+    } else if (presetKey === 'qml') {
+      normalizedKey = 'qml';
+      targetGrid = [
+        ['H', 'S', 'CX_CTRL', 'Z', 'CX_CTRL', null],
+        ['H', 'T', 'CX_TGT', null, 'CX_TGT', null],
+        [null, null, null, null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'qml_quantum_kernel.qc';
+    } else if (presetKey === 'pulse_drag') {
+      normalizedKey = 'pulse_drag';
+      targetGrid = [
+        ['H', 'X', 'H', 'T', null, null],
+        [null, null, null, null, null, null],
+        [null, null, null, null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'pulse_drag_envelope.qc';
+    } else if (presetKey === 'pqc_shor') {
+      normalizedKey = 'pqc_shor';
+      targetGrid = [
+        ['H', 'CX_CTRL', 'H', null, null, null],
+        ['H', 'CX_TGT', 'CX_CTRL', 'H', null, null],
+        ['X', null, 'CX_TGT', null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'pqc_shor_factoring.qc';
+    } else if (presetKey === 'cryo_transmon') {
+      normalizedKey = 'cryo_transmon';
+      targetGrid = [
+        ['X', 'S', 'T', 'H', null, null],
+        ['X', 'H', null, null, null, null],
+        [null, null, null, null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'cryo_transmon_15mk.qc';
+    } else if (presetKey === 'entanglement_swapping') {
+      normalizedKey = 'entanglement_swapping';
+      targetGrid = [
+        ['H', 'CX_CTRL', null, null, null, null],
+        [null, 'CX_TGT', 'CX_CTRL', 'H', null, null],
+        [null, null, 'CX_TGT', null, null, null]
+      ];
+      const lbl = document.getElementById('circuit-filename-label');
+      if (lbl) lbl.textContent = 'quantum_internet_repeater.qc';
     } else if (window.ALGORITHM_CATALOG) {
       targetAlgo = window.ALGORITHM_CATALOG.find(a => a.id === presetKey);
       if (targetAlgo) targetGrid = targetAlgo.grid;

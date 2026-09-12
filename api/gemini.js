@@ -1245,10 +1245,14 @@ function generateRoadmapLocally(instruction, availableModuleIds) {
 
   if (query.includes('beginner') || query.includes('intro') || query.includes('start')) {
     selected = allIds.filter(id => ['module-01', 'module-02', 'module-04', 'module-06'].includes(id));
+  } else if (query.includes('decoherence') || query.includes('lindblad') || query.includes('noise') || query.includes('t1') || query.includes('t2') || query.includes('dephasing')) {
+    selected = allIds.filter(id => ['module-05', 'module-03', 'module-12', 'module-15', 'module-17'].includes(id));
   } else if (query.includes('advanced') || query.includes('expert') || query.includes('error correction') || query.includes('surface')) {
     selected = allIds.filter(id => ['module-03', 'module-05', 'module-10', 'module-12', 'module-14'].includes(id));
   } else if (query.includes('linear algebra') || query.includes('math')) {
     selected = allIds.filter(id => ['module-01', 'module-02', 'module-04', 'module-03'].includes(id));
+  } else if (query.includes('algorithm') || query.includes('grover') || query.includes('vqe') || query.includes('qft')) {
+    selected = allIds.filter(id => ['module-08', 'module-09', 'module-10', 'module-11', 'module-13'].includes(id));
   }
 
   if (selected.length === 0) selected = allIds.slice(0, 4);

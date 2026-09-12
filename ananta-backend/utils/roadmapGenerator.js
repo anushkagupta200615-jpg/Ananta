@@ -108,6 +108,107 @@ function coerceLevel(level) {
   return found || 'Intermediate';
 }
 
+function inferCircuitPreset(title, summary) {
+  const text = `${title || ''} ${summary || ''}`.toLowerCase();
+  if (text.includes('decoherence') || text.includes('lindblad') || text.includes('relaxation') || text.includes('dephasing') || text.includes('t1') || text.includes('t2') || text.includes('noise')) {
+    return 'decoherence';
+  }
+  if (text.includes('surface code') || text.includes('stabilizer') || text.includes('syndrome') || text.includes('repetition') || text.includes('error correction') || text.includes('fault-tolerant')) {
+    return 'surface_code';
+  }
+  if (text.includes('teleport')) {
+    return 'teleport';
+  }
+  if (text.includes('grover') || text.includes('search') || text.includes('amplification')) {
+    return 'grover';
+  }
+  if (text.includes('vqe') || text.includes('variational') || text.includes('chemistry') || text.includes('molecular') || text.includes('eigensolver')) {
+    return 'vqe';
+  }
+  if (text.includes('fourier') || text.includes('qft') || text.includes('phase estimation') || text.includes('qpe')) {
+    return 'qft';
+  }
+  if (text.includes('qaoa') || text.includes('max-cut') || text.includes('combinatorial') || text.includes('optimization')) {
+    return 'qaoa';
+  }
+  if (text.includes('machine learning') || text.includes('qml') || text.includes('kernel') || text.includes('feature map')) {
+    return 'qml';
+  }
+  if (text.includes('pulse') || text.includes('drag') || text.includes('microwave') || text.includes('envelope')) {
+    return 'pulse_drag';
+  }
+  if (text.includes('shor') || text.includes('cryptography') || text.includes('pqc') || text.includes('lattice') || text.includes('rsa')) {
+    return 'pqc_shor';
+  }
+  if (text.includes('cryo') || text.includes('dilution') || text.includes('transmon') || text.includes('hardware') || text.includes('fridge')) {
+    return 'cryo_transmon';
+  }
+  if (text.includes('repeater') || text.includes('swapping') || text.includes('internet') || text.includes('network')) {
+    return 'entanglement_swapping';
+  }
+  if (text.includes('density') || text.includes('mixed state') || text.includes('entropy')) {
+    return 'density_matrix';
+  }
+  if (text.includes('pauli') || text.includes('observable') || text.includes('expectation')) {
+    return 'pauli_observables';
+  }
+  if (text.includes('unitary') || text.includes('unitaries') || text.includes('gate evolution')) {
+    return 'unitaries';
+  }
+  if (text.includes('qasm') || text.includes('cirq') || text.includes('ast') || text.includes('compiler')) {
+    return 'qasm_circuit';
+  }
+  if (text.includes('bell') || text.includes('entangle') || text.includes('epr')) {
+    return 'bell';
+  }
+  if (text.includes('hilbert') || text.includes('amplitude')) {
+    return 'hilbert_state';
+  }
+  return 'superposition';
+}
+
+function generateExerciseGoal(title, preset) {
+  switch (preset) {
+    case 'decoherence':
+      return 'Prepare excited state |1⟩ using Pauli-X on q[0] to observe energy relaxation (T1) and transverse dephasing (T2) dynamics.';
+    case 'surface_code':
+      return 'Entangle data qubit q[0] with syndrome check qubits q[1] and q[2] using CNOT gates to construct repetition stabilizer.';
+    case 'teleport':
+      return 'Construct Bell pair on q[1]-q[2] and Bell measurement on q[0]-q[1] to transfer unknown state amplitudes.';
+    case 'grover':
+      return 'Observe the Grover diffusion operator amplify the marked basis state in the probability distribution.';
+    case 'vqe':
+      return 'Inspect the VQE ansatz circuit for Hydrogen H2 and run the variational energy evaluation.';
+    case 'qft':
+      return 'Trace phase kickback interference on the register to resolve operator eigenvalues with binary precision.';
+    case 'qaoa':
+      return 'Synthesize parameterized cost unitaries for Max-Cut graph and optimize variational angle parameters.';
+    case 'qml':
+      return 'Encode data using ZZ-feature maps and inspect separation boundaries in quantum kernel space.';
+    case 'pulse_drag':
+      return 'Apply π/2 microwave drive rotation on q[0] to calibrate transmon drive envelope parameters.';
+    case 'pqc_shor':
+      return 'Construct quantum phase estimation stages to compute modular order r for factoring integers.';
+    case 'cryo_transmon':
+      return 'Simulate thermal ground state initialization and microwave excitation at 15 mK dilution refrigerator temperatures.';
+    case 'entanglement_swapping':
+      return 'Trace Bell state projection on intermediate nodes to verify non-local entanglement established between end nodes.';
+    case 'density_matrix':
+      return 'Form an entangled Bell pair with H on q[0] and CNOT(0→1). Tracing out q[1] yields a maximally mixed state on q[0].';
+    case 'pauli_observables':
+      return 'Apply H and Pauli gates to watch ⟨Z⟩ drop to 0 and ⟨X⟩ rise to +1 on the statevector.';
+    case 'unitaries':
+      return 'Arm single-qubit unitary gates (H, X, S, T) to observe norm-preserving evolution in Hilbert space.';
+    case 'qasm_circuit':
+      return 'Synthesize a 2-qubit circuit and inspect the generated Cirq / OpenQASM code export.';
+    case 'bell':
+      return 'Place an H gate on Qubit 0 followed by a CNOT(0→1) to generate the |Φ⁺⟩ Bell state.';
+    case 'hilbert_state':
+    default:
+      return 'Place a Hadamard (H) gate on Qubit 0. Observe the statevector split into equal superposition |+⟩ with 50% probability on |0⟩ and 50% on |1⟩.';
+  }
+}
+
 /**
  * Normalises a model step into the exact shape the roadmap UI renders, folding
  * in the authored module when one was cited so the learner keeps the real
@@ -115,6 +216,8 @@ function coerceLevel(level) {
  */
 function normalizeStep(step, index, catalogById) {
   const authored = step.moduleId ? catalogById[step.moduleId] : null;
+  const circuitPreset = authored?.circuitPreset || step.circuitPreset || inferCircuitPreset(step.title, step.summary);
+  const exerciseGoal = authored?.exerciseGoal || step.exerciseGoal || generateExerciseGoal(step.title, circuitPreset);
 
   return {
     id: authored ? authored.id : `generated-${index + 1}`,
@@ -132,8 +235,8 @@ function normalizeStep(step, index, catalogById) {
     // only one that can appear here.
     researchPaper: authored?.researchPaper || null,
     researchTopic: String(step.researchTopic || '').trim(),
-    circuitPreset: authored?.circuitPreset || null,
-    exerciseGoal: authored?.exerciseGoal || null,
+    circuitPreset,
+    exerciseGoal,
     isGenerated: !authored,
     authoredModuleId: authored ? authored.id : null
   };
@@ -240,4 +343,4 @@ async function generateRoadmap({ goal, catalog = [], refresh = false } = {}) {
   return value;
 }
 
-module.exports = { generateRoadmap, fallbackRoadmap, buildPrompt, normalizeStep };
+module.exports = { generateRoadmap, fallbackRoadmap, buildPrompt, normalizeStep, inferCircuitPreset, generateExerciseGoal };

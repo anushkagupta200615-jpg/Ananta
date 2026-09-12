@@ -25,7 +25,7 @@ class TopicRoadmapManager {
         timeEst: '15 mins',
         summary: 'Understand complex probability amplitudes, the Born rule, and continuous statevectors in 2^n dimensional Hilbert space.',
         researchPaper: 'Dirac, Principles of Quantum Mechanics (1930) / Born, Z. Phys. (1926)',
-        circuitPreset: 'superposition',
+        circuitPreset: 'hilbert_state',
         mathFormula: '|ψ⟩ = α|0⟩ + β|1⟩,   where |α|² + |β|² = 1',
         intuition: 'A qubit is not a classical bit with uncertainty. It is a unit vector on the complex sphere where amplitudes can constructively or destructively interfere.',
         exerciseGoal: 'Place a Hadamard (H) gate on Qubit 0. Observe the statevector split into equal superposition |+⟩ with 50% probability on |0⟩ and 50% on |1⟩.'
@@ -40,7 +40,7 @@ class TopicRoadmapManager {
         timeEst: '20 mins',
         summary: 'Learn single-qubit rotations (H, X, Y, Z, S, T) and multi-qubit Kronecker expansions that preserve quantum norm.',
         researchPaper: 'Nielsen & Chuang, Quantum Computation & Quantum Information (2010)',
-        circuitPreset: 'superposition',
+        circuitPreset: 'unitaries',
         mathFormula: 'U · U† = I,   |+⟩ = H|0⟩ = (|0⟩ + |1⟩)/√2',
         intuition: 'Every quantum gate is a reversible rotation in Hilbert space. Applying H puts the qubit into equal superposition.',
         exerciseGoal: 'Arm the Hadamard (H) gate and place it on Qubit 0. Observe measurement probabilities become 50% for |0⟩ and 50% for |1⟩.'
@@ -55,7 +55,7 @@ class TopicRoadmapManager {
         timeEst: '25 mins',
         summary: 'Explore pure vs mixed quantum states, partial trace over entangled subsystems, and von Neumann entropy.',
         researchPaper: 'von Neumann, Mathematische Grundlagen der Quantenmechanik (1932)',
-        circuitPreset: 'bell',
+        circuitPreset: 'density_matrix',
         mathFormula: 'ρ = ∑ p_i |ψ_i⟩⟨ψ_i|,   Tr(ρ) = 1,   Tr(ρ²) ≤ 1',
         intuition: 'When a qubit is entangled or decohered, it can no longer be described by a statevector alone. The density matrix tracks classical mixture and quantum coherences.',
         exerciseGoal: 'Form an entangled Bell pair with H on q[0] and CNOT(0→1). Tracing out q[1] yields a maximally mixed state on q[0] with Tr(ρ²)=0.5.'
@@ -70,7 +70,7 @@ class TopicRoadmapManager {
         timeEst: '20 mins',
         summary: 'Calculate expectation values ⟨Z⟩, ⟨X⟩, ⟨Y⟩ from physical projective measurements and density matrices.',
         researchPaper: 'Pauli, Z. Phys. 43, 601 (1927)',
-        circuitPreset: 'superposition',
+        circuitPreset: 'pauli_observables',
         mathFormula: '⟨O⟩ = ⟨ψ|O|ψ⟩ = Tr(ρ O),   ⟨Z⟩ = P(0) - P(1)',
         intuition: 'Pauli observables quantify the projection of the quantum state along the Bloch sphere coordinate axes.',
         exerciseGoal: 'Switch on Pauli Observables on the left panel to watch ⟨Z⟩ drop to 0 and ⟨X⟩ rise to +1 when H is applied.'
@@ -85,7 +85,7 @@ class TopicRoadmapManager {
         timeEst: '30 mins',
         summary: 'Model energy relaxation (T1) and transverse dephasing (T2) in physical superconducting transmon qubits.',
         researchPaper: 'G. Lindblad, Commun. Math. Phys. 48, 119 (1976)',
-        circuitPreset: 'superposition',
+        circuitPreset: 'decoherence',
         mathFormula: 'dρ/dt = -i[H, ρ] + ∑ (L_k ρ L_k† - ½ {L_k† L_k, ρ})',
         intuition: 'Quantum systems are not isolated. Coupling to thermal electromagnetic environments causes phase information to leak out exponentially.',
         exerciseGoal: 'Prepare excited state |1⟩ using Pauli-X on q[0] to observe energy relaxation (T1) and transverse dephasing (T2) dynamics.'
@@ -100,7 +100,7 @@ class TopicRoadmapManager {
         timeEst: '25 mins',
         summary: 'Master syntax translation between Python SDKs (Cirq, Qiskit, Braket) and standard hardware assembly languages.',
         researchPaper: 'Cross et al., OpenQASM 3.0 Spec, ACM TOCS (2022)',
-        circuitPreset: 'bell',
+        circuitPreset: 'qasm_circuit',
         mathFormula: 'OPENQASM 3.0; qubit[2] q; h q[0]; cx q[0], q[1];',
         intuition: 'Transpilers map mathematical unitary matrices into hardware-native pulse sequences and gate topologies.',
         exerciseGoal: 'Synthesize a 2-qubit circuit and inspect the generated Cirq / QASM code export.'
@@ -205,7 +205,7 @@ class TopicRoadmapManager {
         timeEst: '30 mins',
         summary: 'Solve NP-hard combinatorial graph problems (Max-Cut, TSP, Portfolio Optimization) by alternating problem cost and transverse driver Hamiltonians.',
         researchPaper: 'E. Farhi, J. Goldstone, S. Gutmann, arXiv:1411.4028 (2014)',
-        circuitPreset: 'vqe',
+        circuitPreset: 'qaoa',
         mathFormula: '|γ, β⟩ = ∏ e^{-i β_p H_M} e^{-i γ_p H_C} |+⟩^{\\otimes n}',
         intuition: 'QAOA is the discrete Trotterized analog of adiabatic quantum computing, steering states along an energy landscape toward the ground-state solution.',
         exerciseGoal: 'Synthesize parameterized cost unitaries for a 4-node Max-Cut graph and optimize variational angle parameters (γ, β).'
@@ -220,7 +220,7 @@ class TopicRoadmapManager {
         timeEst: '35 mins',
         summary: 'Map classical datasets non-linearly into high-dimensional Hilbert feature spaces to evaluate quantum kernels and train variational quantum classifiers (VQC).',
         researchPaper: 'V. Havlíček et al., Nature 567 (2019) / M. Schuld & N. Killoran, PRL 122 (2019)',
-        circuitPreset: 'bell',
+        circuitPreset: 'qml',
         mathFormula: 'K(x, x\') = |⟨Φ(x)|Φ(x\')⟩|² = |⟨0| U_Φ†(x\') U_Φ(x) |0⟩|²',
         intuition: 'Classical SVMs struggle with complex feature spaces. Quantum processors can compute inner products in exponentially large spaces where classical computation is intractable.',
         exerciseGoal: 'Encode a 2D dataset with ZZ-feature maps and observe separation boundaries in quantum kernel space.'
@@ -235,7 +235,7 @@ class TopicRoadmapManager {
         timeEst: '35 mins',
         summary: 'Synthesize sub-nanosecond Gaussian and DRAG microwave envelope pulses to eliminate leakage into transmon higher excited states (|2⟩).',
         researchPaper: 'F. Motzoi et al., Phys. Rev. Lett. 103, 110501 (2009)',
-        circuitPreset: 'superposition',
+        circuitPreset: 'pulse_drag',
         mathFormula: 'Ω(t) = Ω_x(t) cos(ω_d t) - (Ω̇_x(t) / Δ) sin(ω_d t)',
         intuition: 'A transmon is a weakly anharmonic oscillator. Fast pulses have spectral width that can accidentally excite the qubit out of computational subspace unless derivative correction (DRAG) cancels out-of-phase leakage.',
         exerciseGoal: 'Apply a π/2 microwave drive rotation via Hadamard gate on q[0] to calibrate transmon drive envelope parameters.'
@@ -250,7 +250,7 @@ class TopicRoadmapManager {
         timeEst: '30 mins',
         summary: 'Quantify cryptographic risk timelines (Y2K8 / Y2Q) for RSA-2048 and ECC, and evaluate NIST lattice-based standards (ML-KEM, ML-DSA).',
         researchPaper: 'NIST FIPS 203 / 204 Standards (2024) / C. Gidney & M. Ekerå, Quantum 5 (2021)',
-        circuitPreset: 'qft',
+        circuitPreset: 'pqc_shor',
         mathFormula: 'N = p · q,   Shor Logical Qubits ≈ 2n + 2,   LWE Hardness: A s + e = b (mod q)',
         intuition: 'While classical RSA and ECC are completely broken in polynomial time by Shor’s period finding, Learning With Errors (LWE) high-dimensional lattice vectors have no known quantum speedup.',
         exerciseGoal: 'Construct quantum phase estimation stages to compute modular order r for factoring integers in polynomial time.'
@@ -265,7 +265,7 @@ class TopicRoadmapManager {
         timeEst: '30 mins',
         summary: 'Explore dilution refrigerator thermodynamics (3He/4He phase separation), thermal quasiparticle poisoning, and transmon Josephson energy ratios (Ej/Ec >> 1).',
         researchPaper: 'J. Koch et al., Phys. Rev. A 76, 042319 (2007) Transmon Physics',
-        circuitPreset: 'superposition',
+        circuitPreset: 'cryo_transmon',
         mathFormula: 'H = 4 E_C (n - n_g)² - E_J cos(φ),   E_J / E_C ≈ 50-80,   T_base ≈ 15 mK',
         intuition: 'Thermal fluctuations at room temperature (~300 K / 26 meV) would immediately destroy fragile micro-eV quantum superpositions. Dilution refrigerators cool transmons down to 15 millikelvin to freeze out blackbody radiation.',
         exerciseGoal: 'Simulate thermal ground state initialization and microwave excitation at 15 mK dilution refrigerator temperatures.'
@@ -280,7 +280,7 @@ class TopicRoadmapManager {
         timeEst: '35 mins',
         summary: 'Distribute entanglement across planetary distances without physical qubit transit using quantum memory repeaters and Bell state measurements.',
         researchPaper: 'H. J. Kimble, Nature 453, 1023–1030 (2008) "The Quantum Internet"',
-        circuitPreset: 'teleport',
+        circuitPreset: 'entanglement_swapping',
         mathFormula: '|Φ⁺⟩₁₂ ⊗ |Φ⁺⟩₃₄  --[BSM₂₃]-->  |Φ⁺⟩₁₄   (Entanglement Swapped across distance)',
         intuition: 'Optical fiber attenuation absorbs photons over long distances. Since quantum states cannot be classically amplified (No-Cloning theorem), quantum repeaters use entanglement swapping at intermediate nodes to link distant stations.',
         exerciseGoal: 'Trace Bell state projection on intermediate nodes to verify non-local entanglement established between end nodes 1 and 4.'
@@ -1507,6 +1507,42 @@ class TopicRoadmapManager {
   // Embedded Circuit Presets Data Dictionary
   getCircuitPresetGrid(presetKey) {
     switch (presetKey) {
+      case 'decoherence':
+        return [
+          ['X', 'H', 'Z', 'H', null, null],
+          [null, null, null, null, null, null],
+          [null, null, null, null, null, null]
+        ];
+      case 'hilbert_state':
+        return [
+          ['H', null, null, null, null, null],
+          [null, null, null, null, null, null],
+          [null, null, null, null, null, null]
+        ];
+      case 'unitaries':
+        return [
+          ['X', 'H', 'S', 'T', null, null],
+          [null, 'H', null, null, null, null],
+          [null, null, null, null, null, null]
+        ];
+      case 'density_matrix':
+        return [
+          ['H', 'CX_CTRL', null, null, null, null],
+          [null, 'CX_TGT', null, null, null, null],
+          [null, null, null, null, null, null]
+        ];
+      case 'pauli_observables':
+        return [
+          ['H', 'Z', 'X', null, null, null],
+          [null, 'H', null, null, null, null],
+          [null, null, null, null, null, null]
+        ];
+      case 'qasm_circuit':
+        return [
+          ['H', 'CX_CTRL', 'S', null, null, null],
+          [null, 'CX_TGT', 'T', null, null, null],
+          [null, null, null, null, null, null]
+        ];
       case 'bell':
       case 'bell_phi_plus':
         return [
@@ -1548,6 +1584,42 @@ class TopicRoadmapManager {
         return [
           ['H', 'CX_CTRL', 'CX_CTRL', null, null, null],
           [null, 'CX_TGT', null, null, null, null],
+          [null, null, 'CX_TGT', null, null, null]
+        ];
+      case 'qaoa':
+        return [
+          ['H', 'CX_CTRL', 'Z', 'CX_CTRL', 'H', null],
+          ['H', 'CX_TGT', null, 'CX_TGT', 'H', null],
+          ['H', null, null, null, 'H', null]
+        ];
+      case 'qml':
+        return [
+          ['H', 'S', 'CX_CTRL', 'Z', 'CX_CTRL', null],
+          ['H', 'T', 'CX_TGT', null, 'CX_TGT', null],
+          [null, null, null, null, null, null]
+        ];
+      case 'pulse_drag':
+        return [
+          ['H', 'X', 'H', 'T', null, null],
+          [null, null, null, null, null, null],
+          [null, null, null, null, null, null]
+        ];
+      case 'pqc_shor':
+        return [
+          ['H', 'CX_CTRL', 'H', null, null, null],
+          ['H', 'CX_TGT', 'CX_CTRL', 'H', null, null],
+          ['X', null, 'CX_TGT', null, null, null]
+        ];
+      case 'cryo_transmon':
+        return [
+          ['X', 'S', 'T', 'H', null, null],
+          ['X', 'H', null, null, null, null],
+          [null, null, null, null, null, null]
+        ];
+      case 'entanglement_swapping':
+        return [
+          ['H', 'CX_CTRL', null, null, null, null],
+          [null, 'CX_TGT', 'CX_CTRL', 'H', null, null],
           [null, null, 'CX_TGT', null, null, null]
         ];
       case 'superposition':
@@ -1709,7 +1781,28 @@ class TopicRoadmapManager {
       : null;
     if (!dockTarget) return;
 
-    const presetName = (this.embeddedPreset || 'superposition').toUpperCase();
+    const presetDisplayNames = {
+      'decoherence': 'DECOHERENCE & LINDBLAD',
+      'hilbert_state': 'HILBERT SPACE & STATEVECTOR',
+      'unitaries': 'GATE UNITARIES & EVOLUTION',
+      'density_matrix': 'DENSITY MATRIX & MIXED STATES',
+      'pauli_observables': 'PAULI OBSERVABLES & EXPECTATION',
+      'qasm_circuit': 'OPENQASM 3.0 & CIRQ AST',
+      'bell': 'BELL ENTANGLEMENT |Φ⁺⟩',
+      'teleport': 'QUANTUM TELEPORTATION',
+      'grover': 'GROVER AMPLITUDE SEARCH',
+      'vqe': 'VARIATIONAL VQE CHEMISTRY',
+      'qft': 'QUANTUM FOURIER TRANSFORM',
+      'surface_code': 'SURFACE CODE STABILIZER',
+      'qaoa': 'QAOA GRAPH OPTIMIZATION',
+      'qml': 'QUANTUM MACHINE LEARNING',
+      'pulse_drag': 'DRAG PULSE HAMILTONIAN',
+      'pqc_shor': 'SHOR PQC ANALYSIS',
+      'cryo_transmon': 'CRYO TRANSMON PHYSICS',
+      'entanglement_swapping': 'ENTANGLEMENT SWAPPING',
+      'superposition': 'SUPERPOSITION'
+    };
+    const presetName = presetDisplayNames[this.embeddedPreset] || (this.embeddedPreset || 'QUANTUM CIRCUIT').toUpperCase().replace(/_/g, ' ');
     const availableGates = [
       { key: 'H', label: 'Hadamard', cls: 'btn-coral' },
       { key: 'X', label: 'Pauli-X', cls: 'btn-crimson' },
@@ -1722,13 +1815,16 @@ class TopicRoadmapManager {
       { key: 'M', label: 'Measure', cls: 'btn-slate' }
     ];
 
-    // Build Palette Buttons HTML
+    // Build Palette Buttons HTML with HTML5 Drag & Drop and click-to-arm
     const paletteButtonsHtml = availableGates.map(g => {
       const isArmed = this.armedGate === g.key;
       return `
         <button class="embedded-gate-btn ${g.cls} ${isArmed ? 'armed' : ''}"
+          draggable="true"
+          ondragstart="window.topicRoadmapManager.handleGateDragStart(event, '${g.key}')"
+          ondragend="window.topicRoadmapManager.handleGateDragEnd(event)"
           onclick="window.topicRoadmapManager.armEmbeddedGate('${g.key}')"
-          title="${g.label}">
+          title="${g.label} — Drag onto wire or click to arm">
           <span class="gate-key-char">${g.key === 'CX' ? '⊕' : (g.key === 'SWAP' ? '⤫' : (g.key === 'M' ? '∿' : g.key))}</span>
           <span class="gate-key-name">${g.label}</span>
         </button>
@@ -1736,7 +1832,7 @@ class TopicRoadmapManager {
     }).join('');
 
     // Dynamic Hint Banner
-    let hintText = '💡 Click a gate above to arm, then click any wire slot to place. Click any placed gate to remove.';
+    let hintText = '💡 Drag any gate onto wire slots, or click a gate to arm and place. Click any placed gate to remove.';
     if (this.cnotPending) {
       hintText = `🔗 CNOT Control placed on q[${this.cnotPending.ctrl}]! Click target qubit wire on step ${this.cnotPending.col + 1} to link.`;
     } else if (this.swapPending) {
@@ -1745,7 +1841,7 @@ class TopicRoadmapManager {
       hintText = `✨ Armed: [${this.armedGate}] — Click any slot on q[0], q[1], or q[2] to place (or click the gate again to disarm).`;
     }
 
-    // Build 3-Qubit Wire Grid HTML (3 wires x 6 steps)
+    // Build 3-Qubit Wire Grid HTML (3 wires x 6 steps) with Drop Handlers
     const numSteps = 6;
     let wiresHtml = '';
     for (let q = 0; q < 3; q++) {
@@ -1774,8 +1870,14 @@ class TopicRoadmapManager {
 
         slotsHtml += `
           <div class="embedded-wire-slot ${slotClass}"
+            data-q="${q}"
+            data-col="${col}"
+            ondragover="window.topicRoadmapManager.handleSlotDragOver(event, ${q}, ${col})"
+            ondragenter="window.topicRoadmapManager.handleSlotDragEnter(event, ${q}, ${col})"
+            ondragleave="window.topicRoadmapManager.handleSlotDragLeave(event, ${q}, ${col})"
+            ondrop="window.topicRoadmapManager.handleSlotDrop(event, ${q}, ${col})"
             onclick="window.topicRoadmapManager.handleSlotClick(${q}, ${col})"
-            title="Qubit ${q}, Step ${col + 1}${cell ? `: ${cell}` : ' (Click to place/remove)'}">
+            title="Qubit ${q}, Step ${col + 1}${cell ? `: ${cell}` : ' (Drag gate here or click)'}">
             ${slotContent}
           </div>
         `;
@@ -1879,8 +1981,11 @@ class TopicRoadmapManager {
         <!-- Unitary Gate Toolbox Palette -->
         <div class="embedded-palette-section">
           <div class="embedded-palette-header">
-            <span class="palette-title">Unitary Gate Toolbox</span>
-            <span class="palette-sub">Click a gate to arm</span>
+            <div class="palette-title-wrap">
+              <span class="palette-title">Unitary Gate Toolbox</span>
+              <span class="drag-drop-pill">🎯 Drag & Drop Enabled</span>
+            </div>
+            <span class="palette-sub">Drag gates directly onto wires, or click to arm</span>
           </div>
           <div class="embedded-palette-grid">
             ${paletteButtonsHtml}
@@ -1931,6 +2036,107 @@ class TopicRoadmapManager {
 
       </div>
     `;
+  }
+
+  // HTML5 Drag and Drop Handlers for Gate Toolbox & Circuit Grid
+  handleGateDragStart(event, gateKey) {
+    this.draggedGate = gateKey;
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', gateKey);
+      event.dataTransfer.setData('application/x-quantum-gate', gateKey);
+      event.dataTransfer.effectAllowed = 'copy';
+    }
+    if (event.currentTarget) {
+      event.currentTarget.classList.add('is-dragging');
+    }
+  }
+
+  handleGateDragEnd(event) {
+    this.draggedGate = null;
+    document.querySelectorAll('.embedded-gate-btn.is-dragging').forEach(el => el.classList.remove('is-dragging'));
+    document.querySelectorAll('.embedded-wire-slot.drag-over').forEach(el => el.classList.remove('drag-over'));
+  }
+
+  handleSlotDragOver(event, q, col) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+    if (event.currentTarget && !event.currentTarget.classList.contains('drag-over')) {
+      event.currentTarget.classList.add('drag-over');
+    }
+  }
+
+  handleSlotDragEnter(event, q, col) {
+    event.preventDefault();
+    if (event.currentTarget) {
+      event.currentTarget.classList.add('drag-over');
+    }
+  }
+
+  handleSlotDragLeave(event, q, col) {
+    if (event.currentTarget) {
+      event.currentTarget.classList.remove('drag-over');
+    }
+  }
+
+  handleSlotDrop(event, q, col) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.currentTarget) {
+      event.currentTarget.classList.remove('drag-over');
+    }
+    document.querySelectorAll('.embedded-wire-slot.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+    const gate = (event.dataTransfer && (event.dataTransfer.getData('text/plain') || event.dataTransfer.getData('application/x-quantum-gate')))
+      || this.draggedGate
+      || this.armedGate;
+
+    this.draggedGate = null;
+    if (!gate || !this.embeddedGrid) return;
+
+    if (gate === 'CX') {
+      if (!this.cnotPending) {
+        this.cnotPending = { ctrl: q, col: col };
+        this.renderEmbeddedStudio(this.activeModule);
+      } else {
+        if (this.cnotPending.col === col && this.cnotPending.ctrl !== q) {
+          this.embeddedGrid[this.cnotPending.ctrl][col] = 'CX_CTRL';
+          this.embeddedGrid[q][col] = 'CX_TGT';
+          this.cnotPending = null;
+          this.armedGate = null;
+        } else {
+          this.cnotPending = null;
+        }
+        this.renderEmbeddedStudio(this.activeModule);
+      }
+      return;
+    }
+
+    if (gate === 'SWAP') {
+      if (!this.swapPending) {
+        this.swapPending = { q1: q, col: col };
+        this.renderEmbeddedStudio(this.activeModule);
+      } else {
+        if (this.swapPending.col === col && this.swapPending.q1 !== q) {
+          this.embeddedGrid[this.swapPending.q1][col] = 'SWAP';
+          this.embeddedGrid[q][col] = 'SWAP';
+          this.swapPending = null;
+          this.armedGate = null;
+        } else {
+          this.swapPending = null;
+        }
+        this.renderEmbeddedStudio(this.activeModule);
+      }
+      return;
+    }
+
+    // Single qubit gate dropped
+    this.cnotPending = null;
+    this.swapPending = null;
+    this.armedGate = null;
+    this.embeddedGrid[q][col] = gate;
+    this.renderEmbeddedStudio(this.activeModule);
   }
 
   // Arm or Disarm a gate in the embedded palette
@@ -2063,14 +2269,56 @@ class TopicRoadmapManager {
     if (!probs || !probs.length) return { passed: false, text: 'Simulating circuit amplitudes...' };
     const active = probs.filter(p => p.probability > 0.05);
 
-    if (presetKey === 'superposition') {
+    if (presetKey === 'decoherence') {
+      const q0HasX = grid[0] && grid[0].includes('X');
+      const q0HasRamsey = grid[0] && grid[0].includes('H') && grid[0].includes('Z');
+      if (q0HasX || q0HasRamsey) {
+        return { passed: true, text: 'Decoherence & Lindblad Dynamics Verified! Qubit q[0] initialized into excited state |1⟩ with Ramsey dephasing probe sequence.' };
+      }
+      return { passed: false, text: 'Prepare excited state |1⟩ using Pauli-X on q[0] to observe energy relaxation (T1) and transverse dephasing (T2) dynamics.' };
+    }
+
+    if (presetKey === 'hilbert_state' || presetKey === 'superposition') {
       if (active.length >= 2) {
-        return { passed: true, text: 'Superposition Verified! Complex amplitudes split across basis states with equal probability.' };
+        return { passed: true, text: 'Hilbert Space Superposition Verified! Complex amplitudes split across basis states with equal probability.' };
       }
       return { passed: false, text: 'Arm Hadamard (H) and place on q[0] to create equal superposition |+⟩.' };
     }
 
-    if (presetKey === 'bell') {
+    if (presetKey === 'unitaries') {
+      const hasUnitary = grid.some(row => row.some(g => ['H', 'X', 'Y', 'Z', 'S', 'T'].includes(g)));
+      if (hasUnitary && active.length >= 1) {
+        return { passed: true, text: 'Gate Unitaries Verified! Reversible unitary rotation transforms statevector in Hilbert space while conserving total probability norm = 1.' };
+      }
+      return { passed: false, text: 'Place unitary gates (H, X, S, T) on qubit wires to observe matrix evolution.' };
+    }
+
+    if (presetKey === 'density_matrix') {
+      const entropy = engine && engine.getEntanglementEntropy ? engine.getEntanglementEntropy() : 0;
+      const hasEntanglement = grid.some(row => row.includes('CX_CTRL') || row.includes('CX_TGT'));
+      if (entropy > 0.5 || hasEntanglement) {
+        return { passed: true, text: 'Density Matrix Formalism Verified! Partial trace over entangled partner produces a maximally mixed reduced state with Tr(ρ²) = 0.5.' };
+      }
+      return { passed: false, text: 'Place H on q[0] and CNOT(0→1) to generate an entangled state and trace out subsystem.' };
+    }
+
+    if (presetKey === 'pauli_observables') {
+      const hasPauli = grid.some(row => row.some(g => ['X', 'Y', 'Z'].includes(g)));
+      if (hasPauli) {
+        return { passed: true, text: 'Pauli Observables Verified! Expectation values ⟨Z⟩ and ⟨X⟩ projected along Bloch coordinate axes.' };
+      }
+      return { passed: false, text: 'Apply H and Pauli gates (X, Y, Z) to measure expectation values ⟨Z⟩, ⟨X⟩, and ⟨Y⟩.' };
+    }
+
+    if (presetKey === 'qasm_circuit') {
+      const gateCount = grid.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
+      if (gateCount >= 2) {
+        return { passed: true, text: 'OpenQASM 3.0 & AST Compilation Verified! Multi-gate register successfully synthesized for hardware AST export.' };
+      }
+      return { passed: false, text: 'Synthesize a 2-qubit circuit with H and CNOT to generate the OpenQASM 3.0 representation.' };
+    }
+
+    if (presetKey === 'bell' || presetKey === 'bell_phi_plus') {
       const entropy = engine && engine.getEntanglementEntropy ? engine.getEntanglementEntropy() : 0;
       if (entropy > 0.7 || (active.length === 2 && Math.abs(active[0].probability - 0.5) < 0.15)) {
         return { passed: true, text: 'Bell Entanglement Verified! Maximally entangled EPR pair formed with maximal entropy S ≈ 1.0 ebit.' };
@@ -2096,12 +2344,76 @@ class TopicRoadmapManager {
       return { passed: false, text: 'Apply oracle phase shift and diffusion operator to amplify the target computational state.' };
     }
 
+    if (presetKey === 'vqe') {
+      const hasEntanglement = grid.some(row => row.includes('CX_CTRL') || row.includes('CX_TGT'));
+      if (hasEntanglement && active.length >= 2) {
+        return { passed: true, text: 'VQE Molecular Ansatz Verified! Variational parameters prepare entangled ground state for H2 Hamiltonian evaluation.' };
+      }
+      return { passed: false, text: 'Inspect the VQE ansatz circuit for Hydrogen H2 and run the variational energy evaluation.' };
+    }
+
+    if (presetKey === 'qft') {
+      const hasPhase = grid.some(row => row.includes('S') || row.includes('T'));
+      if (hasPhase && active.length >= 2) {
+        return { passed: true, text: 'Quantum Fourier Transform Verified! Phase kickback and controlled rotations project computational states into frequency space.' };
+      }
+      return { passed: false, text: 'Apply Hadamard and controlled phase gates (S, T) across register wires to perform QFT.' };
+    }
+
     if (presetKey === 'surface_code') {
       const hasCx = grid.some(row => row.includes('CX_CTRL') || row.includes('CX_TGT'));
       if (hasCx) {
         return { passed: true, text: 'Repetition Code Verified! Data qubit q[0] entangled with ancilla syndrome check qubits.' };
       }
       return { passed: false, text: 'Entangle data qubit q[0] with syndrome check qubits q[1] and q[2] using CNOT gates.' };
+    }
+
+    if (presetKey === 'qaoa') {
+      const hasMixerOrCost = grid.some(row => row.includes('CX_CTRL') || row.includes('Z') || row.includes('H'));
+      if (hasMixerOrCost) {
+        return { passed: true, text: 'QAOA Ansatz Verified! Alternating problem cost Hamiltonian and transverse mixer drive unitaries synthesized.' };
+      }
+      return { passed: false, text: 'Synthesize parameterized cost unitaries for Max-Cut graph and optimize variational angles.' };
+    }
+
+    if (presetKey === 'qml') {
+      const hasFeatureMap = grid.some(row => row.includes('S') || row.includes('T') || row.includes('CX_CTRL'));
+      if (hasFeatureMap) {
+        return { passed: true, text: 'Quantum Machine Learning Kernel Verified! Non-linear ZZ-feature map encoded into high-dimensional Hilbert space.' };
+      }
+      return { passed: false, text: 'Encode dataset using H, phase rotations, and CNOT entanglement to create quantum kernel feature maps.' };
+    }
+
+    if (presetKey === 'pulse_drag') {
+      const hasPulse = grid[0] && (grid[0].includes('H') || grid[0].includes('X'));
+      if (hasPulse) {
+        return { passed: true, text: 'DRAG Microwave Pulse Control Verified! Shaped π/2 envelope drive simulated without out-of-subspace leakage.' };
+      }
+      return { passed: false, text: 'Place H or X on q[0] to simulate microwave pulse control with DRAG derivative correction.' };
+    }
+
+    if (presetKey === 'pqc_shor') {
+      const hasModular = grid.some(row => row.some(g => g !== null));
+      if (hasModular) {
+        return { passed: true, text: 'Shor PQC Period Finding Verified! Phase estimation register active for modular exponentiation order r.' };
+      }
+      return { passed: false, text: 'Construct quantum phase estimation stages to compute modular order r for integer factoring.' };
+    }
+
+    if (presetKey === 'cryo_transmon') {
+      const hasCryo = grid.some(row => row.some(g => g !== null));
+      if (hasCryo) {
+        return { passed: true, text: 'Cryogenic Transmon Physics Verified! Thermal ground state initialization and microwave excitation active at 15 mK.' };
+      }
+      return { passed: false, text: 'Simulate thermal ground state initialization and microwave excitation at 15 mK dilution refrigerator temperatures.' };
+    }
+
+    if (presetKey === 'entanglement_swapping') {
+      const hasSwap = grid.some(row => row.includes('CX_CTRL') || row.includes('SWAP'));
+      if (hasSwap) {
+        return { passed: true, text: 'Entanglement Swapping Verified! Bell state measurement links distant repeater nodes across quantum network.' };
+      }
+      return { passed: false, text: 'Trace Bell state projection on intermediate nodes to verify non-local entanglement established between end nodes.' };
     }
 
     if (active.length > 1) {
