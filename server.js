@@ -14,8 +14,9 @@ const path = require('path');
 
 // Load .env for local dev (DATABASE_URL, GEMINI_API_KEY, etc - see
 // .env.example). Vercel injects its own env vars directly and has no .env
-// file, so this is a silent no-op there.
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+try {
+  require('dotenv').config({ path: path.join(__dirname, '.env') });
+} catch (e) {}
 
 const PORT = process.env.PORT || 5500;
 const HOST = '127.0.0.1';
@@ -287,8 +288,8 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Dedicated Multi-task Multi-Provider AI Endpoint (/api/gemini, /api/ai, /api/grok, /api/ai/tutor)
-  if (pathname === '/api/gemini' || pathname === '/api/ai' || pathname === '/api/grok' || pathname === '/api/ai/tutor') {
+  // Dedicated Multi-task Multi-Provider AI Endpoint (/api/gemini, /api/ai, /api/grok, /api/ai/tutor, /api/knowledge)
+  if (pathname === '/api/gemini' || pathname === '/api/ai' || pathname === '/api/grok' || pathname === '/api/ai/tutor' || pathname.startsWith('/api/knowledge')) {
     try {
       delete require.cache[require.resolve('./api/gemini.js')];
     } catch (e) {}

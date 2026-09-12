@@ -34,10 +34,27 @@ const db = require('./db');
 
 // ANANTA_DATA_DIR lets tests point this at a scratch directory instead of
 // the real local data store (see instructorStorage.js for the same pattern).
-const DATA_DIR = process.env.ANANTA_DATA_DIR || path.join(__dirname, '..', 'data');
+const isServerless = Boolean(
+  process.env.VERCEL ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.LAMBDA_TASK_ROOT
+);
+
+function resolveDataDir() {
+  if (process.env.ANANTA_DATA_DIR) return process.env.ANANTA_DATA_DIR;
+  if (isServerless && !db.isConfigured()) {
+    return path.join('/tmp', 'ananta-data');
+  }
+  return path.join(__dirname, '..', 'data');
+}
+
+const DATA_DIR = resolveDataDir();
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SECRET_FILE = path.join(DATA_DIR, '.session_secret');
 const REVOKED_FILE = path.join(DATA_DIR, '.revoked_sessions.json');
+
+// In-memory store fallback for read-only environments (e.g. Vercel serverless /var/task)
+const _authMemStore = new Map();
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const SCRYPT_KEYLEN = 64;
@@ -52,7 +69,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 let cachedSecret = null;
 
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  } catch (err) {
+    // Ignored if directory cannot be created on read-only hosts
+  }
 }
 
 function getSessionSecret() {
@@ -76,11 +97,17 @@ function getSessionSecret() {
   }
   ensureDataDir();
   if (fs.existsSync(SECRET_FILE)) {
-    const existing = fs.readFileSync(SECRET_FILE, 'utf8').trim();
-    if (existing) { cachedSecret = existing; return cachedSecret; }
+    try {
+      const existing = fs.readFileSync(SECRET_FILE, 'utf8').trim();
+      if (existing) { cachedSecret = existing; return cachedSecret; }
+    } catch (e) {}
   }
   const generated = crypto.randomBytes(32).toString('hex');
-  fs.writeFileSync(SECRET_FILE, generated, { mode: 0o600 });
+  try {
+    fs.writeFileSync(SECRET_FILE, generated, { mode: 0o600 });
+  } catch (e) {
+    // Read-only filesystem, keep in memory
+  }
   cachedSecret = generated;
   return cachedSecret;
 }
@@ -194,18 +221,35 @@ function rowToUser(row) {
 }
 
 function loadUsersFile() {
+  if (_authMemStore.has(USERS_FILE)) return _authMemStore.get(USERS_FILE);
   ensureDataDir();
-  if (!fs.existsSync(USERS_FILE)) return [];
+  if (!fs.existsSync(USERS_FILE)) {
+    // If in /tmp, check if bundled users.json exists
+    const bundledPath = path.join(__dirname, '..', 'data', 'users.json');
+    let initialUsers = [];
+    if (fs.existsSync(bundledPath)) {
+      try { initialUsers = JSON.parse(fs.readFileSync(bundledPath, 'utf8')) || []; } catch (e) {}
+    }
+    _authMemStore.set(USERS_FILE, initialUsers);
+    return initialUsers;
+  }
   try {
-    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')) || [];
+    const users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')) || [];
+    _authMemStore.set(USERS_FILE, users);
+    return users;
   } catch (e) {
     console.error('[AuthService] Corrupt users.json, refusing to overwrite. Error:', e.message);
     throw new Error('User store is unreadable. Contact the server operator.');
   }
 }
 function saveUsersFile(users) {
-  ensureDataDir();
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+  _authMemStore.set(USERS_FILE, users);
+  try {
+    ensureDataDir();
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+  } catch (e) {
+    console.warn(`[AuthService] Users file write failed (${e.message}), preserved in-memory`);
+  }
 }
 
 async function isSessionRevoked(jti) {
@@ -231,16 +275,26 @@ async function markSessionRevoked(jti, expiresAtMs) {
   saveRevokedFile(revoked);
 }
 function loadRevokedFile() {
+  if (_authMemStore.has(REVOKED_FILE)) return _authMemStore.get(REVOKED_FILE);
   ensureDataDir();
   if (!fs.existsSync(REVOKED_FILE)) return {};
-  try { return JSON.parse(fs.readFileSync(REVOKED_FILE, 'utf8')) || {}; } catch (e) { return {}; }
+  try {
+    const data = JSON.parse(fs.readFileSync(REVOKED_FILE, 'utf8')) || {};
+    _authMemStore.set(REVOKED_FILE, data);
+    return data;
+  } catch (e) { return {}; }
 }
 function saveRevokedFile(map) {
-  ensureDataDir();
   const now = Date.now();
   const pruned = {};
   for (const [jti, exp] of Object.entries(map)) if (exp > now) pruned[jti] = exp;
-  fs.writeFileSync(REVOKED_FILE, JSON.stringify(pruned));
+  _authMemStore.set(REVOKED_FILE, pruned);
+  try {
+    ensureDataDir();
+    fs.writeFileSync(REVOKED_FILE, JSON.stringify(pruned));
+  } catch (e) {
+    console.warn(`[AuthService] Revoked file write failed (${e.message}), preserved in-memory`);
+  }
 }
 
 // --------------------------------------------------------------------

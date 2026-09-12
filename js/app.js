@@ -462,15 +462,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function closeAllDropdowns() {
     dropdownItems.forEach(g => {
-      g.classList.remove('is-open');
-      g.classList.add('just-closed');
-      const t = g.querySelector('.nav-dropdown-trigger');
-      if (t) t.setAttribute('aria-expanded', 'false');
-      setTimeout(() => g.classList.remove('just-closed'), 350);
+      if (g.classList.contains('is-open')) {
+        g.classList.remove('is-open');
+        g.classList.add('just-closed');
+        const t = g.querySelector('.nav-dropdown-trigger');
+        if (t) t.setAttribute('aria-expanded', 'false');
+        setTimeout(() => g.classList.remove('just-closed'), 350);
+      }
     });
-    if (document.activeElement && typeof document.activeElement.blur === 'function') {
-      document.activeElement.blur();
-    }
   }
 
   dropdownItems.forEach(group => {
@@ -497,9 +496,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Close dropdowns on outside click or Escape key
-  document.addEventListener('click', () => {
-    closeAllDropdowns();
+  // Close dropdowns on outside click or Escape key (without stealing focus from inputs)
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.nav-dropdown-item')) {
+      closeAllDropdowns();
+    }
   });
 
   document.addEventListener('keydown', (e) => {
@@ -955,6 +956,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Drawer Toggle Handlers for Clean Workspace
+  // Drawer Toggle Handlers for Clean Workspace
   window.toggleKnowledgeEngineDrawer = function() {
     const drawer = document.getElementById('ke-collapsible-drawer');
     const btn = document.getElementById('btn-toggle-ke-drawer');
@@ -962,7 +964,12 @@ document.addEventListener('DOMContentLoaded', () => {
     drawer.classList.toggle('drawer-open');
     if (drawer.classList.contains('drawer-open')) {
       const inp = document.getElementById('ke-search-input');
-      if (inp) inp.focus();
+      if (inp) {
+        setTimeout(() => {
+          inp.focus();
+          inp.select();
+        }, 50);
+      }
       if (btn) btn.classList.add('active');
     } else {
       if (btn) btn.classList.remove('active');
@@ -998,7 +1005,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================
-  // 6. Quantum Knowledge Engine
+  // 6. Quantum Knowledge Engine (Live AI + Offline Corpus)
   // ==========================================
   const keEngine = window.QuantumKnowledgeEngine ? new window.QuantumKnowledgeEngine() : null;
   if (keEngine) {
@@ -1008,34 +1015,112 @@ document.addEventListener('DOMContentLoaded', () => {
     const keResultInner = document.getElementById('ke-result-inner');
     const keCollapseBtn = document.getElementById('btn-ke-collapse');
     const keBar = document.getElementById('knowledge-engine-bar');
+    const keInputWrap = document.querySelector('.ke-input-wrapper');
 
-    function runKESearch(query) {
+    // Make whole search wrapper focus the input on click
+    if (keInputWrap && keInput) {
+      keInputWrap.addEventListener('click', (e) => {
+        if (e.target !== keBtn && !keBtn.contains(e.target)) {
+          keInput.focus();
+        }
+      });
+    }
+
+    async function runKESearch(query) {
       if (!query || query.trim().length < 2) return;
-      const topic = keEngine.search(query);
+      const q = query.trim();
       if (!keResultPanel || !keResultInner) return;
-      if (topic) {
-        keResultInner.innerHTML = keEngine.renderCard(topic);
-        keResultPanel.style.display = 'block';
-        keResultPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      // Ensure drawer is open
+      const drawer = document.getElementById('ke-collapsible-drawer');
+      const drawerBtn = document.getElementById('btn-toggle-ke-drawer');
+      if (drawer && !drawer.classList.contains('drawer-open')) {
+        drawer.classList.add('drawer-open');
+        if (drawerBtn) drawerBtn.classList.add('active');
+      }
+
+      // Show immediate loading indicator
+      keResultInner.innerHTML = `
+        <div class="ke-loading-box">
+          <div class="ke-loading-spinner"></div>
+          <div class="ke-loading-text">
+            <h4>Synthesizing Research Breakdown</h4>
+            <p>Consulting quantum physics models for <strong>"${q}"</strong> via AI backend...</p>
+          </div>
+        </div>`;
+      keResultPanel.style.display = 'block';
+      keResultPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      // 1. Try Live AI Synthesis via Multi-Provider Backend (Google AI Studio / Grok)
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 18000);
+
+        const apiBase = (window.location && window.location.origin) ? window.location.origin : '';
+        const response = await fetch(`${apiBase}/api/gemini`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            task: 'knowledge-engine',
+            payload: { query: q }
+          })
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          const topic = data.result || data.topic;
+          const source = data.source || 'gemini';
+          if (topic && topic.title && topic.definition) {
+            keResultInner.innerHTML = keEngine.renderCard(topic, source);
+            if (window.renderAllMath) {
+              try { window.renderAllMath(); } catch (e) {}
+            }
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('[Knowledge Engine] Live AI fetch note:', err.message);
+      }
+
+      // 2. Offline / network fallback: search deterministic local corpus
+      const localTopic = keEngine.search(q);
+      if (localTopic) {
+        keResultInner.innerHTML = keEngine.renderCard(localTopic, 'deterministic-corpus');
+        if (window.renderAllMath) {
+          try { window.renderAllMath(); } catch (e) {}
+        }
       } else {
         keResultInner.innerHTML = `
           <div class="ke-no-result">
             <div class="ke-no-result-icon">🔭</div>
-            <h4>No topic found for "<em>${query}</em>"</h4>
-            <p>Try: superposition, entanglement, VQE, QFT, Grover's algorithm, decoherence, surface codes, Shor's algorithm, phase kickback, Bloch sphere, quantum teleportation, QAOA, T gate, no-cloning theorem, density matrix...</p>
+            <h4>No local topic found for "<em>${q}</em>"</h4>
+            <p>Connect to the backend with a valid GEMINI_API_KEY to synthesize any advanced quantum research concept, or try: superposition, entanglement, VQE, QFT, Grover's algorithm, decoherence, surface codes, Shor's algorithm, phase kickback, Bloch sphere, quantum teleportation, QAOA, T gate, density matrix...</p>
           </div>`;
-        keResultPanel.style.display = 'block';
       }
     }
 
-    if (keBtn) keBtn.addEventListener('click', () => runKESearch(keInput ? keInput.value : ''));
+    if (keBtn) {
+      keBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        runKESearch(keInput ? keInput.value : '');
+      });
+    }
+
     if (keInput) {
-      keInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runKESearch(keInput.value); });
+      keInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          runKESearch(keInput.value);
+        }
+      });
     }
 
     // Quick chip buttons
     document.querySelectorAll('.ke-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
+      chip.addEventListener('click', (e) => {
+        e.preventDefault();
         const topic = chip.getAttribute('data-topic');
         if (keInput) keInput.value = topic;
         runKESearch(topic);
@@ -2996,22 +3081,32 @@ document.addEventListener('DOMContentLoaded', () => {
     switchView('overview');
   }
 
-  // DevSite Header Search Integration
+  // DevSite Header Search Integration & Quick Launcher
   window.focusKnowledgeEngineSearch = function() {
     switchView('simulator');
+    const drawer = document.getElementById('ke-collapsible-drawer');
+    const btn = document.getElementById('btn-toggle-ke-drawer');
+    if (drawer && !drawer.classList.contains('drawer-open')) {
+      drawer.classList.add('drawer-open');
+      if (btn) btn.classList.add('active');
+    }
     setTimeout(() => {
       const searchInput = document.getElementById('ke-search-input');
-      const keBar = document.getElementById('knowledge-engine-container');
-      if (keBar && keBar.classList.contains('ke-collapsed')) {
-        keBar.classList.remove('ke-collapsed');
-      }
       if (searchInput) {
         searchInput.focus();
         searchInput.select();
         searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, 150);
+    }, 120);
   };
+
+  // Global '/' keyboard shortcut to trigger Knowledge Engine search from anywhere
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) && !document.activeElement?.isContentEditable) {
+      e.preventDefault();
+      window.focusKnowledgeEngineSearch();
+    }
+  });
 
   // Google Quantum AI Smooth Section Scrolling
   window.scrollToSection = function(sectionId) {

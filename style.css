@@ -10089,6 +10089,57 @@ input:checked + .slider-round:before {
 .ke-no-result h4 { font-size: 15px; color: rgba(255,255,255,0.7); margin: 0 0 8px; }
 .ke-no-result p { font-size: 12px; line-height: 1.7; }
 
+/* KE Live AI Badge & Loading State */
+.ke-ai-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, rgba(66, 133, 244, 0.2), rgba(167, 139, 250, 0.25));
+  border: 1px solid rgba(138, 180, 248, 0.5);
+  color: #a5b4fc;
+  border-radius: 12px;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+}
+
+.ke-loading-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 20px;
+  background: rgba(13, 22, 40, 0.7);
+  border: 1px solid rgba(66, 133, 244, 0.25);
+  border-radius: 12px;
+  animation: ke-card-in 0.25s ease;
+}
+.ke-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(138, 180, 248, 0.2);
+  border-top-color: var(--google-blue);
+  border-radius: 50%;
+  animation: ke-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes ke-spin {
+  to { transform: rotate(360deg); }
+}
+.ke-loading-text h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--text-white);
+  font-weight: 600;
+}
+.ke-loading-text p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 /* =====================================================================
    DOCK SUBTITLE & UPDATED PALETTE HEADER
    ===================================================================== */

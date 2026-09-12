@@ -22,11 +22,28 @@ const quizEngine = require('./quizEngine');
 // this at a scratch directory instead of the real committed seed files -
 // without it, running the test suite repeatedly deleted and regenerated
 // ananta-backend/data/*.json, which are real tracked git content.
-const DATA_DIR = process.env.ANANTA_DATA_DIR || path.join(__dirname, '..', 'data');
+const isServerless = Boolean(
+  process.env.VERCEL ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.LAMBDA_TASK_ROOT
+);
+
+function resolveDataDir() {
+  if (process.env.ANANTA_DATA_DIR) return process.env.ANANTA_DATA_DIR;
+  if (isServerless && !db.isConfigured()) {
+    return path.join('/tmp', 'ananta-data');
+  }
+  return path.join(__dirname, '..', 'data');
+}
+
+const DATA_DIR = resolveDataDir();
 const COHORTS_FILE = path.join(DATA_DIR, 'cohorts.json');
 const STUDENTS_FILE = path.join(DATA_DIR, 'students.json');
 const ASSIGNMENTS_FILE = path.join(DATA_DIR, 'assignments.json');
 const SUBMISSIONS_FILE = path.join(DATA_DIR, 'submissions.json');
+
+// In-memory store fallback for read-only environments (e.g. Vercel serverless /var/task)
+const _memStore = new Map();
 
 // --------------------------------------------------------------------
 // Seed data (used to initialize either backend on first run, so the demo
@@ -60,27 +77,59 @@ function buildSeed() {
 }
 
 // --------------------------------------------------------------------
-// File backend (local/offline dev)
+// File backend (local/offline dev with serverless /tmp & in-memory fallback)
 // --------------------------------------------------------------------
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  } catch (err) {
+    // Ignored if directory cannot be created on read-only hosts
+  }
 }
+
 function readJsonFile(filePath, fallback) {
+  if (_memStore.has(filePath)) {
+    return _memStore.get(filePath);
+  }
   ensureDataDir();
   if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, JSON.stringify(fallback, null, 2), 'utf8');
-    return fallback;
+    // If running in /tmp, try reading bundled seed if available
+    const baseName = path.basename(filePath);
+    const bundledPath = path.join(__dirname, '..', 'data', baseName);
+    let initialData = fallback;
+    if (fs.existsSync(bundledPath)) {
+      try {
+        initialData = JSON.parse(fs.readFileSync(bundledPath, 'utf8'));
+      } catch (e) {}
+    }
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(initialData, null, 2), 'utf8');
+    } catch (e) {
+      // EROFS or permission error on read-only filesystem
+    }
+    _memStore.set(filePath, initialData);
+    return initialData;
   }
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    _memStore.set(filePath, data);
+    return data;
   } catch (e) {
     console.error(`[InstructorStorage] Read error ${filePath}:`, e.message);
+    _memStore.set(filePath, fallback);
     return fallback;
   }
 }
+
 function writeJsonFile(filePath, data) {
-  ensureDataDir();
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+  _memStore.set(filePath, data);
+  try {
+    ensureDataDir();
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {
+    // Silently fall back to in-memory store on read-only serverless filesystems
+    console.warn(`[InstructorStorage] Filesystem write failed (${e.message}), preserved in-memory`);
+  }
 }
 
 // --------------------------------------------------------------------

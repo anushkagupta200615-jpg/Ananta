@@ -35,6 +35,14 @@ const { resolveTranscript, sampleSuggestions } = require('../ananta-backend/util
 const { prepareTurn } = require('../ananta-backend/utils/voiceAgent');
 const ragRetrieval = require('../ananta-backend/rag/ragRetrieval');
 
+let localTopicDb = [];
+try {
+  const qkData = require('../js/quantum-knowledge-data');
+  if (Array.isArray(qkData.QUANTUM_TOPIC_DATABASE)) {
+    localTopicDb = qkData.QUANTUM_TOPIC_DATABASE;
+  }
+} catch (e) {}
+
 /**
  * Credentials come from the environment or from the caller, never from source.
  * Returning '' when nothing is configured is deliberate: the provider probe then
@@ -404,10 +412,14 @@ async function handler(req, res) {
   let task = body?.task;
   let payload = body?.payload;
 
-  // Handle direct calls to /api/ai/tutor or /api/ai with flat body
+  // Handle direct calls to /api/ai/tutor or /api/knowledge with flat body
   const reqUrl = new URL(req.url, `http://${req.headers?.host || '127.0.0.1'}`);
   if (!task && reqUrl.pathname.endsWith('/tutor')) {
     task = 'circuit-tutor';
+    payload = body || {};
+  }
+  if (!task && reqUrl.pathname.includes('/knowledge')) {
+    task = 'knowledge-engine';
     payload = body || {};
   }
   if (task && !payload) {
@@ -788,6 +800,70 @@ ${responseSchemaNote}`;
         systemPrompt,
         userQuestion || 'Analyze my current quantum circuit, tell me what I am making, and detect any errors',
         (providerErrors) => generateCircuitTutorLocally(payload, providerErrors),
+        res
+      );
+    }
+
+    // ------------------------------------------------------------------
+    // 6. KNOWLEDGE ENGINE — Live AI Quantum Research Breakdown
+    // ------------------------------------------------------------------
+    case 'knowledge-engine':
+    case 'quantum-knowledge': {
+      const { query, topicKey } = payload || {};
+      const q = (query || topicKey || '').trim();
+      if (!q) {
+        return res.status(400).json({ error: 'Missing topic query' });
+      }
+
+      // Real RAG lookup if available
+      let ragContextBlock = '';
+      try {
+        const ragKey = getApiKey(req);
+        if (ragKey) {
+          const hits = await ragRetrieval.retrieve(q, ragKey, 2);
+          if (hits && hits.length) {
+            ragContextBlock = `\nRELEVANT LANDMARK RESEARCH ARCHIVE EXCERPTS:\n` +
+              hits.map((h, i) => `[${i + 1}] ${h.title}:\n${h.text}`).join('\n\n');
+          }
+        }
+      } catch (e) {
+        console.warn('[knowledge-engine] RAG retrieval skipped:', e.message);
+      }
+
+      const systemPrompt = `You are the Lead Quantum Physicist, Academician, and Researcher at Google Quantum AI, IBM Quantum, and MIT Center for Theoretical Physics.
+Your task is to generate a comprehensive, rigorous, graduate-level breakdown for the quantum computing concept, algorithm, hardware phenomenon, or topic: "${q}".
+
+${ragContextBlock ? ragContextBlock + '\n' : ''}
+REQUIREMENTS:
+1. title: Exact official, formal title (e.g. "Phase Kickback Mechanism", "Variational Quantum Eigensolver (VQE)", "Toric Code & Anyonic Statistics").
+2. category: One of "Foundations", "Quantum Phenomena", "Quantum Algorithms", "Hardware & Noise", "Quantum Error Correction", "Quantum Chemistry", or "Cryptography & Security".
+3. arxiv: Official landmark arXiv citation if applicable (e.g. "arXiv:quant-ph/0101012" or "arXiv:2207.06431"), or null.
+4. definition: Rigorous, formal definition accessible to advanced undergraduate and graduate researchers.
+5. math: Precise mathematical formulation using Dirac bra-ket notation, matrix representations, Hamiltonian equations, or unitary operators. Include clear equations.
+6. intuition: Deep physical intuition, geometric insight (e.g. Bloch sphere, state space trajectory), or wave interference explanation.
+7. applications: Array of 3-5 concrete research and industrial applications (e.g., specific algorithms, QPU error mitigation, NISQ chemistry, topological protection).
+8. preset: Preset circuit key if the concept directly corresponds to a composer circuit ("superposition", "bell", "ghz", "teleport", "grover", "deutsch_jozsa", "qft", or null).
+9. furtherReading: Seminal textbook chapters or milestone publications (e.g. "Nielsen & Chuang Ch. 4; Preskill Lecture Notes Ch. 3; Phys. Rev. Lett. 1993").
+
+SCHEMA (Return ONLY valid raw JSON matching this structure, no markdown fences, no extra text):
+{
+  "title": "<formal title string>",
+  "category": "<category string>",
+  "arxiv": <string or null>,
+  "definition": "<definition string>",
+  "math": "<math equations and state derivation string>",
+  "intuition": "<intuition string>",
+  "applications": ["<app 1>", "<app 2>", "<app 3>"],
+  "preset": <string or null>,
+  "furtherReading": "<citation string>"
+}`;
+
+      return await callMultiProviderAI(
+        req,
+        body,
+        systemPrompt,
+        `Explain quantum topic: "${q}" in rigorous graduate research detail`,
+        (providerErrors) => generateKnowledgeTopicLocally(q, providerErrors),
         res
       );
     }
@@ -1375,6 +1451,46 @@ function answerCircuitQuestionLocally(question, { summary, purpose, entanglement
   }
 
   return `${reason}, so this offline mode can't parse that question freely — but here's what's grounded in your real circuit: ${summary}. ${purpose} ${errors.length ? `${errors.length} diagnostic(s) found — see above.` : 'No issues detected.'}`;
+}
+
+function generateKnowledgeTopicLocally(query, providerErrors = []) {
+  const qLower = (query || '').toLowerCase().trim();
+  const found = localTopicDb.find(t =>
+    t.title.toLowerCase().includes(qLower) ||
+    (t.keys && t.keys.some(k => qLower.includes(k) || k.includes(qLower)))
+  );
+  if (found) {
+    return {
+      title: found.title,
+      category: found.category || 'Foundations',
+      arxiv: found.arxiv || null,
+      definition: found.definition,
+      math: found.math,
+      intuition: found.intuition,
+      applications: found.applications || [],
+      preset: found.preset || null,
+      furtherReading: found.furtherReading || 'Quantum Information Science Literature',
+      source: 'deterministic-knowledge-corpus',
+      providerErrors
+    };
+  }
+  return {
+    title: query.charAt(0).toUpperCase() + query.slice(1),
+    category: 'Quantum Research & Foundations',
+    arxiv: null,
+    definition: `In quantum information theory and computational physics, "${query}" represents an important theoretical construct, algorithmic paradigm, or physical device phenomenon in Hilbert state space.`,
+    math: `Statevector evolution: |ψ(t)⟩ = exp(-i H t / ℏ) |ψ(0)⟩\nUnitary transformation: U |ψ⟩ = |ψ′⟩,   U†U = I\nObservables expectation: ⟨O⟩ = ⟨ψ| O |ψ⟩ = Tr(ρ O)`,
+    intuition: `Quantum operations on concepts like "${query}" harness wave-like probability amplitude interference and high-dimensional entanglement to achieve quantum processing acceleration inaccessible to classical Turing architectures.`,
+    applications: [
+      'Quantum algorithmic compilation & state preparation in Ananta Studio',
+      'NISQ noise mitigation and Hamiltonian tomography',
+      'Fault-tolerant quantum architecture development'
+    ],
+    preset: null,
+    furtherReading: 'Nielsen & Chuang, "Quantum Computation and Quantum Information"; Preskill Lecture Notes',
+    source: 'deterministic-knowledge-corpus',
+    providerErrors
+  };
 }
 
 module.exports = handler;

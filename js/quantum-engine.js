@@ -1916,39 +1916,46 @@ class QuantumKnowledgeEngine {
   }
 
   // Render a rich topic card as HTML
-  renderCard(topic) {
+  renderCard(topic, source = 'corpus') {
+    const isAi = source && (source.includes('gemini') || source.includes('grok') || source.includes('ai') || source === 'ai-studio');
+    const aiBadge = isAi
+      ? `<span class="ke-ai-badge" title="Synthesized live from Google AI Studio / Multi-Provider AI Backend via API Key">✨ Live AI Verified (${source})</span>`
+      : '';
+
     const arxivBadge = topic.arxiv
-      ? `<a href="https://arxiv.org/abs/${topic.arxiv.replace('arXiv:', '').trim()}" target="_blank" class="ke-arxiv-link">\ud83d\udcda ${topic.arxiv}</a>`
+      ? `<a href="https://arxiv.org/abs/${topic.arxiv.replace('arXiv:', '').trim()}" target="_blank" class="ke-arxiv-link">📚 ${topic.arxiv}</a>`
       : '';
 
     const presetBtn = topic.preset
-      ? `<button class="ke-load-circuit-btn" onclick="window.loadPresetSafe('${topic.preset}'); window.scrollToComposer();">\u26a1 Load in Composer</button>`
+      ? `<button class="ke-load-circuit-btn" onclick="if(window.loadPresetSafe){window.loadPresetSafe('${topic.preset}');}else if(window.circuitUI){window.circuitUI.loadPreset('${topic.preset}');}window.scrollToComposer();">⚡ Load in Composer</button>`
       : '';
 
-    const appsList = topic.applications.map(a => `<li>${a}</li>`).join('');
+    const apps = Array.isArray(topic.applications) ? topic.applications : (topic.applications ? [topic.applications] : []);
+    const appsList = apps.map(a => `<li>${a}</li>`).join('');
 
     return `
       <div class="ke-card">
         <div class="ke-card-top">
           <div class="ke-card-meta">
-            <span class="ke-category-badge">${topic.category}</span>
+            <span class="ke-category-badge">${topic.category || 'Quantum Science'}</span>
+            ${aiBadge}
             ${arxivBadge}
           </div>
           <h4 class="ke-card-title">${topic.title}</h4>
         </div>
 
         <div class="ke-section">
-          <div class="ke-section-label">\ud83d\udccc Definition</div>
+          <div class="ke-section-label">📌 Definition</div>
           <p class="ke-definition">${topic.definition}</p>
         </div>
 
         <div class="ke-section">
-          <div class="ke-section-label">\ud83d\udcca Mathematical Formulation</div>
+          <div class="ke-section-label">📊 Mathematical Formulation</div>
           <pre class="ke-math-block">${topic.math}</pre>
         </div>
 
         <div class="ke-section">
-          <div class="ke-section-label">\ud83d\udca1 Physical Intuition</div>
+          <div class="ke-section-label">💡 Physical Intuition</div>
           <p class="ke-intuition">${topic.intuition}</p>
         </div>
 
@@ -1958,7 +1965,7 @@ class QuantumKnowledgeEngine {
         </div>
 
         <div class="ke-card-footer">
-          <span class="ke-reading-hint">\ud83d\udcd6 ${topic.furtherReading}</span>
+          <span class="ke-reading-hint">📖 ${topic.furtherReading || 'Quantum Computation & Quantum Information'}</span>
           <div class="ke-card-actions">
             ${presetBtn}
           </div>

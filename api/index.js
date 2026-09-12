@@ -187,7 +187,7 @@ module.exports = async function handler(req, res) {
   // routing), so on Vercel every Circuit Tutor request 404'd and silently
   // fell back to the client's offline analysis - the AI-backed tutor never
   // actually ran in production.
-  if (pathname === '/api/gemini' || pathname === '/gemini' || pathname === '/api/ai' || pathname === '/api/grok' || pathname === '/api/ai/tutor') {
+  if (pathname === '/api/gemini' || pathname === '/gemini' || pathname === '/api/ai' || pathname === '/api/grok' || pathname === '/api/ai/tutor' || pathname.startsWith('/api/knowledge')) {
     const geminiHandler = require('./gemini.js');
     return geminiHandler(req, res);
   }
