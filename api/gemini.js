@@ -684,6 +684,7 @@ ${responseSchemaNote}`;
     case 'circuit-tutor': {
       const {
         gridStructure,
+        operationList,
         numQubits,
         activeDepth,
         diracNotation,
@@ -692,6 +693,8 @@ ${responseSchemaNote}`;
         deterministicErrors,
         userQuestion
       } = payload;
+
+      const findings = Array.isArray(deterministicErrors) ? deterministicErrors : [];
 
       // Real RAG: when the student asks something, retrieve the actual
       // semantically-nearest passages from the 80+-topic knowledge corpus
@@ -723,6 +726,20 @@ Your goal is to guide students building quantum circuits by providing:
 STRICT ANTI-HALLUCINATION RULES:
 - Ground all statements STRICTLY in the provided circuit ground truth data below.
 - DO NOT invent gates, qubits, or state probabilities not present in the ground truth.
+- Use the RESOLVED OPERATION LIST as the authoritative reading of what gates exist.
+  Two controls sharing one target in the same time step is a TOFFOLI, not a CNOT.
+  Never describe a gate that is not in that list, and never rename one that is.
+- The DETERMINISTIC STATIC ANALYSIS is authoritative AND exhaustive for circuit
+  errors. It is a real simulation-backed check, not a hint. Therefore:
+    * The "errors" array MUST correspond one-to-one with those findings.
+    * If that list is empty, "errors" MUST be [] and "isHealthy" MUST be true.
+    * NEVER invent, infer or add an error that is not in that list.
+  You may still offer improvement ideas - but put them in "tutorGuidance" as
+  suggestions, never as "errors", and never claim a gate is redundant or
+  ineffective unless the deterministic analysis says so.
+- Do not tell the student to delete a gate unless the deterministic analysis
+  flagged it. Removing a gate that is actually doing work changes the circuit's
+  output state and is worse advice than saying nothing.
 - If the circuit is empty, tell the student to place gates to begin.
 - If errors are present, explain the physical reason (e.g. Born rule collapse, Clifford involution H^2 = I) and give a clear fix.
 - If retrieved knowledge-base passages are provided below and the student's question is conceptual (not circuit-specific), ground your answer in them and reference the topic title. Never state a retrieved passage's content as if it applied to the student's circuit unless it actually does.
@@ -738,8 +755,10 @@ ${gridStructure || '(empty circuit)'}
   * von Neumann Entropy S = ${mathMetrics?.entropy ?? '0.00'} ebits
   * Subsystem Purity gamma = ${mathMetrics?.purity ?? '1.00'}
   * Entanglement Classification: ${mathMetrics?.entanglementClass || 'Separable'}
-- Deterministic Static Analysis Findings:
-${JSON.stringify(deterministicErrors || [])}
+- RESOLVED OPERATION LIST (authoritative - this is exactly what the circuit contains, in order):
+${Array.isArray(operationList) && operationList.length ? operationList.map((o, i) => `  ${i + 1}. ${o}`).join('\n') : '  (no gates placed)'}
+- DETERMINISTIC STATIC ANALYSIS - ${findings.length} finding(s) (authoritative and exhaustive):
+${findings.length ? JSON.stringify(findings) : '  NONE. This circuit has no detected errors. "errors" MUST be [] and "isHealthy" MUST be true.'}
 ${userQuestion ? `- Student Question: "${userQuestion}"` : ''}
 ${ragContextBlock}
 

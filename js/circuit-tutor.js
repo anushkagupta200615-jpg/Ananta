@@ -344,8 +344,33 @@ class CircuitTutor {
       const deterministicErrors = this.detectDeterministicErrors(grid);
       const gridStructure = this.formatGridStructure(grid);
 
+      // An unambiguous, already-resolved list of the operations in this
+      // circuit. formatGridStructure() alone shows raw per-wire markers
+      // ("CX_CTRL (t=2)" on two different wires), leaving the model to infer
+      // that two controls sharing a target is a Toffoli - and it guessed
+      // wrong, describing a Toffoli as "a CNOT from q[0] to q[2]". The
+      // engine already resolves this correctly, so send its answer rather
+      // than asking the model to re-derive it.
+      const operationList = (engine && engine.toOperationList)
+        ? engine.toOperationList(grid).map((op) => {
+            switch (op.kind) {
+              case 'toffoli': return `Toffoli: controls q[${op.controls[0]}] and q[${op.controls[1]}], target q[${op.target}]`;
+              case 'cnot': return `CNOT: control q[${op.control}], target q[${op.target}]`;
+              case 'swap': return `SWAP: q[${op.wires[0]}] and q[${op.wires[1]}]`;
+              case 'cz': return `CZ: q[${op.wires[0]}] and q[${op.wires[1]}]`;
+              case 'cp': return `Controlled-phase(${op.angle}): q[${op.wires[0]}] and q[${op.wires[1]}]`;
+              case 'measure': return `Measure: q[${op.qubit}]`;
+              case 'gate1q': return op.angle === null
+                ? `${op.name} on q[${op.qubit}]`
+                : `${op.name}(${op.angle}) on q[${op.qubit}]`;
+              default: return null;
+            }
+          }).filter(Boolean)
+        : [];
+
       const payload = {
         gridStructure,
+        operationList,
         grid, // raw gate grid: lets the backend ground its analysis in a real
               // simulation instead of guessing from the text summary
         numQubits,
