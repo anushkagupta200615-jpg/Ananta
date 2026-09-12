@@ -1286,29 +1286,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const exportCodeEl = document.getElementById('qiskit-code');
   const exportCopyBtn = document.getElementById('btn-copy-qiskit');
   const exportFrameworkLabel = document.getElementById('export-framework-label');
-  let activeExportTab = 'cirq';
+  // Default must match whichever tab button carries .active in the markup.
+  let activeExportTab = (document.querySelector('.export-tab-btn.active')
+    || {}).dataset?.export || 'cirq';
+
+  const EXPORT_BADGES = {
+    qiskit: 'Qiskit 1.x compatible',
+    cirq: 'Google Cirq >= 1.3 - Willow & Sycamore QPU ready',
+    braket: 'Amazon Braket SDK >= 1.7 - IonQ / Rigetti / QuEra ready',
+    pennylane: 'PennyLane >= 0.38 (Xanadu)',
+    qasm: 'OpenQASM 2.0 standard'
+  };
 
   function updateExportCode() {
     if (!circuitUI || !exportCodeEl) return;
     const grid = circuitUI.getGrid ? circuitUI.getGrid() : circuitUI.grid;
     if (!grid) return;
 
-    let code = '';
-    if (activeExportTab === 'cirq') {
-      code = engine.toCirq(grid);
-      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'Google Cirq >= 1.3 - Willow & Sycamore QPU ready';
-    } else if (activeExportTab === 'qiskit') {
-      code = engine.toQiskit(grid);
-      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'Qiskit 1.x compatible';
-    } else if (activeExportTab === 'pennylane') {
-      code = engine.toPennyLane(grid);
-      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'PennyLane >= 0.38 (Xanadu)';
-    } else if (activeExportTab === 'qasm') {
-      code = engine.toQASM(grid);
-      if (exportFrameworkLabel) exportFrameworkLabel.textContent = 'OpenQASM 2.0 standard';
+    // Generate through the engine's single export entry point so this panel
+    // can never fall behind when a framework or gate is added to the engine.
+    exportCodeEl.textContent = engine.exportCode(grid, activeExportTab);
+    if (exportFrameworkLabel) {
+      exportFrameworkLabel.textContent = EXPORT_BADGES[activeExportTab] || activeExportTab;
     }
-    exportCodeEl.textContent = code;
   }
+
+  // circuit-ui.js re-renders the composer on every gate change. It used to
+  // write Qiskit into this same <code> element unconditionally, which stomped
+  // the user's framework choice: picking Cirq then touching the circuit put
+  // Qiskit source under a "Google Cirq" heading. It now calls back here so
+  // there is exactly one writer, and it honours the selected tab.
+  window.anantaRenderExportCode = updateExportCode;
 
   exportTabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1318,6 +1326,9 @@ document.addEventListener('DOMContentLoaded', () => {
       updateExportCode();
     });
   });
+
+  // Paint once on load so the panel never shows the placeholder text.
+  updateExportCode();
 
   if (exportCopyBtn) {
     exportCopyBtn.addEventListener('click', () => {

@@ -1062,37 +1062,44 @@ import numpy as np
 # Device: noiseless statevector simulator
 dev = qml.device("default.qubit", wires=${this.numQubits})
 
-@qml.qnode(dev)
-def circuit():
 `;
     const PL_1Q = { H: 'qml.Hadamard', X: 'qml.PauliX', Y: 'qml.PauliY', Z: 'qml.PauliZ', S: 'qml.S', T: 'qml.T' };
     const ops = this.toOperationList(grid);
     const hasOps = ops.length > 0;
+
+    // Build the gate body ONCE. Both QNodes below emit it verbatim: the
+    // expectation QNode used to carry only a "(same gate sequence as above)"
+    // comment, so it ran on the untouched |0...0> ground state and printed
+    // <Z> = 1 for every qubit of every circuit - exported code that looked
+    // right and silently reported the wrong expectation values.
+    let body = '';
     for (const op of ops) {
       switch (op.kind) {
-        case 'toffoli': py += `    qml.Toffoli(wires=[${op.controls[0]}, ${op.controls[1]}, ${op.target}])\n`; break;
-        case 'cnot': py += `    qml.CNOT(wires=[${op.control}, ${op.target}])\n`; break;
-        case 'swap': py += `    qml.SWAP(wires=[${op.wires[0]}, ${op.wires[1]}])\n`; break;
-        case 'cz': py += `    qml.CZ(wires=[${op.wires[0]}, ${op.wires[1]}])\n`; break;
-        case 'cp': py += `    qml.ControlledPhaseShift(${op.angle}, wires=[${op.wires[0]}, ${op.wires[1]}])\n`; break;
+        case 'toffoli': body += `    qml.Toffoli(wires=[${op.controls[0]}, ${op.controls[1]}, ${op.target}])\n`; break;
+        case 'cnot': body += `    qml.CNOT(wires=[${op.control}, ${op.target}])\n`; break;
+        case 'swap': body += `    qml.SWAP(wires=[${op.wires[0]}, ${op.wires[1]}])\n`; break;
+        case 'cz': body += `    qml.CZ(wires=[${op.wires[0]}, ${op.wires[1]}])\n`; break;
+        case 'cp': body += `    qml.ControlledPhaseShift(${op.angle}, wires=[${op.wires[0]}, ${op.wires[1]}])\n`; break;
         case 'measure': break; // measurements are expressed in the return statement
         case 'gate1q':
-          if (op.angle === null && PL_1Q[op.name]) py += `    ${PL_1Q[op.name]}(wires=${op.qubit})\n`;
-          else if (op.name === 'RX') py += `    qml.RX(${op.angle}, wires=${op.qubit})\n`;
-          else if (op.name === 'RY') py += `    qml.RY(${op.angle}, wires=${op.qubit})\n`;
-          else if (op.name === 'RZ') py += `    qml.RZ(${op.angle}, wires=${op.qubit})\n`;
-          else if (op.name === 'P') py += `    qml.PhaseShift(${op.angle}, wires=${op.qubit})\n`;
+          if (op.angle === null && PL_1Q[op.name]) body += `    ${PL_1Q[op.name]}(wires=${op.qubit})\n`;
+          else if (op.name === 'RX') body += `    qml.RX(${op.angle}, wires=${op.qubit})\n`;
+          else if (op.name === 'RY') body += `    qml.RY(${op.angle}, wires=${op.qubit})\n`;
+          else if (op.name === 'RZ') body += `    qml.RZ(${op.angle}, wires=${op.qubit})\n`;
+          else if (op.name === 'P') body += `    qml.PhaseShift(${op.angle}, wires=${op.qubit})\n`;
           break;
         default: break;
       }
     }
-    if (!hasOps) py += `    pass  # No gates placed yet\n`;
+    if (!hasOps) body += `    pass  # No gates placed yet\n`;
+
+    py += `@qml.qnode(dev)\ndef circuit():\n`;
+    py += body;
     py += `    # Return full statevector\n    return qml.state()\n\n`;
     py += `# Execute the QNode\nstatevec = circuit()\nprint("Statevector |psi>:", statevec)\n`;
-    py += `\n# To measure Pauli expectation values:\n`;
+    py += `\n# Pauli-Z expectation values for the SAME circuit\n`;
     py += `@qml.qnode(dev)\ndef expectation_circuit():\n`;
-    // Repeat gate body
-    py += `    # (same gate sequence as above)\n`;
+    py += body;
     py += `    return [\n`;
     for (let q = 0; q < this.numQubits; q++) {
       py += `        qml.expval(qml.PauliZ(${q})),  # <Z>_q${q}\n`;

@@ -755,9 +755,17 @@ class CircuitUI {
     // Check for Multi-Qubit Entanglement in Circuit
     this.updateEntanglementBadge(probs);
 
-    // Update Export Code
-    if (this.qiskitCodeBlock) {
-      this.qiskitCodeBlock.textContent = this.engine.toQiskit(this.grid);
+    // Update Export Code. app.js owns this panel because it knows which
+    // framework tab is selected; writing toQiskit() directly here overwrote
+    // that choice on every gate change.
+    if (typeof window.anantaRenderExportCode === 'function') {
+      window.anantaRenderExportCode();
+    } else if (this.qiskitCodeBlock) {
+      // First paint, before app.js has wired up: fall back to the framework
+      // the markup marks active rather than assuming Qiskit.
+      const activeBtn = document.querySelector('.export-tab-btn.active');
+      const fw = (activeBtn && activeBtn.getAttribute('data-export')) || 'qiskit';
+      this.qiskitCodeBlock.textContent = this.engine.exportCode(this.grid, fw);
     }
     if (this.qasmCodeBlock) {
       this.qasmCodeBlock.textContent = this.engine.toQASM(this.grid);
