@@ -22412,3 +22412,99 @@ input:checked + .slider-round:before {
 }
 
 
+
+/* =====================================================================
+   CIRCUIT OPTIMIZER / HARDWARE READINESS PANEL
+   ===================================================================== */
+.opt-section {
+  border: 1px solid var(--border-color, #2a3a52);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.opt-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.opt-section-title {
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--text-white, #e9f0fa);
+}
+.opt-hint {
+  font-size: 12px;
+  color: var(--text-dim, #8fa3bf);
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+.btn-opt-run,
+.btn-opt-apply {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  color: #06281d;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.btn-opt-run:hover,
+.btn-opt-apply:hover { filter: brightness(1.1); }
+.btn-opt-apply { margin-top: 12px; }
+.opt-select {
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--text-white, #e9f0fa);
+  border: 1px solid var(--border-color, #2a3a52);
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.opt-result { min-height: 24px; }
+.opt-metrics {
+  display: flex;
+  gap: 26px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.opt-metric { display: flex; flex-direction: column; }
+.opt-metric-val {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-white, #e9f0fa);
+  font-family: 'JetBrains Mono', monospace;
+}
+.opt-metric-lbl {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim, #8fa3bf);
+  margin-top: 2px;
+}
+.opt-good  { color: #34d399; font-size: 13px; line-height: 1.55; }
+.opt-warn  { color: #fbbf24; font-size: 13px; line-height: 1.55; }
+.opt-bad   { color: #f87171; font-size: 13px; line-height: 1.55; }
+.opt-idle  { color: var(--text-dim, #8fa3bf); font-size: 13px; line-height: 1.55; }
+.opt-note  { color: var(--text-dim, #8fa3bf); font-size: 12px; margin-top: 6px; }
+.opt-violation {
+  font-size: 12px;
+  color: #cbd5e1;
+  background: rgba(251, 113, 133, 0.08);
+  border-left: 2px solid #fb7185;
+  padding: 7px 12px;
+  margin-top: 8px;
+  border-radius: 0 5px 5px 0;
+  line-height: 1.5;
+}
+.opt-formula {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim, #8fa3bf);
+  margin-top: 10px;
+  word-break: break-word;
+}

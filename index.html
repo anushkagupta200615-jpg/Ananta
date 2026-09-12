@@ -1154,6 +1154,9 @@
             <button class="tool-btn btn-composer-debugger" id="btn-composer-debugger" onclick="window.openDebuggerFromComposer()" title="Jump straight into Time-Travel Debugger with this circuit (Step-by-step Unitary Inspection & Entropy Analysis)">
               ⏱️ Time-Travel Debugger
             </button>
+            <button class="tool-btn btn-optimize-circ" id="btn-open-optimizer" onclick="window.openCircuitOptimizer()" title="Optimize gate count and depth, check hardware connectivity, and estimate noise survival - every rewrite is verified by state fidelity">
+              🔧 Optimize &amp; Hardware
+            </button>
             <button class="tool-drawer-btn" id="btn-toggle-ke-drawer" onclick="window.toggleKnowledgeEngineDrawer()" title="Toggle Advanced Research Knowledge Assistant (Press /)">
               🔬 Knowledge Engine ▾
             </button>
@@ -3808,6 +3811,56 @@ Key Advantage:
     </div>
   </div>
 
+  <!-- Circuit Optimizer, Hardware Topology & Noise Survival Modal -->
+  <div class="bibtex-modal-backdrop" id="circuit-optimizer-modal" style="display:none;">
+    <div class="bibtex-modal-dialog" style="max-width: 900px; width: 94%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="bibtex-modal-header">
+        <h3>🔧 Optimize &amp; Hardware Readiness</h3>
+        <button class="btn-close-modal" onclick="window.closeCircuitOptimizer()">✕</button>
+      </div>
+      <div class="bibtex-modal-body" style="overflow-y:auto; flex:1;">
+
+        <div class="opt-section">
+          <div class="opt-section-head">
+            <span class="opt-section-title">1. Circuit Optimizer</span>
+            <button class="btn-opt-run" id="btn-run-optimizer" onclick="window.runCircuitOptimizer()">Optimize Circuit ⚡</button>
+          </div>
+          <p class="opt-hint">Cancels self-inverse pairs, merges same-axis rotations and compacts depth &mdash; then simulates both circuits and only keeps the result if the state is provably unchanged.</p>
+          <div id="optimizer-result" class="opt-result"></div>
+        </div>
+
+        <div class="opt-section">
+          <div class="opt-section-head">
+            <span class="opt-section-title">2. Hardware Connectivity</span>
+            <select id="opt-topology-select" class="opt-select" onchange="window.refreshHardwareReadiness()">
+              <option value="linear">Linear Chain</option>
+              <option value="ring">Ring / Cycle</option>
+              <option value="star">Star (bus qubit)</option>
+              <option value="heavyhex">IBM Heavy-Hex</option>
+              <option value="alltoall">All-to-All (trapped ion)</option>
+            </select>
+          </div>
+          <p class="opt-hint">Real chips are not all-to-all connected. This flags two-qubit gates whose wires are not physically coupled, and computes the SWAP route needed.</p>
+          <div id="topology-result" class="opt-result"></div>
+        </div>
+
+        <div class="opt-section">
+          <div class="opt-section-head">
+            <span class="opt-section-title">3. Noise Survival</span>
+            <select id="opt-device-select" class="opt-select" onchange="window.refreshHardwareReadiness()">
+              <option value="superconducting">Superconducting transmon</option>
+              <option value="trappedIon">Trapped ion</option>
+              <option value="neutralAtom">Neutral atom</option>
+            </select>
+          </div>
+          <p class="opt-hint">Estimated probability the whole circuit runs fault-free on real hardware.</p>
+          <div id="noise-result" class="opt-result"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- Live Research Paper Extractor & AI Term Analyzer Modal -->
   <div class="bibtex-modal-backdrop" id="paper-extractor-modal" style="display:none;">
     <div class="bibtex-modal-dialog" style="max-width: 820px; width: 92%; max-height: 88vh; display: flex; flex-direction: column;">
@@ -4417,6 +4470,7 @@ Key Advantage:
   <script src="js/backend-client.js"></script>
   <script src="js/quantum-knowledge-data.js"></script>
   <script src="js/quantum-engine.js"></script>
+  <script src="js/circuit-optimizer.js"></script>
   <script src="js/quantum-audio.js"></script>
   <script src="js/bloch-sphere.js"></script>
   <script src="js/circuit-ui.js"></script>
