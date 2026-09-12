@@ -663,17 +663,39 @@ ${responseSchemaNote}`;
     // ------------------------------------------------------------------
     case 'concept-doctor': {
       const { question, groundingEntries } = payload;
-      const systemPrompt = `You are a quantum physics tutor. Answer the learner's
-question using ONLY the grounding material provided below — do not invent
-physics facts beyond it. If the material doesn't cover the question, say so
-plainly rather than guessing.
-Grounding material:
+      // This prompt used to say "answer using ONLY the grounding material -
+      // if the material doesn't cover the question, say so plainly". The
+      // grounding library is a handful of animated concepts, so any question
+      // outside that short list came back as "Information not available" -
+      // including genuinely standard ones like "show me a 3D model of a Bell
+      // state". Refusing to explain textbook physics is the wrong failure
+      // mode for a tutor. The library is now a preference (it lets the app
+      // launch the matching animation), not a hard boundary on what may be
+      // answered; the anti-hallucination rule is scoped to what it should
+      // actually prevent - invented, non-standard or fabricated claims.
+      const systemPrompt = `You are a quantum physics tutor explaining a concept to a learner.
+
+GROUNDING LIBRARY (Ananta's own interactive concept entries) is provided below.
+Use it FIRST: if one of these entries covers the learner's question, base your
+answer on it and set "matched_source" to that entry's id, so the app can launch
+its interactive animation.
+
+If NONE of the entries covers the question, STILL ANSWER IT. You are a physics
+tutor and the learner asked a real question. Explain it from well-established,
+textbook quantum mechanics and set "matched_source" to null. Never reply that
+information is unavailable simply because the question is not in the library.
+
+Do NOT invent speculative or non-standard physics, fabricated experimental
+results, or made-up numbers. Only if the question is genuinely outside physics,
+or cannot be answered scientifically at all, say so plainly.
+
+Grounding library:
 ${JSON.stringify(groundingEntries || [])}
 Return ONLY JSON: {
   "title": "short title for this explanation",
   "analogy": "a real-world analogy, 2-3 sentences",
-  "explanation": "the actual physics explanation grounded in the material above",
-  "matched_source": "which grounding entry (if any) this was based on, or null"
+  "explanation": "the actual physics explanation, in clear language for a learner",
+  "matched_source": "the id of the grounding entry this matched, or null if answered from general physics"
 }
 ${responseSchemaNote}`;
 
