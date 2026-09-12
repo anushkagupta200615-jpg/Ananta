@@ -13,12 +13,12 @@ class CircuitUI {
     this.numCols = 6;
     this.selectedQubitForBloch = 0;
 
-    // Grid: grid[qubit][col] - Initialized with Bell State (|000⟩ + |110⟩)/√2 by default so the simulator is alive immediately!
-    this.grid = [
-      ['H', 'CX_CTRL', null, null, null, null],
-      [null, 'CX_TGT', null, null, null, null],
-      [null, null, null, null, null, null]
-    ];
+    // Grid: grid[qubit][col]. Starts empty (real |000...0> ground state) -
+    // it used to start pre-loaded with a Bell circuit, which meant the very
+    // first thing every user saw, before touching anything, was "Entangled
+    // Bell State Active". That is not something the user built; it should
+    // not be presented as if it were the result of any computation.
+    this.grid = Array.from({ length: 3 }, () => Array(6).fill(null));
     this.activeDragGate = null;
 
     // Step-by-Step Playback Controller (-1 = full circuit, 0 = init |000⟩, 1..6 = after col 0..5)
@@ -712,10 +712,14 @@ class CircuitUI {
       this.diracHud.textContent = this.engine.getDiracNotation();
     }
 
-    // Update Bloch Sphere for chosen qubit
+    // Update Bloch Sphere for chosen qubit. The engine itself is passed
+    // through so the sphere's narrative can compute real pairwise
+    // concurrence to name which qubit(s) this one is actually entangled
+    // with, instead of assuming a fixed q[0]/q[1] Bell pair regardless of
+    // what circuit is on the grid.
     const blochCoords = this.engine.getBlochCoordinates(this.selectedQubitForBloch);
     if (this.bloch) {
-      this.bloch.updateCoordinates(blochCoords, this.selectedQubitForBloch);
+      this.bloch.updateCoordinates(blochCoords, this.selectedQubitForBloch, this.engine);
     }
 
     // Update Coordinate Badges
@@ -804,28 +808,69 @@ class CircuitUI {
     }
   }
 
+  // Reports which gates are actually present, purely as a fact about the
+  // grid - used to describe what operations ran, never to decide WHETHER or
+  // WHAT KIND of entanglement exists. That decision belongs entirely to
+  // QuantumCircuitEngine.getAdvancedEntanglementMetrics() (real Wootters
+  // concurrence + per-qubit entropy + monogamy, computed from the actual
+  // statevector), which is the only source of truth this file reads from
+  // for classification. This method used to also compute "does the gate
+  // list exactly equal H+CNOT" and use THAT to decide whether to show a
+  // Bell-state label - which is backwards: whether a state is a genuine
+  // Bell pair is a property of the resulting quantum state (concurrence,
+  // entropy), not of which specific gates were used to reach it. H+CNOT+S
+  // is still exactly as much a Bell pair as bare H+CNOT is; gating the
+  // label on an exact gate-list match just meant the label silently
+  // vanished for any circuit built slightly differently from the preset.
+  analyzeGateComposition() {
+    const grid = this.grid;
+    const hasX = grid && grid.some(row => row.some(c => c === 'X'));
+    const hasY = grid && grid.some(row => row.some(c => c === 'Y'));
+    const hasZ = grid && grid.some(row => row.some(c => c === 'Z'));
+    const hasS = grid && grid.some(row => row.some(c => c === 'S'));
+    const hasT = grid && grid.some(row => row.some(c => c === 'T'));
+    const hasM = grid && grid.some(row => row.some(c => c === 'M'));
+
+    let hasToffoli = false, hasCnot = false, hasSwap = false, cnotCount = 0;
+    if (grid && grid.length && grid[0]) {
+      const numCols = grid[0].length;
+      for (let col = 0; col < numCols; col++) {
+        let controls = 0, hasTarget = false, swapWires = 0;
+        for (let q = 0; q < grid.length; q++) {
+          const cell = grid[q][col];
+          if (cell === 'CX_CTRL') controls++;
+          else if (cell === 'CX_TGT') hasTarget = true;
+          else if (cell === 'SWAP') swapWires++;
+        }
+        if (hasTarget && controls === 2) hasToffoli = true;
+        else if (hasTarget && controls === 1) { hasCnot = true; cnotCount++; }
+        if (swapWires >= 2) hasSwap = true;
+      }
+    }
+
+    const entanglingGateNames = [hasToffoli && 'Toffoli', hasCnot && 'CNOT', hasSwap && 'SWAP'].filter(Boolean);
+    const entanglingGatesLabel = entanglingGateNames.length > 0 ? entanglingGateNames.join(' / ') : 'multi-qubit';
+
+    return { hasX, hasY, hasZ, hasS, hasT, hasM, hasToffoli, hasCnot, hasSwap, cnotCount, entanglingGatesLabel };
+  }
+
   updateEntanglementBadge(probs) {
     const badge = document.getElementById('entanglement-status-indicator');
     if (!badge) return;
 
     const activeStates = (probs || []).filter(p => p.probability > 0.05);
     const m = this.engine && this.engine.getAdvancedEntanglementMetrics ? this.engine.getAdvancedEntanglementMetrics() : null;
-    const isEntangled = m ? (m.concurrence > 0.15 || m.vonNeumannEntropy > 0.15) : false;
-    const states = activeStates.map(s => s.state);
+    const isEntangled = m ? (m.concurrence > 0.05 || m.vonNeumannEntropy > 0.05) : false;
 
-    const hasY = this.grid && this.grid.some(row => row.some(c => c === 'Y'));
-    const isStdBell = states.length === 2 && states.includes('|000⟩') && states.includes('|110⟩') && !hasY && isEntangled;
-    const isGHZ = states.length === 2 && states.includes('|000⟩') && states.includes('|111⟩') && isEntangled;
-
-    if (isStdBell) {
+    if (isEntangled) {
+      // Whatever entanglementClass the engine actually computed for THIS
+      // statevector (real concurrence/entropy/monogamy, not a pattern
+      // lookup) - the parenthetical qualifier is dropped for the small
+      // badge, C and S are shown so the number backing the label is always
+      // visible right next to it.
+      const shortClass = m.entanglementClass.split(' (')[0];
       badge.style.display = 'inline-flex';
-      badge.innerHTML = `⚡ Entangled Bell State |Φ⁺⟩ Active`;
-    } else if (isGHZ) {
-      badge.style.display = 'inline-flex';
-      badge.innerHTML = `🌐 Tripartite GHZ State Active`;
-    } else if (isEntangled) {
-      badge.style.display = 'inline-flex';
-      badge.innerHTML = `🔗 Entangled Subsystem (C=${(m ? m.concurrence : 1).toFixed(2)})`;
+      badge.innerHTML = `🔗 ${shortClass} (C=${m.concurrence.toFixed(2)}, S=${m.vonNeumannEntropy.toFixed(2)})`;
     } else if (activeStates.length > 1) {
       badge.style.display = 'inline-flex';
       badge.innerHTML = `🪙 Superposition (${activeStates.length} States)`;
@@ -1492,17 +1537,32 @@ class CircuitUI {
       }
     }
 
-    // Build 8x8 Table
-    const basisLabels = ['000', '001', '010', '011', '100', '101', '110', '111'];
+    // Build an N x N table where N = 2^numQubits - was hardcoded to a fixed
+    // 8x8 (3-qubit) table, so uData.matrix[i][j] for i/j >= 4 was undefined
+    // and .abs() on it crashed the instant the register size changed (e.g.
+    // Auto-Fix removing an idle qubit). computeTotalUnitary already returns
+    // the real N x N matrix for any register size; this just has to render
+    // whatever size it actually gets instead of assuming 3 qubits.
+    const N = uData.matrix.length;
+    const bits = Math.round(Math.log2(N));
+    const basisLabels = Array.from({ length: N }, (_, i) => i.toString(2).padStart(bits, '0'));
+    // A full N x N table stops being readable well before 8 qubits (256x256
+    // cells) - cap the rendered grid and say so rather than freezing the tab.
+    const MAX_RENDERED_DIM = 32;
+    if (N > MAX_RENDERED_DIM) {
+      gridEl.innerHTML = `<div class="unitary-too-large-note">U is ${N}×${N} (${bits} qubits) - too large to render as a table. Use the LaTeX/NumPy export above to inspect it directly.</div>`;
+      return;
+    }
+
     let html = '<table class="unitary-table"><thead><tr><th>⟨out|in⟩</th>';
-    for (let j = 0; j < 8; j++) {
+    for (let j = 0; j < N; j++) {
       html += `<th>|${basisLabels[j]}⟩</th>`;
     }
     html += '</tr></thead><tbody>';
 
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < N; i++) {
       html += `<tr><th>⟨${basisLabels[i]}|</th>`;
-      for (let j = 0; j < 8; j++) {
+      for (let j = 0; j < N; j++) {
         const c = uData.matrix[i][j];
         const mag = c.abs();
         let cls = 'u-cell-zero';
@@ -1667,7 +1727,7 @@ class CircuitUI {
             if (this.bloch.resize) this.bloch.resize();
             window.dispatchEvent(new Event('resize'));
             const coords = this.engine.getBlochCoordinates(this.selectedQubitForBloch);
-            this.bloch.updateCoordinates(coords, this.selectedQubitForBloch);
+            this.bloch.updateCoordinates(coords, this.selectedQubitForBloch, this.engine);
           }, 35);
         }
       });
@@ -2105,58 +2165,18 @@ class CircuitUI {
       entanglementClass: 'Product State'
     };
 
-    // State signatures & Gate analysis
+    // State signatures & Gate analysis - analyzeGateComposition() is the
+    // single shared source of truth (also used by updateEntanglementBadge)
+    // so the badge at the top of the composer and this panel can never
+    // disagree about what circuit is actually on the board again.
     const stateNames = activeStates.map(s => s.state);
-    const hasCX = this.grid && this.grid.some(row => row.some(c => c === 'CX_CTRL' || c === 'CX_TGT'));
-    const hasY = this.grid && this.grid.some(row => row.some(c => c === 'Y'));
-    const hasX = this.grid && this.grid.some(row => row.some(c => c === 'X'));
-    const hasZ = this.grid && this.grid.some(row => row.some(c => c === 'Z'));
-    const hasM = this.grid && this.grid.some(row => row.some(c => c === 'M'));
     const isEntangled = m.concurrence > 0.15 || m.vonNeumannEntropy > 0.15;
+    const gates = this.analyzeGateComposition();
+    const { hasX, hasY, hasZ, hasS, hasT, entanglingGatesLabel } = gates;
 
-    // Name the entangling gate(s) actually present, instead of assuming
-    // CNOT unconditionally - a column with 2 controls sharing a target is
-    // a Toffoli, not a CNOT (mirrors the same fix in circuit-tutor.js's
-    // detectDeterministicErrors, which used to mislabel Toffoli as CNOT).
-    let hasToffoli = false, hasCnot = false, hasSwap = false, cnotCount = 0;
-    if (this.grid && this.grid.length && this.grid[0]) {
-      const numCols = this.grid[0].length;
-      for (let col = 0; col < numCols; col++) {
-        let controls = 0, hasTarget = false, swapWires = 0;
-        for (let q = 0; q < this.grid.length; q++) {
-          const cell = this.grid[q][col];
-          if (cell === 'CX_CTRL') controls++;
-          else if (cell === 'CX_TGT') hasTarget = true;
-          else if (cell === 'SWAP') swapWires++;
-        }
-        if (hasTarget && controls === 2) hasToffoli = true;
-        else if (hasTarget && controls === 1) { hasCnot = true; cnotCount++; }
-        if (swapWires >= 2) hasSwap = true;
-      }
-    }
-    const entanglingGateNames = [hasToffoli && 'Toffoli', hasCnot && 'CNOT', hasSwap && 'SWAP'].filter(Boolean);
-    const entanglingGatesLabel = entanglingGateNames.length > 0 ? entanglingGateNames.join(' / ') : 'multi-qubit';
-
-    // The canned Bell/GHZ narrative below is only accurate when THOSE are
-    // literally the only gates that ran - matching purely on the final
-    // measurement-probability pattern was wrong: an S gate only shifts
-    // phase (invisible to measurement probabilities) and an inert Toffoli
-    // whose controls never both reach |1> changes nothing either, so a
-    // circuit with H + CNOT + S + Toffoli could still land on exactly the
-    // canonical |000>+|110> Bell signature and get the exact same "Qubit 0
-    // was put into superposition with H, and CNOT entangled..." text with
-    // no mention of the other gates the user actually placed - which is
-    // exactly the "it's not changing no matter what I build" bug.
-    const hasS = this.grid && this.grid.some(row => row.some(c => c === 'S'));
-    const hasT = this.grid && this.grid.some(row => row.some(c => c === 'T'));
-    const hasOnlyBellGates = hasCnot && cnotCount === 1 && !hasToffoli && !hasSwap && !hasX && !hasY && !hasZ && !hasS && !hasT;
-    const hasOnlyGhzGates = hasCnot && cnotCount === 2 && !hasToffoli && !hasSwap && !hasX && !hasY && !hasZ && !hasS && !hasT;
-
-    const isStdBell = hasOnlyBellGates && activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|110⟩') && Math.abs(activeStates[0].probability - 0.5) < 0.15;
-    const isStdGHZ = hasOnlyGhzGates && activeStates.length === 2 && stateNames.includes('|000⟩') && stateNames.includes('|111⟩') && Math.abs(activeStates[0].probability - 0.5) < 0.15;
-    const isRotatedEntangled = isEntangled && (hasY || hasX || hasZ || hasS || hasT);
     const isSuperpos = activeStates.length > 1;
-    const isGround = activeStates.length === 1 && (activeStates[0].state === '|000⟩' || activeStates[0].state === '|00⟩');
+    const groundLabel = '|' + '0'.repeat(this.numQubits) + '⟩';
+    const isGround = activeStates.length === 1 && activeStates[0].state === groundLabel;
 
     // Step operator & column inspection
     let stepOperatorLabel = 'Operator: I₈ (Ground State)';
@@ -2239,42 +2259,33 @@ class CircuitUI {
 
     if (begPill) begPill.textContent = stepPillText;
 
-    if (isStdBell) {
-      if (begConcept) begConcept.textContent = 'Quantum Entanglement & Non-Locality';
-      if (begAction) begAction.textContent = '⚡ Bell State |Φ⁺⟩ Active';
-      if (begIcon) begIcon.textContent = '⚡';
-      if (begTitle) begTitle.textContent = 'The Quantum Entanglement Link';
-      if (begDesc) begDesc.textContent = 'Qubit 0 was put into equal superposition with the Hadamard gate, and CNOT entangled Qubit 0 with Qubit 1. Now they act as a single unit: measuring Qubit 0 as |0⟩ instantly guarantees Qubit 1 is |0⟩ too!';
-      if (begApp) begApp.textContent = 'Quantum Cryptography (QKD) & Teleportation';
-    } else if (isStdGHZ) {
-      if (begConcept) begConcept.textContent = 'Tripartite Entangled Superposition';
-      if (begAction) begAction.textContent = '🌐 Tripartite GHZ Active';
-      if (begIcon) begIcon.textContent = '🌐';
-      if (begTitle) begTitle.textContent = 'The 3-Qubit Collective Web (|000⟩ + |111⟩)';
-      if (begDesc) begDesc.textContent = 'All three qubits are locked into a single shared quantum wave. Checking any single qubit forces the entire register to snap together into either |000⟩ or |111⟩ with zero delay.';
-      if (begApp) begApp.textContent = 'Quantum Secret Sharing & Atomic Magnetometry';
-    } else if (isRotatedEntangled) {
-      const gateNames = [];
-      if (hasY) gateNames.push('Pauli-Y (Bit+Phase Flip)');
-      if (hasX) gateNames.push('Pauli-X (Bit Flip)');
-      if (hasZ) gateNames.push('Pauli-Z (Phase Flip)');
-      if (hasS) gateNames.push('S (90° Phase)');
-      if (hasT) gateNames.push('T (45° Phase)');
-      if (hasToffoli) gateNames.push('Toffoli');
-      const statesStr = stateNames.join(' and ');
-      if (begConcept) begConcept.textContent = 'Rotated Entangled Basis';
-      if (begAction) begAction.textContent = '🔄 Transformed Entanglement';
-      if (begIcon) begIcon.textContent = '🔀';
-      if (begTitle) begTitle.textContent = `Rotated Entangled State: ${stateNames.join(' ↔ ')}`;
-      if (begDesc) begDesc.textContent = `The entangled Bell/GHZ pair was further transformed by the ${gateNames.join(' & ')} gate${gateNames.length > 1 ? 's' : ''}! While quantum correlations remain active (Concurrence C = ${m.concurrence.toFixed(2)}), the computational basis was inverted into ${statesStr}. Observing one qubit still perfectly predicts the others in this new basis.`;
-      if (begApp) begApp.textContent = 'Quantum Dense Coding & Error Mitigation';
-    } else if (isEntangled) {
-      if (begConcept) begConcept.textContent = 'Multi-Qubit Entangled Subsystem';
-      if (begAction) begAction.textContent = `🔗 Entangled (C = ${m.concurrence.toFixed(2)})`;
+    if (isEntangled) {
+      // One description path for every entangled circuit, driven entirely
+      // by what QuantumCircuitEngine actually computed for THIS statevector
+      // - not a separate branch per "named" pattern (Bell/GHZ/rotated/
+      // generic) that only fired when the gate list or output happened to
+      // match a specific lookup. m.entanglementClass is itself computed
+      // from real Wootters concurrence, per-qubit entropy and entanglement
+      // monogamy (see quantum-engine.js) - it already correctly reads
+      // "Bell-Type" for ANY genuine maximally-entangled 2-qubit pair
+      // (however it was built) and "GHZ-Type" for ANY genuine
+      // monogamy-saturated multipartite state, so trusting it directly here
+      // means the label can never drift out of sync with the physics, and
+      // never depends on gates matching one specific preset exactly.
+      const singleQubitGates = [];
+      if (hasX) singleQubitGates.push('Pauli-X');
+      if (hasY) singleQubitGates.push('Pauli-Y');
+      if (hasZ) singleQubitGates.push('Pauli-Z');
+      if (hasS) singleQubitGates.push('S (90° phase)');
+      if (hasT) singleQubitGates.push('T (45° phase)');
+      const gateList = [entanglingGatesLabel, ...singleQubitGates].filter(Boolean).join(', ');
+
+      if (begConcept) begConcept.textContent = m.entanglementClass;
+      if (begAction) begAction.textContent = `🔗 C = ${m.concurrence.toFixed(2)}, S = ${m.vonNeumannEntropy.toFixed(2)} ebits`;
       if (begIcon) begIcon.textContent = '🔗';
-      if (begTitle) begTitle.textContent = `Coupled Quantum State: ${stateNames.slice(0, 3).join(' + ')}`;
-      if (begDesc) begDesc.textContent = `${entanglingGatesLabel} entangling operations have coupled the qubits together. Subsystem purity is ${(m.purity * 100).toFixed(0)}% with Von Neumann entropy ${m.vonNeumannEntropy.toFixed(2)} ebits. Outcomes are correlated across ${stateNames.join(', ')}.`;
-      if (begApp) begApp.textContent = 'Quantum Phase Estimation & VQE Chemistry';
+      if (begTitle) begTitle.textContent = `Entangled State: ${stateNames.join(' + ')}`;
+      if (begDesc) begDesc.textContent = `Computed from the actual statevector: Wootters concurrence C = ${m.concurrence.toFixed(2)}, von Neumann entropy S = ${m.vonNeumannEntropy.toFixed(2)} ebits, subsystem purity ${(m.purity * 100).toFixed(0)}%, Schmidt rank ${m.schmidtRank}. Gates applied: ${gateList || 'a multi-qubit operation'}. Outcomes are correlated across ${stateNames.join(', ')} - measuring one qubit changes what you'll find on the others.`;
+      if (begApp) begApp.textContent = 'Correlated measurement outcomes like this underlie quantum key distribution, teleportation, secret sharing, and error-correcting codes.';
     } else if (isSuperpos) {
       if (begConcept) begConcept.textContent = 'Quantum Superposition (Spinning Coin)';
       if (begAction) begAction.textContent = `🪙 ${activeStates.length}-State Superposition`;

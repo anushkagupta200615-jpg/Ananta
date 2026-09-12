@@ -344,8 +344,33 @@ class CircuitTutor {
       const deterministicErrors = this.detectDeterministicErrors(grid);
       const gridStructure = this.formatGridStructure(grid);
 
+      // An unambiguous, already-resolved list of the operations in this
+      // circuit. formatGridStructure() alone shows raw per-wire markers
+      // ("CX_CTRL (t=2)" on two different wires), leaving the model to infer
+      // that two controls sharing a target is a Toffoli - and it guessed
+      // wrong, describing a Toffoli as "a CNOT from q[0] to q[2]". The
+      // engine already resolves this correctly, so send its answer rather
+      // than asking the model to re-derive it.
+      const operationList = (engine && engine.toOperationList)
+        ? engine.toOperationList(grid).map((op) => {
+            switch (op.kind) {
+              case 'toffoli': return `Toffoli: controls q[${op.controls[0]}] and q[${op.controls[1]}], target q[${op.target}]`;
+              case 'cnot': return `CNOT: control q[${op.control}], target q[${op.target}]`;
+              case 'swap': return `SWAP: q[${op.wires[0]}] and q[${op.wires[1]}]`;
+              case 'cz': return `CZ: q[${op.wires[0]}] and q[${op.wires[1]}]`;
+              case 'cp': return `Controlled-phase(${op.angle}): q[${op.wires[0]}] and q[${op.wires[1]}]`;
+              case 'measure': return `Measure: q[${op.qubit}]`;
+              case 'gate1q': return op.angle === null
+                ? `${op.name} on q[${op.qubit}]`
+                : `${op.name}(${op.angle}) on q[${op.qubit}]`;
+              default: return null;
+            }
+          }).filter(Boolean)
+        : [];
+
       const payload = {
         gridStructure,
+        operationList,
         grid, // raw gate grid: lets the backend ground its analysis in a real
               // simulation instead of guessing from the text summary
         numQubits,
@@ -379,6 +404,15 @@ class CircuitTutor {
         console.warn('[CircuitTutor] Network call to /api/ai/tutor failed, using grounded local analysis:', netErr.message);
         auditResult = this.generateLocalFallback(payload);
       }
+
+      // The AI backend's JSON schema (circuitSummary/errors/tutorGuidance -
+      // see api/gemini.js's circuit-tutor prompt) never echoes mathMetrics
+      // back, so anything downstream that needs the REAL computed
+      // concurrence/entropy/entanglementClass (not the AI's own prose)
+      // must read it from here, not from auditResult - overwritten
+      // unconditionally so it's always the actual number just computed for
+      // this exact circuit, regardless of which path answered.
+      if (auditResult) auditResult.mathMetrics = mathMetrics;
 
       this.lastAuditResult = auditResult;
       this.renderAuditResults(auditResult);
@@ -460,27 +494,29 @@ class CircuitTutor {
       };
     }
 
-    const onlyH = distinctGates.length === 1 && distinctGates[0] === 'H' && swapCount === 0;
-    let summary, purpose;
-    if (onlyH && activeWires === 2 && singleGateCounts.H === 1 && cnotCount === 1) {
-      summary = 'Bell State Preparation (Bipartite Entanglement)';
-      purpose = 'A Hadamard puts one qubit into superposition, then a CNOT entangles it with the second qubit, producing a maximally entangled EPR pair. Used in quantum key distribution and teleportation.';
-    } else if (onlyH && activeWires === 3 && singleGateCounts.H === 1 && cnotCount === 2) {
-      summary = 'GHZ State (Tripartite Entanglement)';
-      purpose = 'A Hadamard followed by a chain of two CNOTs spreads superposition across all three qubits into a single maximally entangled state. Used in quantum secret sharing and metrology.';
-    } else {
-      const parts = distinctGates.map(g => `${GATE_NAMES[g] || g} (×${singleGateCounts[g]})`);
-      if (cnotCount) parts.push(`CNOT (×${cnotCount})`);
-      if (toffoliCount) parts.push(`Toffoli (×${toffoliCount})`);
-      if (swapCount) parts.push(`SWAP (×${swapCount})`);
-      const nameList = distinctGates.concat(
-        cnotCount ? ['CNOT'] : [], toffoliCount ? ['Toffoli'] : [], swapCount ? ['SWAP'] : []
-      ).join(', ');
-      summary = `Custom ${n}-Qubit Circuit: ${nameList}`;
-      purpose = `Applies ${parts.join(', ')} across a ${n}-qubit register. ` +
-        (entangled ? 'The resulting state is entangled — measuring one qubit affects the others.'
-                   : 'The resulting state is separable — each qubit can be described independently.');
-    }
+    // One description path for every circuit, driven entirely by the gates
+    // actually present and the real computed entanglementClass (Wootters
+    // concurrence + per-qubit entropy + monogamy, from
+    // quantum-engine.js's getAdvancedEntanglementMetrics - not a gate- or
+    // output-pattern lookup here). This used to special-case "exactly one H
+    // and exactly one CNOT on exactly 2 wires" as "Bell State Preparation"
+    // with a fixed sentence, which meant a circuit built any other way
+    // (extra phase gate, different gate order, wider register) fell through
+    // to generic "Custom Circuit" text even when it was still, physically,
+    // just as much a Bell pair.
+    const parts = distinctGates.map(g => `${GATE_NAMES[g] || g} (×${singleGateCounts[g]})`);
+    if (cnotCount) parts.push(`CNOT (×${cnotCount})`);
+    if (toffoliCount) parts.push(`Toffoli (×${toffoliCount})`);
+    if (swapCount) parts.push(`SWAP (×${swapCount})`);
+    const nameList = distinctGates.concat(
+      cnotCount ? ['CNOT'] : [], toffoliCount ? ['Toffoli'] : [], swapCount ? ['SWAP'] : []
+    ).join(', ');
+    const summary = `${n}-Qubit Circuit: ${nameList}`;
+    const entanglementClass = mathMetrics?.entanglementClass || (entangled ? 'Entangled Subsystem' : 'Separable Pure State');
+    const purpose = `Applies ${parts.join(', ')} across a ${n}-qubit register on ${activeWires} active wire${activeWires === 1 ? '' : 's'}. ` +
+      (entangled
+        ? `The resulting state is entangled (${entanglementClass}) — measuring one qubit changes what you'll find on the others.`
+        : 'The resulting state is separable — each qubit can be described independently.');
 
     const entanglementAnalysis = entangled
       ? `Entangled: Concurrence C = ${concurrence.toFixed(2)}, von Neumann Entropy S = ${entropy.toFixed(2)} ebits. Subsystems cannot be described independently.`
@@ -931,10 +967,21 @@ class CircuitTutor {
    */
   getHealthyConceptInfo(data) {
     const summary = (data.circuitSummary || '').toLowerCase();
-    if (summary.includes('bell') || summary.includes('entangle')) {
+    // Whether THIS circuit is genuinely entangled - and what kind - is
+    // decided from the real computed metrics (mathMetrics.entanglementClass,
+    // Wootters concurrence, per-qubit entropy), not by string-searching the
+    // AI's free-text summary for the word "bell". That string match was
+    // fragile in both directions: it would miss a genuine Bell pair the AI
+    // happened to describe as e.g. "EPR pair" instead of "bell", and it
+    // would fire on any unrelated mention of the word. mathMetrics is
+    // threaded onto every audit result unconditionally in runAudit(), so
+    // it's always the real number just computed for this exact circuit.
+    const concurrence = parseFloat(data.mathMetrics?.concurrence || 0);
+    const entanglementClass = data.mathMetrics?.entanglementClass || '';
+    if (concurrence > 0.05 || /entangl/i.test(entanglementClass)) {
       return {
-        title: 'Bipartite Bell State Synthesis & Non-Local Correlations',
-        explanation: 'Your circuit successfully synthesizes quantum entanglement, violating local realism and preparing states with maximum subsystem entropy S(ρ) = 1.000 ebits.',
+        title: entanglementClass || 'Entangled Quantum Subsystem',
+        explanation: `Your circuit produces real quantum entanglement: Wootters concurrence C = ${concurrence.toFixed(2)}, computed directly from the statevector (${entanglementClass || 'entangled'}).`,
         moduleId: 'module-07',
         moduleNum: 'Module 07',
         moduleTitle: 'Entanglement Entropy & Bell States',
@@ -989,12 +1036,69 @@ class CircuitTutor {
   /**
    * Automatically repairs circuit pathology directly on canvas.
    */
+  /**
+   * The AI backend's JSON schema for errors (title/location/explanation/
+   * suggestedFix - see api/gemini.js's circuit-tutor prompt) has never
+   * included the structured fields (errorType, qubit, cols, controls,
+   * grounded) that autoFixError needs to mechanically edit the grid - those
+   * only ever existed on detectDeterministicErrors()'s own output. While the
+   * AI backend was silently broken (see the aiProvider.js fix), every audit
+   * fell back to that local detector, so Auto-Fix always happened to have
+   * the rich data by accident. Now that the AI genuinely answers, its errors
+   * lack qubit/cols entirely - autoFixError defaulted every fix to q[0], or
+   * for idle_qubit (no title-fallback at all) silently did nothing.
+   *
+   * Ground truth for the mechanical repair should never depend on which
+   * provider happened to answer, so this re-runs the same deterministic,
+   * zero-hallucination analyzer fresh and matches the AI's prose error back
+   * to the structured finding it was grounded in (the AI is instructed to
+   * ground itself in exactly this data, so their wire/column references
+   * agree even when the phrasing doesn't match verbatim).
+   */
+  resolveStructuredError(err, grid) {
+    if (!err) return null;
+    if (err.errorType) return err; // already structured (local detector)
+
+    const detErrors = this.detectDeterministicErrors(grid);
+    if (!detErrors.length) return null;
+
+    const numsIn = (s) => (String(s || '').match(/\d+/g) || []).map(Number);
+    const errQubits = new Set(numsIn((err.location || '') + ' ' + (err.title || '')).filter((n) => n < (grid ? grid.length : 8)));
+
+    const CATEGORY_HINTS = {
+      premature_measurement: /measur/i,
+      self_inverse: /self.?cancel|redundan/i,
+      ineffective_cnot: /ineffective|toffoli|cnot/i,
+      idle_qubit: /idle/i,
+      high_depth: /depth/i
+    };
+    const category = Object.keys(CATEGORY_HINTS).find((k) => CATEGORY_HINTS[k].test(err.title || '') || CATEGORY_HINTS[k].test(err.explanation || ''));
+
+    let best = null, bestScore = -1;
+    for (const det of detErrors) {
+      let score = det.errorType === category ? 5 : 0;
+      const detQubits = new Set(numsIn(det.location));
+      for (const q of errQubits) if (detQubits.has(q)) score += 1;
+      if (score > bestScore) { bestScore = score; best = det; }
+    }
+    // Require at least a category match, or a qubit match if category
+    // couldn't be inferred - a bare fallback to "whatever sorted first"
+    // would silently fix the wrong thing.
+    return bestScore > 0 ? best : null;
+  }
+
   autoFixError(errIndex) {
-    const err = this.currentErrors && this.currentErrors[errIndex];
-    if (!err) return;
+    const rawErr = this.currentErrors && this.currentErrors[errIndex];
+    if (!rawErr) return;
 
     const ui = this.circuitUI || window.circuitUI;
     if (!ui || !ui.grid) return;
+
+    const err = this.resolveStructuredError(rawErr, ui.grid) || rawErr;
+    if (!err.errorType) {
+      this.showAutoFixFeedback('Could not automatically locate this finding on the current grid - the circuit may have changed since this audit ran. Try re-analyzing.');
+      return;
+    }
 
     let fixed = false;
     let feedbackMsg = '';

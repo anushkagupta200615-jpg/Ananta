@@ -121,9 +121,102 @@ class QuantumCircuitEngine {
     };
   }
 
+  /**
+   * Grid cells are plain strings so a circuit stays JSON-serializable.
+   * Continuously-parameterized gates carry their angle inside the token:
+   * "RX(1.5708)", "RY(-0.7854)", "RZ(3.14159)", "P(0.5)", "CP(1.0472)".
+   * Fixed gates ("H", "X", "CX_CTRL", ...) parse to a null angle, so every
+   * existing `cell === 'H'` comparison in the codebase keeps working.
+   *
+   * @returns {{name: string, angle: number|null, token: string}|null}
+   */
+  static parseGateToken(token) {
+    if (!token || typeof token !== 'string') return null;
+    const match = token.match(/^([A-Za-z_]+)\(\s*(-?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*\)$/);
+    if (match) {
+      const angle = parseFloat(match[2]);
+      return { name: match[1].toUpperCase(), angle: Number.isFinite(angle) ? angle : 0, token };
+    }
+    return { name: token.toUpperCase(), angle: null, token };
+  }
+
+  /**
+   * Builds a parametric gate token. Keeps 12 significant digits: enough that
+   * round-tripping an angle through the token is accurate to ~1e-12, far
+   * below anything observable. (6 decimals was visibly too coarse - it put
+   * P(|0>) for Rx(pi/4) off from cos^2(theta/2) in the 8th decimal.)
+   */
+  static makeGateToken(name, angle) {
+    return `${name.toUpperCase()}(${Number(Number(angle).toPrecision(12))})`;
+  }
+
+  /** Short human-readable angle for gate chips and code export. */
+  static formatAngle(angle, decimals = 3) {
+    const piRatio = angle / Math.PI;
+    const rounded = Math.round(piRatio * 8) / 8;
+    if (Math.abs(piRatio - rounded) < 1e-9 && rounded !== 0) {
+      if (rounded === 1) return 'π';
+      if (rounded === -1) return '-π';
+      const frac = { 0.125: 'π/8', 0.25: 'π/4', 0.375: '3π/8', 0.5: 'π/2', 0.625: '5π/8', 0.75: '3π/4', 0.875: '7π/8' };
+      const abs = Math.abs(rounded);
+      if (frac[abs]) return (rounded < 0 ? '-' : '') + frac[abs];
+      return `${rounded}π`;
+    }
+    return Number(angle).toFixed(decimals);
+  }
+
+  /**
+   * The real 2x2 unitary for any single-qubit token, fixed or parametric.
+   * Rotation matrices are the standard textbook exponentials of the Pauli
+   * operators, R_k(theta) = exp(-i * theta/2 * sigma_k), computed from the
+   * angle - never a lookup table of pre-baked discrete angles.
+   */
+  static matrixForToken(token) {
+    const parsed = QuantumCircuitEngine.parseGateToken(token);
+    if (!parsed) return null;
+
+    const fixed = QuantumCircuitEngine.GATES[parsed.name];
+    if (fixed) return fixed;
+    if (parsed.angle === null) return null;
+
+    const t = parsed.angle;
+    const c = Math.cos(t / 2);
+    const s = Math.sin(t / 2);
+
+    switch (parsed.name) {
+      case 'RX':
+        return [
+          [new Complex(c, 0), new Complex(0, -s)],
+          [new Complex(0, -s), new Complex(c, 0)]
+        ];
+      case 'RY':
+        return [
+          [new Complex(c, 0), new Complex(-s, 0)],
+          [new Complex(s, 0), new Complex(c, 0)]
+        ];
+      case 'RZ':
+        return [
+          [new Complex(Math.cos(-t / 2), Math.sin(-t / 2)), new Complex(0, 0)],
+          [new Complex(0, 0), new Complex(Math.cos(t / 2), Math.sin(t / 2))]
+        ];
+      case 'P': // phase shift: diag(1, e^{i*theta}) - S is P(pi/2), T is P(pi/4)
+        return [
+          [new Complex(1, 0), new Complex(0, 0)],
+          [new Complex(0, 0), new Complex(Math.cos(t), Math.sin(t))]
+        ];
+      default:
+        return null;
+    }
+  }
+
+  /** True for any token this engine can apply as a single-qubit unitary. */
+  static isSingleQubitGate(token) {
+    return QuantumCircuitEngine.matrixForToken(token) !== null;
+  }
+
   // Apply single qubit gate to target wire
   apply1QGate(gateName, targetQubit) {
-    const matrix = QuantumCircuitEngine.GATES[gateName];
+    const matrix = QuantumCircuitEngine.matrixForToken(gateName);
     if (!matrix) return;
 
     const newState = Array.from({ length: this.numStates }, () => new Complex(0, 0));
@@ -184,6 +277,36 @@ class QuantumCircuitEngine {
     this.state = newState;
   }
 
+  /**
+   * Controlled phase: multiplies only the |11> component of the two wires by
+   * e^{i*theta}. CZ is exactly this with theta = pi (diag(1,1,1,-1)).
+   *
+   * This is the natively-implemented two-qubit interaction on superconducting
+   * transmon hardware (Google Sycamore, Rigetti) - there, CNOT is the gate
+   * that gets synthesized from it (CNOT = (I x H) . CZ . (I x H)), not the
+   * other way round. It is symmetric in its two wires, which is why the grid
+   * marks both with the same token rather than a control/target pair.
+   */
+  applyControlledPhase(qubitA, qubitB, theta = Math.PI) {
+    if (qubitA === qubitB) return;
+    const maskA = 1 << (this.numQubits - 1 - qubitA);
+    const maskB = 1 << (this.numQubits - 1 - qubitB);
+    const phase = new Complex(Math.cos(theta), Math.sin(theta));
+
+    const newState = this.state.slice();
+    for (let i = 0; i < this.numStates; i++) {
+      if ((i & maskA) !== 0 && (i & maskB) !== 0) {
+        newState[i] = this.state[i].mul(phase);
+      }
+    }
+    this.state = newState;
+  }
+
+  /** CZ is the theta = pi case of the controlled-phase interaction. */
+  applyCZ(qubitA, qubitB) {
+    this.applyControlledPhase(qubitA, qubitB, Math.PI);
+  }
+
   // Apply Toffoli (CCX): flips the target only when BOTH controls are |1>.
   // A Toffoli with only one control detected applied is not the same gate as
   // a CNOT and must not silently collapse into one.
@@ -206,20 +329,42 @@ class QuantumCircuitEngine {
   runCircuitUpToCol(grid, upToCol = -1) {
     this.reset();
     if (!grid || !grid.length) return;
-
     const maxCols = grid[0].length;
     const limit = upToCol === -1 ? maxCols : Math.min(upToCol + 1, maxCols);
+    this.applyCircuitColumns(grid, limit);
+  }
+
+  /**
+   * Applies the first `limit` columns to whatever state the engine currently
+   * holds, WITHOUT resetting first. Split out of runCircuitUpToCol so
+   * computeTotalUnitary can drive the exact same gate-application code from
+   * each basis state - one implementation of "what does this circuit do",
+   * used by both the statevector and the unitary matrix.
+   */
+  applyCircuitColumns(grid, limit) {
+    if (!grid || !grid.length || !grid[0]) return;
 
     for (let col = 0; col < limit; col++) {
       const controls = [];
       let cnotTarget = -1;
       const swapWires = [];
+      const czWires = [];
+      const cpWires = [];
+      let cpAngle = Math.PI;
 
       for (let q = 0; q < this.numQubits; q++) {
         const cell = grid[q][col];
         if (cell === 'CX_CTRL') controls.push(q);
         else if (cell === 'CX_TGT') cnotTarget = q;
         else if (cell === 'SWAP') swapWires.push(q);
+        else if (cell === 'CZ') czWires.push(q);
+        else {
+          const parsed = QuantumCircuitEngine.parseGateToken(cell);
+          if (parsed && parsed.name === 'CP' && parsed.angle !== null) {
+            cpWires.push(q);
+            cpAngle = parsed.angle;
+          }
+        }
       }
 
       // Two controls sharing a target is a Toffoli, not a CNOT — collapsing
@@ -233,6 +378,12 @@ class QuantumCircuitEngine {
       if (swapWires.length === 2) {
         this.applySWAP(swapWires[0], swapWires[1]);
       }
+      if (czWires.length === 2) {
+        this.applyCZ(czWires[0], czWires[1]);
+      }
+      if (cpWires.length === 2) {
+        this.applyControlledPhase(cpWires[0], cpWires[1], cpAngle);
+      }
 
       for (let q = 0; q < this.numQubits; q++) {
         const cell = grid[q][col];
@@ -245,7 +396,10 @@ class QuantumCircuitEngine {
           // actually does: outcome probabilities are unchanged, but the
           // superposition (and any entanglement through that wire) is gone.
           this.measuredQubits.add(q);
-        } else if (cell && cell !== 'CX_CTRL' && cell !== 'CX_TGT' && cell !== 'SWAP') {
+        } else if (QuantumCircuitEngine.isSingleQubitGate(cell)) {
+          // Only tokens that genuinely resolve to a 2x2 unitary are applied
+          // here; multi-wire markers (CX_CTRL/CX_TGT/SWAP/CZ/CP) were already
+          // handled above and must not be re-applied as single-qubit gates.
           this.apply1QGate(cell, q);
         }
       }
@@ -255,6 +409,51 @@ class QuantumCircuitEngine {
   // Run full series of time-step columns
   runCircuit(grid) {
     this.runCircuitUpToCol(grid, -1);
+  }
+
+  /** Snapshot of the current statevector (detached from the live engine). */
+  getStateVectorCopy() {
+    return this.state.map((c) => new Complex(c.re, c.im));
+  }
+
+  /**
+   * State fidelity F = |<psi1|psi2>|^2 between two statevectors of equal
+   * dimension. 1.0 means the two circuits produce physically identical
+   * states (up to global phase, which is unobservable); anything less is a
+   * genuine difference in the prepared state.
+   *
+   * This is what makes an "optimizer" trustworthy rather than decorative:
+   * a pass that claims to preserve a circuit can be made to prove it.
+   */
+  static fidelityBetweenStates(stateA, stateB) {
+    if (!stateA || !stateB || stateA.length !== stateB.length) return 0;
+    let re = 0, im = 0;
+    for (let i = 0; i < stateA.length; i++) {
+      // <a|b> = sum conj(a_i) * b_i
+      const a = stateA[i], b = stateB[i];
+      re += a.re * b.re + a.im * b.im;
+      im += a.re * b.im - a.im * b.re;
+    }
+    return Math.min(1, re * re + im * im);
+  }
+
+  /**
+   * Runs two grids on independent engines and reports how physically close
+   * their output states are. Used by the optimizer/transpiler to verify a
+   * rewrite, and by the UI to check a student's circuit against a target.
+   */
+  static compareCircuits(gridA, gridB, numQubits) {
+    const engineA = new QuantumCircuitEngine(numQubits);
+    const engineB = new QuantumCircuitEngine(numQubits);
+    engineA.runCircuit(gridA);
+    engineB.runCircuit(gridB);
+    const fidelity = QuantumCircuitEngine.fidelityBetweenStates(engineA.state, engineB.state);
+    return {
+      fidelity,
+      equivalent: fidelity > 0.999999,
+      stateA: engineA.getDiracNotation(),
+      stateB: engineB.getDiracNotation()
+    };
   }
 
   // Run Monte Carlo physical measurement sampling (1024 shots)
@@ -674,38 +873,27 @@ qubits = cirq.LineQubit.range(${this.numQubits})
 circuit = cirq.Circuit()
 
 `;
-    const numCols = grid[0].length;
-    let hasOps = false;
-    for (let col = 0; col < numCols; col++) {
-      const controls = [], swapWires = [];
-      let cnotTarget = -1;
-      for (let q = 0; q < this.numQubits; q++) {
-        const c = grid[q][col];
-        if (c === 'CX_CTRL') controls.push(q);
-        else if (c === 'CX_TGT') cnotTarget = q;
-        else if (c === 'SWAP') swapWires.push(q);
-      }
-      if (controls.length === 2 && cnotTarget !== -1) {
-        py += `circuit.append(cirq.TOFFOLI(qubits[${controls[0]}], qubits[${controls[1]}], qubits[${cnotTarget}]))\n`;
-        hasOps = true;
-      } else if (controls.length === 1 && cnotTarget !== -1) {
-        py += `circuit.append(cirq.CNOT(qubits[${controls[0]}], qubits[${cnotTarget}]))\n`;
-        hasOps = true;
-      }
-      if (swapWires.length === 2) {
-        py += `circuit.append(cirq.SWAP(qubits[${swapWires[0]}], qubits[${swapWires[1]}]))\n`;
-        hasOps = true;
-      }
-      for (let q = 0; q < this.numQubits; q++) {
-        const gate = grid[q][col];
-        if (!gate || gate === 'CX_CTRL' || gate === 'CX_TGT' || gate === 'SWAP') continue;
-        if (gate === 'H') { py += `circuit.append(cirq.H(qubits[${q}]))\n`; hasOps = true; }
-        else if (gate === 'X') { py += `circuit.append(cirq.X(qubits[${q}]))\n`; hasOps = true; }
-        else if (gate === 'Y') { py += `circuit.append(cirq.Y(qubits[${q}]))\n`; hasOps = true; }
-        else if (gate === 'Z') { py += `circuit.append(cirq.Z(qubits[${q}]))\n`; hasOps = true; }
-        else if (gate === 'S') { py += `circuit.append(cirq.S(qubits[${q}]))\n`; hasOps = true; }
-        else if (gate === 'T') { py += `circuit.append(cirq.T(qubits[${q}]))\n`; hasOps = true; }
-        else if (gate === 'M') { py += `circuit.append(cirq.measure(qubits[${q}], key='m${q}'))\n`; hasOps = true; }
+    // Rendered from the shared operation list so Cirq export can never fall
+    // behind the other exporters when a gate is added to the engine.
+    const CIRQ_1Q = { H: 'cirq.H', X: 'cirq.X', Y: 'cirq.Y', Z: 'cirq.Z', S: 'cirq.S', T: 'cirq.T' };
+    const ops = this.toOperationList(grid);
+    let hasOps = ops.length > 0;
+    for (const op of ops) {
+      switch (op.kind) {
+        case 'toffoli': py += `circuit.append(cirq.TOFFOLI(qubits[${op.controls[0]}], qubits[${op.controls[1]}], qubits[${op.target}]))\n`; break;
+        case 'cnot': py += `circuit.append(cirq.CNOT(qubits[${op.control}], qubits[${op.target}]))\n`; break;
+        case 'swap': py += `circuit.append(cirq.SWAP(qubits[${op.wires[0]}], qubits[${op.wires[1]}]))\n`; break;
+        case 'cz': py += `circuit.append(cirq.CZ(qubits[${op.wires[0]}], qubits[${op.wires[1]}]))\n`; break;
+        case 'cp': py += `circuit.append(cirq.CZPowGate(exponent=${op.angle / Math.PI})(qubits[${op.wires[0]}], qubits[${op.wires[1]}]))\n`; break;
+        case 'measure': py += `circuit.append(cirq.measure(qubits[${op.qubit}], key='m${op.qubit}'))\n`; break;
+        case 'gate1q':
+          if (op.angle === null && CIRQ_1Q[op.name]) py += `circuit.append(${CIRQ_1Q[op.name]}(qubits[${op.qubit}]))\n`;
+          else if (op.name === 'RX') py += `circuit.append(cirq.rx(${op.angle})(qubits[${op.qubit}]))\n`;
+          else if (op.name === 'RY') py += `circuit.append(cirq.ry(${op.angle})(qubits[${op.qubit}]))\n`;
+          else if (op.name === 'RZ') py += `circuit.append(cirq.rz(${op.angle})(qubits[${op.qubit}]))\n`;
+          else if (op.name === 'P') py += `circuit.append(cirq.ZPowGate(exponent=${op.angle / Math.PI})(qubits[${op.qubit}]))\n`;
+          break;
+        default: break;
       }
     }
     if (!hasOps) py += `# No gates placed yet\npass\n`;
@@ -739,32 +927,20 @@ from qiskit.primitives import Statevector
 qc = QuantumCircuit(${this.numQubits}, ${this.numQubits})
 
 `;
-    const numCols = grid[0].length;
-    for (let col = 0; col < numCols; col++) {
-      const controls = [], swapWires = [];
-      let cnotTarget = -1;
-      for (let q = 0; q < this.numQubits; q++) {
-        const c = grid[q][col];
-        if (c === 'CX_CTRL') controls.push(q);
-        else if (c === 'CX_TGT') cnotTarget = q;
-        else if (c === 'SWAP') swapWires.push(q);
-      }
-      if (controls.length === 2 && cnotTarget !== -1) {
-        py += `qc.ccx(${controls[0]}, ${controls[1]}, ${cnotTarget})\n`;
-      } else if (controls.length === 1 && cnotTarget !== -1) {
-        py += `qc.cx(${controls[0]}, ${cnotTarget})\n`;
-      }
-      if (swapWires.length === 2) {
-        py += `qc.swap(${swapWires[0]}, ${swapWires[1]})\n`;
-      }
-      for (let q = 0; q < this.numQubits; q++) {
-        const gate = grid[q][col];
-        if (!gate || gate === 'CX_CTRL' || gate === 'CX_TGT' || gate === 'SWAP') continue;
-        if (gate === 'M') {
-          py += `qc.measure(${q}, ${q})\n`;
-        } else {
-          py += `qc.${gate.toLowerCase()}(${q})\n`;
-        }
+    for (const op of this.toOperationList(grid)) {
+      switch (op.kind) {
+        case 'toffoli': py += `qc.ccx(${op.controls[0]}, ${op.controls[1]}, ${op.target})\n`; break;
+        case 'cnot': py += `qc.cx(${op.control}, ${op.target})\n`; break;
+        case 'swap': py += `qc.swap(${op.wires[0]}, ${op.wires[1]})\n`; break;
+        case 'cz': py += `qc.cz(${op.wires[0]}, ${op.wires[1]})\n`; break;
+        case 'cp': py += `qc.cp(${op.angle}, ${op.wires[0]}, ${op.wires[1]})\n`; break;
+        case 'measure': py += `qc.measure(${op.qubit}, ${op.qubit})\n`; break;
+        case 'gate1q':
+          py += op.angle === null
+            ? `qc.${op.name.toLowerCase()}(${op.qubit})\n`
+            : `qc.${op.name.toLowerCase()}(${op.angle}, ${op.qubit})\n`;
+          break;
+        default: break;
       }
     }
 
@@ -783,34 +959,72 @@ print(qc.draw('text'))
   // Shared gate-emission body used by both toQASM (code-view export, keeps
   // user-placed M gates inline) and toExecutableQASM (real execution,
   // ignores M placement and measures the whole register at the end instead).
+  /**
+   * Single normalized reading of the grid, shared by every code exporter.
+   *
+   * Each exporter used to re-implement its own gate dispatch loop, so adding
+   * a gate meant editing four near-identical loops and any one that got
+   * missed would silently drop that gate from its output. Everything now
+   * renders from this one list, so a circuit exports identically (and
+   * completely) to every framework.
+   *
+   * @returns {Array<{kind:string, ...}>} ops in execution order
+   */
+  toOperationList(grid) {
+    const ops = [];
+    if (!grid || !grid.length || !grid[0]) return ops;
+    const numCols = grid[0].length;
+
+    for (let col = 0; col < numCols; col++) {
+      const controls = [], swapWires = [], czWires = [], cpWires = [];
+      let cnotTarget = -1, cpAngle = Math.PI;
+
+      for (let q = 0; q < this.numQubits; q++) {
+        const cell = grid[q] ? grid[q][col] : null;
+        if (cell === 'CX_CTRL') controls.push(q);
+        else if (cell === 'CX_TGT') cnotTarget = q;
+        else if (cell === 'SWAP') swapWires.push(q);
+        else if (cell === 'CZ') czWires.push(q);
+        else {
+          const parsed = QuantumCircuitEngine.parseGateToken(cell);
+          if (parsed && parsed.name === 'CP' && parsed.angle !== null) { cpWires.push(q); cpAngle = parsed.angle; }
+        }
+      }
+
+      if (controls.length === 2 && cnotTarget !== -1) ops.push({ kind: 'toffoli', controls: [controls[0], controls[1]], target: cnotTarget });
+      else if (controls.length === 1 && cnotTarget !== -1) ops.push({ kind: 'cnot', control: controls[0], target: cnotTarget });
+      if (swapWires.length === 2) ops.push({ kind: 'swap', wires: swapWires.slice(0, 2) });
+      if (czWires.length === 2) ops.push({ kind: 'cz', wires: czWires.slice(0, 2) });
+      if (cpWires.length === 2) ops.push({ kind: 'cp', wires: cpWires.slice(0, 2), angle: cpAngle });
+
+      for (let q = 0; q < this.numQubits; q++) {
+        const cell = grid[q] ? grid[q][col] : null;
+        if (!cell) continue;
+        if (cell === 'M') { ops.push({ kind: 'measure', qubit: q }); continue; }
+        if (!QuantumCircuitEngine.isSingleQubitGate(cell)) continue;
+        const parsed = QuantumCircuitEngine.parseGateToken(cell);
+        ops.push({ kind: 'gate1q', name: parsed.name, angle: parsed.angle, qubit: q });
+      }
+    }
+    return ops;
+  }
+
   _qasmGateLines(grid, { includeMeasureGates }) {
     let body = '';
-    const numCols = grid[0].length;
-    for (let col = 0; col < numCols; col++) {
-      const controls = [], swapWires = [];
-      let cnotTarget = -1;
-      for (let q = 0; q < this.numQubits; q++) {
-        const c = grid[q][col];
-        if (c === 'CX_CTRL') controls.push(q);
-        else if (c === 'CX_TGT') cnotTarget = q;
-        else if (c === 'SWAP') swapWires.push(q);
-      }
-      if (controls.length === 2 && cnotTarget !== -1) {
-        body += `ccx q[${controls[0]}], q[${controls[1]}], q[${cnotTarget}];\n`;
-      } else if (controls.length === 1 && cnotTarget !== -1) {
-        body += `cx q[${controls[0]}], q[${cnotTarget}];\n`;
-      }
-      if (swapWires.length === 2) {
-        body += `swap q[${swapWires[0]}], q[${swapWires[1]}];\n`;
-      }
-      for (let q = 0; q < this.numQubits; q++) {
-        const gate = grid[q][col];
-        if (!gate || gate === 'CX_CTRL' || gate === 'CX_TGT' || gate === 'SWAP') continue;
-        if (gate === 'M') {
-          if (includeMeasureGates) body += `measure q[${q}] -> c[${q}];\n`;
-        } else {
-          body += `${gate.toLowerCase()} q[${q}];\n`;
-        }
+    for (const op of this.toOperationList(grid)) {
+      switch (op.kind) {
+        case 'toffoli': body += `ccx q[${op.controls[0]}], q[${op.controls[1]}], q[${op.target}];\n`; break;
+        case 'cnot': body += `cx q[${op.control}], q[${op.target}];\n`; break;
+        case 'swap': body += `swap q[${op.wires[0]}], q[${op.wires[1]}];\n`; break;
+        case 'cz': body += `cz q[${op.wires[0]}], q[${op.wires[1]}];\n`; break;
+        case 'cp': body += `cp(${op.angle}) q[${op.wires[0]}], q[${op.wires[1]}];\n`; break;
+        case 'measure': if (includeMeasureGates) body += `measure q[${op.qubit}] -> c[${op.qubit}];\n`; break;
+        case 'gate1q':
+          body += op.angle === null
+            ? `${op.name.toLowerCase()} q[${op.qubit}];\n`
+            : `${op.name.toLowerCase()}(${op.angle}) q[${op.qubit}];\n`;
+          break;
+        default: break;
       }
     }
     return body;
@@ -851,38 +1065,25 @@ dev = qml.device("default.qubit", wires=${this.numQubits})
 @qml.qnode(dev)
 def circuit():
 `;
-    const numCols = grid[0].length;
-    let hasOps = false;
-    for (let col = 0; col < numCols; col++) {
-      const controls = [], swapWires = [];
-      let cnotTarget = -1;
-      for (let q = 0; q < this.numQubits; q++) {
-        const c = grid[q][col];
-        if (c === 'CX_CTRL') controls.push(q);
-        else if (c === 'CX_TGT') cnotTarget = q;
-        else if (c === 'SWAP') swapWires.push(q);
-      }
-      if (controls.length === 2 && cnotTarget !== -1) {
-        py += `    qml.Toffoli(wires=[${controls[0]}, ${controls[1]}, ${cnotTarget}])\n`;
-        hasOps = true;
-      } else if (controls.length === 1 && cnotTarget !== -1) {
-        py += `    qml.CNOT(wires=[${controls[0]}, ${cnotTarget}])\n`;
-        hasOps = true;
-      }
-      if (swapWires.length === 2) {
-        py += `    qml.SWAP(wires=[${swapWires[0]}, ${swapWires[1]}])\n`;
-        hasOps = true;
-      }
-      for (let q = 0; q < this.numQubits; q++) {
-        const gate = grid[q][col];
-        if (!gate || gate === 'CX_CTRL' || gate === 'CX_TGT' || gate === 'SWAP') continue;
-        if (gate === 'H') { py += `    qml.Hadamard(wires=${q})\n`; hasOps = true; }
-        else if (gate === 'X') { py += `    qml.PauliX(wires=${q})\n`; hasOps = true; }
-        else if (gate === 'Y') { py += `    qml.PauliY(wires=${q})\n`; hasOps = true; }
-        else if (gate === 'Z') { py += `    qml.PauliZ(wires=${q})\n`; hasOps = true; }
-        else if (gate === 'S') { py += `    qml.S(wires=${q})\n`; hasOps = true; }
-        else if (gate === 'T') { py += `    qml.T(wires=${q})\n`; hasOps = true; }
-        else if (gate === 'M') { /* measurements handled in return */ hasOps = true; }
+    const PL_1Q = { H: 'qml.Hadamard', X: 'qml.PauliX', Y: 'qml.PauliY', Z: 'qml.PauliZ', S: 'qml.S', T: 'qml.T' };
+    const ops = this.toOperationList(grid);
+    const hasOps = ops.length > 0;
+    for (const op of ops) {
+      switch (op.kind) {
+        case 'toffoli': py += `    qml.Toffoli(wires=[${op.controls[0]}, ${op.controls[1]}, ${op.target}])\n`; break;
+        case 'cnot': py += `    qml.CNOT(wires=[${op.control}, ${op.target}])\n`; break;
+        case 'swap': py += `    qml.SWAP(wires=[${op.wires[0]}, ${op.wires[1]}])\n`; break;
+        case 'cz': py += `    qml.CZ(wires=[${op.wires[0]}, ${op.wires[1]}])\n`; break;
+        case 'cp': py += `    qml.ControlledPhaseShift(${op.angle}, wires=[${op.wires[0]}, ${op.wires[1]}])\n`; break;
+        case 'measure': break; // measurements are expressed in the return statement
+        case 'gate1q':
+          if (op.angle === null && PL_1Q[op.name]) py += `    ${PL_1Q[op.name]}(wires=${op.qubit})\n`;
+          else if (op.name === 'RX') py += `    qml.RX(${op.angle}, wires=${op.qubit})\n`;
+          else if (op.name === 'RY') py += `    qml.RY(${op.angle}, wires=${op.qubit})\n`;
+          else if (op.name === 'RZ') py += `    qml.RZ(${op.angle}, wires=${op.qubit})\n`;
+          else if (op.name === 'P') py += `    qml.PhaseShift(${op.angle}, wires=${op.qubit})\n`;
+          break;
+        default: break;
       }
     }
     if (!hasOps) py += `    pass  # No gates placed yet\n`;
@@ -898,6 +1099,86 @@ def circuit():
     }
     py += `    ]\n\npauli_z_vals = expectation_circuit()\nprint("Pauli <Z> per qubit:", pauli_z_vals)\n`;
     return py;
+  }
+
+  /**
+   * Export to Amazon Braket (Python) - runs on AWS-hosted Rigetti, IonQ and
+   * QuEra hardware as well as the local/SV1 simulators. Rendered from the
+   * same shared operation list as every other exporter.
+   */
+  toBraket(grid) {
+    let py = `# Generated by Ananta Quantum Studio
+# Compatible with amazon-braket-sdk >= 1.7
+from braket.circuits import Circuit
+from braket.devices import LocalSimulator
+
+circuit = Circuit()
+`;
+    const BRAKET_1Q = { H: 'h', X: 'x', Y: 'y', Z: 'z', S: 's', T: 't' };
+    const ops = this.toOperationList(grid);
+    let emitted = 0;
+
+    for (const op of ops) {
+      switch (op.kind) {
+        case 'toffoli': py += `circuit.ccnot(${op.controls[0]}, ${op.controls[1]}, ${op.target})\n`; emitted++; break;
+        case 'cnot': py += `circuit.cnot(${op.control}, ${op.target})\n`; emitted++; break;
+        case 'swap': py += `circuit.swap(${op.wires[0]}, ${op.wires[1]})\n`; emitted++; break;
+        case 'cz': py += `circuit.cz(${op.wires[0]}, ${op.wires[1]})\n`; emitted++; break;
+        case 'cp': py += `circuit.cphaseshift(${op.wires[0]}, ${op.wires[1]}, ${op.angle})\n`; emitted++; break;
+        // Braket has no mid-circuit measure in the gate set; the whole
+        // register is sampled by running with shots > 0, so an M marker is
+        // intentionally not emitted as an instruction here.
+        case 'measure': break;
+        case 'gate1q':
+          if (op.angle === null && BRAKET_1Q[op.name]) { py += `circuit.${BRAKET_1Q[op.name]}(${op.qubit})\n`; emitted++; }
+          else if (op.name === 'RX') { py += `circuit.rx(${op.qubit}, ${op.angle})\n`; emitted++; }
+          else if (op.name === 'RY') { py += `circuit.ry(${op.qubit}, ${op.angle})\n`; emitted++; }
+          else if (op.name === 'RZ') { py += `circuit.rz(${op.qubit}, ${op.angle})\n`; emitted++; }
+          else if (op.name === 'P') { py += `circuit.phaseshift(${op.qubit}, ${op.angle})\n`; emitted++; }
+          break;
+        default: break;
+      }
+    }
+    if (emitted === 0) py += `# No gates placed yet\n`;
+
+    py += `
+# Exact statevector on the local simulator
+device = LocalSimulator()
+circuit.state_vector()
+result = device.run(circuit, shots=0).result()
+print("Statevector |psi>:", result.values[0])
+
+# To run on real AWS hardware instead (billed per shot):
+# from braket.aws import AwsDevice
+# device = AwsDevice("arn:aws:braket:us-east-1::device/qpu/ionq/Aria-1")
+# result = device.run(circuit, shots=1000).result()
+# print(result.measurement_counts)
+`;
+    return py;
+  }
+
+  /**
+   * One entry point for every supported target, so callers (UI, transpiler,
+   * download buttons) don't each need their own framework switch.
+   */
+  exportCode(grid, framework = 'qiskit') {
+    switch (String(framework).toLowerCase()) {
+      case 'cirq': return this.toCirq(grid);
+      case 'braket': return this.toBraket(grid);
+      case 'pennylane': return this.toPennyLane(grid);
+      case 'qasm': case 'openqasm': return this.toQASM(grid);
+      case 'qiskit': default: return this.toQiskit(grid);
+    }
+  }
+
+  static get EXPORT_FRAMEWORKS() {
+    return [
+      { key: 'qiskit', label: 'Qiskit (IBM)', ext: 'py' },
+      { key: 'cirq', label: 'Cirq (Google)', ext: 'py' },
+      { key: 'braket', label: 'Amazon Braket (AWS)', ext: 'py' },
+      { key: 'pennylane', label: 'PennyLane (Xanadu)', ext: 'py' },
+      { key: 'qasm', label: 'OpenQASM 2.0', ext: 'qasm' }
+    ];
   }
 
   // Compute Pauli Expectation Values for all qubits
@@ -952,152 +1233,37 @@ def circuit():
   // ACADEMIC & RESEARCH-GRADE SUITE (IIT / IISc / MIT Level Methods)
   // =========================================================================
 
-  // 1. Compute Full 8x8 Unitary Matrix U_total for the entire circuit
+  // 1. Compute the full 2^n x 2^n unitary U_total for the entire circuit
+  /**
+   * Built by running the circuit on each computational basis state in turn:
+   * column j of U_total is exactly U|j>. That makes the displayed matrix
+   * correct by construction for every gate the simulator supports - it can
+   * never drift out of sync with what the simulator actually does, and new
+   * gates need no changes here at all.
+   *
+   * This replaced a second, independent gate table plus hand-built
+   * permutation matrices. That duplicate knew only about H/X/Y/Z/S/T and
+   * CX/Toffoli/SWAP, so every gate added to the engine (rotations, CZ,
+   * controlled-phase) would have been silently dropped from the Unitary
+   * Inspector while the simulator applied it - the matrix and the
+   * statevector disagreeing about the same circuit.
+   */
   computeTotalUnitary(grid, maxCol = 6) {
-    const N = this.numStates; // 8 for 3 qubits
-    const SQRT2_INV = 1 / Math.SQRT2;
-    const GATES = {
-      I: [[new Complex(1, 0), new Complex(0, 0)], [new Complex(0, 0), new Complex(1, 0)]],
-      X: [[new Complex(0, 0), new Complex(1, 0)], [new Complex(1, 0), new Complex(0, 0)]],
-      Y: [[new Complex(0, 0), new Complex(0, -1)], [new Complex(0, 1), new Complex(0, 0)]],
-      Z: [[new Complex(1, 0), new Complex(0, 0)], [new Complex(0, 0), new Complex(-1, 0)]],
-      H: [[new Complex(SQRT2_INV, 0), new Complex(SQRT2_INV, 0)], [new Complex(SQRT2_INV, 0), new Complex(-SQRT2_INV, 0)]],
-      S: [[new Complex(1, 0), new Complex(0, 0)], [new Complex(0, 0), new Complex(0, 1)]],
-      T: [[new Complex(1, 0), new Complex(0, 0)], [new Complex(0, 0), new Complex(SQRT2_INV, SQRT2_INV)]]
-    };
-
-    // Helper: matrix multiplication of two NxN complex matrices
-    const matMul = (A, B) => {
-      const res = Array.from({ length: N }, () => Array(N).fill(null));
-      for (let i = 0; i < N; i++) {
-        for (let j = 0; j < N; j++) {
-          let sum = new Complex(0, 0);
-          for (let k = 0; k < N; k++) {
-            sum = sum.add(A[i][k].mul(B[k][j]));
-          }
-          res[i][j] = sum;
-        }
-      }
-      return res;
-    };
-
-    // Initialize U_total as Identity matrix
-    let U_total = Array.from({ length: N }, (_, i) =>
-      Array.from({ length: N }, (_, j) => i === j ? new Complex(1, 0) : new Complex(0, 0))
-    );
-
+    const N = this.numStates;
     const effectiveCols = Math.min(grid[0].length, maxCol === -1 ? grid[0].length : maxCol);
 
-    for (let col = 0; col < effectiveCols; col++) {
-      let hasGates = false;
-      const colGates = [];
-      const controls = [];
-      let cnotTarget = -1;
-      const swapWires = [];
+    const probe = new QuantumCircuitEngine(this.numQubits);
+    const U_total = Array.from({ length: N }, () => Array(N).fill(null));
 
-      for (let q = 0; q < this.numQubits; q++) {
-        const g = grid[q][col];
-        colGates.push(g);
-        if (g) hasGates = true;
-        if (g === 'CX_CTRL') controls.push(q);
-        else if (g === 'CX_TGT') cnotTarget = q;
-        else if (g === 'SWAP') swapWires.push(q);
+    for (let j = 0; j < N; j++) {
+      probe.reset();
+      probe.state = Array.from({ length: N }, (_, i) => (i === j ? new Complex(1, 0) : new Complex(0, 0)));
+      probe.applyCircuitColumns(grid, effectiveCols);
+      for (let i = 0; i < N; i++) {
+        U_total[i][j] = new Complex(probe.state[i].re, probe.state[i].im);
       }
-
-      if (!hasGates) continue;
-
-      // Two controls sharing a target is a Toffoli, not a CNOT — same
-      // detection rule as runCircuitUpToCol, generalized to any register size.
-      const isToffoli = controls.length === 2 && cnotTarget !== -1;
-      const isCNOT = controls.length === 1 && cnotTarget !== -1;
-      const isSwap = swapWires.length === 2;
-
-      let U_col;
-      if (isToffoli || isCNOT || isSwap) {
-        // Multi-qubit column: build the permutation induced by CX/Toffoli/SWAP,
-        // then fold in any single-qubit gates riding on the remaining ("other") wires.
-        U_col = Array.from({ length: N }, () => Array(N).fill(new Complex(0, 0)));
-
-        const involved = new Set();
-        if (isToffoli) { involved.add(controls[0]); involved.add(controls[1]); involved.add(cnotTarget); }
-        else if (isCNOT) { involved.add(controls[0]); involved.add(cnotTarget); }
-        if (isSwap) { involved.add(swapWires[0]); involved.add(swapWires[1]); }
-
-        const otherQubits = [];
-        for (let q = 0; q < this.numQubits; q++) {
-          if (!involved.has(q)) otherQubits.push(q);
-        }
-
-        for (let j = 0; j < N; j++) {
-          // Apply the controlled-bit-flip / swap permutation to get the base row
-          let permRow = j;
-          if (isToffoli) {
-            const bitA = (j >> (this.numQubits - 1 - controls[0])) & 1;
-            const bitB = (j >> (this.numQubits - 1 - controls[1])) & 1;
-            if (bitA === 1 && bitB === 1) permRow ^= (1 << (this.numQubits - 1 - cnotTarget));
-          } else if (isCNOT) {
-            const bitCtrl = (j >> (this.numQubits - 1 - controls[0])) & 1;
-            if (bitCtrl === 1) permRow ^= (1 << (this.numQubits - 1 - cnotTarget));
-          }
-          if (isSwap) {
-            const maskA = 1 << (this.numQubits - 1 - swapWires[0]);
-            const maskB = 1 << (this.numQubits - 1 - swapWires[1]);
-            const bitA = (permRow & maskA) ? 1 : 0;
-            const bitB = (permRow & maskB) ? 1 : 0;
-            if (bitA !== bitB) permRow ^= (maskA ^ maskB);
-          }
-
-          // Fold in single-qubit gates on the other wires — each may fan the
-          // amplitude out across both basis values of that wire.
-          let contributions = [{ idx: permRow, weight: new Complex(1, 0) }];
-          for (const q of otherQubits) {
-            const gate = colGates[q];
-            if (!gate || !GATES[gate]) continue;
-            const mat = GATES[gate];
-            const bitVal = (j >> (this.numQubits - 1 - q)) & 1;
-            const mask = 1 << (this.numQubits - 1 - q);
-            const next = [];
-            for (const c of contributions) {
-              for (let b = 0; b < 2; b++) {
-                const weight = mat[b][bitVal];
-                if (weight.re === 0 && weight.im === 0) continue;
-                const dest = (c.idx & ~mask) | (b << (this.numQubits - 1 - q));
-                next.push({ idx: dest, weight: c.weight.mul(weight) });
-              }
-            }
-            contributions = next;
-          }
-
-          for (const c of contributions) {
-            U_col[c.idx][j] = U_col[c.idx][j].add(c.weight);
-          }
-        }
-      } else {
-        // Kronecker product of single-qubit gates
-        let current = GATES[colGates[0]] || GATES['I'];
-        for (let q = 1; q < this.numQubits; q++) {
-          const g = GATES[colGates[q]] || GATES['I'];
-          const nA = current.length, nB = g.length;
-          const next = Array.from({ length: nA * nB }, () => Array(nA * nB).fill(null));
-          for (let i = 0; i < nA; i++) {
-            for (let j = 0; j < nA; j++) {
-              for (let k = 0; k < nB; k++) {
-                for (let l = 0; l < nB; l++) {
-                  next[i * nB + k][j * nB + l] = current[i][j].mul(g[k][l]);
-                }
-              }
-            }
-          }
-          current = next;
-        }
-        U_col = current;
-      }
-
-      // Multiply: U_total = U_col * U_total (time ordering from left to right)
-      U_total = matMul(U_col, U_total);
     }
 
-    // Check unitarity: U^\dagger U = I
     let unitarityError = 0;
     for (let i = 0; i < N; i++) {
       for (let j = 0; j < N; j++) {
@@ -1147,6 +1313,7 @@ def circuit():
 
     // Format helper for LaTeX and UI
     const formatEntry = (c) => {
+      const SQRT2_INV = 1 / Math.SQRT2;
       const re = Math.abs(c.re) < 1e-4 ? 0 : c.re;
       const im = Math.abs(c.im) < 1e-4 ? 0 : c.im;
       if (re === 0 && im === 0) return '0';
@@ -1186,17 +1353,6 @@ def circuit():
 
   // 2. Comprehensive Entanglement & Purity Quantifier
   getAdvancedEntanglementMetrics() {
-    // Real Tr(rho_q0^2) subsystem purity (not an inverse-participation-ratio
-    // over the full register, which is basis-dependent and doesn't measure
-    // entanglement at all - e.g. it wrongly reported 0.125 "purity" for a
-    // genuinely pure product state like H on every qubit).
-    const q0State = this.getSingleQubitReducedState(0);
-    const { purity, entropy: entropyQ0, schmidtRank } = QuantumCircuitEngine.purityAndEntropy2x2(
-      q0State.rho00, q0State.rho11, q0State.rho01_re, q0State.rho01_im
-    );
-    // Linear entropy of a single-qubit (dimension d=2) subsystem: d/(d-1) * (1-purity).
-    const linearEntropy = 2 * (1 - purity);
-
     // Real Wootters concurrence, generalized to ANY register size: check
     // every qubit pair and report the strongest pairwise entanglement link
     // found anywhere, instead of hardcoding the q0-q1 pair.
@@ -1212,6 +1368,23 @@ def circuit():
     const perQubitEntropy = Array.from({ length: this.numQubits }, (_, q) => this.getEntanglementEntropy(q));
     const entangledQubitCount = perQubitEntropy.filter((s) => s > 0.05).length;
     const maxEntropy = Math.max(0, ...perQubitEntropy);
+
+    // Purity/entropy/Schmidt rank reported as the register's headline
+    // numbers come from whichever qubit is ACTUALLY most entangled, not a
+    // qubit hardcoded to index 0. Reporting q0's numbers unconditionally
+    // was self-contradictory: a Bell pair built on q1/q2 with q0 left idle
+    // would show concurrence=1.00 (correctly the max over all pairs)
+    // alongside entropy=0.00 and purity=1.00 (q0's own, genuinely separable
+    // state) - concurrence and entropy flatly disagreeing about whether the
+    // register is entangled at all, because they were silently describing
+    // different qubits.
+    const representativeQubit = Math.max(0, perQubitEntropy.indexOf(maxEntropy));
+    const repState = this.getSingleQubitReducedState(representativeQubit);
+    const { purity, entropy: entropyRep, schmidtRank } = QuantumCircuitEngine.purityAndEntropy2x2(
+      repState.rho00, repState.rho11, repState.rho01_re, repState.rho01_im
+    );
+    // Linear entropy of a single-qubit (dimension d=2) subsystem: d/(d-1) * (1-purity).
+    const linearEntropy = 2 * (1 - purity);
 
     // After a projective measurement the register can still show per-qubit
     // entropy, but that is classical uncertainty about the outcome, not
@@ -1241,11 +1414,12 @@ def circuit():
     return {
       purity: parseFloat(purity.toFixed(4)),
       linearEntropy: parseFloat(linearEntropy.toFixed(4)),
-      vonNeumannEntropy: parseFloat(entropyQ0.toFixed(3)),
+      vonNeumannEntropy: parseFloat(entropyRep.toFixed(3)),
       concurrence: parseFloat(concurrence.toFixed(4)),
-      mutualInformation: parseFloat((2 * entropyQ0).toFixed(4)),
+      mutualInformation: parseFloat((2 * entropyRep).toFixed(4)),
       schmidtRank,
-      entanglementClass
+      entanglementClass,
+      representativeQubit
     };
   }
 

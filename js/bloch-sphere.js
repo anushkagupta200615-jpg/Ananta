@@ -236,12 +236,18 @@ class BlochSphereVisualizer {
     this.blochGroup.add(sprite);
   }
 
-  updateCoordinates(blochCoords, qubitIndex = 0) {
+  updateCoordinates(blochCoords, qubitIndex = 0, engine = null) {
     const bx = Number.isFinite(Number(blochCoords.x)) ? Number(blochCoords.x) : 0;
     const by = Number.isFinite(Number(blochCoords.y)) ? Number(blochCoords.y) : 0;
     const bz = Number.isFinite(Number(blochCoords.z)) ? Number(blochCoords.z) : 1;
 
-    // Vector length in Bloch ball r = sqrt(x^2 + y^2 + z^2)
+    // Vector length in Bloch ball r = sqrt(x^2 + y^2 + z^2). This is a real
+    // per-qubit reduced-density-matrix quantity (js/quantum-engine.js's
+    // getBlochCoordinates does a real partial trace over every other
+    // qubit) - r < 1 genuinely means this qubit's local state is mixed,
+    // which for a globally pure register can only happen if it's
+    // entangled with something else. That physical fact was already real;
+    // what follows here only fixes the TEXT describing it.
     const r = Math.sqrt(bx * bx + by * by + bz * bz);
     this.blochRadius = r;
     this.isEntangled = (r < 0.12);
@@ -249,35 +255,84 @@ class BlochSphereVisualizer {
     if (r > 0.001) {
       this.targetVector.set(bx, bz, by);
     } else {
-      // Maximally entangled state (e.g. Bell State) -> at center origin (0, 0, 0)
+      // Maximally mixed reduced state -> Bloch vector collapses to the
+      // ball's center, for ANY circuit that puts this qubit there, not
+      // specifically a 2-qubit Bell pair.
       this.targetVector.set(0, 0.0001, 0);
     }
 
-    this.updateEntanglementDisplay(r, blochCoords, qubitIndex);
+    this.updateEntanglementDisplay(r, blochCoords, qubitIndex, engine);
   }
 
-  updateEntanglementDisplay(r, blochCoords, qubitIndex = 0) {
+  /**
+   * Names which other qubit(s) the selected one is actually entangled with,
+   * using real pairwise Wootters concurrence
+   * (QuantumCircuitEngine.getPairwiseConcurrence - see quantum-engine.js),
+   * instead of assuming q[0]/q[1] are "the" entangled pair regardless of
+   * what circuit is on the grid. Also finds a genuinely separable qubit (if
+   * one exists) to suggest inspecting, rather than a hardcoded "click q[2]".
+   */
+  findRealEntanglementPartners(engine, qubitIndex) {
+    const result = { partners: [], separableQubit: null };
+    if (!engine || !engine.numQubits || typeof engine.getPairwiseConcurrence !== 'function') return result;
+
+    for (let q = 0; q < engine.numQubits; q++) {
+      if (q === qubitIndex) continue;
+      const c = engine.getPairwiseConcurrence(qubitIndex, q);
+      if (c > 0.05) result.partners.push({ qubit: q, concurrence: c });
+    }
+    result.partners.sort((a, b) => b.concurrence - a.concurrence);
+
+    if (typeof engine.getEntanglementEntropy === 'function') {
+      for (let q = 0; q < engine.numQubits; q++) {
+        if (engine.getEntanglementEntropy(q) < 0.05) { result.separableQubit = q; break; }
+      }
+    }
+    return result;
+  }
+
+  updateEntanglementDisplay(r, blochCoords, qubitIndex = 0, engine = null) {
     const banner = document.getElementById('bloch-entanglement-hud');
     if (!banner) return;
 
     const bz = Number.isFinite(Number(blochCoords.z)) ? Number(blochCoords.z) : 1;
+    // Real purity/entropy of THIS qubit's reduced state, derived from the
+    // actual r just computed - not a fixed "0.50 / 1.0 bit" string that
+    // only happens to be exactly right for a maximally entangled pair.
+    const purity = Number.isFinite(Number(blochCoords.purity)) ? Number(blochCoords.purity) : 0.5 * (1 + r * r);
+    const l1 = Math.max(0, Math.min(1, (1 + r) / 2));
+    const l2 = Math.max(0, Math.min(1, (1 - r) / 2));
+    let entropy = 0;
+    if (l1 > 1e-6) entropy -= l1 * Math.log2(l1);
+    if (l2 > 1e-6) entropy -= l2 * Math.log2(l2);
 
     if (this.isEntangled) {
+      const { partners, separableQubit } = this.findRealEntanglementPartners(engine, qubitIndex);
       banner.style.display = 'flex';
       banner.style.borderColor = 'rgba(236, 72, 153, 0.5)';
-      const isPair = (qubitIndex === 0 || qubitIndex === 1);
+
+      let insightText;
+      if (partners.length > 0) {
+        const names = partners.map(p => `<strong>q[${p.qubit}]</strong> (C=${p.concurrence.toFixed(2)})`).join(', ');
+        insightText = `<strong>q[${qubitIndex}]</strong> shares real pairwise entanglement (Wootters concurrence) with ${names}. Each partner's reduced density matrix is individually mixed (ρ ≈ ½I) even though the joint state of the register is pure - that's why this qubit's vector sits at the ball's center.`;
+      } else {
+        insightText = `<strong>q[${qubitIndex}]</strong>'s reduced state is mixed (entropy correlates with the rest of the register), but no single other qubit shows nonzero pairwise concurrence with it - consistent with multipartite entanglement (e.g. GHZ-type) where the correlation is distributed across three or more qubits rather than concentrated in one pair.`;
+      }
+      const tip = separableQubit !== null
+        ? `<br>👉 <em>Tip:</em> q[${separableQubit}] currently has near-zero entanglement entropy - click it to see a comparison.`
+        : '';
+
       banner.innerHTML = `
         <div class="bloch-entangle-top">
           <div class="bloch-entangle-badge">
             <span>⚡ Entangled Subsystem — Selected: <strong>q[${qubitIndex}]</strong></span>
           </div>
           <div class="bloch-entangle-sub">
-            Vector: |r| = 0.00 (Sphere Origin Center) | Maximally Mixed State (Purity Tr(ρ²)=0.50, Entropy S=1.0 bit)
+            Vector: |r| = ${r.toFixed(2)} (Sphere Origin Center) | Mixed State (Purity Tr(ρ²)=${purity.toFixed(2)}, Entropy S=${entropy.toFixed(2)} bit)
           </div>
         </div>
         <div class="bloch-entangle-insight">
-          💡 <strong>Why are q[0] and q[1] identical?</strong> ${isPair ? 'In this Bell pair (|00⟩+|11⟩)/√2, qubits <strong>q[0]</strong> and <strong>q[1]</strong> form the entangled pair. In quantum mechanics, each partner qubit individually has an identical maximally mixed density matrix (reduced trace ρ = ½I) at the origin center.' : 'This qubit participates in an entangled quantum state with its reduced Bloch vector collapsed to the center.'} <br>
-          👉 <em>Tip:</em> Click <strong>q[2]</strong> to inspect an unentangled pure state (|0⟩ pointing straight up to the North Pole with |r| = 1.00)!
+          💡 ${insightText}${tip}
         </div>
       `;
     } else if (r < 0.92) {
@@ -289,7 +344,7 @@ class BlochSphereVisualizer {
             <span>⚠️ Partially Decohered State — Selected: <strong>q[${qubitIndex}]</strong></span>
           </div>
           <div class="bloch-entangle-sub">
-            Vector: |r| = ${r.toFixed(2)} (Inside Sphere Volume) | Mixed State (Tr(ρ²) = ${(0.5 * (1 + r * r)).toFixed(2)})
+            Vector: |r| = ${r.toFixed(2)} (Inside Sphere Volume) | Mixed State (Tr(ρ²) = ${purity.toFixed(2)}, Entropy S=${entropy.toFixed(2)} bit)
           </div>
         </div>
       `;
@@ -303,7 +358,7 @@ class BlochSphereVisualizer {
             <span>✨ Pure Quantum State — Selected: <strong>q[${qubitIndex}]</strong></span>
           </div>
           <div class="bloch-entangle-sub" style="color: #a7f3d0;">
-            Vector: |r| = ${r.toFixed(2)} (Surface) | Pure State (Tr(ρ²)=1.00) | ${orientation}
+            Vector: |r| = ${r.toFixed(2)} (Surface) | Pure State (Tr(ρ²)=${purity.toFixed(2)}) | ${orientation}
           </div>
         </div>
       `;
