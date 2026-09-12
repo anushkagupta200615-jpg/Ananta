@@ -157,10 +157,15 @@ class ConceptDoctor {
     // Otherwise, ask the backend — grounded in this exact knowledge base (Section 4.4)
     this._showThinkingState(queryText);
     try {
+      // Send the tags and real-world impact too - they were being dropped,
+      // so the model had only a title and an analogy to match against and
+      // missed entries it should have matched.
       const groundingEntries = Object.values(this.knowledgeBase).map(item => ({
         id: item.id,
         title: item.title,
-        analogy: item.analogy
+        tags: item.tags || [],
+        analogy: item.analogy,
+        realWorldImpact: item.realWorldImpact || ''
       }));
 
       const response = await fetch('/api/gemini', {
@@ -254,37 +259,175 @@ class ConceptDoctor {
       ctx.scale(dpr, dpr);
       const w = rect.width;
       const h = rect.height;
-      ctx.fillStyle = '#080816';
-      ctx.fillRect(0, 0, w, h);
 
-      ctx.strokeStyle = 'rgba(168, 85, 247, 0.2)';
-      ctx.lineWidth = 1;
-      for (let x = 0; x < w; x += 30) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-        ctx.stroke();
+      // This used to draw a fixed decorative sine curve
+      // (sin(x*0.04)*35*cos(x*0.01)) for every concept that wasn't one of the
+      // six hand-written animations - the same squiggle whether you asked
+      // about Bell states or Shor's algorithm, derived from nothing. It looked
+      // like a visualisation while showing no information at all.
+      //
+      // Now: if the AI supplied an illustrative circuit, it is run on the real
+      // QuantumCircuitEngine and the ACTUAL resulting probabilities and
+      // entanglement are drawn. If it did not, we say so plainly rather than
+      // drawing something meaningless.
+      const sim = this.simulateIllustrativeCircuit(result.illustrative_circuit);
+      if (sim) {
+        this.drawSimulatedConcept(ctx, w, h, sim, result.illustrative_circuit);
+      } else {
+        this.drawNoSimulationNotice(ctx, w, h);
       }
-      for (let y = 0; y < h; y += 30) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-        ctx.stroke();
-      }
-
-      ctx.beginPath();
-      ctx.strokeStyle = '#a855f7';
-      ctx.lineWidth = 3;
-      ctx.shadowColor = '#a855f7';
-      ctx.shadowBlur = 15;
-      for (let x = 0; x < w; x++) {
-        const y = h / 2 + Math.sin(x * 0.04) * 35 * Math.cos(x * 0.01);
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
       ctx.restore();
     }
+  }
+
+  /**
+   * Turns the AI's illustrative-circuit spec into a real gate grid and runs it
+   * on the actual statevector engine. Returns null if there is no usable
+   * circuit - callers must not fabricate a visual in that case.
+   */
+  simulateIllustrativeCircuit(spec) {
+    const Engine = window.QuantumCircuitEngine;
+    if (!Engine || !spec || !Array.isArray(spec.gates) || spec.gates.length === 0) return null;
+
+    const n = Math.max(1, Math.min(5, parseInt(spec.numQubits, 10) || 2));
+    const gates = spec.gates.slice(0, 12);
+    // One gate per column keeps the mapping unambiguous and always valid.
+    const grid = Array.from({ length: n }, () => Array(gates.length).fill(null));
+
+    const inRange = (q) => Number.isInteger(q) && q >= 0 && q < n;
+    let placed = 0;
+
+    gates.forEach((g, col) => {
+      const name = String(g && g.gate || '').toUpperCase();
+      const angle = Number(g && g.angle);
+      switch (name) {
+        case 'CNOT': case 'CX':
+          if (inRange(g.control) && inRange(g.target) && g.control !== g.target) {
+            grid[g.control][col] = 'CX_CTRL';
+            grid[g.target][col] = 'CX_TGT';
+            placed++;
+          }
+          break;
+        case 'TOFFOLI': case 'CCX': {
+          const cs = Array.isArray(g.controls) ? g.controls : [];
+          if (cs.length === 2 && cs.every(inRange) && inRange(g.target) && !cs.includes(g.target)) {
+            grid[cs[0]][col] = 'CX_CTRL';
+            grid[cs[1]][col] = 'CX_CTRL';
+            grid[g.target][col] = 'CX_TGT';
+            placed++;
+          }
+          break;
+        }
+        case 'CZ': case 'SWAP': {
+          const ws = Array.isArray(g.wires) ? g.wires : [];
+          if (ws.length === 2 && ws.every(inRange) && ws[0] !== ws[1]) {
+            grid[ws[0]][col] = name;
+            grid[ws[1]][col] = name;
+            placed++;
+          }
+          break;
+        }
+        case 'RX': case 'RY': case 'RZ': case 'P':
+          if (inRange(g.qubit) && Number.isFinite(angle)) {
+            grid[g.qubit][col] = Engine.makeGateToken(name, angle);
+            placed++;
+          }
+          break;
+        case 'H': case 'X': case 'Y': case 'Z': case 'S': case 'T': case 'M':
+          if (inRange(g.qubit)) { grid[g.qubit][col] = name; placed++; }
+          break;
+        default:
+          break;
+      }
+    });
+
+    if (placed === 0) return null;
+
+    try {
+      const engine = new Engine(n);
+      engine.runCircuit(grid);
+      const probs = engine.getProbabilities().filter((p) => p.probability > 0.004);
+      return {
+        numQubits: n,
+        dirac: engine.getDiracNotation(),
+        probabilities: probs.sort((a, b) => b.probability - a.probability).slice(0, 8),
+        metrics: engine.getAdvancedEntanglementMetrics()
+      };
+    } catch (e) {
+      console.warn('[ConceptDoctor] Illustrative circuit failed to simulate:', e.message);
+      return null;
+    }
+  }
+
+  /** Draws the REAL simulated outcome: measured probabilities + entanglement. */
+  drawSimulatedConcept(ctx, w, h, sim, spec) {
+    ctx.fillStyle = '#080816';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = '#a855f7';
+    ctx.font = 'bold 12px Inter, system-ui, sans-serif';
+    ctx.fillText('LIVE SIMULATION  -  run on Ananta’s quantum engine', 18, 26);
+
+    if (spec && spec.caption) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px Inter, system-ui, sans-serif';
+      ctx.fillText(String(spec.caption).slice(0, 92), 18, 45);
+    }
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 13px "JetBrains Mono", monospace';
+    ctx.fillText(sim.dirac.slice(0, 58), 18, 72);
+
+    // Real Born-rule probabilities
+    const top = 92;
+    const barH = 20;
+    const gap = 9;
+    const labelW = 66;
+    const maxBar = Math.max(60, w - labelW - 104);
+
+    sim.probabilities.forEach((p, i) => {
+      const y = top + i * (barH + gap);
+      if (y + barH > h - 42) return;
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px "JetBrains Mono", monospace';
+      ctx.fillText(p.state, 18, y + 14);
+
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.14)';
+      ctx.fillRect(labelW + 18, y, maxBar, barH);
+
+      const grad = ctx.createLinearGradient(labelW + 18, 0, labelW + 18 + maxBar, 0);
+      grad.addColorStop(0, '#38bdf8');
+      grad.addColorStop(1, '#a855f7');
+      ctx.fillStyle = grad;
+      ctx.fillRect(labelW + 18, y, Math.max(2, maxBar * p.probability), barH);
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'bold 11px "JetBrains Mono", monospace';
+      ctx.fillText(`${(p.probability * 100).toFixed(1)}%`, labelW + 26 + maxBar, y + 14);
+    });
+
+    // Real computed entanglement, straight from the engine
+    const m = sim.metrics;
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10.5px Inter, system-ui, sans-serif';
+    ctx.fillText(`Concurrence C = ${m.concurrence.toFixed(2)}    Entropy S = ${m.vonNeumannEntropy.toFixed(2)} ebits`, 18, h - 24);
+    ctx.fillStyle = m.concurrence > 0.05 ? '#34d399' : '#64748b';
+    ctx.font = 'bold 10.5px Inter, system-ui, sans-serif';
+    ctx.fillText(m.entanglementClass.slice(0, 58), 18, h - 9);
+  }
+
+  /** Honest empty state - no fabricated visual. */
+  drawNoSimulationNotice(ctx, w, h) {
+    ctx.fillStyle = '#080816';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#475569';
+    ctx.font = '13px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No interactive simulation for this concept yet.', w / 2, h / 2 - 8);
+    ctx.font = '11.5px Inter, system-ui, sans-serif';
+    ctx.fillText('The explanation on the left still applies.', w / 2, h / 2 + 14);
+    ctx.textAlign = 'left';
   }
 
   renderNotCoveredMessage(queryText) {
