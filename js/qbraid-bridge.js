@@ -16,6 +16,11 @@ class QBraidBridge {
     this.engine = engine;
     this.circuitUI = circuitUI;
     this.apiKey = localStorage.getItem('ananta_qbraid_token') || '';
+    // A stored key is only "verified" if a previous live check said so. Absent
+    // that record we must not imply the key works.
+    this.keyState = this.apiKey
+      ? (localStorage.getItem('ananta_qbraid_token_state') || 'unverified')
+      : 'none';
     this.selectedBackend = 'ionq_aria_1';
     this.isJobRunning = false;
     this.devices = {};
@@ -377,49 +382,84 @@ class QBraidBridge {
       const data = await res.json();
       if (res.ok && data.valid) {
         this.apiKey = cleanKey;
-        localStorage.setItem('ananta_qbraid_token', this.apiKey);
-        if (statusEl) {
-          statusEl.className = 'status-pill status-ready';
-          statusEl.innerHTML = `✓ Connected: ${data.user || 'qBraid Account'} (${data.credits || 100} Credits)`;
-        }
+        this.setKeyState('verified', {
+          user: data.user || 'qBraid Account',
+          credits: data.credits != null ? data.credits : 100
+        });
         await this.fetchDeviceFleet();
         return;
-      } else {
-        if (statusEl) {
-          statusEl.className = 'status-pill status-warn';
-          statusEl.innerHTML = '⚠️ Invalid Key (Simulated Mode)';
-        }
-        alert(`qBraid Authentication notice: ${data.error || 'Invalid API Key'}`);
       }
-    } catch (err) {
-      console.warn('[qBraidBridge] Key verification notice:', err);
-    }
 
-    this.apiKey = cleanKey;
-    localStorage.setItem('ananta_qbraid_token', this.apiKey);
-    this.updateTokenStatus();
-    this.fetchDeviceFleet();
+      // qBraid itself rejected the key. Keep it in the box so the user can see
+      // and correct it, but never claim it is connected - the old code fell
+      // through to updateTokenStatus() below, which repainted the red
+      // "Invalid Key" pill as a green "Saved" pill one tick after the alert.
+      this.apiKey = cleanKey;
+      this.setKeyState('rejected', { error: data.error || 'Invalid API Key' });
+      alert(`qBraid Authentication notice: ${data.error || 'Invalid API Key'}`);
+      this.fetchDeviceFleet();
+      return;
+    } catch (err) {
+      // Network/transport failure is NOT the same as a rejected key: we simply
+      // could not reach the verifier, so report it as unverified, not invalid.
+      console.warn('[qBraidBridge] Key verification notice:', err);
+      this.apiKey = cleanKey;
+      this.setKeyState('unverified', { error: err.message });
+      this.fetchDeviceFleet();
+    }
+  }
+
+  /**
+   * Single source of truth for "what do we actually know about this key".
+   * Persisted alongside the key so a page reload cannot resurrect a green
+   * "connected" pill for a key qBraid already rejected.
+   */
+  setKeyState(state, detail = {}) {
+    this.keyState = state;
+    if (this.apiKey) {
+      localStorage.setItem('ananta_qbraid_token', this.apiKey);
+      localStorage.setItem('ananta_qbraid_token_state', state);
+    } else {
+      localStorage.removeItem('ananta_qbraid_token');
+      localStorage.removeItem('ananta_qbraid_token_state');
+    }
+    this.updateTokenStatus(detail);
   }
 
   clearApiKey() {
     this.apiKey = '';
+    this.keyState = 'none';
     localStorage.removeItem('ananta_qbraid_token');
+    localStorage.removeItem('ananta_qbraid_token_state');
     const input = document.getElementById('qbraid-api-token-input');
     if (input) input.value = '';
     this.updateTokenStatus();
     this.fetchDeviceFleet();
   }
 
-  updateTokenStatus() {
+  updateTokenStatus(detail = {}) {
     const statusEl = document.getElementById('qbraid-token-status');
     if (!statusEl) return;
-    if (this.apiKey) {
-      const masked = `${this.apiKey.substring(0, 4)}••••••••${this.apiKey.substring(this.apiKey.length - 4)}`;
-      statusEl.className = 'status-pill status-ready';
-      statusEl.innerHTML = `✓ Saved (${masked})`;
-    } else {
+
+    if (!this.apiKey) {
       statusEl.className = 'status-pill status-warn';
       statusEl.innerHTML = '⚠️ No Key (Simulated Physics Mode)';
+      return;
+    }
+
+    const masked = `${this.apiKey.substring(0, 4)}••••••••${this.apiKey.substring(this.apiKey.length - 4)}`;
+
+    if (this.keyState === 'verified') {
+      statusEl.className = 'status-pill status-ready';
+      statusEl.innerHTML = detail.user
+        ? `✓ Connected: ${detail.user} (${detail.credits} Credits)`
+        : `✓ Verified (${masked})`;
+    } else if (this.keyState === 'rejected') {
+      statusEl.className = 'status-pill status-warn';
+      statusEl.innerHTML = `⚠️ Rejected by qBraid (${masked}) — Simulated Mode`;
+    } else {
+      statusEl.className = 'status-pill status-warn';
+      statusEl.innerHTML = `⚠️ Unverified (${masked}) — Simulated Mode`;
     }
   }
 

@@ -2,7 +2,7 @@
  * Ananta Quantum Studio - qBraid Multi-Provider Quantum Execution Client
  * 
  * Provides direct integration with:
- *  1. qBraid Cloud REST API (https://api.qbraid.com/api)
+ *  1. qBraid Cloud REST API v2 (https://api-v2.qbraid.com/api/v1, X-API-KEY header)
  *  2. Unconstrained Multi-Provider Device Fleet Discovery (AWS Braket, QuEra, IonQ, Rigetti, OQC, IQM, IBM, Quantinuum, Xanadu, qBraid Simulator)
  *  3. Intelligent Circuit-to-Hardware Recommendation Engine (Fidelity, Queue, Topology, Cost matching)
  *  4. Multi-Architecture Native Transpiler (OpenQASM 3.0, Braket SDK, IonQ Native, Qiskit, Cirq)
@@ -657,8 +657,53 @@ function httpsRequest(options, postData = null) {
   });
 }
 
+// qBraid REST API v2. The v1 API (api.qbraid.com/api + "api-key" header) is
+// retired: keys minted at account.qbraid.com/account/api-keys are v2 keys, so
+// every current key was being rejected by the v1 host with "Invalid API key".
+// See https://docs.qbraid.com/v2/api-reference/rest/migration
+const QBRAID_API_HOST = 'api-v2.qbraid.com';
+const QBRAID_API_BASE = '/api/v1';
+
+function qbraidHeaders(apiKey, extra = {}) {
+  return {
+    'X-API-KEY': apiKey,
+    'Accept': 'application/json',
+    'User-Agent': 'Ananta-Quantum-Studio/2.5.0',
+    ...extra
+  };
+}
+
+function qbraidRequest(apiKey, path, { method = 'GET', body = null } = {}) {
+  return httpsRequest({
+    hostname: QBRAID_API_HOST,
+    port: 443,
+    path: `${QBRAID_API_BASE}${path}`,
+    method,
+    headers: qbraidHeaders(apiKey, body ? { 'Content-Type': 'application/json' } : {})
+  }, body);
+}
+
 /**
- * Validates a qBraid API key by querying user profile or devices
+ * v2 wraps every payload as { success, data }. Older code expected the raw
+ * body, so unwrap in exactly one place rather than at each call site.
+ */
+function unwrap(res) {
+  const d = res.data;
+  if (d && typeof d === 'object' && 'success' in d && 'data' in d) return d.data;
+  return d;
+}
+
+function qbraidErrorMessage(res, fallback) {
+  const d = res.data || {};
+  return d.error?.message || d.message || d.error || fallback;
+}
+
+/**
+ * Validates a qBraid API key against the live v2 API.
+ *
+ * There is no public "current user" route in v2, so we authenticate against
+ * /devices: it is the cheapest authenticated GET, and a 200 proves the key is
+ * accepted for the same scope the rest of this module needs.
  */
 async function validateToken(apiKey) {
   if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 8) {
@@ -672,60 +717,36 @@ async function validateToken(apiKey) {
   }
 
   try {
-    const options = {
-      hostname: 'api.qbraid.com',
-      port: 443,
-      path: '/api/v1/user',
-      method: 'GET',
-      headers: {
-        'api-key': cleanKey,
-        'Accept': 'application/json',
-        'User-Agent': 'Ananta-Quantum-Studio/2.5.0'
-      }
-    };
-
-    const res = await httpsRequest(options);
+    const res = await qbraidRequest(cleanKey, '/devices?limit=1');
 
     if (res.statusCode === 200) {
-      const user = res.data?.user || res.data || {};
       const result = {
         valid: true,
-        user: user.name || user.email || 'qBraid Quantum Developer',
-        email: user.email || '',
-        credits: user.credits || user.quantumCredits || 100,
-        tier: user.tier || 'Academic Pro',
+        user: 'qBraid Account',
+        email: '',
+        credits: null,
+        tier: '',
+        apiVersion: 'v2',
         isLive: true
       };
       qbraidTokenCache.set(cleanKey, { result, expiresAt: Date.now() + 10 * 60 * 1000 });
       return result;
-    } else {
-      // Fallback check against devices endpoint
-      const devRes = await httpsRequest({
-        hostname: 'api.qbraid.com',
-        port: 443,
-        path: '/api/v1/quantum-devices',
-        method: 'GET',
-        headers: { 'api-key': cleanKey, 'Accept': 'application/json' }
-      });
-
-      if (devRes.statusCode === 200) {
-        const result = {
-          valid: true,
-          user: 'qBraid Authenticated User',
-          credits: 50,
-          tier: 'Quantum Explorer',
-          isLive: true
-        };
-        qbraidTokenCache.set(cleanKey, { result, expiresAt: Date.now() + 10 * 60 * 1000 });
-        return result;
-      }
-
-      return {
-        valid: false,
-        statusCode: res.statusCode,
-        error: res.data?.message || res.data?.error || `qBraid API HTTP ${res.statusCode}: Invalid API Key`
-      };
     }
+
+    if (res.statusCode === 429) {
+      return { valid: false, statusCode: 429, error: 'qBraid rate limit reached (1000 requests / 15 min). Try again shortly.' };
+    }
+
+    const msg = qbraidErrorMessage(res, `qBraid API HTTP ${res.statusCode}: key rejected`);
+    return {
+      valid: false,
+      statusCode: res.statusCode,
+      // A v1-era key fails v2's format check. Say where a valid key comes from
+      // instead of leaving the user to guess which of their keys is wrong.
+      error: /format/i.test(String(msg))
+        ? `${msg}. Generate a current key at account.qbraid.com/account/api-keys (v1 keys no longer work).`
+        : msg
+    };
   } catch (err) {
     return {
       valid: false,
@@ -752,51 +773,53 @@ async function getLiveBackends(apiKey = '', filters = {}) {
       isLive = cached.data.isLive;
     } else {
       try {
-        const endpoints = ['/api/v1/quantum-devices', '/api/devices', '/api/v1/devices'];
-        let liveData = null;
-
-        for (const ep of endpoints) {
-          try {
-            const res = await httpsRequest({
-              hostname: 'api.qbraid.com',
-              port: 443,
-              path: ep,
-              method: 'GET',
-              headers: {
-                'api-key': cleanKey,
-                'Accept': 'application/json',
-                'User-Agent': 'Ananta-Quantum-Studio/2.5.0'
-              }
-            });
-            if (res.statusCode === 200 && (Array.isArray(res.data) || (res.data && Array.isArray(res.data.devices)))) {
-              liveData = Array.isArray(res.data) ? res.data : res.data.devices;
-              break;
-            }
-          } catch (e) {}
+        // v2 paginates (max 100/page), so walk pages until exhausted rather
+        // than silently showing only the first 20 devices.
+        let liveData = [];
+        for (let page = 1; page <= 10; page++) {
+          const res = await qbraidRequest(cleanKey, `/devices?limit=100&page=${page}`);
+          if (res.statusCode !== 200) { liveData = null; break; }
+          const batch = unwrap(res);
+          if (!Array.isArray(batch) || batch.length === 0) break;
+          liveData.push(...batch);
+          if (batch.length < 100) break;
         }
 
-        if (liveData && Array.isArray(liveData)) {
+        if (liveData && liveData.length) {
           isLive = true;
           liveData.forEach(dev => {
-            const id = dev.qbraid_id || dev.id || dev.name;
+            // v2 identifies devices by QRN (vendor:provider:type:name).
+            const id = dev.qrn || dev.qbraid_id || dev.id || dev.name;
+            if (!id) return;
             const ref = REFERENCE_QBRAID_DEVICES[id] || {};
+            const vendor = dev.vendor || (typeof dev.qrn === 'string' ? dev.qrn.split(':')[0] : '') || '';
+            const isSim = String(dev.deviceType || '').toUpperCase() === 'SIMULATOR';
+            const modality = String(dev.modality || '').toLowerCase();
             devices[id] = {
               id,
+              qrn: dev.qrn || null,
               name: dev.name || ref.name || id,
-              provider: dev.provider || ref.provider || 'qBraid Cloud',
-              providerKey: ref.providerKey || (dev.provider || '').toLowerCase().replace(/[^a-z0-9]/g, '_'),
-              architecture: ref.architecture || (dev.type?.toLowerCase().includes('ion') ? 'trapped-ion' : 'superconducting'),
-              type: dev.type || ref.type || 'Quantum Processor',
-              qubits: dev.number_qubits || dev.qubits || ref.qubits || 30,
+              provider: dev.providerId || ref.provider || vendor || 'qBraid Cloud',
+              providerKey: ref.providerKey || vendor.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+              architecture: ref.architecture || (modality.includes('ion') ? 'trapped-ion' : (isSim ? 'simulator' : 'superconducting')),
+              type: dev.deviceType || ref.type || 'Quantum Processor',
+              qubits: dev.numberQubits != null ? dev.numberQubits : (ref.qubits || 30),
               status: dev.status === 'ONLINE' ? 'Online' : (dev.status || ref.status || 'Online'),
-              queue: dev.pending_jobs !== undefined ? dev.pending_jobs : (ref.queue || 0),
-              fidelity1Q: dev.fidelity_1q || ref.fidelity1Q || 0.999,
-              fidelity2Q: dev.fidelity_2q || ref.fidelity2Q || 0.985,
-              t1Median: dev.t1 || ref.t1Median || 100,
-              t2Median: dev.t2 || ref.t2Median || 80,
-              readoutError: dev.readout_error || ref.readoutError || 0.015,
-              topology: dev.topology || ref.topology || 'Configurable',
-              basisGates: dev.basis_gates || ref.basisGates || ['rx', 'rz', 'cz'],
+              queue: dev.queueDepth != null ? dev.queueDepth : (ref.queue || 0),
+              // v2 does not publish calibration data on /devices. Carry the
+              // reference values through, but mark them so the UI never
+              // presents a local constant as a live measurement.
+              fidelity1Q: ref.fidelity1Q || 0.999,
+              fidelity2Q: ref.fidelity2Q || 0.985,
+              t1Median: ref.t1Median || 100,
+              t2Median: ref.t2Median || 80,
+              readoutError: ref.readoutError || 0.015,
+              calibrationIsLive: false,
+              topology: ref.topology || 'Configurable',
+              basisGates: ref.basisGates || ['rx', 'rz', 'cz'],
+              runInputTypes: Array.isArray(dev.runInputTypes) ? dev.runInputTypes : null,
+              paradigm: dev.paradigm || null,
+              pricingModel: dev.pricingModel || null,
               isLive: true,
               pricing: dev.pricing || ref.pricing || 'qBraid Credits',
               features: ref.features || ['Direct qBraid Dispatch']
@@ -1169,43 +1192,40 @@ async function submitQbraidJob({ apiKey, backend = 'qbraid_sdk_simulator', qasm 
     throw new Error('Valid qBraid API Key required for live execution.');
   }
 
+  // v2 requires a QRN (vendor:provider:type:name). Legacy underscore ids are
+  // deprecated, so refuse rather than submitting one qBraid will reject.
+  const deviceQrn = backend;
+  if (!/^[^:]+:[^:]+:[^:]+:.+$/.test(deviceQrn)) {
+    throw new Error(`qBraid v2 requires a device QRN (vendor:provider:type:name); got "${backend}". Legacy device ids are no longer accepted.`);
+  }
+
   const postBody = {
-    device_id: backend,
-    circuit: qasm,
-    circuit_format: 'OPENQASM2',
+    deviceQrn,
+    program: { format: 'qasm2', data: qasm },
     shots: Math.min(Math.max(Number(shots) || 1024, 100), 8192),
     tags: { client: 'Ananta-Quantum-Studio', version: '2.5.0' }
   };
 
-  const options = {
-    hostname: 'api.qbraid.com',
-    port: 443,
-    path: '/api/v1/quantum-jobs',
-    method: 'POST',
-    headers: {
-      'api-key': apiKey.trim(),
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'User-Agent': 'Ananta-Quantum-Studio/2.5.0'
-    }
-  };
-
-  const res = await httpsRequest(options, postBody);
+  const res = await qbraidRequest(apiKey.trim(), '/jobs', { method: 'POST', body: postBody });
 
   if (res.statusCode === 200 || res.statusCode === 201) {
-    const jobData = res.data;
+    const jobData = unwrap(res) || {};
+    const jobQrn = jobData.jobQrn || jobData.qbraid_id || jobData.job_id || jobData.id;
+    if (!jobQrn) {
+      throw new Error('qBraid accepted the job but returned no job QRN.');
+    }
     return {
       success: true,
-      jobId: jobData.qbraid_id || jobData.job_id || jobData.id || ('qbr_' + Date.now()),
+      jobId: jobQrn,
       backend,
       status: jobData.status || 'QUEUED',
-      isRealHardware: !backend.includes('simulator'),
+      isRealHardware: !/:sim:/.test(deviceQrn),
       shots: postBody.shots,
       createdAt: new Date().toISOString()
     };
   }
 
-  throw new Error(res.data?.message || res.data?.error || `qBraid API HTTP ${res.statusCode}: Submission failed`);
+  throw new Error(qbraidErrorMessage(res, `qBraid API HTTP ${res.statusCode}: Submission failed`));
 }
 
 /**
@@ -1214,37 +1234,42 @@ async function submitQbraidJob({ apiKey, backend = 'qbraid_sdk_simulator', qasm 
 async function getJobStatusAndResult(apiKey, jobId) {
   if (!jobId) throw new Error('Job ID is required');
 
-  const options = {
-    hostname: 'api.qbraid.com',
-    port: 443,
-    path: `/api/v1/quantum-jobs/${encodeURIComponent(jobId)}`,
-    method: 'GET',
-    headers: {
-      'api-key': (apiKey || '').trim(),
-      'Accept': 'application/json'
-    }
-  };
+  const key = (apiKey || '').trim();
+  const qrn = encodeURIComponent(jobId);
 
-  const res = await httpsRequest(options);
-
-  if (res.statusCode === 200) {
-    const d = res.data;
-    const status = (d.status || 'COMPLETED').toUpperCase();
-    const counts = d.measurement_counts || d.counts || d.results?.counts || null;
-
-    return {
-      success: true,
-      jobId,
-      status,
-      backend: d.device_id || d.device,
-      shots: d.shots || 1024,
-      isRealHardware: Boolean(d.is_real_device || !d.device_id?.includes('simulator')),
-      counts: counts,
-      completedAt: d.completed_at || (status === 'COMPLETED' ? new Date().toISOString() : null)
-    };
+  const res = await qbraidRequest(key, `/jobs/${qrn}`);
+  if (res.statusCode !== 200) {
+    throw new Error(qbraidErrorMessage(res, `Failed to fetch qBraid job ${jobId}`));
   }
 
-  throw new Error(res.data?.message || `Failed to fetch qBraid job ${jobId}`);
+  const d = unwrap(res) || {};
+  const status = String(d.status || 'COMPLETED').toUpperCase();
+  const deviceQrn = d.deviceQrn || d.device_id || d.device || '';
+
+  // v2 splits the result onto its own route; only fetch it once the job is done.
+  let counts = d.measurementCounts || d.measurement_counts || d.counts || null;
+  if (!counts && status === 'COMPLETED') {
+    try {
+      const rRes = await qbraidRequest(key, `/jobs/${qrn}/result`);
+      if (rRes.statusCode === 200) {
+        const r = unwrap(rRes) || {};
+        counts = r.measurementCounts || r.counts || r.data?.measurementCounts || null;
+      }
+    } catch (e) {
+      // Status is still useful without the counts; surface it rather than failing.
+    }
+  }
+
+  return {
+    success: true,
+    jobId,
+    status,
+    backend: deviceQrn,
+    shots: d.shots || 1024,
+    isRealHardware: deviceQrn ? !/:sim:/.test(deviceQrn) : false,
+    counts,
+    completedAt: d.completedAt || d.completed_at || (status === 'COMPLETED' ? new Date().toISOString() : null)
+  };
 }
 
 /**
