@@ -2658,6 +2658,109 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modal) modal.classList.remove('active');
   };
 
+  // ==========================================
+  // CIRCUIT OPTIMIZER, TOPOLOGY & NOISE PANEL
+  // ==========================================
+  window.openCircuitOptimizer = function() {
+    const modal = document.getElementById('circuit-optimizer-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    const res = document.getElementById('optimizer-result');
+    if (res) res.innerHTML = '<div class="opt-idle">Press <strong>Optimize Circuit</strong> to run the algebraic passes on the circuit currently in the composer.</div>';
+    window.refreshHardwareReadiness();
+  };
+
+  window.closeCircuitOptimizer = function() {
+    const modal = document.getElementById('circuit-optimizer-modal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  /** Reads the live composer circuit, or null with a reason if unavailable. */
+  function getComposerCircuit() {
+    const ui = window.circuitUI;
+    if (!ui || !ui.grid) return null;
+    const hasGates = ui.grid.some(row => row.some(cell => cell && cell !== ''));
+    return { grid: ui.grid, numQubits: ui.numQubits, hasGates };
+  }
+
+  window.runCircuitOptimizer = function() {
+    const out = document.getElementById('optimizer-result');
+    if (!out) return;
+    const circuit = getComposerCircuit();
+    if (!circuit) { out.innerHTML = '<div class="opt-bad">Composer not ready.</div>'; return; }
+    if (!circuit.hasGates) { out.innerHTML = '<div class="opt-idle">No gates placed yet — build a circuit first.</div>'; return; }
+    if (!window.CircuitOptimizer) { out.innerHTML = '<div class="opt-bad">Optimizer module failed to load.</div>'; return; }
+
+    const r = window.CircuitOptimizer.optimize(circuit.grid, circuit.numQubits);
+
+    if (r.rejected) {
+      out.innerHTML = `
+        <div class="opt-bad"><strong>Rewrite rejected.</strong> ${r.summary}</div>
+        <div class="opt-note">Your circuit was left exactly as it was.</div>`;
+      return;
+    }
+
+    const changed = r.after.total !== r.before.total || r.after.depth !== r.before.depth;
+    out.innerHTML = `
+      <div class="opt-metrics">
+        <div class="opt-metric"><span class="opt-metric-val">${r.before.total} → ${r.after.total}</span><span class="opt-metric-lbl">gates</span></div>
+        <div class="opt-metric"><span class="opt-metric-val">${r.before.depth} → ${r.after.depth}</span><span class="opt-metric-lbl">depth</span></div>
+        <div class="opt-metric"><span class="opt-metric-val opt-good">${r.fidelity.toFixed(6)}</span><span class="opt-metric-lbl">verified fidelity</span></div>
+      </div>
+      <div class="${changed ? 'opt-good' : 'opt-idle'}">${r.summary}</div>
+      ${changed ? `<button class="btn-opt-apply" onclick="window.applyOptimizedCircuit()">Apply to Composer</button>` : ''}`;
+
+    // Held until the user explicitly applies it - the composer is never
+    // rewritten behind their back.
+    window.__ANANTA_OPTIMIZED_GRID = changed ? r.grid : null;
+  };
+
+  window.applyOptimizedCircuit = function() {
+    const grid = window.__ANANTA_OPTIMIZED_GRID;
+    const ui = window.circuitUI;
+    if (!grid || !ui) return;
+    ui.loadPreset(grid, null);
+    window.__ANANTA_OPTIMIZED_GRID = null;
+    const out = document.getElementById('optimizer-result');
+    if (out) out.innerHTML = '<div class="opt-good">Optimized circuit applied to the composer.</div>';
+    window.refreshHardwareReadiness();
+  };
+
+  window.refreshHardwareReadiness = function() {
+    const topoOut = document.getElementById('topology-result');
+    const noiseOut = document.getElementById('noise-result');
+    const circuit = getComposerCircuit();
+    if (!topoOut || !noiseOut || !circuit || !window.CircuitOptimizer) return;
+
+    if (!circuit.hasGates) {
+      topoOut.innerHTML = '<div class="opt-idle">No gates placed yet.</div>';
+      noiseOut.innerHTML = '<div class="opt-idle">No gates placed yet.</div>';
+      return;
+    }
+
+    // --- connectivity ---
+    const topoKey = (document.getElementById('opt-topology-select') || {}).value || 'linear';
+    const t = window.CircuitOptimizer.analyzeTopology(circuit.grid, circuit.numQubits, topoKey);
+    topoOut.innerHTML = t.deployable
+      ? `<div class="opt-good">✓ ${t.summary}</div>`
+      : `<div class="opt-warn">${t.summary}</div>` +
+        t.violations.map(v => `<div class="opt-violation">Step t=${v.col + 1} — ${v.reason}</div>`).join('');
+
+    // --- noise ---
+    const devKey = (document.getElementById('opt-device-select') || {}).value || 'superconducting';
+    const n = window.CircuitOptimizer.estimateNoiseSurvival(circuit.grid, circuit.numQubits, devKey);
+    const pct = (n.survivalProbability * 100).toFixed(1);
+    const cls = { good: 'opt-good', ok: 'opt-good', warn: 'opt-warn', bad: 'opt-bad', idle: 'opt-idle' }[n.severity] || 'opt-idle';
+    noiseOut.innerHTML = `
+      <div class="opt-metrics">
+        <div class="opt-metric"><span class="opt-metric-val ${cls}">${pct}%</span><span class="opt-metric-lbl">survival</span></div>
+        <div class="opt-metric"><span class="opt-metric-val">${n.singleQubitGates} / ${n.twoQubitGates}</span><span class="opt-metric-lbl">1q / 2q gates</span></div>
+        <div class="opt-metric"><span class="opt-metric-val">${n.circuitTimeUs.toFixed(2)} µs</span><span class="opt-metric-lbl">circuit time</span></div>
+      </div>
+      <div class="${cls}">${n.verdict}</div>
+      <div class="opt-formula">${n.formula}</div>`;
+  };
+
   window.copyBibtex = function() {
     const codeEl = document.getElementById('bibtex-code-content');
     const copyBtn = document.getElementById('btn-copy-bibtex');
